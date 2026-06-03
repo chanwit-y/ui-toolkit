@@ -1,0 +1,35 @@
+export const api = {
+  countries: {
+    url: "/collection/get-all",
+    description: "Get all countries",
+    methods: "POST" as const,
+    response: "countryRes",
+    body: "countryBody",
+    withOptions: false,
+  },
+  createCountry: {
+    url: "/collection/create/691e9963992636eb1560eadb",
+    description: "Create country",
+    methods: "POST" as const,
+    response: "countryRes",
+    body: "countryBody",
+    withOptions: false,
+  },
+  updateCountry: {
+    url: "/collection/update/691e9963992636eb1560eadb/:id",
+    description: "Update country",
+    methods: "PATCH" as const,
+    response: "countryRes",
+    body: "countryBody",
+    parameter: "countryParam",
+    withOptions: false,
+  },
+  deleteCountry: {
+    url: "/collection/delete/691e9963992636eb1560eadb/:id",
+    description: "Delete country",
+    methods: "DELETE" as const,
+    response: "countryRes",
+    parameter: "countryParam",
+    withOptions: false,
+  },
+};

@@ -1,0 +1,726 @@
+@import "@radix-ui/themes/styles.css";
+@import "@radix-ui/colors/black-alpha.css";
+@import "@radix-ui/colors/mauve.css";
+@import "@radix-ui/colors/violet.css";
+@import "./components/Modal.css";
+@import "./components/Snackbar.css";
+@import "./components/context/LoadingProvider.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom CSS variables and overrides */
+:root {
+  --my-custom-spacing: 1rem;
+}
+
+
+/* Ensure Tailwind utilities work with Radix components */
+@layer utilities {
+  /* Override Radix styles when needed */
+  .radix-override {}
+}
+
+/* Custom component styles that work with Radix Themes */
+@layer components {
+  .custom-gradient {
+    @apply bg-gradient-to-r from-blue-500 to-purple-600;
+  }
+  
+  /* Utility class to make Tailwind work with Radix TextField */
+  .rt-TextField-root {
+    /* Allow Tailwind width utilities to work */
+    width: inherit !important;
+  }
+  
+  /* Error state styling for TextField */
+  .rt-TextField-root[data-error="true"] {
+    --accent-9: rgb(239 68 68) !important;
+    --accent-a9: rgb(239 68 68) !important;
+  }
+}
+
+.radix-themes:where([data-is-root-theme='true']) {
+  min-height: calc(100dvh - 112px);
+}
+
+/* .bg-violet-200 {
+  @apply bg-violet-200;
+}
+
+.bg-violet-300 {
+  @apply bg-violet-300;
+} */
+
+/* .ring-violet-300 {
+  @apply ring-violet-300;
+}
+
+.ring-1 {
+  @apply ring-1;
+} */
+
+/* .hover-bg-violet-300 {
+  @apply hover:bg-violet-300;
+}
+
+.hover-bg-violet-50 {
+  @apply hover:bg-violet-50;
+}
+
+.bg-violet-600 {
+  @apply bg-violet-600;
+}
+
+.hover-bg-violet-700 {
+  @apply hover:bg-violet-700;
+} */
+
+.sm-col-span-1 {
+  @apply sm:col-span-1;
+}
+
+.sm-col-span-2 {
+  @apply sm:col-span-2;
+}
+
+.sm-col-span-3 {
+  @apply sm:col-span-3;
+}
+
+.sm-col-span-4 {
+  @apply sm:col-span-4;
+}
+
+.sm-col-span-5 {
+  @apply sm:col-span-5;
+}
+
+.sm-col-span-6 {
+  @apply sm:col-span-6;
+}
+
+.sm-col-span-7 {
+  @apply sm:col-span-7;
+}
+
+.sm-col-span-8 {
+  @apply sm:col-span-8;
+}
+
+.sm-col-span-9 {
+  @apply sm:col-span-9;
+}
+
+.sm-col-span-10 {
+  @apply sm:col-span-10;
+}
+
+.sm-col-span-11 {
+  @apply sm:col-span-11;
+}
+
+.sm-col-span-12 {
+  @apply sm:col-span-12;
+}
+
+.md-col-span-1 {
+  @apply md:col-span-1;
+}
+
+.md-col-span-2 {
+  @apply md:col-span-2;
+}
+
+.md-col-span-3 {
+  @apply md:col-span-3;
+}
+
+.md-col-span-4 {
+  @apply md:col-span-4;
+}
+
+.md-col-span-5 {
+  @apply md:col-span-5;
+}
+
+.md-col-span-6 {
+  @apply md:col-span-6;
+}
+
+.md-col-span-7 {
+  @apply md:col-span-7;
+}
+
+.md-col-span-8 {
+  @apply md:col-span-8;
+}
+
+.md-col-span-9 {
+  @apply md:col-span-9;
+}
+
+.md-col-span-10 {
+  @apply md:col-span-10;
+}
+
+.md-col-span-11 {
+  @apply md:col-span-11;
+}
+
+.md-col-span-12 {
+  @apply md:col-span-12;
+}
+
+.lg-col-span-1 {
+  @apply lg:col-span-1;
+}
+
+.lg-col-span-2 {
+  @apply lg:col-span-2;
+}
+
+.lg-col-span-3 {
+  @apply lg:col-span-3;
+}
+
+.lg-col-span-4 {
+  @apply lg:col-span-4;
+}
+
+.lg-col-span-5 {
+  @apply lg:col-span-5;
+}
+
+.lg-col-span-6 {
+  @apply lg:col-span-6;
+}
+
+.lg-col-span-7 {
+  @apply lg:col-span-7;
+}
+
+.lg-col-span-8 {
+  @apply lg:col-span-8;
+}
+
+.lg-col-span-9 {
+  @apply lg:col-span-9;
+}
+
+.lg-col-span-10 {
+  @apply lg:col-span-10;
+}
+
+.lg-col-span-11 {
+  @apply lg:col-span-11;
+}
+
+.lg-col-span-12 {
+  @apply lg:col-span-12;
+}
+
+.xl-col-span-1 {
+  @apply xl:col-span-1;
+}
+
+.xl-col-span-2 {
+  @apply xl:col-span-2;
+}
+
+.xl-col-span-3 {
+  @apply xl:col-span-3;
+}
+
+.xl-col-span-4 {
+  @apply xl:col-span-4;
+}
+
+.xl-col-span-5 {
+  @apply xl:col-span-5;
+}
+
+.xl-col-span-6 {
+  @apply xl:col-span-6;
+}
+
+.xl-col-span-7 {
+  @apply xl:col-span-7;
+}
+
+.xl-col-span-8 {
+  @apply xl:col-span-8;
+}
+
+.xl-col-span-9 {
+  @apply xl:col-span-9;
+}
+
+.xl-col-span-10 {
+  @apply xl:col-span-10;
+}
+
+.xl-col-span-11 {
+  @apply xl:col-span-11;
+}
+
+.xl-col-span-12 {
+  @apply xl:col-span-12;
+}
+
+.rt-TextFieldRoot:where(.rt-variant-surface):has([data-error="true"]) {
+  --text-field-focus-color: transparent;
+}
+
+/* Textarea component styles */
+textarea[data-error="true"] {
+  --textarea-focus-color: transparent;
+}
+
+/* SelectField component styles */
+.rt-SelectTrigger[data-error="true"] {
+  --select-field-focus-color: transparent;
+  border-color: rgb(239 68 68) !important; /* red-500 */
+}
+
+.rt-SelectTrigger[data-error="true"]:focus {
+  border-color: rgb(239 68 68) !important; /* red-500 */
+  box-shadow: none !important;
+}
+
+.rt-SelectTrigger[data-error="true"]:hover {
+  border-color: rgb(239 68 68) !important; /* red-500 */
+}
+
+
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+.fade-out {
+  animation: fadeOut 0.5s ease-in-out;
+}
+
+/* Custom scrollbar for textarea */
+/* textarea::-webkit-scrollbar {
+  width: 8px;
+} */
+/* 
+textarea::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+textarea::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+textarea::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+} */
+
+/* DataTable2 Component Styles */
+.datatable-container {
+  /* Empty container class */
+}
+
+.datatable-header {
+  @apply flex flex-row justify-between items-start  bg-white z-10;
+}
+
+.datatable-title {
+  @apply text-2xl shrink-0 text-gray-500 font-semibold;
+}
+
+.datatable-controls-wrapper {
+  @apply flex flex-col w-full gap-0.5 items-end justify-end;
+}
+
+/* .datatable-controls {
+  @apply flex flex-row gap-0.5 items-center justify-center space-x-2;
+} */
+
+.datatable-icon-button {
+  @apply p-1 hover:scale-110 transition-transform cursor-pointer text-gray-500 border hover:ring-1 hover:ring-blue-400 rounded-sm border-blue-500 hover:bg-gray-50;
+}
+
+.datatable-row-count {
+  @apply text-xs text-gray-500;
+}
+
+.datatable-table-wrapper {
+  @apply shadow-lg rounded-lg overflow-hidden;
+}
+
+.datatable-scroll-x {
+  @apply overflow-x-auto;
+}
+
+.datatable-table {
+  @apply w-full bg-white border border-gray-200 table-fixed;
+}
+
+.datatable-thead {
+  @apply bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200 block overflow-hidden;
+}
+
+.datatable-header-row {
+  @apply text-center text-xs font-bold text-gray-700 tracking-widest table w-full table-fixed;
+}
+
+.datatable-header-cell-icon {
+  @apply py-4 border-r border-gray-200 flex justify-center items-center;
+}
+
+.datatable-header-cell {
+  @apply py-4 border-r border-gray-200 last:border-r-0 transition-colors duration-200 select-none;
+}
+
+.datatable-header-content {
+  @apply flex flex-row gap-2 items-center justify-center;
+}
+
+.datatable-sort-icon {
+  @apply transition-all duration-300 ease-in-out;
+}
+
+.datatable-sort-icon-bounce {
+  @apply animate-bounce;
+}
+
+.datatable-sort-icon-default {
+  @apply opacity-60 hover:opacity-100 transition-opacity duration-200;
+}
+
+.datatable-popover-content {
+  width: 260px;
+  border-radius: 0.25rem;
+  background-color: white;
+  padding: 1rem;
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  border: 1px solid rgb(229 231 235);
+  will-change: transform, opacity;
+  outline: none;
+}
+
+.datatable-popover-content:focus {
+  box-shadow: 0 0 0 2px rgb(96 165 250 / 0.5);
+}
+
+.datatable-popover-content[data-state="open"][data-side="bottom"] {
+  animation: slideUpAndFade 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.datatable-popover-content[data-state="open"][data-side="left"] {
+  animation: slideRightAndFade 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.datatable-popover-content[data-state="open"][data-side="right"] {
+  animation: slideLeftAndFade 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.datatable-popover-content[data-state="open"][data-side="top"] {
+  animation: slideDownAndFade 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUpAndFade {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideRightAndFade {
+  from {
+    opacity: 0;
+    transform: translateX(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideLeftAndFade {
+  from {
+    opacity: 0;
+    transform: translateX(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideDownAndFade {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.datatable-filter-icon {
+  @apply cursor-pointer;
+}
+
+/* Checkbox styling within datatable filters */
+.datatable-popover-content .rt-CheckboxRoot {
+  margin-right: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.datatable-popover-content .rt-CheckboxRoot:hover {
+  transform: scale(1.05);
+}
+
+.datatable-popover-content .rt-CheckboxRoot[data-state="checked"] {
+  background-color: rgb(59 130 246); /* blue-500 */
+  border-color: rgb(59 130 246);
+}
+
+.datatable-popover-content .rt-CheckboxRoot[data-state="unchecked"] {
+  border-color: rgb(209 213 219); /* gray-300 */
+  background-color: white;
+}
+
+.datatable-popover-content .rt-CheckboxRoot[data-state="checked"]:hover {
+  background-color: rgb(37 99 235); /* blue-600 */
+  border-color: rgb(37 99 235);
+}
+
+.datatable-popover-content .rt-CheckboxRoot[data-state="unchecked"]:hover {
+  border-color: rgb(59 130 246); /* blue-500 */
+  background-color: rgb(239 246 255); /* blue-50 */
+}
+
+.datatable-popover-content .rt-Text {
+  font-size: 12px;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: color 0.2s ease-in-out;
+}
+
+.datatable-popover-content .rt-Text:hover {
+  color: rgb(59 130 246); /* blue-500 */
+}
+
+/* Checkbox item container styling */
+.datatable-popover-content .rt-Flex {
+  padding: 6px 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease-in-out;
+  cursor: pointer;
+}
+
+.datatable-popover-content .rt-Flex:hover {
+  background-color: rgb(249 250 251); /* gray-50 */
+}
+
+/* Checkbox indicator styling */
+.datatable-popover-content .rt-CheckboxIndicator {
+  color: white;
+  font-size: 10px;
+  font-weight: bold;
+}
+
+.datatable-tbody {
+  @apply bg-white divide-y divide-gray-200 block h-[460px] overflow-y-auto overflow-x-hidden;
+}
+
+.datatable-footer {
+  @apply flex items-center justify-between px-2 py-4 bg-white border-t border-gray-200;
+}
+
+.datatable-body-row {
+  @apply text-center text-xs font-bold text-gray-700 tracking-widest table w-full table-fixed;
+}
+
+.datatable-body-cell {
+  @apply py-4 border-r border-b border-gray-200 last:border-r-0 transition-colors duration-200 select-none;
+}
+
+/* Popover focus-visible styles */
+
+/* Native checkbox styling for DataTable2 filters */
+.datatable-popover-content input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid rgb(209 213 219); /* gray-300 */
+  border-radius: 0.25rem;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease-in-out;
+  background-color: white;
+}
+
+.datatable-popover-content input[type="checkbox"]:hover {
+  border-color: rgb(96 165 250); /* blue-400 */
+  background-color: rgb(239 246 255); /* blue-50 */
+}
+
+.datatable-popover-content input[type="checkbox"]:checked {
+  background-color: rgb(96 165 250); /* blue-400 */
+  border-color: rgb(96 165 250); /* blue-400 */
+}
+
+.datatable-popover-content input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(45deg);
+  width: 0.25rem;
+  height: 0.5rem;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+}
+
+.datatable-popover-content input[type="checkbox"]:checked:hover {
+  background-color: rgb(59 130 246); /* blue-500 */
+  border-color: rgb(59 130 246); /* blue-500 */
+}
+
+/* Text highlighting styles for DataTable2 */
+.datatable-body-cell mark {
+  background-color: rgb(254 240 138); /* yellow-200 */
+  color: rgb(120 53 15); /* amber-800 */
+  padding: 0.125rem 0.25rem; /* px-1 */
+  border-radius: 0.25rem; /* rounded */
+  font-weight: 600;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  transition: all 0.2s ease-in-out;
+}
+
+.datatable-body-cell mark:hover {
+  background-color: rgb(253 224 71); /* yellow-300 */
+  transform: scale(1.02);
+}
+
+/* Smooth transition for highlighting appearance */
+.datatable-body-cell {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Enhanced cell content wrapper */
+.datatable-body-cell .cell-content {
+  display: inline-block;
+  width: 100%;
+}
+
+/* Page change animation */
+@keyframes pageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pageSlideOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+}
+
+.datatable-tbody.page-changing {
+  animation: pageSlideIn 0.3s ease-out;
+}
+
+.datatable-tbody.page-changing .datatable-body-row {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Filter change animation */
+@keyframes filterFadeScale {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes filterRowStagger {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.datatable-tbody.filtering {
+  animation: filterFadeScale 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.datatable-tbody.filtering .datatable-body-row {
+  animation: filterRowStagger 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  animation-fill-mode: both;
+}
+
+.datatable-tbody.filtering .datatable-body-row:nth-child(1) { animation-delay: 0s; }
+.datatable-tbody.filtering .datatable-body-row:nth-child(2) { animation-delay: 0.02s; }
+.datatable-tbody.filtering .datatable-body-row:nth-child(3) { animation-delay: 0.04s; }
+.datatable-tbody.filtering .datatable-body-row:nth-child(4) { animation-delay: 0.06s; }
+.datatable-tbody.filtering .datatable-body-row:nth-child(5) { animation-delay: 0.08s; }
+.datatable-tbody.filtering .datatable-body-row:nth-child(6) { animation-delay: 0.10s; }
+.datatable-tbody.filtering .datatable-body-row:nth-child(7) { animation-delay: 0.12s; }
+.datatable-tbody.filtering .datatable-body-row:nth-child(8) { animation-delay: 0.14s; }
+.datatable-tbody.filtering .datatable-body-row:nth-child(9) { animation-delay: 0.16s; }
+.datatable-tbody.filtering .datatable-body-row:nth-child(10) { animation-delay: 0.18s; }
+.modal {
+  pointer-events: none;
+  z-index: 100;
+}
+
+.dropdown {
+  z-index: 200;
+}
