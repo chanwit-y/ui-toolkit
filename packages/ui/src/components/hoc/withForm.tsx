@@ -24,16 +24,6 @@ export const withForm = <T extends any>(Component:
 
 		// Extract control from either 'control' prop or 'form.control'
 		const control = 'control' in props ? props.control : props.form.control
-		// const { watch } = useFormContext()
-
-
-		// useEffect(() => {
-		// 	console.log('watch', watch(name))
-		// }, [watch(name)])
-		// const { fields, append, remove } = useFieldArray({
-		// 	control,
-		// 	name: name as ArrayPath<TFieldValues>,
-		// })
 
 		// Check if this is a number input field
 		const isNumberType = (restProps as any)?.dataType === 'number' || (restProps as any)?.type === 'number'

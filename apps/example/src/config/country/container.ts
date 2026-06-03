@@ -100,7 +100,7 @@ export const countryDetail: Bin[] = [
       confirmBox: {
         title: "Update Country",
         description: "Are you sure you want to update this country?",
-        True: ["StratLoading", "SubmitFormToPatchAPI", "StopLoading", "CloseModal"],
+        True: ["StartLoading", "SubmitFormToPatchAPI", "StopLoading", "CloseModal"],
         False: [],
       },
       reloadDataTable: "dtCountry",
@@ -132,7 +132,7 @@ export const countryDetail: Bin[] = [
       confirmBox: {
         title: "Create Country",
         description: "Are you sure you want to create this country?",
-        True: ["StratLoading", "SubmitFormToPostAPI", "StopLoading", "CloseModal"],
+        True: ["StartLoading", "SubmitFormToPostAPI", "StopLoading", "CloseModal"],
         False: [],
       },
       reloadDataTable: "dtCountry",
@@ -189,7 +189,7 @@ export const groupList: Bin[] = [
       minWidth: "700px",
       trigger: {
         label: "",
-        actions: ["ClearCurrentFormSeleted"],
+        actions: ["ClearCurrentFormSelected"],
         icon: "puls",
       },
     },
@@ -247,7 +247,7 @@ export const groupList: Bin[] = [
         confirmBox: {
           title: "Delete Country",
           description: "Are you sure you want to delete this country?",
-          True: ["StratLoading", "SubmitFormToDeleteAPI", "StopLoading"],
+          True: ["StartLoading", "SubmitFormToDeleteAPI", "StopLoading"],
           False: [],
         },
         isReload: true,

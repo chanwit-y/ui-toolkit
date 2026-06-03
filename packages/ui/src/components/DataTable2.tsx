@@ -84,22 +84,8 @@ export const DataTable2 = <T extends Record<string, any>>({
 	// editModalContainer,
 }: DataTableProps) => {
 
-	// const {
-	// 	updateLoadDataTables,
-	// 	updateSelectedRow,
-	// } = useStord((state) => ({
-	// 	updateLoadDataTables: state.updateLoadDataTables,
-	// 	updateSelectedRow: state.updateSelectedRow,
-	// }))
-
 	const [openModal, setOpenModal] = useState(false)
 	const [openConfirmBox, setOpenConfirmBox] = useState(false)
-
-	// const updateLoadDataTables = useStord((state) => state.updateFnCtxs)
-	// const updateSelectedRow = useStord((state) => state.updateContextData)
-	// const { updateContextData: updateSelectedRow, 
-	// 	updateFnCtxs: updateLoadDataTables,
-	// 	contextData } = useData()
 
 	const [data, setData] = useState<T[]>([])
 	const [globalFilter, setGlobalFilter] = useState('')
@@ -151,19 +137,7 @@ export const DataTable2 = <T extends Record<string, any>>({
 						await apiDelete({ id: selectedRow[apiDeleteInfo.params["id"]] || selectedRow[apiDeleteInfo.params["_id"]] })
 						apiDeleteInfo?.isReload && await refetch();
 					}
-					// if (selectedRow?.id) {
-					// 	api && await api({ id: data.id }, { ...data })
-					// } else {
-					// 	api && await api({ ...data })
-					// }
 					break;
-				// case 'ReloadDataTable':
-				// 	await refetch();
-				// 	// await loadDataTables["Source Apps"]()
-				// 	break;
-				// case 'ClearCurrentFormSelected':
-				// 	clearCurrentFormSelected();
-				// 	break;
 				case 'StartLoading':
 					loaderId = startLoading();
 					break;
@@ -178,11 +152,6 @@ export const DataTable2 = <T extends Record<string, any>>({
 			}
 		}
 
-		// if (event && onClick) {
-		// 	onClick(event);
-		// }
-
-
 		if (apiDeleteInfo?.snackbarSuccess) {
 			showSnackbar({
 				variant: apiDeleteInfo?.snackbarSuccess.type,
@@ -190,7 +159,6 @@ export const DataTable2 = <T extends Record<string, any>>({
 			})
 		}
 	}, [apiDeleteInfo, apiDelete, showSnackbar, selectedRow])
-	// }, [api, handleSubmit, loadDataTables, onClick, showSnackbar, snackbarSuccess, startLoading, stopLoading])
 
 
 	const handleConfirm = useCallback((isConfirm: boolean) => {
@@ -204,8 +172,6 @@ export const DataTable2 = <T extends Record<string, any>>({
 	const filterRef = useRef<HTMLInputElement>(null);
 	const theme = useTheme()
 
-	// const dataCtx = context ? useContext(context) : undefined
-	// const updateSelectedRow = useStord((state) => state.updateContextData)
 	const updateFnCtxs = useStord((state) => state.updateFnCtxs)
 	const dataCtx = useData()
 
@@ -225,13 +191,7 @@ export const DataTable2 = <T extends Record<string, any>>({
 								size="1"
 								color={theme.components.dataTable?.editButtonColor as ThemeProps['accentColor'] || 'blue'}
 								onClick={() => {
-
 									setOpenModal(true)
-
-									// setTimeout(() => {
-									// updateSelectedRow(name ?? '', row.original)
-									// }, 3000)
-									// updateFnCtxs("modal", (f: boolean) => setOpenModal(f))
 									dataCtx?.updateContextData(name ?? '', row.original)
 								}}
 							>
@@ -247,9 +207,6 @@ export const DataTable2 = <T extends Record<string, any>>({
 								onClick={() => {
 									setSelectedRow(row.original)
 									setOpenConfirmBox(true)
-									// console.log(row.original)
-									// updateSelectedRow(`selected-row-${title ?? ''}`, row.original)
-
 								}}
 							>
 								<Icon icon="trash" size={14} />
@@ -269,18 +226,6 @@ export const DataTable2 = <T extends Record<string, any>>({
 
 		return canEdit || canDelete ? [actionIconColumn, ...columns] : [...columns]
 	}, [title, columns, canDelete, canEdit])
-
-	// const align = useMemo(() => {
-	// 	console.log('align', columns)
-	// 	const x = columns.reduce((acc, current) => {
-	// 		return { ...acc, [current.accessor]: current.align }
-	// 	}, {})
-	// 	console.log('align', x)
-	// 	return x
-	// }, [columns])
-
-
-	// const { setValue } = useFormContext()
 
 	const table = useReactTable({
 		data,
@@ -303,7 +248,7 @@ export const DataTable2 = <T extends Record<string, any>>({
 	})
 
 
-	const fechtData = useCallback(async () => {
+	const fetchData = useCallback(async () => {
 		const q = Object.entries(apiInfo?.query ?? {}).reduce((acc, [key, value]) => {
 			return { ...acc, [key]: value.type === "value" ? value.value : undefined }
 		}, {})
@@ -327,23 +272,12 @@ export const DataTable2 = <T extends Record<string, any>>({
 				data = data[path]
 			})
 
-			// setData(data ?? [])
 			return data ?? []
 		}
 		return []
-
-		// api && api({ ...q }).then((res: any) => {
-		// 	let data = res
-		// 	apiInfo?.paths?.forEach((path) => {
-		// 		data = data[path]
-		// 	})
-		// 	// setData(data ?? [])
-		// 	return data ?? []
-		// })
-		// return []
 	}, [api, apiInfo])
 
-	const { data: tableData, refetch, isLoading, isFetching } = useQuery({ queryKey: [`table-data-${title}`], queryFn: fechtData })
+	const { data: tableData, refetch, isLoading, isFetching } = useQuery({ queryKey: [`table-data-${title}`], queryFn: fetchData })
 
 	const showSkeleton = (isLoading || isFetching) && data.length === 0
 	const visibleColumns = table.getVisibleLeafColumns()
@@ -354,30 +288,9 @@ export const DataTable2 = <T extends Record<string, any>>({
 
 
 	useEffect(() => {
-		// updateLoadDataTables(name ?? '', refetch)
-		// dataCtx?.updateFnCtxs(name ?? '', refetch)
 		updateFnCtxs(name ?? '', refetch)
 		updateFnCtxs("modalEdit", (f: boolean) => setOpenModal(f))
-		// updateLoadDataTables({ [title ?? '']: fechtData })
 	}, [name])
-
-
-	// useEffect(() => {
-	// 	// TODO: get value
-	// 	// console.log('call api', apiInfo)
-
-	// 	// const query = Object.entries(apiInfo?.query ?? {}).reduce((acc, [key, value]) => {
-	// 	// 	return { ...acc, [key]: value }
-	// 	// }, {})
-
-
-
-	// 	// api && api().then((res: { data: SetStateAction<T[]> }) => {
-	// 	// 	setData(res.data)
-	// 	// })
-	// 	// fechtData();
-	// 	refetch();
-	// }, [api, apiInfo])
 
 	useEffect(() => {
 		filterRef.current?.focus()
@@ -447,9 +360,6 @@ export const DataTable2 = <T extends Record<string, any>>({
 
 					{table.getHeaderGroups().map(headerGroup => (
 						<tr key={headerGroup.id} className="datatable-header-row">
-							{/* <th className="datatable-header-cell-icon">
-								<SendToBack className="w-4 h-4" />
-							</th> */}
 							{headerGroup.headers.map(header => (
 								header.column.columnDef.header && <th key={header.id} className={`datatable-header-cell 
 									 ${tableBgColors[theme.components.dataTable?.headerColor || 'blue']}
@@ -470,7 +380,6 @@ export const DataTable2 = <T extends Record<string, any>>({
 											<Popover.Root>
 												<Popover.Trigger asChild>
 													<ListFilter size={14} className="datatable-filter-icon" />
-													{/* <Icon icon="listFilter" size={14} className="datatable-filter-icon" /> */}
 												</Popover.Trigger>
 												<Popover.Portal>
 													<Popover.Content
@@ -711,7 +620,6 @@ export const DataTable2 = <T extends Record<string, any>>({
 			minWidth={modalMinWidth}
 			maxHeight={modalMaxHeight}
 		>
-			{/* <pre>{JSON.stringify(dataCtx?.contextData, undefined, 2)}</pre> */}
 			{modalContainer}
 		</Modal>
 		<ConfirmBox

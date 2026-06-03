@@ -10,43 +10,11 @@ import {
 import { type IHttpClientFactory } from './@types/HttpClientType';
 import { type AxiosRequestConfig, type AxiosResponse } from 'axios';
 
-// interface ITest {
-//   run: () => void;
-// }
-
-// class A implements ITest {
-//   public run() {
-//     console.log('A')
-//   }
-// }
-
-// class B implements ITest {
-//   public run() {
-//     console.log('B')
-//   }
-// }
-
-// class C {
-//   public test(t: ITest) {
-//     t.run();
-//   }
-// }
-
-// class D {
-//   private _c = new C();
-
-//   constructor() {
-//     this._c.test(new A()) // -> A
-//     this._c.test(new B()) // -> B
-//   }
-// }
-
 export class HttpClientFactory
   extends HttpClientBase
   implements IHttpClientFactory
 {
   constructor(
-    // private _factory: HttpClientFactoryType<unknown, unknown>[],
     private _baseUrl: string,
     private _getAccessToken: () => Promise<string>,
     version: string = '1.0.0',
@@ -140,8 +108,6 @@ export class HttpClientFactory
     switch (method) {
       case HttpMethod.GET:
         res = await this.get(url, config);
-        // console.log('http client factory get', res)
-        // res = await this.processGet<R, Q, P, B>(url, request, config);
         break;
       case HttpMethod.POST: {
         res = await this.post(url, request?.body, config);
@@ -162,13 +128,8 @@ export class HttpClientFactory
       default:
         throw 'error in http client factory!';
     }
-    
-    // console.log('unwrap',this._unwrap && !isNotUnwrap ? this._unwrap(res.data) : res.data)
-
 
     return this._unwrap && !isNotUnwrap ? this._unwrap(res.data) : res.data;
-    // }
-    // throw 'group or key not found!';
   }
 
   public async processGet<R, Q, P, B>(
@@ -176,44 +137,6 @@ export class HttpClientFactory
     _request?: Request<Q, P, B>,
     config?: AxiosRequestConfig
   ): Promise<AxiosResponse<R, any>> {
-    // is check request send by query string?
-    // if (request?.query ) {
-    //   const stringQuery = this.getUrlQueryString(request.query);
-    //   url = `${url}?${stringQuery}`;
-    // }
     return await this.get(url, config);
   }
-
-  // private async processGet<R, Q, P, B>(
-  //   api: Api<unknown>,
-  //   request: Request<Q, P, B>,
-  //   url: string
-  // ): Promise<AxiosResponse<R, any>> {
-  //   // is check request send by query string?
-  //   // console.log(request.stringQuery)
-  //   if (request.stringQuery) {
-  //     const stringQuery = this.getUrlQueryString(request.stringQuery);
-  //     url = `${url}?${stringQuery}`;
-  //   }
-  //   // // is check requesr send by parameter?
-  //   // if (request.parameter) {
-  //   //   // url data is '/user/:userId'
-  //   //   // replace :parameter to value
-  //   //   url = this.getUrlParameter(request.parameter, url);
-  //   // }
-  //   return await this.get(url, api.axiosRequestConfig);
-  // }
-
-  // public post_<P, B>(group: string, method: string, req: Request<None, P, B>) {}
-  // public put_<P, B>(group: string, method: string, req: Request<None, P, B>) {}
-  // public patch_<P, B>(
-  //   group: string,
-  //   method: string,
-  //   req: Request<None, P, B>
-  // ) {}
-  // public delete_<P, B>(
-  //   group: string,
-  //   method: string,
-  //   req: Request<None, P, B>
-  // ) {}
 }

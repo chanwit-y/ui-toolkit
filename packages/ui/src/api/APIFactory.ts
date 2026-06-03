@@ -39,41 +39,6 @@ type Context = {
   cacheTime?: number;
 };
 
-// type Request_<Q, P, B> = Q extends Map
-//   ? P extends Map
-//     ? B extends Map
-//       ? {
-//           query: Q;
-//           parameter: P;
-//           body: B;
-//         } // E
-//       : {
-//           query: Q;
-//           parameter: P;
-//         } // B
-//     : B extends Map
-//     ? {
-//         query: Q;
-//         body: B;
-//       } // C
-//     : {
-//         query: Q;
-//       } // A
-//   : P extends Map
-//   ? B extends Map
-//     ? {
-//         parameter: P;
-//         body: B;
-//       } // D
-//     : {
-//         parameter: P;
-//       } // F
-//   : B extends Map
-//   ? {
-//       body: B;
-//     } // G
-//   : {}; // 0
-
 type Request<Q, P, B, R> = Q extends Map
   ? Request<undefined, P, B, { query: Q }>
   : P extends Map
@@ -88,31 +53,11 @@ type Req<Q, P, B> = {
   body?: B;
 };
 
-//   query: Q extends object ? Q : never;
-//   parameter: P extends object ? P : never;
-//   body: B extends object ? B : never;
 export type Config = {
   [K: string]: Context;
 };
 
 export type Map = { [key: string]: any };
-
-// type Func<R, Q, P, B> = Q extends object
-//   ? P extends object
-//     ? B extends object
-//       ? (query: Q, param: P, body: B) => R
-//       : (query: Q, param: P) => R
-//     : (query: Q) => R
-//   : never;
-
-//-0   mutate: <R, E = unknown>(key: N, options?: MutateOptions<R, E, void>) => UseMutationResult<R, E, void, unknown>
-//-A   mutateQ: <R, Q = void, E = unknown>(key: N, options?: MutateOptions<R, E, Q>) => UseMutationResult<R, E, Q, unknown>
-//-B   mutateQP: <R, Q, P, E = unknown>(key: N, options?: MutateOptions<R, E, RequestMutateQP<Q, P>>) => UseMutationResult<R, E, RequestMutateQP<Q, P>, unknown>
-//-C   mutateQB: <R, Q, B, E = unknown>(key: N, options?: MutateOptions<R, E, RequestMutateQB<Q, B>>) => UseMutationResult<R, E, RequestMutateQB<Q, B>, unknown>
-//-D   mutatePB: <R, P, B, E = unknown>(key: N, options?: MutateOptions<R, E, RequestMutatePB<P, B>>) => UseMutationResult<R, E, RequestMutatePB<P, B>, unknown>
-//-E   mutateQPB: <R, Q, P, B, E = unknown>(key: N, options?: MutateOptions<R, E, Request<Q, P, B>>) => UseMutationResult<R, E, Request<Q, P, B>, unknown>
-//-F   mutateP: <R, P = void, E = unknown>(key: N, options?: MutateOptions<R, E, P>) => UseMutationResult<R, E, P, unknown>
-//-G   mutateB: <R, B = void, E = unknown>(key: N, options?: MutateOptions<R, E, B>) => UseMutationResult<R, E, B, unknown>
 
 type FuncIsGet<M, F1 extends Function, F2 extends Function> = M extends 0
   ? F1
@@ -135,24 +80,6 @@ export type Func<R, Q, P, B, M> = Q extends Map
   ? FuncIsGet<M, (body: B) => R, FuncReturn<R>> // G
   : FuncReturn<R>; // 0
 
-// type Test0 = Func<number, undefined, undefined, undefined, 0>;
-// type TestA = Func<number, { email: string }, undefined, undefined, 0>;
-// type TestB = Func<number, { email: string }, { id: number }, undefined, 0>;
-// type TestC = Func<number, { email: string }, undefined, { name: string }, 0>;
-// type TestD = Func<number, undefined, { id: number }, { name: string }, 0>;
-// type TestE = Func<
-//   number,
-//   { email: string },
-//   { id: number },
-//   { name: string },
-//   0
-// >;
-// type TestF = Func<number, undefined, { id: number }, undefined, 0>;
-// type TestG = Func<number, undefined, undefined, { name: string }, 0>;
-
-// export class ApiFactory<A extends Config, MapFunc extends Map> {
-
-// export class ApiFactory<A extends Config, MapFunc extends Map> {
 export class ApiFactory<_A extends Config, MapFunc extends Map> {
   constructor(
     private _http: IHttpClientFactory,
@@ -174,7 +101,6 @@ export class ApiFactory<_A extends Config, MapFunc extends Map> {
   private _action<R, Q, P, B>(ctx: Context, req: Req<Q, P, B>) {
     if (ctx.method.const === 0) {
       if (ctx.withOptions.const) {
-        console.info(ctx);
         return {
           use: (options?: UseQueryOptions<R, unknown, R, [string, Req<Q, P, B>]>) =>
             useQuery<R, unknown, R, [string, Req<Q, P, B>]>({
@@ -195,10 +121,7 @@ export class ApiFactory<_A extends Config, MapFunc extends Map> {
       }
     } else {
       return useMutation<R, unknown, Req<Q, P, B>, unknown>({
-        mutationFn: (req) => {
-          console.log("in mutation", req);
-          return this._call<R, Q, P, B>(ctx, req);
-        },
+        mutationFn: (req) => this._call<R, Q, P, B>(ctx, req),
       });
     }
 
@@ -220,11 +143,9 @@ export class ApiFactory<_A extends Config, MapFunc extends Map> {
     }
   > {
     Object.entries(c).forEach(([key, ctx]) => {
-      //       type Response = Static<typeof ctx.response>;
       type Query = Static<typeof ctx.query>;
       type Parameter = Static<typeof ctx.parameter>;
       type Body = Static<typeof ctx.body>;
-      //       type Method = Static<typeof ctx.method>;
 
       this._fn = {
         ...this._fn,
@@ -234,37 +155,19 @@ export class ApiFactory<_A extends Config, MapFunc extends Map> {
               ? ctx.body.type !== "undefined"
                 ? (query: Query, param: Parameter, body: Body) =>
                   this._call(ctx, { query, parameter: param, body })
-                : (query: Query, param: Parameter) => {
-                  // console.log('query Hi', query, param);
-                  return this._call(ctx, { query, parameter: param });
-                  // return action<Response, Query, Parameter, Body>({
-                  //   query,
-                  //   parameter: param,
-                  // });
-                }
+                : (query: Query, param: Parameter) =>
+                  this._call(ctx, { query, parameter: param })
               : ctx.body.type !== "undefined"
                 ? (query: Query, body: Body) => this._call(ctx, { query, body })
-                : // action<Response, Query, Parameter, Body>({ query, body })
-                // (query: Query) => this._call(ctx, { query })
-                (query: Query) => {
-                  return this._call(ctx, { query })
-                }
-            : // action<Response, Query, Parameter, Body>({ query })
-            ctx.parameter.type !== "undefined"
+                : (query: Query) => this._call(ctx, { query })
+            : ctx.parameter.type !== "undefined"
               ? ctx.body.type !== "undefined"
                 ? (param: Parameter, body: Body) =>
                   this._call(ctx, { parameter: param, body })
-                : // action<Response, Query, Parameter, Body>({
-                //   parameter: param,
-                //   body,
-                // })
-                (param: Parameter) => this._call(ctx, { parameter: param })
-              : // action<Response, Query, Parameter, Body>({ parameter: param })
-              ctx.body.type !== "undefined"
-                ? // ? (body: Body) => action<Response, Query, Parameter, Body>({ body })
-                (body: Body) => this._call(ctx, { body })
-                : // : () => action<Response, Query, Parameter, Body>({}),
-                () => this._call(ctx, {}),
+                : (param: Parameter) => this._call(ctx, { parameter: param })
+              : ctx.body.type !== "undefined"
+                ? (body: Body) => this._call(ctx, { body })
+                : () => this._call(ctx, {}),
       };
     });
 
@@ -332,13 +235,11 @@ export class ApiFactory<_A extends Config, MapFunc extends Map> {
                     parameter: param,
                     body,
                   })
-                : (query: Query, param: Parameter) => {
-                  // console.log('query Hi', query, param);
-                  return action<Response, Query, Parameter, Body>({
+                : (query: Query, param: Parameter) =>
+                  action<Response, Query, Parameter, Body>({
                     query,
                     parameter: param,
-                  });
-                }
+                  })
               : ctx.body.type !== "undefined"
                 ? (query: Query, body: Body) =>
                   action<Response, Query, Parameter, Body>({ query, body })

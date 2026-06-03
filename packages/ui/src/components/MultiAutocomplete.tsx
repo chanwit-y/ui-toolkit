@@ -84,7 +84,6 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 			const q = Object.entries(apiInfo?.query ?? {}).reduce((acc, [key, value]) => {
 				return { ...acc, [key]: value.type === "value" ? value.value : undefined }
 			}, {})
-			// console.log('fetchData', apiInfo)
 			if (observeTo !== "") {
 				if (!isEmpty(apiInfo?.params)) {
 					if (!isEmpty(observeData)) {
@@ -98,7 +97,6 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 					}
 				}
 			} else {
-				console.log("query", q)
 				return api && api({ ...q }, {})
 			}
 			return undefined
@@ -117,7 +115,6 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 		}, [subject, apiInfo, fetchData, observeData])
 
 		const handleValuesChange = useCallback((newValues: string[]) => {
-			// console.log('handleValuesChange', newValues)
 			setInternalValues(newValues);
 			onValuesChange?.(newValues);
 			onChange?.(newValues);
@@ -137,10 +134,7 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 			} else {
 				// Add item if not selected and within max limit
 				if (!maxSelections || internalValues.length < maxSelections) {
-					// console.log('add item')
 					const newValues = [...internalValues, itemId];
-					// console.log('append', itemId, item[displayKey])
-					// append?.({ id: itemId, value: item[displayKey] })
 					handleValuesChange(newValues);
 				}
 			}

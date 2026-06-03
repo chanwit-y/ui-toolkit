@@ -67,13 +67,6 @@ export class ApiMaster<M extends TModelMaster, A extends TApiMaster<M>> {
     >;
   } {
     const apis = Object.entries(this._apis).reduce((acc, [key, value]) => {
-      // const x = value.parameter
-      // ? convertTModelToTypeBox(this._modelConfig[value.parameter as keyof M])
-      // : t.Undefined();
-      // console.log(value.description, value.parameter, x);
-
-      // console.log('value', value)
-
       return {
         ...acc,
         [key]: {
@@ -103,7 +96,6 @@ export class ApiMaster<M extends TModelMaster, A extends TApiMaster<M>> {
       };
     }, {} as Config);
 
-    // console.log(apis);
     return this._apiFactory.createService(apis as Config).api as any;
   }
 
@@ -111,59 +103,3 @@ export class ApiMaster<M extends TModelMaster, A extends TApiMaster<M>> {
     return this._modelConfig[key as keyof M]
   }
 }
-
-// const base = ModelFactory.base({
-//   pagination: {
-//     type: "object",
-//     collection: {
-//       page: "number",
-//       limit: "number",
-//       total: "number",
-//       totalPages: "number",
-//     },
-//   },
-// });
-
-// export const apiMaster = new ApiMaster(
-//   {
-//     todoRes: {
-//       data: {
-//         type: "array",
-//         collection: {
-//           id: "number",
-//           name: "string",
-//           email: "string",
-//           age: "number",
-//           role: "string",
-//         },
-//       },
-//       pagination: base.pagination,
-//     },
-//     todoPram: {
-//       id: "number",
-//     },
-//   },
-//   {
-//     todos: {
-//       url: "/todos",
-//       description: "Get all todos",
-//       methods: "GET",
-//       response: "todoRes",
-//       withOptions: false,
-//     },
-//     todoByID: {
-//       url: "/todos/:id",
-//       description: "Get todo by id",
-//       methods: "GET",
-//       response: "todoRes",
-//       parameter: "todoPram",
-//       withOptions: false,
-//     },
-//   },
-//   apiFactory
-// );
-
-// // const key = apiMaster.apiNames.todos
-// // const res = await apiMaster.api.todoByID({ id: 1 });
-// // console.log(res);
-// // console.log(key)

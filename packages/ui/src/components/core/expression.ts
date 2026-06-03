@@ -61,31 +61,3 @@ export class ConditionExpression {
     return this._evaluate(expression);
   }
 }
-
-// const expression = new ConditionExpression({
-//   selectedRow: {
-//     name: "xxxx"
-//   }
-// });
-// const input: TExpression = {
-//   right: {
-//     right: { val: 1 },
-//     operator: "neq",
-//     left: { val: 2 },
-//   },
-//   left: {
-//     right: { val: 1 },
-//     operator: "eq",
-//     left: { val: 2 },
-//   },
-//   operator: "and",
-// };
-// console.log(expression.expression(input));
-
-// const input2: TExpression = {
-//   right: { key: "selectedRow", path: "name" },
-//   operator: "neq",
-//   left: { val: "" },
-// }
-
-// console.log(expression.expression(input2));

@@ -67,10 +67,6 @@ const Modal = forwardRef<HTMLDivElement, ModalProps>(
 			}
 		}, [maxWidth, minWidth])
 
-		// useEffect(() => {
-		// 	console.log('isOpen', isOpen)
-		// }, [isOpen])
-
 		const handleOpenChange = useCallback(
 			(nextOpen: boolean) => {
 				setIsOpen(nextOpen)

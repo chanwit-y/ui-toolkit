@@ -24,11 +24,9 @@ const Button = forwardRef<ElementRef<typeof RadixButton>, ButtonProps>(({
 	modalId,
 }) => {
 
-	// const { loadDataTables } = useCore()
 	const fnCtxs = useStord((state) => state.fnCtxs)
 	const { clearCurrentFormSelected } = useData()
 	const { showSnackbar } = useSnackbar()
-	// const clearCurrentFormSelected = useStord((state) => state.clearCurrentFormSelected)
 	const { handleSubmit, formState, trigger } = useFormContext()
 	const { startLoading, stopLoading } = useLoading()
 
@@ -55,14 +53,12 @@ const Button = forwardRef<ElementRef<typeof RadixButton>, ButtonProps>(({
 		event?: React.MouseEvent<HTMLButtonElement>
 	) => {
 		let loaderId: string | undefined;
-		// const fnCtxs = useStord((state) => state.fnCtxs)
 
 		try {
 			for (const action of actionsToExecute) {
 				switch (action) {
 					case 'SubmitFormToPostAPI':
 					case 'SubmitFormToPatchAPI':
-						// console.log('2')
 						// Trigger validation first
 						const isValid = await trigger()
 
@@ -82,22 +78,13 @@ const Button = forwardRef<ElementRef<typeof RadixButton>, ButtonProps>(({
 						}
 
 						await handleSubmit(async (data) => {
-							// TODO: check api info
-							// console.log('data', data)
 							if (data["id"] || data["_id"]) {
-								// console.log('apiInfo', apiInfo)
-								// console.log(!apiInfo?.parameter && !apiInfo?.body)
-								// if (!apiInfo?.parameter && !apiInfo?.body)
 								api && await api({ id: data["id"] || data["_id"] }, { ...data })
-								// else  
-								// 	api && await api({ ...data })
 							} else {
 								api && await api({ ...data })
 							}
 
-
 							reloadDataTable && await fnCtxs[reloadDataTable]()
-
 
 							if (snackbarSuccess) {
 								showSnackbar({
@@ -107,16 +94,8 @@ const Button = forwardRef<ElementRef<typeof RadixButton>, ButtonProps>(({
 							}
 						})()
 						break;
-					// case 'ReloadDataTable':
-					// 	console.log('3')
-					// 	// Change to table name
-					// 	await fnCtxs["Companies"]()
-					// 	break;
 					case 'ClearCurrentFormSelected':
-						// reset();
 						clearCurrentFormSelected();
-						// inc && setFns((prev) => [...prev, inc])
-
 						break;
 					case 'StartLoading':
 						loaderId = startLoading();
@@ -125,8 +104,6 @@ const Button = forwardRef<ElementRef<typeof RadixButton>, ButtonProps>(({
 						loaderId && stopLoading(loaderId);
 						break;
 					case 'CloseModal':
-						// console.log('close modal')
-						// console.log(modalId, fnCtxs?.[modalId ?? "modal"])
 						fnCtxs?.[modalId ?? "modal"]?.bind(fnCtxs)?.(false)
 						fnCtxs?.["modalDatable"]?.bind(fnCtxs)?.(false)
 						fnCtxs?.["modalEdit"]?.bind(fnCtxs)?.(false)
@@ -139,19 +116,8 @@ const Button = forwardRef<ElementRef<typeof RadixButton>, ButtonProps>(({
 			if (event && onClick) {
 				onClick(event);
 			}
-
-
-			// console.log('reloadDataTable', reloadDataTable)
-
-			// if (snackbarSuccess) {
-			// 	showSnackbar({
-			// 		variant: snackbarSuccess.type,
-			// 		message: snackbarSuccess.message,
-			// 	})
-			// }
 		} catch (err) {
 			loaderId && stopLoading(loaderId);
-			// throw err;
 			if (snackbarError === "$exception") {
 				showSnackbar({
 					variant: "error",
@@ -202,7 +168,6 @@ const Button = forwardRef<ElementRef<typeof RadixButton>, ButtonProps>(({
 		>{icon ? <Icon icon={icon} size={14} /> : ""}
 			{label}
 		</RadixButton>
-		{/* <pre>{JSON.stringify(fnCtxs, null, 2)}</pre> */}
 		<ConfirmBox
 			id="confirmBox"
 			open={open}

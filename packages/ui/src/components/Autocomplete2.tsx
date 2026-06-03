@@ -129,7 +129,6 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 					}
 				}
 			} else {
-				// console.log("query", q)
 				return api && api({ ...q }, {})
 			}
 			return undefined
@@ -142,8 +141,6 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 					debounce(() => interval(500)),
 					distinct(),
 					switchMap(async (_text) => {
-						// console.log('isSingleLoad', isSingleLoad, data)
-
 						if (isSingleLoad && data) return
 						refetch()
 					}),
@@ -356,21 +353,12 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 		}, [apiInfo])
 
 		useEffect(() => {
-			// console.log('isSingleLoad', isSingleLoad, data, isSingleLoad && data)
-
-
 			if (isSingleLoad && data) return
 
-			// console.log('refetch')
 			refetch()
-			// refetch()
-			// fetchData("")?.then((res) => {
-			// 	setItems(getItems(res))
-			// });
 		}, [apiSearch, observeApiData, refetch, data, isSingleLoad])
 
 		useEffect(() => {
-			// console.log('data', data)
 			data && setItems(getItems(data))
 		}, [apiSearch, observeApiData, data])
 

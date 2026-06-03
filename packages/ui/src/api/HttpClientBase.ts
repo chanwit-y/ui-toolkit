@@ -120,7 +120,6 @@ export class HttpClientBase {
         }
 
         if (code === "ERR_NETWORK") {
-          // console.error('Network error:', error);
           error$.next({ statusCode: response.status, response: error });
           return Promise.reject(error);
         }

@@ -5,17 +5,17 @@ import { Form } from "../form";
 import { Schema } from "./schema";
 import { Provider } from "./context";
 import { ElementContext } from "./elementBuilder";
-import {   useMemo } from "react";
+import { useMemo } from "react";
 import { ConditionExpression } from "./expression";
 import { useTheme } from "../context";
 import { useData } from "../context/DataProvider";
 import { getBinGridItemStyle, getContainerGridStyle } from "./containerGrid";
 export class ContainerBuilder<M extends TModelMaster, A extends TApiMaster<M>> {
 
-	constructor(private _connainers: Container[], private _apis: ApiMaster<M, A>) { }
+	constructor(private _containers: Container[], private _apis: ApiMaster<M, A>) { }
 
 	private _schema() {
-		const schema = new Schema(this._connainers);
+		const schema = new Schema(this._containers);
 		return schema.generate();
 	}
 
@@ -24,7 +24,6 @@ export class ContainerBuilder<M extends TModelMaster, A extends TApiMaster<M>> {
 	}
 
 	private _renderElement(b: Bin, f: any | undefined, _api: APIFunction | undefined, t: ThemeContextType | undefined) {
-		//TODO: sholde be 1 object
 		let el = (new ElementContext(b.element as TElement))
 			.Form(f)
 			.APIs(this._apis as unknown as ApiMaster<TModelMaster, TApiMaster<TModelMaster>>);
@@ -32,11 +31,6 @@ export class ContainerBuilder<M extends TModelMaster, A extends TApiMaster<M>> {
 		if (t) {
 			el = el.Theme(t);
 		}
-
-		// if (fns) {
-		// 	console.log('fns', fns)
-		// 	el = el.Fns(fns);
-		// }
 
 		const builtElement = el.build(b.type);
 
@@ -52,27 +46,18 @@ export class ContainerBuilder<M extends TModelMaster, A extends TApiMaster<M>> {
 	}
 
 	public draw(isRoot: boolean = false, withAuth: boolean = false, _t: ThemeContextType | undefined = undefined) {
-		// const ctx = useStord((state) => state.contextData)
-		const {contextData: ctx} = useData()
-		// const {contextData: ctx} = useContext(DataContext)
-		// const defaultValues = selectedRow[this._connainers[0].name]
-		// const defaultValues = useMemo(() => selectedRow[this._connainers[0].name] ?? {}, [selectedRow, this._connainers]) 
+		const { contextData: ctx } = useData()
 
-		//TODO: Fix code
-		const defaultValues = useMemo(() => this._connainers.length > 0 ? ctx?.[this._connainers[0]?.contextData ?? ""] ?? {} : {}, [ctx, this._connainers])
+		const defaultValues = useMemo(() => this._containers.length > 0 ? ctx?.[this._containers[0]?.contextData ?? ""] ?? {} : {}, [ctx, this._containers])
 
 		const F = new Form(this.getSchema(), defaultValues).setup().create();
-		// const F = new Form(this.getSchema(), {}).setup().create();
 
 		const theme = useTheme()
-
-		// const  count = useCount((state) => state.count)
-		// const  inc = useCount((state) => state.inc)
 
 		return <F.Fn>
 			{(f) => (
 				<Provider isRoot={isRoot} withAuth={withAuth}>
-					{this._connainers.map((c) => (
+					{this._containers.map((c) => (
 						<div
 							key={c.id}
 							className="grid grid-cols-12"

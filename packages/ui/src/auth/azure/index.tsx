@@ -8,7 +8,6 @@ import {
 	useMsal,
 } from '@azure/msal-react';
 import msalInstance from "./MsalInstance";
-// import { InteractionStatus, RedirectRequest } from '@azure/msal-browser';
 
 export type IAzureContext<T> = IAuthContext<T> & {}
 
@@ -18,8 +17,8 @@ export type AzureProps<T> = {
 	children: ReactNode;
 	context: Context<IAzureContext<T>>;
 	url?: string;
-	errror500Page?: ReactNode;
-	landingPage?: ComponentType<{ onSingin: () => Promise<void> }>;
+	error500Page?: ReactNode;
+	landingPage?: ComponentType<{ onSignin: () => Promise<void> }>;
 };
 
 export const createAuthContext: AzureAuthContext = <T extends any>() =>
@@ -57,21 +56,12 @@ const AzureProvider = <T extends any>({
 	}}>
 		<Fragment>
 			<AuthenticatedTemplate>
-				{
-					children
-					// (userProfile?.errors?.length ?? 0) === 0 && (userProfile?.error?.length ?? 0) === 0
-					// 	? children
-					// 	: <div>unauth page...</div>// : <UnauthPage {...componoentBuilder} />
-				}
+				{children}
 			</AuthenticatedTemplate>
 			<UnauthenticatedTemplate>
-				{/* TODO */}
-				{
-					<div className="flex items-center justify-center h-screen">
-						<button onClick={login}>Login</button>
-					</div>
-					// landingPage ? createElement(landingPage, { onSingin: handleSignin }) : <AuthPage {...componoentBuilder} />
-				}
+				<div className="flex items-center justify-center h-screen">
+					<button onClick={login}>Login</button>
+				</div>
 			</UnauthenticatedTemplate>
 		</Fragment>
 	</context.Provider>
