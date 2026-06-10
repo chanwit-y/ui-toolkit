@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import {
   Core,
+  DataProvider,
   HttpClientFactory,
   ThemeProvider,
 } from "@gummy-ui/ui";
@@ -15,31 +16,39 @@ const http = new HttpClientFactory(
   30000
 );
 
-export function App() {
+function AppContent() {
   const ui = useMemo(
     () => new Core(http as any, model, api, containerCountryList).run(),
     []
   );
 
   return (
-    <ThemeProvider
-      components={{
-        button: { color: "violet" },
-        dataTable: {
-          headerColor: "violet",
-          editButtonColor: "violet",
-          deleteButtonColor: "violet",
-          headerHoverColor: "violet",
-          paginationButtonColor: "violet",
-          rowHoverColor: "violet",
-          paginationButtonHoverColor: "violet",
-        },
-      }}
-      className="flex flex-col w-full min-h-screen"
-    >
-      <main className="p-8 flex-1 overflow-auto">
-        {ui}
-      </main>
-    </ThemeProvider>
+    <main className="p-8 flex-1 overflow-auto">
+      {ui}
+    </main>
+  );
+}
+
+export function App() {
+  return (
+    <DataProvider>
+      <ThemeProvider
+        components={{
+          button: { color: "violet" },
+          dataTable: {
+            headerColor: "violet",
+            editButtonColor: "violet",
+            deleteButtonColor: "violet",
+            headerHoverColor: "violet",
+            paginationButtonColor: "violet",
+            rowHoverColor: "violet",
+            paginationButtonHoverColor: "violet",
+          },
+        }}
+        className="flex flex-col w-full min-h-screen"
+      >
+        <AppContent />
+      </ThemeProvider>
+    </DataProvider>
   );
 }

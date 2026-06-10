@@ -5,8 +5,11 @@ export const model: TModelMaster = {
     data: {
       type: "array",
       collection: {
-        id: "number",
+        _id: "string",
         name: "string",
+        code: "string",
+        updated_at: "string",
+        updated_by_name: "string",
       },
     },
     status: "number",
@@ -19,5 +22,8 @@ export const model: TModelMaster = {
   },
   countryParam: {
     id: "string",
+  },
+  countrySearchQuery: {
+    search: "string",
   },
 };

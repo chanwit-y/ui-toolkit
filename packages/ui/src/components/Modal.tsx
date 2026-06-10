@@ -1,5 +1,5 @@
 // import { AlertDialog } from "@radix-ui/themes"
-import { forwardRef, useCallback, useEffect, useMemo, useState } from "react"
+import { forwardRef, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { CSSProperties, ReactNode } from "react"
 import * as AlertDialog from "@radix-ui/react-dialog"
 import { ThemeProvider, useTheme } from "./context"
@@ -73,9 +73,12 @@ const Modal = forwardRef<HTMLDivElement, ModalProps>(
 				onOpenChange?.(nextOpen)
 			}, [onOpenChange])
 
+		const handleOpenChangeRef = useRef(handleOpenChange)
+		handleOpenChangeRef.current = handleOpenChange
+
 		useEffect(() => {
-			updateFnCtxs?.(id, handleOpenChange)
-		}, [id, updateFnCtxs, handleOpenChange])
+			updateFnCtxs?.(id, (...args: any[]) => handleOpenChangeRef.current(...(args as [boolean])))
+		}, [id, updateFnCtxs])
 
 		return (
 			<AlertDialog.Root open={isOpen} onOpenChange={handleOpenChange}>

@@ -1,4 +1,12 @@
 export const api = {
+  searchCountries: {
+    url: "/collection/search",
+    description: "Search countries by name or code",
+    methods: "GET" as const,
+    response: "countryRes",
+    query: "countrySearchQuery",
+    withOptions: false,
+  },
   countries: {
     url: "/collection/get-all",
     description: "Get all countries",

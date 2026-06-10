@@ -8,7 +8,7 @@ import {
 	type CSSProperties,
 	type ElementRef
 } from "react";
-import type { AutocompleteItem2, AutocompleteProps2, Obs } from "./@types";
+import type { AutocompleteItem2, AutocompleteProps2, DataValue, Obs } from "./@types";
 import { Box, Text } from "@radix-ui/themes";
 import { cn } from "../util/utils";
 import { AlertCircle, Check, ChevronDown, Loader2, Search, X } from "lucide-react";
@@ -102,52 +102,86 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 		const displayHelperText = useMemo(() => hasError ? errorMessage : helperText, [hasError, errorMessage, helperText]);
 		const selectedItem = useMemo(() => items.find(item => String(item[idKey]) === String(value)), [items, value, searchKey]);
 
-
-
-		const { data, refetch, isFetching } = useQuery({
-			queryKey: [`${name}-${apiInfo?.name}`],
-			queryFn: () => fetchData(""),
-			staleTime: Infinity,
-			gcTime: Infinity
-		})
+		const resolveDataValue = useCallback((value: DataValue, text: string) => {
+			if (value.type === "value") {
+				return value.value !== undefined ? value.value : text;
+			}
+			return undefined;
+		}, []);
 
 		const fetchData = useCallback((text: string) => {
-
 			const q = Object.entries(apiInfo?.query ?? {}).reduce((acc, [key, value]) => {
-				return { ...acc, [key]: value.type === "value" ? value.value : undefined }
-			}, {})
+				return { ...acc, [key]: resolveDataValue(value, text) }
+			}, {} as Record<string, unknown>)
+
+			const b = Object.entries(apiInfo?.body ?? {}).reduce((acc, [key, value]) => {
+				return { ...acc, [key]: resolveDataValue(value, text) }
+			}, {} as Record<string, unknown>)
+
 			if (observeTo !== "") {
 				if (!isEmpty(apiInfo?.params)) {
 					if (!isEmpty(observeApiData)) {
 						const p = Object.entries(apiInfo?.params ?? {}).reduce((acc, [key, value]) => {
-							return { ...acc, [key]: value.type === "observe" ? observeApiData : value.type === "value" ? text : value }
-						}, {})
+							return {
+								...acc,
+								[key]: value.type === "observe"
+									? observeApiData
+									: value.type === "value"
+										? resolveDataValue(value, text)
+										: value
+							}
+						}, {} as Record<string, unknown>)
 
-						return api && api({ ...q }, {
-							...p
-						})
+						if (!isEmpty(apiInfo?.query) && !isEmpty(apiInfo?.body)) {
+							return api?.({ ...q }, { ...p }, { ...b })
+						}
+
+						return api?.({ ...q }, { ...p })
 					}
 				}
+			} else if (!isEmpty(apiInfo?.query) && !isEmpty(apiInfo?.body)) {
+				return api?.({ ...q }, { ...b })
+			} else if (!isEmpty(apiInfo?.query)) {
+				return api?.({ ...q })
+			} else if (!isEmpty(apiInfo?.body)) {
+				return api?.({ ...b })
 			} else {
-				return api && api({ ...q }, {})
+				return api?.()
 			}
-			return undefined
-		}, [observeTo, observeApiData, api, apiInfo]);
 
+			return undefined
+		}, [observeTo, observeApiData, api, apiInfo, resolveDataValue]);
+
+		const hasApiSearch = !!(api && apiInfo?.query);
+		const [isSearching, setIsSearching] = useState(false);
+
+		const { data, isFetching } = useQuery({
+			queryKey: [`${name}-${apiInfo?.name}`],
+			queryFn: () => fetchData(""),
+			staleTime: Infinity,
+			gcTime: Infinity,
+			enabled: !!api && !hasApiSearch,
+		})
 
 		const apiSearch = useMemo(() => {
-			if (api && apiInfo?.query) {
+			if (hasApiSearch) {
 				return subject.pipe(
 					debounce(() => interval(500)),
 					distinct(),
-					switchMap(async (_text) => {
-						if (isSingleLoad && data) return
-						refetch()
+					switchMap(async (text) => {
+						if (isSingleLoad && items.length > 0) return
+						setIsSearching(true);
+						try {
+							return await fetchData(text);
+						} finally {
+							setIsSearching(false);
+						}
 					}),
-
 				)
-			} else return undefined
-		}, [subject, apiInfo, observeApiData, refetch, items, isSingleLoad])
+			}
+
+			return undefined
+		}, [subject, hasApiSearch, fetchData, isSingleLoad, items.length])
 
 
 		// const ctx = useStord((state) => state.contextData)
@@ -354,14 +388,30 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 		}, [apiInfo])
 
 		useEffect(() => {
-			if (isSingleLoad && data) return
+			if (!hasApiSearch) return;
 
-			refetch()
-		}, [apiSearch, observeApiData, refetch, data, isSingleLoad])
+			setIsSearching(true);
+			fetchData("")?.then((res) => {
+				setItems(getItems(res));
+			}).finally(() => {
+				setIsSearching(false);
+			});
+		}, [hasApiSearch, fetchData, getItems, observeApiData])
+
+		useObservableCleanup(
+			apiSearch,
+			(res) => {
+				if (res) setItems(getItems(res));
+			},
+			[getItems]
+		);
 
 		useEffect(() => {
+			if (hasApiSearch) return;
 			data && setItems(getItems(data))
-		}, [apiSearch, observeApiData, data])
+		}, [hasApiSearch, data, getItems])
+
+		const showFetching = isFetching || isSearching;
 
 		const dropdown = isOpen ? (
 			<div
@@ -401,13 +451,13 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 					onWheel={handleListWheel}
 				>
 
-					{isFetching && (
+					{showFetching && (
 						<div className="flex items-center justify-center gap-2 py-3 text-sm text-gray-500">
 							<Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
 							Loading...
 						</div>
 					)}
-					{filteredItems?.length === 0 && !isFetching
+					{filteredItems?.length === 0 && !showFetching
 						? <div className="flex justify-center py-3 text-sm text-gray-500">
 							No results found
 						</div>
@@ -462,7 +512,7 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 						</span>
 					</div>
 					<div className="flex items-center flex-shrink-0 gap-2">
-						{isFetching && <Loader2 className="h-4 w-4 text-gray-400 animate-spin" aria-hidden="true" />}
+						{showFetching && <Loader2 className="h-4 w-4 text-gray-400 animate-spin" aria-hidden="true" />}
 						<ChevronDown className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
 					</div>
 				</button>
