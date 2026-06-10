@@ -625,9 +625,12 @@ export const DataTable2 = <T extends Record<string, any>>({
 			open={openModal}
 			onOpenChange={(open) => {
 				setOpenModal(open);
-				// Clear context when closing
+				// Clear context after the close animation finishes so the modal
+				// content doesn't change while it is still fading out
 				if (!open) {
-					dataCtx?.updateContextData(name ?? '', {});
+					setTimeout(() => {
+						dataCtx?.updateContextData(name ?? '', {});
+					}, 200);
 				}
 			}}
 			hiddenTrigger={true}
@@ -635,8 +638,7 @@ export const DataTable2 = <T extends Record<string, any>>({
 			minWidth={modalMinWidth}
 			maxHeight={modalMaxHeight}
 		>
-			{/* Only render modalContainer when modal is open to ensure fresh data */}
-			{openModal && modalContainer}
+			{modalContainer}
 		</Modal>
 		<ConfirmBox
 			id="confirmBox"
