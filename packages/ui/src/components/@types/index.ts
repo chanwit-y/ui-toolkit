@@ -537,6 +537,63 @@ export type DatePickerElement = {
   errorMessage?: string;
 } & DatePickerProps;
 
+export type DateRange = {
+  start: string | null;
+  end: string | null;
+};
+
+export type DateRangePickerProps = BaseComponentProps<
+  "button",
+  {
+    label?: string;
+    placeholder?: string;
+    helperText?: string;
+    isRequired?: boolean;
+    error?: boolean;
+    errorMessage?: string;
+    variant?: "classic" | "surface" | "soft";
+    size?: "1" | "2" | "3";
+    radius?: "none" | "small" | "medium" | "large" | "full";
+    isFullWidth?: boolean;
+    width?: number;
+    isFixedHeight?: boolean;
+    /**
+     * The currently selected date range value.
+     */
+    value?: DateRange | null;
+    defaultValue?: DateRange | null;
+    /**
+     * Display format used inside the trigger. Defaults to "yyyy-MM-dd".
+     */
+    displayFormat?: "yyyy-MM-dd" | "MM/dd/yyyy" | "dd/MM/yyyy";
+    /**
+     * Earliest selectable date (inclusive) as an ISO date string (YYYY-MM-DD).
+     */
+    minDate?: string;
+    /**
+     * Latest selectable date (inclusive) as an ISO date string (YYYY-MM-DD).
+     */
+    maxDate?: string;
+    /**
+     * Whether the picker should allow clearing the selected value. Defaults to true.
+     */
+    clearable?: boolean;
+    /**
+     * Disable the input.
+     */
+    disabled?: boolean;
+    onChange?: (value: DateRange | null) => void;
+    onBlur?: () => void;
+  }
+>;
+
+export type DateRangePickerElement = {
+  name: string;
+  dataType: string;
+  isRequired?: boolean;
+  errorMessage?: string;
+} & DateRangePickerProps;
+
 export type DateTimePickerProps = BaseComponentProps<
   "button",
   {
@@ -613,6 +670,7 @@ export type TElement =
   | CheckboxElement
   | DataTableElement
   | DatePickerElement
+  | DateRangePickerElement
   | DateTimePickerElement
   | TextElement
   | ModalElement
@@ -631,6 +689,7 @@ export type BinType =
   | "radio"
   | "textarea"
   | "datepicker"
+  | "daterangepicker"
   | "datetimepicker"
   | "text"
   | "container"

@@ -253,6 +253,8 @@ export const DataTable2 = <T extends Record<string, any>>({
 
 
 	const fetchData = useCallback(async () => {
+		console.log('DataTable2 fetchData called', { api, apiInfo, hasApi: !!api });
+		
 		const q = Object.entries(apiInfo?.query ?? {}).reduce((acc, [key, value]) => {
 			return { ...acc, [key]: value.type === "value" ? value.value : undefined }
 		}, {})
@@ -260,6 +262,8 @@ export const DataTable2 = <T extends Record<string, any>>({
 		const b = Object.entries(apiInfo?.body ?? {}).reduce((acc, [key, value]) => {
 			return { ...acc, [key]: value.type === "value" ? value.value : undefined }
 		}, {})
+
+		console.log('DataTable2 request params', { query: q, body: b });
 
 		if (!!api) {
 			let result;
@@ -270,14 +274,18 @@ export const DataTable2 = <T extends Record<string, any>>({
 				result = await api({ ...q, ...b })
 			}
 
+			console.log('DataTable2 API result', result);
+
 			let data = result
 
 			apiInfo?.paths?.forEach((path) => {
 				data = data[path]
 			})
 
+			console.log('DataTable2 final data', data);
 			return data ?? []
 		}
+		console.log('DataTable2: No API provided, returning empty array');
 		return []
 	}, [api, apiInfo])
 

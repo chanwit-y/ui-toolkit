@@ -9,6 +9,7 @@ import { Hidden } from "../hidden";
 import { Modal } from "../modal";
 import { Radio } from "../radio";
 import { DatePicker } from "../datePicker";
+import { DateRangePicker } from "../dateRangePicker";
 import { DateTimePicker } from "../dateTimePicker";
 import { TextField } from "../textField";
 import { Textarea } from "../textarea";
@@ -36,6 +37,7 @@ export const ElementData = {
 	hidden: Hidden,
 	radio: Radio,
 	datepicker: DatePicker,
+	daterangepicker: DateRangePicker,
 	datetimepicker: DateTimePicker,
 	text: Text,
 }

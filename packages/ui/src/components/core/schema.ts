@@ -98,6 +98,11 @@ export class Schema {
 				return z.boolean();
 			case 'date':
 				return z.date();
+			case 'daterange':
+				return z.object({
+					start: z.string(),
+					end: z.string(),
+				});
 			case 'email':
 				return z.string().email();
 			case 'url':

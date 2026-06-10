@@ -6,6 +6,7 @@ export { TextareaBase } from "./Textarea";
 export { CheckboxBase } from "./Checkbox";
 export { RadioButtonBase } from "./RadioButton";
 export { DatePickerBase } from "./DatePicker";
+export { DateRangePickerBase } from "./DateRangePicker";
 export { DateTimePickerBase } from "./DateTimePicker";
 export { AutocompleteBase2 } from "./Autocomplete2";
 export { MultiAutocompleteBase } from "./MultiAutocomplete";
