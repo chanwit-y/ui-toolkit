@@ -239,52 +239,63 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 		}, [isOpen]);
 
 		const updateDropdownPosition = useCallback(() => {
-			const triggerEl = dropdownRef.current;
+			const triggerEl = triggerElement ?? dropdownRef.current;
 			if (!triggerEl) return;
-			if (typeof document === "undefined") return;
+			if (typeof window === "undefined") return;
 
 			const rect = triggerEl.getBoundingClientRect();
 			const modalContent = triggerEl.closest(".modal-content") as HTMLElement | null;
-			const boundaryRect = modalContent
-				? modalContent.getBoundingClientRect()
-				: ({ top: 0, bottom: window.innerHeight } as const);
+			const modalRect = modalContent?.getBoundingClientRect() ?? null;
+			const boundaryTop = modalRect?.top ?? 0;
+			const boundaryBottom = modalRect?.bottom ?? window.innerHeight;
+
 			const viewportPadding = 8;
-			const triggerGap = 6;
+			const triggerGap = 4;
 			const dropdownHeaderHeight = 44;
 			const preferredListHeight = typeof maxHeight === "number" ? Math.max(120, maxHeight - dropdownHeaderHeight) : 236;
 			const minListHeight = 80;
+			const estimatedDropdownHeight = dropdownHeaderHeight + preferredListHeight;
 
-			const availableBelow = boundaryRect.bottom - rect.bottom - triggerGap - viewportPadding;
-			const availableAbove = rect.top - boundaryRect.top - triggerGap - viewportPadding;
-			const shouldShowAbove = availableBelow < 220 && availableAbove > availableBelow;
-			const availablePrimarySpace = shouldShowAbove ? availableAbove : availableBelow;
+			const spaceBelow = boundaryBottom - rect.bottom - triggerGap - viewportPadding;
+			const spaceAbove = rect.top - boundaryTop - triggerGap - viewportPadding;
+			const shouldShowAbove = spaceBelow < estimatedDropdownHeight && spaceAbove > spaceBelow;
+			const availableListSpace = (shouldShowAbove ? spaceAbove : spaceBelow) - dropdownHeaderHeight;
 
 			const computedListHeight = Math.max(
 				minListHeight,
-				Math.min(preferredListHeight, availablePrimarySpace)
+				Math.min(preferredListHeight, availableListSpace)
 			);
 
-			setDropdownStyles({
-				position: "absolute",
-				left: 0,
-				width: "100%",
-				...(shouldShowAbove
-					? { bottom: `calc(100% + ${triggerGap}px)` }
-					: { top: `calc(100% + ${triggerGap}px)` }),
+			// `.modal-content` uses transform/backdrop-filter, which makes it the
+			// containing block for position: fixed descendants. Coordinates must
+			// then be relative to the modal box instead of the viewport.
+			const styles: CSSProperties = {
+				position: "fixed",
+				left: rect.left - (modalRect?.left ?? 0),
+				width: rect.width,
 				zIndex: 100000,
-			});
+			};
 
+			if (shouldShowAbove) {
+				styles.bottom = (modalRect?.bottom ?? window.innerHeight) - rect.top + triggerGap;
+			} else {
+				styles.top = rect.bottom - (modalRect?.top ?? 0) + triggerGap;
+			}
+
+			setDropdownStyles(styles);
 			setDropdownListMaxHeight(computedListHeight);
-		}, [maxHeight]);
+		}, [maxHeight, triggerElement]);
 
 		const openDropdown = useCallback(() => {
-			updateDropdownPosition();
-			setIsOpen(prev => !prev);
+			if (!isOpen) {
+				updateDropdownPosition();
+			}
+			setIsOpen((prev) => !prev);
 			setTimeout(() => {
 				dropdownContainerRef.current?.classList.add('opacity-100');
 				searchInputRef.current?.focus();
-			}, 0)
-		}, [updateDropdownPosition]);
+			}, 0);
+		}, [updateDropdownPosition, isOpen]);
 
 		const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
 			if (!isOpen) {
@@ -490,7 +501,7 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 					</Text>
 				)
 			}
-			<div className="autocomplete-trigger relative" ref={dropdownRef}>
+			<div className="autocomplete-trigger w-full" ref={dropdownRef}>
 				<button
 					ref={setTriggerButtonRef}
 					onClick={openDropdown}
@@ -516,8 +527,8 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 						<ChevronDown className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
 					</div>
 				</button>
-				{dropdown}
 			</div>
+			{dropdown}
 			{
 				displayHelperText && (
 					<Text
