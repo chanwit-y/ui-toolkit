@@ -197,8 +197,8 @@ export const DataTable2 = <T extends Record<string, any>>({
 							className={getActionButtonClassName(editButtonColor)}
 							aria-label="Edit row"
 							onClick={() => {
-								setOpenModal(true)
 								dataCtx?.updateContextData(name ?? '', row.original)
+								setOpenModal(true)
 							}}
 						>
 							<Icon icon="edit" size={14} />
@@ -625,13 +625,18 @@ export const DataTable2 = <T extends Record<string, any>>({
 			open={openModal}
 			onOpenChange={(open) => {
 				setOpenModal(open);
+				// Clear context when closing
+				if (!open) {
+					dataCtx?.updateContextData(name ?? '', {});
+				}
 			}}
 			hiddenTrigger={true}
 			maxWidth={modalMaxWidth}
 			minWidth={modalMinWidth}
 			maxHeight={modalMaxHeight}
 		>
-			{modalContainer}
+			{/* Only render modalContainer when modal is open to ensure fresh data */}
+			{openModal && modalContainer}
 		</Modal>
 		<ConfirmBox
 			id="confirmBox"
