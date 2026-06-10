@@ -3,7 +3,6 @@ import {
   Core,
   HttpClientFactory,
   ThemeProvider,
-  DataProvider,
 } from "@gummy-ui/ui";
 import { model } from "./config/country/model";
 import { api } from "./config/country/api";
@@ -39,7 +38,7 @@ export function App() {
       className="flex flex-col w-full min-h-screen"
     >
       <main className="p-8 flex-1 overflow-auto">
-        <DataProvider>{ui}</DataProvider>
+        {ui}
       </main>
     </ThemeProvider>
   );

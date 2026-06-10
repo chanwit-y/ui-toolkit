@@ -74,9 +74,8 @@ const Modal = forwardRef<HTMLDivElement, ModalProps>(
 			}, [onOpenChange])
 
 		useEffect(() => {
-			updateFnCtxs && updateFnCtxs(id, handleOpenChange)
-			// dtCtx.updateFnCtxs(id, handleOpenChange)
-		}, [id])
+			updateFnCtxs?.(id, handleOpenChange)
+		}, [id, updateFnCtxs, handleOpenChange])
 
 		return (
 			<AlertDialog.Root open={isOpen} onOpenChange={handleOpenChange}>

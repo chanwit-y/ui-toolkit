@@ -21,13 +21,15 @@ const highlightText = (text: string, searchTerm: string) => {
 		return <>{text}</>
 	}
 
-	const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
-	const parts = text.split(regex)
+	const escaped = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+	const splitRegex = new RegExp(`(${escaped})`, 'gi')
+	const testRegex = new RegExp(`^${escaped}$`, 'i')
+	const parts = text.split(splitRegex)
 
 	return (
 		<>
 			{parts.map((part, index) =>
-				regex.test(part) ? (
+				testRegex.test(part) ? (
 					<mark key={index} className="bg-yellow-200 px-1 rounded">
 						{part}
 					</mark>
@@ -190,6 +192,7 @@ export const DataTable2 = <T extends Record<string, any>>({
 								className="inline-flex items-center justify-center w-3 h-3 cursor-pointer"
 								size="1"
 								color={theme.components.dataTable?.editButtonColor as ThemeProps['accentColor'] || 'blue'}
+								aria-label="Edit row"
 								onClick={() => {
 									setOpenModal(true)
 									dataCtx?.updateContextData(name ?? '', row.original)
@@ -204,6 +207,7 @@ export const DataTable2 = <T extends Record<string, any>>({
 								className="inline-flex items-center justify-center w-3 h-3 cursor-pointer"
 								size="1"
 								color={theme.components.dataTable?.deleteButtonColor as ThemeProps['accentColor'] || 'red'}
+								aria-label="Delete row"
 								onClick={() => {
 									setSelectedRow(row.original)
 									setOpenConfirmBox(true)
@@ -290,7 +294,7 @@ export const DataTable2 = <T extends Record<string, any>>({
 	useEffect(() => {
 		updateFnCtxs(name ?? '', refetch)
 		updateFnCtxs("modalEdit", (f: boolean) => setOpenModal(f))
-	}, [name])
+	}, [name, updateFnCtxs, refetch])
 
 	useEffect(() => {
 		filterRef.current?.focus()

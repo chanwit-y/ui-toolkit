@@ -15,6 +15,7 @@ import { AlertCircle, Check, ChevronDown, Search, X } from "lucide-react";
 import { useCore } from "./core/context";
 import { debounce, distinct, interval, Subject, switchMap } from "rxjs";
 import { isEmpty } from "lodash";
+import { useObservableCleanup } from "../hooks";
 
 const createMultiAutocomplete = <T extends Record<string, any>>() => {
 	return forwardRef<
@@ -253,16 +254,16 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 		// 	setInternalValues(values);
 		// }, [values]);
 
-		useEffect(() => {
-			if (observeTo) {
-				getDataValue({ key: observeTo, type: "observe" })?.subscribe((data: unknown) => {
-					setInternalValues([])
-					onChange?.([] as any)
-					onValuesChange?.([] as any)
-					setObserveData(data)
-				})
-			}
-		}, [getDataValue, observeTo])
+		useObservableCleanup(
+			observeTo ? getDataValue({ key: observeTo, type: "observe" }) : null,
+			(data: unknown) => {
+				setInternalValues([])
+				onChange?.([] as any)
+				onValuesChange?.([] as any)
+				setObserveData(data)
+			},
+			[observeTo, onChange, onValuesChange]
+		)
 
 		const getItems = useCallback((res: any) => {
 			let data = res
@@ -284,13 +285,17 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 				if (result) {
 					result.then((res) => setItems(getItems(res)));
 				}
+				return
 			}
-			else if (apiSearch) {
-				apiSearch.subscribe((res) => {
-					setItems(getItems(res))
-				})
-			}
-		}, [apiSearch, observeData]);
+		}, [apiInfo?.query, fetchData, getItems, observeData]);
+
+		useObservableCleanup(
+			apiSearch,
+			(res) => {
+				setItems(getItems(res))
+			},
+			[getItems]
+		);
 
 		const displayText = useMemo(() => {
 			if (selectedItems.length === 0) {

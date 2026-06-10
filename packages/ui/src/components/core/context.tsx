@@ -6,8 +6,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { LoadingProvider } from "../context";
 import { SnackbarProvider } from "../Snackbar";
 import { AzureAuthProvider, azureCtx } from "../../auth";
-// import { DataProvider } from "./dataContext";
-// import { useStord } from "./stord";
+import { DataProvider } from "../context/DataProvider";
 
 type CoreContextType = {
 	observeTable: Record<string, any>;
@@ -65,18 +64,18 @@ export const Provider = ({ children, isRoot = false, withAuth = false }: CorePro
 	return isRoot ?
 		(
 			<Context.Provider value={{ observeTable, addObserveTable, getObserveTable }}>
-				{/* <DataProvider> */}
+				<DataProvider>
 					<LoadingProvider>
 						<SnackbarProvider>
 							<QueryClientProvider client={queryClient}>
 								{withAuth ? <AzureAuthProvider context={azureCtx}>
 									{children}
 								</AzureAuthProvider> : children}
-								<ReactQueryDevtools initialIsOpen={false} />
+								{process.env.NODE_ENV === "development" && <ReactQueryDevtools initialIsOpen={false} />}
 							</QueryClientProvider>
 						</SnackbarProvider>
 					</LoadingProvider>
-				{/* </DataProvider> */}
+				</DataProvider>
 			</Context.Provider>
 		) : children
 };
@@ -84,7 +83,7 @@ export const Provider = ({ children, isRoot = false, withAuth = false }: CorePro
 export const useCore = () => {
 	const context = useContext(Context);
 	if (!context) {
-		throw new Error('usePage must be used within a PageProvider');
+		throw new Error('useCore must be used within a Core Provider');
 	}
 	return context;
 };

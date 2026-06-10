@@ -1,6 +1,7 @@
 export * from "./components/context";
 export * from "./components/form";
 export { Form } from "./components/form/Form";
+export * from "./hooks";
 
 export * from "./components/Autocomplete2";
 export * from "./components/core/core";
@@ -12,7 +13,6 @@ export {
 	resolveContainerGap,
 } from "./components/core/containerGrid";
 export * from "./api/APIMaster";
-export * from "./components/DataTable";
 export * from "./components/DataTable2";
 export * from "./components/Icon";
 // export * from "./components/Icon.example";
@@ -24,7 +24,6 @@ export * from "./components/Snackbar";
 export { ApiFactory, HttpClientFactory } from "./api";
 export { getAccessToken } from "./auth/azure/MsalInstance"
 
-export * from "./components/MultiAutocomplete.example";
 export * from "./components/Text";
 export type { TextProps } from "./components/Text";
 

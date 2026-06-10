@@ -16,7 +16,7 @@ import { useCore } from "./core/context";
 import { debounce, distinct, interval, Subject, switchMap } from "rxjs";
 import { isEmpty } from "lodash";
 import { useQuery } from "@tanstack/react-query";
-// import { useStord } from "./core/stord";
+import { useObservableCleanup } from "../hooks";
 import { ConditionExpression } from "./core/expression";
 import { useData } from "./context/DataProvider";
 
@@ -153,15 +153,16 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 		// const ctx = useStord((state) => state.contextData)
 		const { contextData: ctx } = useData()
 
-		useEffect(() => {
-			if (enabledWhen) {
-				setIsObserveEnabled(false)
-				getDataValue({ key: (enabledWhen.left as Obs).key, type: "observe" })?.subscribe((data: unknown) => {
+		useObservableCleanup(
+			enabledWhen ? getDataValue({ key: (enabledWhen.left as Obs).key, type: "observe" }) : null,
+			(data: unknown) => {
+				if (enabledWhen) {
 					const result = (!(new ConditionExpression(ctx).expression({ ...enabledWhen, left: { val: data } })));
 					setIsObserveEnabled(result)
-				})
-			}
-		}, [enabledWhen, getDataValue])
+				}
+			},
+			[enabledWhen, ctx]
+		)
 
 		const handValueChange = useCallback((newValue: string) => {
 			onValueChange?.(newValue);
@@ -334,15 +335,15 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 			canObserve && name && addObserveTable(name);
 		}, [canObserve, name, addObserveTable]);
 
-		useEffect(() => {
-			if (observeTo) {
-				getDataValue({ key: observeTo, type: "observe" })?.subscribe((data: unknown) => {
-					onChange?.(null as any)
-					onValueChange?.(null as any)
-					setObserveApiData(data)
-				})
-			}
-		}, [getDataValue, observeTo])
+		useObservableCleanup(
+			observeTo ? getDataValue({ key: observeTo, type: "observe" }) : null,
+			(data: unknown) => {
+				onChange?.(null as any)
+				onValueChange?.(null as any)
+				setObserveApiData(data)
+			},
+			[observeTo, onChange, onValueChange]
+		)
 
 		const getItems = useCallback((res: any) => {
 			let data = res
@@ -410,8 +411,8 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 						? <div className="flex justify-center py-3 text-sm text-gray-500">
 							No results found
 						</div>
-						: filteredItems.map((item) => {
-							const isSelected = selectedIndex === filteredItems.findIndex(i => i[idKey] === item[idKey]);
+						: filteredItems.map((item, index) => {
+							const isSelected = selectedIndex === index;
 							const isCurrent = value === item[idKey];
 							return (<button key={item[idKey]}
 								onClick={() => handleSelect(item)}
