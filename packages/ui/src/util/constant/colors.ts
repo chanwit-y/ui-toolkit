@@ -27,6 +27,35 @@ export const tableBgColors: { [key: string]: string } = {
   sky: 'bg-sky-100',
 }
 
+export const actionButtonTextColors: { [key: string]: string } = {
+  blue: 'text-blue-700',
+  ruby: 'text-rose-700',
+  gray: 'text-gray-700',
+  gold: 'text-yellow-700',
+  bronze: 'text-amber-700',
+  brown: 'text-stone-700',
+  yellow: 'text-yellow-700',
+  amber: 'text-amber-700',
+  orange: 'text-orange-700',
+  tomato: 'text-red-700',
+  red: 'text-red-700',
+  crimson: 'text-rose-700',
+  pink: 'text-pink-700',
+  plum: 'text-fuchsia-700',
+  purple: 'text-purple-700',
+  violet: 'text-violet-700',
+  iris: 'text-indigo-700',
+  indigo: 'text-indigo-700',
+  cyan: 'text-cyan-700',
+  teal: 'text-teal-700',
+  jade: 'text-emerald-700',
+  green: 'text-green-700',
+  grass: 'text-lime-700',
+  lime: 'text-lime-700',
+  mint: 'text-emerald-700',
+  sky: 'text-sky-700',
+}
+
 export const tableHoverBgColors: { [key: string]: string } = {
   blue: 'hover:bg-blue-200',
   ruby: 'hover:bg-rose-200',

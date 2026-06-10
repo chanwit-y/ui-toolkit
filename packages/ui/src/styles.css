@@ -361,8 +361,12 @@ textarea::-webkit-scrollbar-thumb:hover {
   @apply flex flex-row gap-0.5 items-center justify-center space-x-2;
 } */
 
-.datatable-icon-button {
-  @apply p-1 hover:scale-110 transition-transform cursor-pointer text-gray-500 border hover:ring-1 hover:ring-blue-400 rounded-sm border-blue-500 hover:bg-gray-50;
+.datatable-action-cell {
+  @apply flex items-center justify-center gap-1.5;
+}
+
+.datatable-action-button {
+  @apply inline-flex items-center justify-center h-7 w-7 min-w-7 p-0 rounded-md border-0 cursor-pointer transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 hover:scale-105 active:scale-95;
 }
 
 .datatable-row-count {

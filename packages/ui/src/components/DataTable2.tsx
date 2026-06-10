@@ -1,10 +1,10 @@
 import * as Popover from "@radix-ui/react-popover"
-import { Button, Text, type ThemeProps } from "@radix-ui/themes"
+import { Text, type ThemeProps } from "@radix-ui/themes"
 import { useQuery } from "@tanstack/react-query"
 import { flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable, type ColumnDef, type ColumnFiltersState, type PaginationState, type SortingState } from "@tanstack/react-table"
 import { ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, ListFilter } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { paginationBgColors, paginationHoverBgColors, ringColors, rowHoverBgColors, tableBgColors, tableHoverBgColors } from "../util/constant"
+import { actionButtonTextColors, paginationBgColors, paginationHoverBgColors, ringColors, rowHoverBgColors, tableBgColors, tableHoverBgColors } from "../util/constant"
 import type { ButtonAction, DataTableProps } from "./@types"
 import { ConfirmBox } from "./ConfirmBox"
 import Icon from "./Icon"
@@ -65,6 +65,8 @@ const renderCellWithHighlight = (cell: any, globalFilter: string) => {
 	return cellContent
 }
 
+const getActionButtonClassName = (color: string) =>
+	`datatable-action-button ${tableBgColors[color] ?? tableBgColors.blue} ${tableHoverBgColors[color] ?? tableHoverBgColors.blue} ${actionButtonTextColors[color] ?? actionButtonTextColors.blue} hover:ring-1 ${ringColors[color] ?? ringColors.blue}`
 
 export const DataTable2 = <T extends Record<string, any>>({
 	name,
@@ -178,6 +180,9 @@ export const DataTable2 = <T extends Record<string, any>>({
 	const dataCtx = useData()
 
 	// Prepend a default display column with an icon
+	const editButtonColor = (theme.components.button?.color as ThemeProps['accentColor']) || 'blue'
+	const deleteButtonColor: ThemeProps['accentColor'] = 'red'
+
 	const enhancedColumns = useMemo<ColumnDef<T, unknown>[]>(() => {
 		const actionIconColumn: ColumnDef<T, unknown> = {
 			id: '__icon__',
@@ -185,40 +190,34 @@ export const DataTable2 = <T extends Record<string, any>>({
 				<>ACTION</>
 			),
 			cell: ({ row }) => (
-				<div className="flex items-center justify-center gap-1">
-					{
-						canEdit && (
-							<Button
-								className="inline-flex items-center justify-center w-3 h-3 cursor-pointer"
-								size="1"
-								color={theme.components.dataTable?.editButtonColor as ThemeProps['accentColor'] || 'blue'}
-								aria-label="Edit row"
-								onClick={() => {
-									setOpenModal(true)
-									dataCtx?.updateContextData(name ?? '', row.original)
-								}}
-							>
-								<Icon icon="edit" size={14} />
-							</Button>)
-					}
-					{
-						canDelete && (
-							<Button
-								className="inline-flex items-center justify-center w-3 h-3 cursor-pointer"
-								size="1"
-								color={theme.components.dataTable?.deleteButtonColor as ThemeProps['accentColor'] || 'red'}
-								aria-label="Delete row"
-								onClick={() => {
-									setSelectedRow(row.original)
-									setOpenConfirmBox(true)
-								}}
-							>
-								<Icon icon="trash" size={14} />
-							</Button>
-						)
-					}
+				<div className="datatable-action-cell">
+					{canEdit && (
+						<button
+							type="button"
+							className={getActionButtonClassName(editButtonColor)}
+							aria-label="Edit row"
+							onClick={() => {
+								setOpenModal(true)
+								dataCtx?.updateContextData(name ?? '', row.original)
+							}}
+						>
+							<Icon icon="edit" size={14} />
+						</button>
+					)}
+					{canDelete && (
+						<button
+							type="button"
+							className={getActionButtonClassName(deleteButtonColor)}
+							aria-label="Delete row"
+							onClick={() => {
+								setSelectedRow(row.original)
+								setOpenConfirmBox(true)
+							}}
+						>
+							<Icon icon="trash" size={14} />
+						</button>
+					)}
 				</div>
-
 			)
 			,
 			enableSorting: false,
@@ -229,7 +228,7 @@ export const DataTable2 = <T extends Record<string, any>>({
 		}
 
 		return canEdit || canDelete ? [actionIconColumn, ...columns] : [...columns]
-	}, [title, columns, canDelete, canEdit])
+	}, [columns, canDelete, canEdit, dataCtx, editButtonColor, name])
 
 	const table = useReactTable({
 		data,
