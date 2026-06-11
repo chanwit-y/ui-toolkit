@@ -6,6 +6,7 @@ import { Avatar } from "../avatar";
 import { Button } from "../button";
 import { Checkbox } from "../checkbox";
 import { DataTable } from "../dataTable";
+import { DataTableEditable } from "../dataTableEditable";
 import { Hidden } from "../hidden";
 import { Modal } from "../modal";
 import { Radio } from "../radio";
@@ -37,6 +38,7 @@ export const ElementData = {
 	autocomplete: Autocomplete,
 	multiAutocomplete: MultiAutocomplete,
 	datatable: DataTable,
+	datatableeditable: DataTableEditable,
 	textfield: TextField,
 	textarea: Textarea,
 	checkbox: Checkbox,

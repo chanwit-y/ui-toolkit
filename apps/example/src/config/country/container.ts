@@ -2036,6 +2036,88 @@ export const groupList: Bin[] = [
       },
     },
   },
+  {
+    sm: "12",
+    md: "12",
+    lg: "12",
+    xl: "12",
+    type: "datatableeditable",
+    justifySelf: "stretch",
+    alignSelf: "stretch",
+    element: {
+      name: "dtCountryEditable",
+      title: "Countries (Inline CRUD)",
+      idKey: "_id",
+      columns: [
+        {
+          accessorKey: "code",
+          header: "Code",
+          enableColumnFilter: true,
+          enableSorting: true,
+          align: "start",
+          isRequired: true,
+          validation: {
+            requiredMessage: "Code is required",
+            minLength: 2,
+            maxLength: 5,
+            pattern: "^[A-Za-z]+$",
+            patternMessage: "Code must contain letters only",
+          },
+        },
+        {
+          accessorKey: "name",
+          header: "Name",
+          enableColumnFilter: true,
+          enableSorting: true,
+          align: "start",
+          isRequired: true,
+          validation: {
+            requiredMessage: "Name is required",
+            minLength: 2,
+          },
+        },
+        {
+          accessorKey: "updated_by_name",
+          header: "Updated By",
+          enableSorting: true,
+          align: "start",
+          editable: false,
+        },
+      ],
+      apiCrud: {
+        read: {
+          name: "countries",
+          paths: ["data"],
+          query: {
+            collectionId: "691e9963992636eb1560eadb",
+            offset: 0,
+            limit: 100,
+          },
+        },
+        create: {
+          name: "createCountry",
+          snackbarSuccess: { type: "success", message: "Country created successfully" },
+          snackbarError: "$exception",
+        },
+        update: {
+          name: "updateCountry",
+          params: { id: "_id" },
+          snackbarSuccess: { type: "success", message: "Country updated successfully" },
+          snackbarError: "$exception",
+        },
+        delete: {
+          name: "deleteCountry",
+          params: { id: "_id" },
+          confirmBox: {
+            title: "Delete Country",
+            description: "Are you sure you want to delete this country?",
+          },
+          snackbarSuccess: { type: "success", message: "Country deleted successfully" },
+          snackbarError: "$exception",
+        },
+      },
+    },
+  },
 ];
 
 export const containerCountryList: Container[] = [

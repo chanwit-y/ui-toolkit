@@ -379,6 +379,130 @@ export type DataTableProps = {
   // apiEdit?: APIFunction;
 };
 
+export type DataTableEditableEditor =
+  | "text"
+  | "number"
+  | "date"
+  | "select"
+  | "checkbox";
+
+export type DataTableEditableValidation = {
+  /** Error message shown when a required value is missing. */
+  requiredMessage?: string;
+  /** Minimum numeric value (editor "number"). */
+  min?: number;
+  /** Maximum numeric value (editor "number"). */
+  max?: number;
+  minLength?: number;
+  maxLength?: number;
+  /** Regex the value must match. */
+  pattern?: string | RegExp;
+  /** Error message shown when the pattern does not match. */
+  patternMessage?: string;
+  /** Custom validator. Return an error message, or null/undefined when valid. */
+  validate?: (value: any, row: Record<string, any>) => string | null | undefined;
+};
+
+export type DataTableEditableColumn = {
+  accessorKey: string;
+  header: string;
+  /** Whether the column can be edited inline. Defaults to true. */
+  editable?: boolean;
+  /** Editor rendered when the row is in edit mode. Defaults to "text". */
+  editor?: DataTableEditableEditor;
+  /** Options for the "select" editor. */
+  options?: Array<{ value: string; label: string }>;
+  isRequired?: boolean;
+  /** Validation rules applied when saving the row. */
+  validation?: DataTableEditableValidation;
+  enableSorting?: boolean;
+  enableColumnFilter?: boolean;
+  size?: number;
+  align?: "start" | "center" | "end";
+  /** Initial value used when creating a new row. */
+  defaultValue?: any;
+};
+
+export type CrudReadApi = {
+  api: APIFunction;
+  /** Query object passed to the read API. */
+  query?: Record<string, any>;
+  /** Paths to drill into the API response to reach the row array. */
+  paths?: string[];
+};
+
+export type CrudMutationApi = {
+  api: APIFunction;
+  /**
+   * URL/path parameter mapping: API param name -> row field
+   * (e.g. { id: "_id" }). When set, the API is called as
+   * api(params, body) instead of api(body).
+   */
+  params?: Record<string, string>;
+  snackbarSuccess?: SnackbarElement;
+  snackbarError?: SnackbarElement | "$exception";
+};
+
+export type CrudDeleteApi = CrudMutationApi & {
+  confirmBox?: Pick<ConfirmBoxElement, "title" | "description">;
+};
+
+export type DataTableEditableApiConfig = {
+  read: CrudReadApi;
+  create?: CrudMutationApi;
+  update?: CrudMutationApi;
+  delete?: CrudDeleteApi;
+};
+
+export type DataTableEditableProps = {
+  name: string;
+  title?: string;
+  /** Row key used as the record id for update/delete calls. Defaults to "id". */
+  idKey?: string;
+  columns: DataTableEditableColumn[];
+  /** CRUD API configuration. Create/update/delete actions appear only when their API is set. */
+  apiCrud: DataTableEditableApiConfig;
+  align?: Record<string, "start" | "center" | "end">;
+};
+
+// Config-driven (container builder) variants: APIs are referenced by the name
+// registered in ApiMaster and resolved when the element is built.
+export type CrudReadApiRef = {
+  /** API name registered in ApiMaster. */
+  name: string;
+  /** Request object passed as the first argument of the API (query or body, depending on the API). */
+  query?: Record<string, any>;
+  /** Paths to drill into the API response to reach the row array. */
+  paths?: string[];
+};
+
+export type CrudMutationApiRef = {
+  /** API name registered in ApiMaster. */
+  name: string;
+  /** URL/path parameter mapping: API param name -> row field (e.g. { id: "_id" }). */
+  params?: Record<string, string>;
+  snackbarSuccess?: SnackbarElement;
+  snackbarError?: SnackbarElement | "$exception";
+};
+
+export type CrudDeleteApiRef = CrudMutationApiRef & {
+  confirmBox?: Pick<ConfirmBoxElement, "title" | "description">;
+};
+
+export type DataTableEditableElement = {
+  name: string;
+  title?: string;
+  /** Row key used as the record id for update/delete calls. Defaults to "id". */
+  idKey?: string;
+  columns: DataTableEditableColumn[];
+  apiCrud: {
+    read: CrudReadApiRef;
+    create?: CrudMutationApiRef;
+    update?: CrudMutationApiRef;
+    delete?: CrudDeleteApiRef;
+  };
+};
+
 export type PopoverProps = BaseComponentProps<
   "div",
   {
@@ -829,6 +953,7 @@ export type TElement =
   | TextareaElement
   | CheckboxElement
   | DataTableElement
+  | DataTableEditableElement
   | DatePickerElement
   | DateRangePickerElement
   | DateTimePickerElement
@@ -847,6 +972,7 @@ export type BinType =
   | "modal"
   | "button"
   | "datatable"
+  | "datatableeditable"
   | "autocomplete"
   | "textfield"
   | "select"

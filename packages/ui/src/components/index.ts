@@ -13,6 +13,7 @@ export { MultiAutocompleteBase } from "./MultiAutocomplete";
 export { MultiAutocompleteExample } from "./MultiAutocomplete.example";
 export { DataTable } from "./DataTable";
 export { DataTable2 } from "./DataTable2";
+export { DataTableEditable } from "./DataTableEditable";
 export { Popover } from "./Popover";
 export { FilterIcon } from "./FilterIcon";
 export { Icon } from "./Icon";

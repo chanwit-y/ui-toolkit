@@ -14,6 +14,21 @@ export {
 } from "./components/core/containerGrid";
 export * from "./api/APIMaster";
 export * from "./components/DataTable2";
+export * from "./components/DataTableEditable";
+export type {
+	DataTableEditableProps,
+	DataTableEditableColumn,
+	DataTableEditableApiConfig,
+	DataTableEditableEditor,
+	DataTableEditableValidation,
+	CrudReadApi,
+	CrudMutationApi,
+	CrudDeleteApi,
+	CrudReadApiRef,
+	CrudMutationApiRef,
+	CrudDeleteApiRef,
+	DataTableEditableElement,
+} from "./components/@types";
 export * from "./components/Icon";
 // export * from "./components/Icon.example";
 export * from "./components/Modal";

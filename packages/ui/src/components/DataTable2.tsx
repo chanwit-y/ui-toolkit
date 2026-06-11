@@ -487,10 +487,12 @@ export const DataTable2 = <T extends Record<string, any>>({
 								{visibleColumns.map((column, columnIndex) => (
 									<td
 										key={`skeleton-cell-${column.id}-${columnIndex}`}
-										className="datatable-body-cell px-4"
+										className="datatable-body-cell px-4 py-1"
 										style={{ width: column.getSize(), textAlign: align[column.id] }}
 									>
-										<div className="h-4 w-full rounded bg-gray-200 animate-pulse" />
+										<div className="min-h-10 flex flex-col justify-center">
+											<div className="h-4 w-full rounded bg-gray-200 animate-pulse" />
+										</div>
 									</td>
 								))}
 							</tr>
@@ -499,8 +501,10 @@ export const DataTable2 = <T extends Record<string, any>>({
 							<tr key={row.id} className={`datatable-body-row 
 							${rowHoverBgColors[theme.components.dataTable?.rowHoverColor || 'blue']}`}>
 								{row.getVisibleCells().map(cell => (
-									<td key={cell.id} className="datatable-body-cell px-4" style={{ width: cell.column.getSize(), textAlign: align[cell.column.id] }}>
-										{renderCellWithHighlight(cell, globalFilter)}
+									<td key={cell.id} className="datatable-body-cell px-4 py-1" style={{ width: cell.column.getSize(), textAlign: align[cell.column.id] }}>
+										<div className="min-h-10 flex flex-col justify-center">
+											{renderCellWithHighlight(cell, globalFilter)}
+										</div>
 									</td>
 								))}
 							</tr>
