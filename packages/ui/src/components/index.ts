@@ -16,6 +16,7 @@ export { DataTable2 } from "./DataTable2";
 export { Popover } from "./Popover";
 export { FilterIcon } from "./FilterIcon";
 export { Icon } from "./Icon";
+export { Avatar } from "./Avatar";
 export { Text } from "./Text";
 // export {IconExamples} from "./Icon.example"
 export {

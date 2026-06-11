@@ -24,6 +24,8 @@ export * from "./components/Snackbar";
 export { ApiFactory, HttpClientFactory } from "./api";
 export { getAccessToken } from "./auth/azure/MsalInstance"
 
+export * from "./components/Avatar";
+export type { AvatarProps } from "./components/@types";
 export * from "./components/Text";
 export type { TextProps } from "./components/Text";
 

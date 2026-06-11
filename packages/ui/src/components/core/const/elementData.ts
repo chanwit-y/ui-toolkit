@@ -2,6 +2,7 @@
 // import type { TModelMaster } from "../../../model/master";
 // import type { IElement } from "../../@types";
 import { Autocomplete, MultiAutocomplete } from "../autocomplete";
+import { Avatar } from "../avatar";
 import { Button } from "../button";
 import { Checkbox } from "../checkbox";
 import { DataTable } from "../dataTable";
@@ -26,6 +27,7 @@ import { Text } from "../text";
 // } ;
 
 export const ElementData = {
+	avatar: Avatar,
 	button: Button,
 	modal: Modal,
 	autocomplete: Autocomplete,

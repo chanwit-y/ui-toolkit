@@ -36,7 +36,7 @@ export class Schema {
 		boxes.forEach(box => {
 			if (box.element) {
 				const elementSchema = this.createElementSchema(box.element as any);
-				if (elementSchema && 'name' in box.element) {
+				if (elementSchema && 'name' in box.element && box.element.name) {
 					fields[box.element.name] = elementSchema;
 				}
 			} else if (box.container) {

@@ -671,6 +671,23 @@ export type TextElement = BaseComponentProps<
   }
 >;
 
+export type AvatarProps = BaseComponentProps<
+  "div",
+  {
+    src?: string;
+    alt?: string;
+    size?: "xs" | "sm" | "md" | "lg" | "xl" | number;
+    fallback?: ReactNode;
+    className?: string;
+    loading?: "lazy" | "eager";
+    onError?: () => void;
+  }
+>;
+
+export type AvatarElement = {
+  name?: string;
+} & AvatarProps;
+
 export type TElement =
   | HiddenElement
   | AutocompleteElement
@@ -682,6 +699,7 @@ export type TElement =
   | DateRangePickerElement
   | DateTimePickerElement
   | TextElement
+  | AvatarElement
   | ModalElement
   | ButtonElement;
 
@@ -701,6 +719,7 @@ export type BinType =
   | "daterangepicker"
   | "datetimepicker"
   | "text"
+  | "avatar"
   | "container"
   | "empty";
 
