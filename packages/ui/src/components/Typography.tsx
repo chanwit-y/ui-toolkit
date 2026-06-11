@@ -1,5 +1,6 @@
-import { forwardRef, type ElementRef, type ReactNode } from "react";
+import React, { forwardRef, type ElementRef, type ReactNode } from "react";
 import { Text as RadixText, Heading as RadixHeading, type TextProps as RadixTextProps, type HeadingProps as RadixHeadingProps } from "@radix-ui/themes";
+import * as Tooltip from "@radix-ui/react-tooltip";
 import { cn } from "../util/utils";
 
 export type TypographyVariant = 
@@ -23,6 +24,9 @@ export interface TypographyProps extends Omit<RadixTextProps, 'size' | 'weight' 
   href?: string;
   target?: '_blank' | '_self' | '_parent' | '_top';
   rel?: string;
+  tooltip?: string;
+  tooltipSide?: 'top' | 'right' | 'bottom' | 'left';
+  tooltipDelay?: number;
 }
 
 const variantConfig: Record<TypographyVariant, {
@@ -66,16 +70,30 @@ const Typography = forwardRef<ElementRef<'div'>, TypographyProps>(({
   href,
   target,
   rel,
+  tooltip,
+  tooltipSide = 'top',
+  tooltipDelay = 700,
   ...props
 }, ref) => {
   const config = variantConfig[variant];
-  const resolvedComponent = component ?? config.component;
   const resolvedSize = size ?? config.size;
   const resolvedWeight = weight ?? config.weight;
   const content = text ?? children;
 
+  const resolvedElement = (() => {
+    const base = component ?? config.component;
+    if (!tooltip) {
+      return href ? config.component : base;
+    }
+    if (href || base === "p" || base === "div") {
+      return "span";
+    }
+    return base;
+  })();
+
   const typographyClasses = cn(
     config.className,
+    tooltip && "inline-block w-fit max-w-full",
     {
       'text-left': align === 'left',
       'text-center': align === 'center',
@@ -100,7 +118,7 @@ const Typography = forwardRef<ElementRef<'div'>, TypographyProps>(({
       return (
         <RadixHeading
           ref={href ? undefined : (ref as any)}
-          as={(href ? config.component : resolvedComponent) as any}
+          as={resolvedElement as any}
           size={resolvedSize as any}
           weight={resolvedWeight as any}
           color={color}
@@ -115,7 +133,7 @@ const Typography = forwardRef<ElementRef<'div'>, TypographyProps>(({
     return (
       <RadixText
         ref={href ? undefined : (ref as any)}
-        as={(href ? config.component : resolvedComponent) as any}
+        as={resolvedElement as any}
         size={resolvedSize as any}
         weight={resolvedWeight as any}
         color={color}
@@ -127,8 +145,33 @@ const Typography = forwardRef<ElementRef<'div'>, TypographyProps>(({
     );
   };
 
-  if (href) {
+  const renderWithTooltip = (content: React.ReactElement) => {
+    if (!tooltip) return content;
+
     return (
+      <Tooltip.Provider>
+        <Tooltip.Root delayDuration={tooltipDelay}>
+          <Tooltip.Trigger asChild>
+            {content}
+          </Tooltip.Trigger>
+          <Tooltip.Portal>
+            <Tooltip.Content
+              side={tooltipSide}
+              sideOffset={4}
+              align="center"
+              className="z-50 max-w-xs rounded-md bg-gray-900 px-2 py-1 text-xs text-white shadow-md"
+            >
+              {tooltip}
+              <Tooltip.Arrow className="fill-gray-900" />
+            </Tooltip.Content>
+          </Tooltip.Portal>
+        </Tooltip.Root>
+      </Tooltip.Provider>
+    );
+  };
+
+  if (href) {
+    const linkElement = (
       <a
         ref={ref as any}
         href={href}
@@ -139,9 +182,10 @@ const Typography = forwardRef<ElementRef<'div'>, TypographyProps>(({
         {renderContent()}
       </a>
     );
+    return renderWithTooltip(linkElement);
   }
 
-  return renderContent();
+  return renderWithTooltip(renderContent());
 });
 
 Typography.displayName = "Typography";

@@ -691,6 +691,9 @@ export type TypographyElement = BaseComponentProps<
     href?: string;
     target?: '_blank' | '_self' | '_parent' | '_top';
     rel?: string;
+    tooltip?: string;
+    tooltipSide?: 'top' | 'right' | 'bottom' | 'left';
+    tooltipDelay?: number;
   }
 >;
 
