@@ -18,6 +18,8 @@ export { FilterIcon } from "./FilterIcon";
 export { Icon } from "./Icon";
 export { Avatar } from "./Avatar";
 export { Text } from "./Text";
+export { UploadImageBase } from "./UploadImage";
+export { UploadFileBase } from "./UploadFile";
 // export {IconExamples} from "./Icon.example"
 export {
   SnackbarProvider,

@@ -79,6 +79,13 @@ export class Schema {
 			const isRequired = element.isRequired ?? element.isRequired ?? false;
 
 			// Apply required validation
+			if (isRequired && normalizedDataType === 'array') {
+				// Required arrays (e.g. upload byte data / file lists) must not be empty
+				schema = z.array(z.unknown(), {
+					required_error: requiredMessage,
+					invalid_type_error: requiredMessage,
+				}).min(1, requiredMessage);
+			}
 			if (!isRequired) {
 				if (normalizedDataType === 'string') {
 					schema = z.string({

@@ -16,6 +16,8 @@ import { TextField } from "../textField";
 import { Textarea } from "../textarea";
 import { Text } from "../text";
 import { Tab } from "../tab";
+import { UploadImage } from "../uploadImage";
+import { UploadFile } from "../uploadFile";
 // import type { IElement } from "../@types";
 // import type { TModelMaster } from "../../model/master";
 // import type { TApiMaster } from "../../api/APIMaster";
@@ -44,4 +46,6 @@ export const ElementData = {
 	datetimepicker: DateTimePicker,
 	text: Text,
 	tab: Tab,
+	uploadimage: UploadImage,
+	uploadfile: UploadFile,
 }

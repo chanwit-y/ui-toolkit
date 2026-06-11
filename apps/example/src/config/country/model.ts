@@ -20,6 +20,24 @@ export const model: TModelMaster = {
   countryBody: {
     name: "string",
     code: "string",
+    // Flag image content as raw bytes
+    flagImage: {
+      type: "array",
+      collection: "number",
+    },
+    // Supporting documents: metadata + content as raw bytes
+    documents: {
+      type: "array",
+      collection: {
+        name: "string",
+        size: "number",
+        type: "string",
+        data: {
+          type: "array",
+          collection: "number",
+        },
+      },
+    },
   },
   countryParam: {
     id: "string",

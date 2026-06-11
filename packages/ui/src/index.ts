@@ -31,6 +31,14 @@ export * from "./components/Text";
 export type { TextProps } from "./components/Text";
 export * from "./components/DateRangePicker";
 export type { DateRange, DateRangePickerProps } from "./components/@types";
+export * from "./components/UploadImage";
+export * from "./components/UploadFile";
+export type {
+	UploadedFile,
+	UploadImageProps,
+	UploadFileProps,
+} from "./components/@types";
+export * from "./util/file";
 
 export type { Bin, Container, DataTableElement } from "./components/@types"
 export type * from "./model/master"

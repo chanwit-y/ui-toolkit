@@ -22,6 +22,7 @@ import type {
   UseFieldArrayRemove,
 } from "react-hook-form";
 import type { SnackbarVariant } from "../Snackbar";
+import type { UploadFileContent, UploadValueFormat } from "../../util/file";
 import { DataContextType } from "../context/DataProvider";
 // import { DataState } from "../core/stord";
 import { TApiMaster } from "../../api/APIMaster";
@@ -690,6 +691,98 @@ export type AvatarElement = {
   name?: string;
 } & AvatarProps;
 
+export type UploadImageProps = BaseComponentProps<
+  "div",
+  {
+    label?: string;
+    helperText?: string;
+    isRequired?: boolean;
+    error?: boolean;
+    errorMessage?: string;
+    /** Accepted mime types passed to the file input. Defaults to "image/*". */
+    accept?: string;
+    /** Maximum file size in megabytes. */
+    maxSizeMB?: number;
+    /** Shape of the image preview. Defaults to "square". */
+    shape?: "square" | "circle";
+    /** Height of the drop zone / preview in pixels. Defaults to 160. */
+    previewHeight?: number;
+    isFullWidth?: boolean;
+    width?: number;
+    disabled?: boolean;
+    /**
+     * Format of the value stored in the form (and sent to the API):
+     * "dataUrl" (default), "base64" (raw base64 string), or
+     * "bytes" (raw byte number array).
+     */
+    valueFormat?: UploadValueFormat;
+    /**
+     * The uploaded image content. A data URL / base64 / remote URL string,
+     * or a byte array when valueFormat is "bytes". Empty when nothing is
+     * uploaded.
+     */
+    value?: UploadFileContent;
+    onValueChange?: (value: UploadFileContent) => void;
+    onBlur?: () => void;
+  }
+>;
+
+export type UploadImageElement = {
+  name: string;
+  dataType: string;
+  isRequired?: boolean;
+  errorMessage?: string;
+} & UploadImageProps;
+
+export type UploadedFile = {
+  name: string;
+  size: number;
+  type: string;
+  /**
+   * File content. Format depends on the component's valueFormat:
+   * data URL string, raw base64 string, or raw byte number array.
+   */
+  data: UploadFileContent;
+};
+
+export type UploadFileProps = BaseComponentProps<
+  "div",
+  {
+    label?: string;
+    helperText?: string;
+    isRequired?: boolean;
+    error?: boolean;
+    errorMessage?: string;
+    /** Accepted file types passed to the file input (e.g. ".pdf,.docx"). */
+    accept?: string;
+    /** Allow selecting multiple files. Defaults to false. */
+    multiple?: boolean;
+    /** Maximum number of files when multiple is enabled. */
+    maxFiles?: number;
+    /** Maximum file size in megabytes (per file). */
+    maxSizeMB?: number;
+    isFullWidth?: boolean;
+    width?: number;
+    disabled?: boolean;
+    /**
+     * Format of each file's `data` field stored in the form (and sent to
+     * the API): "dataUrl" (default), "base64", or "bytes".
+     */
+    valueFormat?: UploadValueFormat;
+    /** The uploaded files. */
+    value?: UploadedFile[];
+    onValueChange?: (value: UploadedFile[]) => void;
+    onBlur?: () => void;
+  }
+>;
+
+export type UploadFileElement = {
+  name: string;
+  dataType: string;
+  isRequired?: boolean;
+  errorMessage?: string;
+} & UploadFileProps;
+
 export type TElement =
   | HiddenElement
   | AutocompleteElement
@@ -702,6 +795,8 @@ export type TElement =
   | DateTimePickerElement
   | TextElement
   | AvatarElement
+  | UploadImageElement
+  | UploadFileElement
   | ModalElement
   | ButtonElement
   | TabElement;
@@ -723,6 +818,8 @@ export type BinType =
   | "datetimepicker"
   | "text"
   | "avatar"
+  | "uploadimage"
+  | "uploadfile"
   | "container"
   | "tab"
   | "empty";
