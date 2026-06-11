@@ -294,6 +294,7 @@ export type AutocompleteProps2<T extends Record<string, any> = {}> =
       size?: "1" | "2" | "3";
       radius?: "none" | "small" | "medium" | "large" | "full";
       inputIcon?: keyof typeof IconData | LucideIcon;
+      itemIcon?: keyof typeof IconData | LucideIcon | ((item: T) => keyof typeof IconData | LucideIcon);
       options: T[];
       searchKey: keyof T;
       idKey: keyof T;
@@ -485,6 +486,7 @@ export type AutocompleteElement = {
   orientation?: "horizontal" | "vertical";
   maxHeight?: number | string;
   inputIcon?: keyof typeof IconData | LucideIcon;
+  itemIcon?: keyof typeof IconData | LucideIcon | ((item: any) => keyof typeof IconData | LucideIcon);
 };
 
 export type ColumnDef = {

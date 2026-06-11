@@ -30,6 +30,7 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 		name,
 		placeholder,
 		inputIcon,
+		itemIcon,
 		options,
 		searchKey,
 		idKey,
@@ -477,6 +478,24 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 						: filteredItems.map((item, index) => {
 							const isSelected = selectedIndex === index;
 							const isCurrent = value === item[idKey];
+							
+							// Determine the icon for this item
+							let ItemIconComponent: LucideIcon | null = null;
+							if (itemIcon) {
+								if (typeof itemIcon === 'function') {
+									const iconResult = itemIcon(item);
+									if (typeof iconResult === 'string') {
+										ItemIconComponent = IconData[iconResult as keyof typeof IconData] as LucideIcon;
+									} else {
+										ItemIconComponent = iconResult as LucideIcon;
+									}
+								} else if (typeof itemIcon === 'string') {
+									ItemIconComponent = IconData[itemIcon as keyof typeof IconData] as LucideIcon;
+								} else {
+									ItemIconComponent = itemIcon as LucideIcon;
+								}
+							}
+							
 							return (<button key={item[idKey]}
 								onClick={() => handleSelect(item)}
 								aria-selected={isCurrent}
@@ -487,7 +506,10 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 										: "text-gray-700 hover:bg-gray-50",
 									isCurrent ? "bg-blue-50 text-blue-700 font-semibold" : ""
 								)}>
-								{item[displayKey]}
+								<div className="flex items-center gap-2">
+									{ItemIconComponent && <ItemIconComponent className="h-4 w-4 text-gray-400 flex-shrink-0" />}
+									<span>{item[displayKey]}</span>
+								</div>
 								{isCurrent && (<Check className="h-4 w-4 text-blue-600 ml-2 flex-shrink-0" />)}
 							</button>)
 						})}

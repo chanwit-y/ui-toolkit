@@ -36,6 +36,7 @@ export class Autocomplete<M extends TModelMaster, A extends TApiMaster<M>>
       isSingleLoad: props.isSingleLoad,
       maxHeight: props.maxHeight,
       inputIcon: props.inputIcon,
+      itemIcon: props.itemIcon,
     });
   }
 }
