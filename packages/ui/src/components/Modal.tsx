@@ -101,7 +101,7 @@ const Modal = forwardRef<HTMLDivElement, ModalProps>(
 					<AlertDialog.Content
 						ref={ref}
 						style={contentStyle}
-						className="modal-content fixed top-1/2 left-1/2 z-99999 mx-4 min-w-[400px] max-w-lg transform -translate-x-1/2 -translate-y-1/2 rounded-lg bg-white shadow-lg pb-6"
+						className="modal-content fixed top-1/2 left-1/2 z-99999 mx-4 min-w-[400px] max-w-lg max-h-[90vh] transform -translate-x-1/2 -translate-y-1/2 rounded-lg bg-white shadow-lg flex flex-col"
 					>
 
 						<ThemeProvider
@@ -112,8 +112,8 @@ const Modal = forwardRef<HTMLDivElement, ModalProps>(
 									size: "2",
 								}
 							}}
-							className="flex flex-col">
-							<div className={`flex items-start justify-between gap-4 sticky top-0 bg-white py-4 px-6 ${isHideTitleLine ? "" : "border-b border-gray-200"}`}							>
+							className="flex flex-col flex-1 min-h-0">
+							<div className={`flex items-start justify-between gap-4 flex-shrink-0 bg-white py-4 px-6 ${isHideTitleLine ? "" : "border-b border-gray-200"}`}>
 								<div className="flex-1">
 									{title && (
 										<AlertDialog.Title className="text-lg font-semibold">
@@ -136,7 +136,7 @@ const Modal = forwardRef<HTMLDivElement, ModalProps>(
 							{/* {id}
 							{String(isOpen)} */}
 							{children && (
-								<div className="px-6 overflow-y-auto" style={{ maxHeight }}>
+								<div className="px-6 py-4 overflow-y-auto flex-1 min-h-0" style={{ maxHeight: maxHeight || 'none' }}>
 									{children}
 								</div>
 							)}
