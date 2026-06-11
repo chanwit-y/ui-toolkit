@@ -38,6 +38,12 @@
   display: none !important;
 }
 
+/* Move the hover/active background from the Radix inner span to the trigger itself */
+.tab-trigger .rt-TabsTriggerInner,
+.tab-trigger .rt-BaseTabListTriggerInner {
+  background-color: transparent !important;
+}
+
 .tab-trigger:hover {
   color: var(--gray-12);
   background-color: var(--accent-a3);
