@@ -5,3 +5,4 @@ export const DEFAULT_DROPDOWN_WIDTH = 280
 // Used as a fallback before the dropdown is measured for the first time.
 export const ESTIMATED_DROPDOWN_HEIGHT = 340
 export const DROPDOWN_VIEWPORT_MARGIN = 8
+export const DROPDOWN_TRIGGER_GAP = 5

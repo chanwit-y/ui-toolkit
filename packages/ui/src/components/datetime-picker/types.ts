@@ -1,5 +1,5 @@
 import type { Dayjs } from "dayjs"
-import type { RefObject } from "react"
+import type { CSSProperties, RefObject } from "react"
 import type { DateTimePickerProps } from "../@types"
 
 export type DropdownPlacement = "bottom" | "top"
@@ -38,7 +38,7 @@ export type TimePickerProps = {
 
 export type DateTimeDropdownProps = {
 	dropdownRef: RefObject<HTMLDivElement>
-	placement: DropdownPlacement
+	dropdownStyles: CSSProperties
 	cursor: Dayjs
 	calendar: Dayjs[][]
 	weekdayLabels: string[]

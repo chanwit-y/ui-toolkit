@@ -2,7 +2,7 @@ import { Text } from "@radix-ui/themes"
 import { AlertCircle, ChevronLeft, ChevronRight, ChevronUp, ChevronDown } from "lucide-react"
 import type { Dayjs } from "dayjs"
 import { cn } from "../../util/utils"
-import { DEFAULT_DROPDOWN_WIDTH, HOURS } from "./constants"
+import { HOURS } from "./constants"
 import { padZero, getFilteredMinutes } from "./utils"
 import type {
 	CalendarFooterProps,
@@ -217,7 +217,7 @@ export const CalendarFooter = ({
 
 export const DateTimeDropdown = ({
 	dropdownRef,
-	placement,
+	dropdownStyles,
 	cursor,
 	calendar,
 	weekdayLabels,
@@ -238,13 +238,8 @@ export const DateTimeDropdown = ({
 }: DateTimeDropdownProps) => (
 	<div
 		ref={dropdownRef}
-		style={{ minWidth: DEFAULT_DROPDOWN_WIDTH }}
-		data-placement={placement}
-		className={cn(
-			"datetime-picker-dropdown bg-white border border-gray-200 rounded-md shadow-lg p-3 z-[100000]",
-			"absolute left-0 w-full",
-			placement === "top" ? "bottom-full mb-1" : "top-full mt-1"
-		)}
+		style={dropdownStyles}
+		className="datetime-picker-dropdown bg-white border ring-2 ring-blue-400 border-transparent rounded-md shadow-lg p-3"
 	>
 		<CalendarHeader
 			cursor={cursor}

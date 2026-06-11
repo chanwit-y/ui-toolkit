@@ -78,7 +78,7 @@ const DatePickerBase = forwardRef<
 
 	const dropdownRef = useRef<HTMLDivElement | null>(null)
 	const { triggerRef, setTriggerRef } = useForwardedButtonRef(ref)
-	const { placement, resetPlacement } = useDropdownPlacement(
+	const { dropdownStyles, resetDropdownStyles } = useDropdownPlacement(
 		isOpen,
 		triggerRef,
 		dropdownRef
@@ -113,9 +113,9 @@ const DatePickerBase = forwardRef<
 	const openDropdown = useCallback(() => {
 		if (disabled) return
 		setCursor(selectedDate ?? dayjs())
-		resetPlacement()
+		resetDropdownStyles()
 		setIsOpen(true)
-	}, [disabled, selectedDate, resetPlacement])
+	}, [disabled, selectedDate, resetDropdownStyles])
 
 	const toggleDropdown = useCallback(() => {
 		if (disabled) return
@@ -235,7 +235,7 @@ const DatePickerBase = forwardRef<
 					data-error={hasError ? "true" : undefined}
 					{...props}
 				>
-					<div className="flex flex-1 min-w-0 items-center gap-2">
+					<div className="flex flex-1 min-w-0 items-center gap-3">
 						<CalendarIcon className="h-4 w-4 text-gray-400 shrink-0" />
 						<span
 							className={cn(
@@ -262,7 +262,7 @@ const DatePickerBase = forwardRef<
 				{isOpen && (
 					<CalendarDropdown
 						dropdownRef={dropdownRef}
-						placement={placement}
+						dropdownStyles={dropdownStyles}
 						cursor={cursor}
 						calendar={calendar}
 						weekdayLabels={weekdayLabels}

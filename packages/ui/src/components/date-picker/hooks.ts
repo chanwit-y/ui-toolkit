@@ -4,15 +4,18 @@ import {
 	useLayoutEffect,
 	useRef,
 	useState,
+	type CSSProperties,
 	type ForwardedRef,
 	type MutableRefObject,
 	type RefObject,
 } from "react"
 import {
+	DEFAULT_DROPDOWN_WIDTH,
+	DROPDOWN_TRIGGER_GAP,
 	DROPDOWN_VIEWPORT_MARGIN,
 	ESTIMATED_DROPDOWN_HEIGHT,
 } from "./constants"
-import type { DatePickerBaseProps, DropdownPlacement } from "./types"
+import type { DatePickerBaseProps } from "./types"
 
 export const useValidationMessage = ({
 	isRequired,
@@ -117,22 +120,15 @@ export const useOutsideClick = (
 	}, [isEnabled, triggerRef, dropdownRef, onOutsideClick])
 }
 
-type TriggerRect = {
-	top: number
-	bottom: number
-	left: number
-	width: number
-}
-
 export const useDropdownPlacement = (
 	isOpen: boolean,
 	triggerRef: RefObject<HTMLButtonElement>,
 	dropdownRef: RefObject<HTMLDivElement>
 ) => {
-	const [placement, setPlacement] = useState<DropdownPlacement>("bottom")
+	const [dropdownStyles, setDropdownStyles] = useState<CSSProperties>({})
 
-	const resetPlacement = useCallback(() => {
-		setPlacement("bottom")
+	const resetDropdownStyles = useCallback(() => {
+		setDropdownStyles({})
 	}, [])
 
 	const updatePlacement = useCallback(() => {
@@ -141,22 +137,45 @@ export const useDropdownPlacement = (
 		const rect = trigger.getBoundingClientRect()
 		const dropdownHeight =
 			dropdownRef.current?.offsetHeight ?? ESTIMATED_DROPDOWN_HEIGHT
+		const dropdownWidth =
+			dropdownRef.current?.offsetWidth ?? DEFAULT_DROPDOWN_WIDTH
 
 		const modalContent = trigger.closest(".modal-content") as HTMLElement | null
-		const boundaryTop = modalContent
-			? modalContent.getBoundingClientRect().top
-			: 0
-		const boundaryBottom = modalContent
-			? modalContent.getBoundingClientRect().bottom
-			: window.innerHeight
+		const modalRect = modalContent?.getBoundingClientRect() ?? null
+		const boundaryTop = modalRect?.top ?? 0
+		const boundaryBottom = modalRect?.bottom ?? window.innerHeight
 
-		const spaceBelow = boundaryBottom - rect.bottom - DROPDOWN_VIEWPORT_MARGIN
-		const spaceAbove = rect.top - boundaryTop - DROPDOWN_VIEWPORT_MARGIN
-		const needed = dropdownHeight + DROPDOWN_VIEWPORT_MARGIN
+		const margin = DROPDOWN_VIEWPORT_MARGIN
+		const triggerGap = DROPDOWN_TRIGGER_GAP
+		const spaceBelow = boundaryBottom - rect.bottom - triggerGap - margin
+		const spaceAbove = rect.top - boundaryTop - triggerGap - margin
+		const needed = dropdownHeight + triggerGap + margin
+		const showAbove = spaceBelow < needed && spaceAbove > spaceBelow
 
-		setPlacement(
-			spaceBelow < needed && spaceAbove > spaceBelow ? "top" : "bottom"
+		// `.modal-content` uses transform, which makes it the containing block
+		// for position: fixed descendants. Coordinates must then be relative to
+		// the modal box instead of the viewport.
+		const offsetLeft = modalRect?.left ?? 0
+		const viewportLeft = Math.max(
+			margin,
+			Math.min(rect.left, window.innerWidth - dropdownWidth - margin),
 		)
+
+		const styles: CSSProperties = {
+			position: "fixed",
+			left: viewportLeft - offsetLeft,
+			width: rect.width,
+			minWidth: DEFAULT_DROPDOWN_WIDTH,
+			zIndex: 100000,
+		}
+
+		if (showAbove) {
+			styles.bottom = (modalRect?.bottom ?? window.innerHeight) - rect.top + triggerGap
+		} else {
+			styles.top = rect.bottom - (modalRect?.top ?? 0) + triggerGap
+		}
+
+		setDropdownStyles(styles)
 	}, [triggerRef, dropdownRef])
 
 	useLayoutEffect(() => {
@@ -175,5 +194,5 @@ export const useDropdownPlacement = (
 		}
 	}, [isOpen, updatePlacement])
 
-	return { placement, resetPlacement }
+	return { dropdownStyles, resetDropdownStyles }
 }

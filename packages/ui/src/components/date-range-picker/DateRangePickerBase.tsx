@@ -495,7 +495,7 @@ export const DateRangePickerBase = forwardRef<HTMLButtonElement, DateRangePicker
 						data-error={hasError ? "true" : undefined}
 						{...props}
 					>
-						<div className="flex flex-1 min-w-0 items-center gap-2">
+						<div className="flex flex-1 min-w-0 items-center gap-3">
 							<Calendar className="h-4 w-4 text-gray-400 shrink-0" />
 							<span
 								className={cn(
