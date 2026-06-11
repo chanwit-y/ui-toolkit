@@ -20,6 +20,9 @@ export interface TypographyProps extends Omit<RadixTextProps, 'size' | 'weight' 
   decoration?: 'none' | 'underline' | 'line-through';
   truncate?: boolean;
   noWrap?: boolean;
+  href?: string;
+  target?: '_blank' | '_self' | '_parent' | '_top';
+  rel?: string;
 }
 
 const variantConfig: Record<TypographyVariant, {
@@ -60,6 +63,9 @@ const Typography = forwardRef<ElementRef<'div'>, TypographyProps>(({
   decoration,
   truncate,
   noWrap,
+  href,
+  target,
+  rel,
   ...props
 }, ref) => {
   const config = variantConfig[variant];
@@ -82,39 +88,60 @@ const Typography = forwardRef<ElementRef<'div'>, TypographyProps>(({
       'line-through': decoration === 'line-through',
       'truncate': truncate,
       'whitespace-nowrap': noWrap,
+      'cursor-pointer hover:opacity-80': href,
     },
     className
   );
 
-  if (config.useHeading) {
+  const resolvedRel = rel || (target === '_blank' ? 'noopener noreferrer' : undefined);
+
+  const renderContent = () => {
+    if (config.useHeading) {
+      return (
+        <RadixHeading
+          ref={href ? undefined : (ref as any)}
+          as={(href ? config.component : resolvedComponent) as any}
+          size={resolvedSize as any}
+          weight={resolvedWeight as any}
+          color={color}
+          className={href ? undefined : typographyClasses}
+          {...(props as any)}
+        >
+          {content}
+        </RadixHeading>
+      );
+    }
+
     return (
-      <RadixHeading
-        ref={ref as any}
-        as={resolvedComponent as any}
+      <RadixText
+        ref={href ? undefined : (ref as any)}
+        as={(href ? config.component : resolvedComponent) as any}
         size={resolvedSize as any}
         weight={resolvedWeight as any}
         color={color}
-        className={typographyClasses}
+        className={href ? undefined : typographyClasses}
         {...(props as any)}
       >
         {content}
-      </RadixHeading>
+      </RadixText>
+    );
+  };
+
+  if (href) {
+    return (
+      <a
+        ref={ref as any}
+        href={href}
+        target={target}
+        rel={resolvedRel}
+        className={cn(typographyClasses, 'no-underline text-inherit')}
+      >
+        {renderContent()}
+      </a>
     );
   }
 
-  return (
-    <RadixText
-      ref={ref as any}
-      as={resolvedComponent as any}
-      size={resolvedSize as any}
-      weight={resolvedWeight as any}
-      color={color}
-      className={typographyClasses}
-      {...(props as any)}
-    >
-      {content}
-    </RadixText>
-  );
+  return renderContent();
 });
 
 Typography.displayName = "Typography";

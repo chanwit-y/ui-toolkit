@@ -1694,6 +1694,73 @@ const countryTypographyBins: Bin[] = [
       color: "red",
     },
   },
+  {
+    sm: "12",
+    md: "12",
+    lg: "12",
+    xl: "12",
+    type: "text",
+    element: {
+      text: "Link Examples",
+      isLabel: true,
+    },
+  },
+  {
+    sm: "12",
+    md: "6",
+    lg: "3",
+    xl: "3",
+    type: "typography",
+    element: {
+      text: "Basic link",
+      variant: "body1",
+      href: "https://example.com",
+      color: "blue",
+      decoration: "underline",
+    },
+  },
+  {
+    sm: "12",
+    md: "6",
+    lg: "3",
+    xl: "3",
+    type: "typography",
+    element: {
+      text: "External link (new tab)",
+      variant: "body1",
+      href: "https://github.com",
+      target: "_blank",
+      color: "blue",
+      decoration: "underline",
+    },
+  },
+  {
+    sm: "12",
+    md: "6",
+    lg: "3",
+    xl: "3",
+    type: "typography",
+    element: {
+      text: "Button-style link",
+      variant: "button",
+      href: "https://docs.example.com",
+      target: "_blank",
+      color: "violet",
+    },
+  },
+  {
+    sm: "12",
+    md: "6",
+    lg: "3",
+    xl: "3",
+    type: "typography",
+    element: {
+      text: "Heading as link",
+      variant: "h3",
+      href: "https://heading-link.com",
+      color: "blue",
+    },
+  },
 ];
 
 export const containerCountryOverview: Container = {

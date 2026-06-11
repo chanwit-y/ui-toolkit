@@ -688,6 +688,9 @@ export type TypographyElement = BaseComponentProps<
     decoration?: 'none' | 'underline' | 'line-through';
     truncate?: boolean;
     noWrap?: boolean;
+    href?: string;
+    target?: '_blank' | '_self' | '_parent' | '_top';
+    rel?: string;
   }
 >;
 
@@ -851,6 +854,7 @@ export type BinType =
   | "daterangepicker"
   | "datetimepicker"
   | "text"
+  | "typography"
   | "avatar"
   | "uploadimage"
   | "uploadfile"
