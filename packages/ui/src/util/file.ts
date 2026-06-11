@@ -4,7 +4,7 @@
  * - "base64": base64-encoded bytes without the data URL prefix
  * - "bytes": raw bytes as a number array
  */
-export type UploadValueFormat = "dataUrl" | "base64" | "bytes"
+export type UploadValueFormat = "dataUrl" | "base64" | "bytes" | "api"
 
 export type UploadFileContent = string | number[]
 

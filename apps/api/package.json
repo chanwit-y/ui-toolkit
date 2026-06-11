@@ -4,14 +4,14 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "nodemon src/index.ts",
+    "dev": "nodemon",
     "start": "node dist/index.js",
     "build": "tsc",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "hono": "^4.4.0",
-    "@hono/node-server": "^1.11.1"
+    "@hono/node-server": "^1.11.1",
+    "hono": "^4.4.0"
   },
   "devDependencies": {
     "@types/node": "^20.14.2",

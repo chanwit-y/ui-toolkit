@@ -4,13 +4,14 @@ import type { ChangeEvent, DragEvent, ElementRef } from "react"
 
 import { forwardRef, useCallback, useMemo, useRef, useState } from "react"
 import { Box, Text } from "@radix-ui/themes"
-import { AlertCircle, ImagePlus, RefreshCw, Trash2 } from "lucide-react"
+import { AlertCircle, ImagePlus, Loader2, RefreshCw, Trash2 } from "lucide-react"
 import { cn } from "../util/utils"
 import {
 	dataUrlToUploadContent,
 	readFileAsDataUrl,
 	toImagePreviewSrc,
 } from "../util/file"
+import { uploadFileToApi, deleteFileFromApi } from "../util/uploadApi"
 
 export type UploadImageBaseProps = UploadImageProps & {
 	onChange?: (value: UploadFileContent) => void
@@ -34,6 +35,7 @@ const UploadImageBase = forwardRef<
 	width,
 	disabled = false,
 	valueFormat = "dataUrl",
+	uploadApi,
 	value,
 	onValueChange,
 	onChange,
@@ -43,6 +45,10 @@ const UploadImageBase = forwardRef<
 	const inputRef = useRef<HTMLInputElement | null>(null)
 	const [isDragging, setIsDragging] = useState(false)
 	const [internalError, setInternalError] = useState<string | null>(null)
+	const [uploading, setUploading] = useState(false)
+	const uploadedFilenameRef = useRef<string | null>(null)
+
+	const isApiMode = valueFormat === "api"
 
 	const previewSrc = useMemo(() => toImagePreviewSrc(value), [value])
 
@@ -74,16 +80,30 @@ const UploadImageBase = forwardRef<
 			}
 
 			try {
-				const dataUrl = await readFileAsDataUrl(file)
-				setInternalError(null)
-				emitChange(dataUrlToUploadContent(dataUrl, valueFormat))
-			} catch {
-				setInternalError("Failed to read image file")
+				if (isApiMode && uploadApi) {
+					setUploading(true)
+					const result = await uploadFileToApi(file, {
+						...uploadApi,
+						fieldName: uploadApi.fieldName ?? "image",
+					})
+					uploadedFilenameRef.current = result.filename
+					setInternalError(null)
+					emitChange(result.url)
+				} else {
+					const dataUrl = await readFileAsDataUrl(file)
+					setInternalError(null)
+					emitChange(dataUrlToUploadContent(dataUrl, valueFormat))
+				}
+			} catch (err) {
+				setInternalError(
+					err instanceof Error ? err.message : "Failed to read image file"
+				)
 			} finally {
+				setUploading(false)
 				onBlur?.()
 			}
 		},
-		[maxSizeMB, valueFormat, emitChange, onBlur]
+		[maxSizeMB, valueFormat, isApiMode, uploadApi, emitChange, onBlur]
 	)
 
 	const handleInputChange = useCallback(
@@ -118,12 +138,22 @@ const UploadImageBase = forwardRef<
 		inputRef.current?.click()
 	}, [disabled])
 
-	const handleRemove = useCallback(() => {
+	const handleRemove = useCallback(async () => {
 		if (disabled) return
+
+		if (isApiMode && uploadApi?.deleteUrl && uploadedFilenameRef.current) {
+			try {
+				await deleteFileFromApi(uploadedFilenameRef.current, uploadApi)
+				uploadedFilenameRef.current = null
+			} catch {
+				// Best-effort: still clear the preview even if server delete fails
+			}
+		}
+
 		setInternalError(null)
 		emitChange(valueFormat === "bytes" ? [] : "")
 		onBlur?.()
-	}, [disabled, valueFormat, emitChange, onBlur])
+	}, [disabled, valueFormat, isApiMode, uploadApi, emitChange, onBlur])
 
 	return (
 		<Box
@@ -152,7 +182,22 @@ const UploadImageBase = forwardRef<
 				onChange={handleInputChange}
 			/>
 
-			{previewSrc ? (
+			{uploading ? (
+				<div
+					className={cn(
+						"flex flex-col items-center justify-center gap-2 rounded-md border-2 border-dashed border-blue-400 bg-blue-50/50",
+						shape === "circle" ? "rounded-full mx-auto" : ""
+					)}
+					style={
+						shape === "circle"
+							? { width: `${previewHeight}px`, height: `${previewHeight}px` }
+							: { height: `${previewHeight}px` }
+					}
+				>
+					<Loader2 className="h-8 w-8 text-blue-500 animate-spin" />
+					<Text size="2" className="text-blue-600">Uploading...</Text>
+				</div>
+			) : previewSrc ? (
 				<div
 					className={cn(
 						"relative group overflow-hidden border border-gray-200",

@@ -3,9 +3,10 @@ import type { ChangeEvent, DragEvent, ElementRef } from "react"
 
 import { forwardRef, useCallback, useMemo, useRef, useState } from "react"
 import { Box, Text } from "@radix-ui/themes"
-import { AlertCircle, FileText, UploadCloud, X } from "lucide-react"
+import { AlertCircle, FileText, Loader2, UploadCloud, X } from "lucide-react"
 import { cn } from "../util/utils"
 import { dataUrlToUploadContent, readFileAsDataUrl } from "../util/file"
+import { uploadFileToApi, deleteFileFromApi } from "../util/uploadApi"
 
 export type UploadFileBaseProps = UploadFileProps & {
 	onChange?: (value: UploadedFile[]) => void
@@ -35,6 +36,7 @@ const UploadFileBase = forwardRef<
 	width,
 	disabled = false,
 	valueFormat = "dataUrl",
+	uploadApi,
 	value,
 	onValueChange,
 	onChange,
@@ -44,6 +46,9 @@ const UploadFileBase = forwardRef<
 	const inputRef = useRef<HTMLInputElement | null>(null)
 	const [isDragging, setIsDragging] = useState(false)
 	const [internalError, setInternalError] = useState<string | null>(null)
+	const [uploading, setUploading] = useState(false)
+
+	const isApiMode = valueFormat === "api"
 
 	const files = useMemo(() => value ?? [], [value])
 
@@ -81,26 +86,50 @@ const UploadFileBase = forwardRef<
 			}
 
 			try {
-				const uploaded: UploadedFile[] = await Promise.all(
-					incoming.map(async (file) => ({
-						name: file.name,
-						size: file.size,
-						type: file.type,
-						data: dataUrlToUploadContent(
-							await readFileAsDataUrl(file),
-							valueFormat
-						),
-					}))
+				if (isApiMode && uploadApi) {
+					setUploading(true)
+					const uploaded: UploadedFile[] = await Promise.all(
+						incoming.map(async (file) => {
+							const result = await uploadFileToApi(file, {
+								...uploadApi,
+								fieldName: uploadApi.fieldName ?? "file",
+							})
+							return {
+								name: result.originalName,
+								size: file.size,
+								type: file.type,
+								data: result.url,
+								_filename: result.filename,
+							} as UploadedFile
+						})
+					)
+					setInternalError(null)
+					emitChange(multiple ? [...files, ...uploaded] : uploaded)
+				} else {
+					const uploaded: UploadedFile[] = await Promise.all(
+						incoming.map(async (file) => ({
+							name: file.name,
+							size: file.size,
+							type: file.type,
+							data: dataUrlToUploadContent(
+								await readFileAsDataUrl(file),
+								valueFormat
+							),
+						}))
+					)
+					setInternalError(null)
+					emitChange(multiple ? [...files, ...uploaded] : uploaded)
+				}
+			} catch (err) {
+				setInternalError(
+					err instanceof Error ? err.message : "Failed to read file"
 				)
-				setInternalError(null)
-				emitChange(multiple ? [...files, ...uploaded] : uploaded)
-			} catch {
-				setInternalError("Failed to read file")
 			} finally {
+				setUploading(false)
 				onBlur?.()
 			}
 		},
-		[multiple, maxFiles, maxSizeMB, valueFormat, files, emitChange, onBlur]
+		[multiple, maxFiles, maxSizeMB, valueFormat, isApiMode, uploadApi, files, emitChange, onBlur]
 	)
 
 	const handleInputChange = useCallback(
@@ -136,13 +165,26 @@ const UploadFileBase = forwardRef<
 	}, [disabled])
 
 	const handleRemove = useCallback(
-		(index: number) => {
+		async (index: number) => {
 			if (disabled) return
+
+			const file = files[index]
+			if (isApiMode && uploadApi?.deleteUrl && file) {
+				const filename = (file as any)._filename ?? (typeof file.data === "string" ? file.data.split("/").pop() : "")
+				if (filename) {
+					try {
+						await deleteFileFromApi(filename, uploadApi)
+					} catch {
+						// Best-effort: still remove from the list
+					}
+				}
+			}
+
 			setInternalError(null)
 			emitChange(files.filter((_, i) => i !== index))
 			onBlur?.()
 		},
-		[disabled, files, emitChange, onBlur]
+		[disabled, files, isApiMode, uploadApi, emitChange, onBlur]
 	)
 
 	return (
@@ -173,40 +215,47 @@ const UploadFileBase = forwardRef<
 				onChange={handleInputChange}
 			/>
 
-			<div
-				role="button"
-				tabIndex={disabled ? -1 : 0}
-				onClick={openFileDialog}
-				onKeyDown={(e) => {
-					if (e.key === "Enter" || e.key === " ") {
-						e.preventDefault()
-						openFileDialog()
-					}
-				}}
-				onDrop={handleDrop}
-				onDragOver={handleDragOver}
-				onDragLeave={() => setIsDragging(false)}
-				className={cn(
-					"flex flex-col items-center justify-center gap-1.5 rounded-md border-2 border-dashed px-4 py-6 transition duration-200 ease-in-out",
-					disabled
-						? "cursor-not-allowed bg-gray-50 border-gray-200 text-gray-400"
-						: "cursor-pointer text-gray-500 hover:border-blue-400 hover:bg-blue-50/50",
-					isDragging ? "border-blue-500 bg-blue-50" : "border-gray-300",
-					hasError && "border-red-300 hover:border-red-400"
-				)}
-			>
-				<UploadCloud className="h-7 w-7" />
-				<Text size="2" className="text-center">
-					Click or drag {multiple ? "files" : "a file"} here to upload
-				</Text>
-				{(accept || maxSizeMB) && (
-					<Text size="1" className="text-gray-400 text-center">
-						{[accept, maxSizeMB ? `max ${maxSizeMB} MB` : null]
-							.filter(Boolean)
-							.join(" · ")}
+			{uploading ? (
+				<div className="flex flex-col items-center justify-center gap-1.5 rounded-md border-2 border-dashed border-blue-400 bg-blue-50/50 px-4 py-6">
+					<Loader2 className="h-7 w-7 text-blue-500 animate-spin" />
+					<Text size="2" className="text-blue-600">Uploading...</Text>
+				</div>
+			) : (
+				<div
+					role="button"
+					tabIndex={disabled ? -1 : 0}
+					onClick={openFileDialog}
+					onKeyDown={(e) => {
+						if (e.key === "Enter" || e.key === " ") {
+							e.preventDefault()
+							openFileDialog()
+						}
+					}}
+					onDrop={handleDrop}
+					onDragOver={handleDragOver}
+					onDragLeave={() => setIsDragging(false)}
+					className={cn(
+						"flex flex-col items-center justify-center gap-1.5 rounded-md border-2 border-dashed px-4 py-6 transition duration-200 ease-in-out",
+						disabled
+							? "cursor-not-allowed bg-gray-50 border-gray-200 text-gray-400"
+							: "cursor-pointer text-gray-500 hover:border-blue-400 hover:bg-blue-50/50",
+						isDragging ? "border-blue-500 bg-blue-50" : "border-gray-300",
+						hasError && "border-red-300 hover:border-red-400"
+					)}
+				>
+					<UploadCloud className="h-7 w-7" />
+					<Text size="2" className="text-center">
+						Click or drag {multiple ? "files" : "a file"} here to upload
 					</Text>
-				)}
-			</div>
+					{(accept || maxSizeMB) && (
+						<Text size="1" className="text-gray-400 text-center">
+							{[accept, maxSizeMB ? `max ${maxSizeMB} MB` : null]
+								.filter(Boolean)
+								.join(" · ")}
+						</Text>
+					)}
+				</div>
+			)}
 
 			{files.length > 0 && (
 				<ul className="mt-2 flex flex-col gap-1.5">

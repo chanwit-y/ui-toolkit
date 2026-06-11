@@ -7,7 +7,8 @@
     "apps/*"
   ],
   "scripts": {
-    "dev": "bun run --cwd packages/ui dev & bun run --cwd apps/api dev & bun run --cwd apps/example dev & wait",
+    "postinstall": "node scripts/dedupe-esbuild.mjs",
+    "dev": "node scripts/dev.mjs",
     "build": "bun run --cwd packages/ui build && bun run --cwd apps/api build && bun run --cwd apps/example build && bun run --cwd apps/studio build",
     "studio": "bun run --cwd apps/studio dev",
     "example": "bun run --cwd apps/example dev",
@@ -17,5 +18,8 @@
   },
   "devDependencies": {
     "typescript": "^5.4.5"
+  },
+  "overrides": {
+    "esbuild": "0.27.7"
   }
 }

@@ -10,7 +10,7 @@ import { api } from "./config/country/api";
 import { containerCountryList } from "./config/country/container";
 
 const http = new HttpClientFactory(
-  import.meta.env.VITE_API_URL ?? "http://localhost:3001",
+  import.meta.env.VITE_API_URL ?? "",
   async () => "",
   "1.0.0",
   30000

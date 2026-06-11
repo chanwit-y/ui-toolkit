@@ -691,6 +691,17 @@ export type AvatarElement = {
   name?: string;
 } & AvatarProps;
 
+export type UploadApiConfig = {
+  /** URL to POST the file to (e.g. "/upload/single"). */
+  uploadUrl: string;
+  /** URL to DELETE the file from, with :filename placeholder (e.g. "/upload/:filename"). */
+  deleteUrl?: string;
+  /** FormData field name expected by the server. Defaults to "image" for UploadImage, "file" for UploadFile. */
+  fieldName?: string;
+  /** Dot-path to extract the file URL from the upload response (e.g. "data.url"). */
+  responsePath?: string;
+};
+
 export type UploadImageProps = BaseComponentProps<
   "div",
   {
@@ -712,10 +723,12 @@ export type UploadImageProps = BaseComponentProps<
     disabled?: boolean;
     /**
      * Format of the value stored in the form (and sent to the API):
-     * "dataUrl" (default), "base64" (raw base64 string), or
-     * "bytes" (raw byte number array).
+     * "dataUrl" (default), "base64" (raw base64 string),
+     * "bytes" (raw byte number array), or "api" (upload via API, store URL).
      */
     valueFormat?: UploadValueFormat;
+    /** API upload configuration. Required when valueFormat is "api". */
+    uploadApi?: UploadApiConfig;
     /**
      * The uploaded image content. A data URL / base64 / remote URL string,
      * or a byte array when valueFormat is "bytes". Empty when nothing is
@@ -766,9 +779,12 @@ export type UploadFileProps = BaseComponentProps<
     disabled?: boolean;
     /**
      * Format of each file's `data` field stored in the form (and sent to
-     * the API): "dataUrl" (default), "base64", or "bytes".
+     * the API): "dataUrl" (default), "base64", "bytes", or "api" (upload
+     * via API, store URL).
      */
     valueFormat?: UploadValueFormat;
+    /** API upload configuration. Required when valueFormat is "api". */
+    uploadApi?: UploadApiConfig;
     /** The uploaded files. */
     value?: UploadedFile[];
     onValueChange?: (value: UploadedFile[]) => void;

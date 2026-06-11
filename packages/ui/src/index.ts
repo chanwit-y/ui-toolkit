@@ -37,8 +37,10 @@ export type {
 	UploadedFile,
 	UploadImageProps,
 	UploadFileProps,
+	UploadApiConfig,
 } from "./components/@types";
 export * from "./util/file";
+export { uploadFileToApi, deleteFileFromApi } from "./util/uploadApi";
 
 export type { Bin, Container, DataTableElement } from "./components/@types"
 export type * from "./model/master"

@@ -24,6 +24,7 @@ export class UploadImage<M extends TModelMaster, A extends TApiMaster<M>>
       accept: props.accept,
       maxSizeMB: props.maxSizeMB,
       valueFormat: props.valueFormat,
+      uploadApi: props.uploadApi,
       shape: props.shape,
       previewHeight: props.previewHeight,
       isFullWidth: props.isFullWidth,
