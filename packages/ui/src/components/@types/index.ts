@@ -297,6 +297,7 @@ export type AutocompleteProps2<T extends Record<string, any> = {}> =
       inputIcon?: keyof typeof IconData | LucideIcon;
       itemIcon?: keyof typeof IconData | LucideIcon | ((item: T) => keyof typeof IconData | LucideIcon);
       itemSubtitle?: keyof T | ((item: T) => string);
+      itemAvatar?: keyof T | ((item: T) => string | { src: string; alt?: string; fallback?: string });
       options: T[];
       searchKey: keyof T;
       idKey: keyof T;
@@ -491,6 +492,7 @@ export type AutocompleteElement = {
   inputIcon?: keyof typeof IconData | LucideIcon;
   itemIcon?: keyof typeof IconData | LucideIcon | ((item: any) => keyof typeof IconData | LucideIcon);
   itemSubtitle?: keyof any | ((item: any) => string);
+  itemAvatar?: keyof any | ((item: any) => string | { src: string; alt?: string; fallback?: string });
 };
 
 export type ColumnDef = {

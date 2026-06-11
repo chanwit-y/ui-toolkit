@@ -46,6 +46,8 @@ function convertValue(value: TModelValue): TSchema {
         return Type.Boolean();
       case 'integer':
         return Type.Integer();
+      case 'any':
+        return Type.Any();
       default:
         throw new Error(`Unknown primitive type: ${value}`);
     }

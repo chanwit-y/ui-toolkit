@@ -136,13 +136,55 @@ export const countryDetail: Bin[] = [
       inputIcon: "globe",
       itemIcon: "mapPin",
       itemSubtitle: "name",
+      itemAvatar: "avatar",
       keys: {
         id: "_id",
         search: "name",
         display: "name",
       },
       defaultData: {},
-      options: [],
+      options: [
+        {
+          _id: "1",
+          name: "United States",
+          code: "US",
+          avatar: "https://flagcdn.com/w40/us.png",
+        },
+        {
+          _id: "2",
+          name: "United Kingdom",
+          code: "GB",
+          avatar: {
+            src: "https://flagcdn.com/w40/gb.png",
+            alt: "UK Flag",
+            fallback: "UK"
+          },
+        },
+        {
+          _id: "3",
+          name: "Germany",
+          code: "DE",
+          avatar: {
+            src: "https://flagcdn.com/w40/de.png",
+            alt: "German Flag"
+          },
+        },
+        {
+          _id: "4",
+          name: "France",
+          code: "FR",
+          avatar: "https://flagcdn.com/w40/fr.png",
+        },
+        {
+          _id: "5",
+          name: "Japan",
+          code: "JP",
+          avatar: {
+            src: "https://flagcdn.com/w40/jp.png",
+            fallback: "JP"
+          },
+        }
+      ],
       api: {
         name: "searchCountries",
         paths: ["data"],
@@ -204,6 +246,7 @@ export const countryDetail: Bin[] = [
       observeTo: "",
       isSingleLoad: false,
       inputIcon: "map",
+      itemAvatar: "avatar",
       keys: {
         id: "_id",
         search: "name",
@@ -275,6 +318,7 @@ export const countryDetail: Bin[] = [
       observeTo: "",
       isSingleLoad: false,
       inputIcon: "dollarSign",
+      itemAvatar: "avatar",
       keys: {
         id: "_id",
         search: "name",

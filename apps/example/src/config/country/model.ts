@@ -8,6 +8,7 @@ export const model: TModelMaster = {
         _id: "string",
         name: "string",
         code: "string",
+        avatar: "any",
         updated_at: "string",
         updated_by_name: "string",
       },

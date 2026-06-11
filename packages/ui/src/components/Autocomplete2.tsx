@@ -20,6 +20,7 @@ import { useObservableCleanup } from "../hooks";
 import { ConditionExpression } from "./core/expression";
 import { useData } from "./context/DataProvider";
 import { IconData } from "./core/const/iconData";
+import { Avatar } from "./Avatar";
 
 const createAutocomplete = <T extends Record<string, any>>() => {
 	return forwardRef<
@@ -33,6 +34,7 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 		inputIcon,
 		itemIcon,
 		itemSubtitle,
+		itemAvatar,
 		options,
 		searchKey,
 		idKey,
@@ -508,6 +510,34 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 								}
 							}
 							
+							// Determine the avatar for this item
+							let itemAvatarProps: { src: string; alt?: string; fallback?: string } | null = null;
+							if (itemAvatar) {
+								if (typeof itemAvatar === 'function') {
+									const avatarResult = itemAvatar(item);
+									if (typeof avatarResult === 'string') {
+										itemAvatarProps = { src: avatarResult, alt: item[displayKey] };
+									} else if (avatarResult && typeof avatarResult === 'object') {
+										itemAvatarProps = {
+											src: avatarResult.src,
+											alt: avatarResult.alt || item[displayKey],
+											fallback: avatarResult.fallback
+										};
+									}
+								} else {
+									const avatarValue = item[itemAvatar];
+									if (typeof avatarValue === 'string') {
+										itemAvatarProps = { src: avatarValue, alt: item[displayKey] };
+									} else if (avatarValue && typeof avatarValue === 'object' && 'src' in avatarValue) {
+										itemAvatarProps = {
+											src: (avatarValue as any).src,
+											alt: (avatarValue as any).alt || item[displayKey],
+											fallback: (avatarValue as any).fallback
+										};
+									}
+								}
+							}
+							
 							return (<button key={item[idKey]}
 								onClick={() => handleSelect(item)}
 								aria-selected={isCurrent}
@@ -520,7 +550,14 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 									isCurrent ? "bg-blue-50 text-blue-700 font-semibold" : ""
 								)}>
 								<div className="flex items-center gap-2 flex-1 min-w-0">
-									{ItemIconComponent && <ItemIconComponent className="h-4 w-4 text-gray-400 flex-shrink-0" />}
+									{itemAvatarProps && <Avatar 
+										src={itemAvatarProps.src} 
+										alt={itemAvatarProps.alt} 
+										size="xs" 
+										fallback={itemAvatarProps.fallback}
+										className="flex-shrink-0" 
+									/>}
+									{!itemAvatarProps && ItemIconComponent && <ItemIconComponent className="h-4 w-4 text-gray-400 flex-shrink-0" />}
 									<div className="flex flex-col gap-0.5 min-w-0 flex-1">
 										<span className="truncate">{item[displayKey]}</span>
 										{itemSubtitleText && (
