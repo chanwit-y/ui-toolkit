@@ -1,4 +1,4 @@
-import type { AutocompleteElement, Bin, Container, TextFieldElement } from "../@types";
+import type { AutocompleteElement, Bin, Container, TabElement, TextFieldElement } from "../@types";
 import { z } from "zod";
 
 export class Schema {
@@ -35,6 +35,19 @@ export class Schema {
 
 		boxes.forEach(box => {
 			if (box.element) {
+				if (this.isTabElement(box.element)) {
+					box.element.tabs.forEach((tab) => {
+						const containerFields = this.processBoxes(tab.container.bins);
+
+						if (tab.container.isArray) {
+							fields[tab.container.name] = z.array(z.object(containerFields));
+						} else {
+							Object.assign(fields, containerFields);
+						}
+					});
+					return;
+				}
+
 				const elementSchema = this.createElementSchema(box.element as any);
 				if (elementSchema && 'name' in box.element && box.element.name) {
 					fields[box.element.name] = elementSchema;
@@ -51,6 +64,10 @@ export class Schema {
 		});
 
 		return fields;
+	}
+
+	private isTabElement(element: Bin["element"]): element is TabElement {
+		return !!element && "tabs" in element && Array.isArray(element.tabs);
 	}
 
 	private createElementSchema(element: AutocompleteElement | TextFieldElement): z.ZodTypeAny | null {

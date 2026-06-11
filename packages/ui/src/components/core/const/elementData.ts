@@ -15,6 +15,7 @@ import { DateTimePicker } from "../dateTimePicker";
 import { TextField } from "../textField";
 import { Textarea } from "../textarea";
 import { Text } from "../text";
+import { Tab } from "../tab";
 // import type { IElement } from "../@types";
 // import type { TModelMaster } from "../../model/master";
 // import type { TApiMaster } from "../../api/APIMaster";
@@ -42,4 +43,5 @@ export const ElementData = {
 	daterangepicker: DateRangePicker,
 	datetimepicker: DateTimePicker,
 	text: Text,
+	tab: Tab,
 }

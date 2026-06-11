@@ -1,0 +1,101 @@
+/* MUI-style easing: standard curve */
+.tab-root {
+  --tab-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.tab-list-wrapper {
+  position: relative;
+  border-bottom: 1px solid var(--gray-a5);
+}
+
+.tab-list {
+  display: flex;
+  gap: 0.25rem;
+  box-shadow: none;
+}
+
+.tab-trigger {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  padding: 0.625rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--gray-a11);
+  border-radius: 0.5rem 0.5rem 0 0;
+  background-color: transparent;
+  transition:
+    color 200ms var(--tab-ease),
+    background-color 200ms var(--tab-ease);
+}
+
+/* Hide the Radix Themes built-in active underline; we draw our own ink bar */
+.tab-trigger::before {
+  display: none !important;
+}
+
+.tab-trigger:hover {
+  color: var(--gray-12);
+  background-color: var(--accent-a3);
+}
+
+.tab-trigger[data-state="active"] {
+  color: var(--accent-11);
+}
+
+.tab-trigger:focus-visible {
+  outline: 2px solid var(--accent-a8);
+  outline-offset: -2px;
+}
+
+/* Sliding ink-bar indicator (left/width set inline from JS) */
+.tab-indicator {
+  position: absolute;
+  bottom: -1px;
+  height: 3px;
+  border-radius: 9999px 9999px 0 0;
+  background-color: var(--accent-9);
+  pointer-events: none;
+  transition:
+    left 300ms var(--tab-ease),
+    width 300ms var(--tab-ease),
+    opacity 200ms var(--tab-ease);
+}
+
+/* MUI-style ripple spawned on pointer down */
+.tab-ripple {
+  position: absolute;
+  border-radius: 50%;
+  background-color: var(--accent-a5);
+  transform: scale(0);
+  pointer-events: none;
+  animation: tab-ripple 550ms var(--tab-ease) forwards;
+}
+
+@keyframes tab-ripple {
+  to {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+/* Content fade + slide-up on tab switch (plays on mount) */
+.tab-content {
+  padding-top: 0.5rem;
+  animation: tab-content-enter 300ms var(--tab-ease);
+}
+
+@keyframes tab-content-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

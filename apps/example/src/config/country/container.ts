@@ -630,6 +630,100 @@ export const containerCountryDetail: Container = {
   gridAutoFlow: "row",
 };
 
+const countryOverviewBins: Bin[] = [
+  {
+    sm: "12",
+    md: "12",
+    lg: "12",
+    xl: "12",
+    type: "text",
+    element: {
+      text: "Country overview",
+      isLabel: true,
+    },
+  },
+  {
+    sm: "12",
+    md: "6",
+    lg: "6",
+    xl: "6",
+    type: "textfield",
+    element: {
+      name: "overviewCode",
+      label: "Overview Code",
+      dataType: "string",
+    },
+  },
+  {
+    sm: "12",
+    md: "6",
+    lg: "6",
+    xl: "6",
+    type: "textfield",
+    element: {
+      name: "overviewName",
+      label: "Overview Name",
+      dataType: "string",
+    },
+  },
+];
+
+const countryMetadataBins: Bin[] = [
+  {
+    sm: "12",
+    md: "12",
+    lg: "12",
+    xl: "12",
+    type: "text",
+    element: {
+      text: "Country metadata",
+      isLabel: true,
+    },
+  },
+  {
+    sm: "12",
+    md: "6",
+    lg: "6",
+    xl: "6",
+    type: "textfield",
+    element: {
+      name: "metadataSource",
+      label: "Source",
+      dataType: "string",
+    },
+  },
+  {
+    sm: "12",
+    md: "6",
+    lg: "6",
+    xl: "6",
+    type: "textfield",
+    element: {
+      name: "metadataVersion",
+      label: "Version",
+      dataType: "string",
+    },
+  },
+];
+
+export const containerCountryOverview: Container = {
+  id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  name: "CountryOverview",
+  isArray: false,
+  bins: countryOverviewBins,
+  ...DEFAULT_CONTAINER_GRID,
+  gap: "3",
+};
+
+export const containerCountryMetadata: Container = {
+  id: "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+  name: "CountryMetadata",
+  isArray: false,
+  bins: countryMetadataBins,
+  ...DEFAULT_CONTAINER_GRID,
+  gap: "3",
+};
+
 export const groupList: Bin[] = [
   {
     type: "empty",
@@ -661,6 +755,30 @@ export const groupList: Bin[] = [
         actions: ["ClearCurrentFormSelected"],
         icon: "puls",
       },
+    },
+  },
+  {
+    sm: "12",
+    md: "12",
+    lg: "12",
+    xl: "12",
+    type: "tab",
+    justifySelf: "stretch",
+    alignSelf: "stretch",
+    element: {
+      defaultValue: "overview",
+      tabs: [
+        {
+          label: "Overview",
+          value: "overview",
+          container: containerCountryOverview,
+        },
+        {
+          label: "Metadata",
+          value: "metadata",
+          container: containerCountryMetadata,
+        },
+      ],
     },
   },
   {

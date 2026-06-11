@@ -703,7 +703,8 @@ export type TElement =
   | TextElement
   | AvatarElement
   | ModalElement
-  | ButtonElement;
+  | ButtonElement
+  | TabElement;
 
 export type BinType =
   | "hidden"
@@ -723,6 +724,7 @@ export type BinType =
   | "text"
   | "avatar"
   | "container"
+  | "tab"
   | "empty";
 
 type BoxRange =
@@ -855,6 +857,18 @@ export type ModalElement = {
   maxWidth?: string;
   minWidth?: string;
   maxHeight?: string;
+};
+
+export type TabItem = {
+  label: string;
+  value: string;
+  container: Container;
+};
+
+export type TabElement = {
+  defaultValue?: string;
+  className?: string;
+  tabs: TabItem[];
 };
 
 export type Modals = Record<string, ModalElement>;
