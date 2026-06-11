@@ -29,6 +29,8 @@ export * from "./components/Avatar";
 export type { AvatarProps } from "./components/@types";
 export * from "./components/Text";
 export type { TextProps } from "./components/Text";
+export * from "./components/Typography";
+export type { TypographyProps, TypographyVariant } from "./components/Typography";
 export * from "./components/DateRangePicker";
 export type { DateRange, DateRangePickerProps } from "./components/@types";
 export * from "./components/UploadImage";

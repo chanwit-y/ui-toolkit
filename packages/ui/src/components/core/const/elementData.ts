@@ -15,6 +15,7 @@ import { DateTimePicker } from "../dateTimePicker";
 import { TextField } from "../textField";
 import { Textarea } from "../textarea";
 import { Text } from "../text";
+import { Typography } from "../typography";
 import { Tab } from "../tab";
 import { UploadImage } from "../uploadImage";
 import { UploadFile } from "../uploadFile";
@@ -45,6 +46,7 @@ export const ElementData = {
 	daterangepicker: DateRangePicker,
 	datetimepicker: DateTimePicker,
 	text: Text,
+	typography: Typography,
 	tab: Tab,
 	uploadimage: UploadImage,
 	uploadfile: UploadFile,

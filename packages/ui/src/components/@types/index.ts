@@ -674,6 +674,23 @@ export type TextElement = BaseComponentProps<
   }
 >;
 
+export type TypographyElement = BaseComponentProps<
+  "div",
+  {
+    text?: ReactNode;
+    variant?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'body1' | 'body2' | 'subtitle1' | 'subtitle2' | 'caption' | 'overline' | 'button' | 'display1' | 'display2';
+    component?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'p' | 'span' | 'div' | 'label';
+    size?: '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9';
+    weight?: 'light' | 'regular' | 'medium' | 'bold';
+    color?: 'gray' | 'gold' | 'bronze' | 'brown' | 'yellow' | 'amber' | 'orange' | 'tomato' | 'red' | 'ruby' | 'crimson' | 'pink' | 'plum' | 'purple' | 'violet' | 'iris' | 'indigo' | 'blue' | 'cyan' | 'teal' | 'jade' | 'green' | 'grass' | 'lime' | 'mint' | 'sky';
+    align?: 'left' | 'center' | 'right' | 'justify';
+    transform?: 'none' | 'capitalize' | 'uppercase' | 'lowercase';
+    decoration?: 'none' | 'underline' | 'line-through';
+    truncate?: boolean;
+    noWrap?: boolean;
+  }
+>;
+
 export type AvatarProps = BaseComponentProps<
   "div",
   {
@@ -810,6 +827,7 @@ export type TElement =
   | DateRangePickerElement
   | DateTimePickerElement
   | TextElement
+  | TypographyElement
   | AvatarElement
   | UploadImageElement
   | UploadFileElement
