@@ -29,6 +29,8 @@ export * from "./components/Avatar";
 export type { AvatarProps } from "./components/@types";
 export * from "./components/Text";
 export type { TextProps } from "./components/Text";
+export * from "./components/DateRangePicker";
+export type { DateRange, DateRangePickerProps } from "./components/@types";
 
 export type { Bin, Container, DataTableElement } from "./components/@types"
 export type * from "./model/master"

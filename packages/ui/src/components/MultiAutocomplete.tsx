@@ -58,15 +58,29 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 		const [listboxId] = useState(() => `listbox-${Math.random().toString(36).substr(2, 9)}`);
 		const [isOpen, setIsOpen] = useState(false)
 		const [dropdownStyles, setDropdownStyles] = useState<CSSProperties>({});
+		const [dropdownListMaxHeight, setDropdownListMaxHeight] = useState(256);
 		const [selectedIndex, setSelectedIndex] = useState(-1);
 		const [query, setQuery] = useState('');
+		const [triggerElement, setTriggerElement] = useState<HTMLButtonElement | null>(null);
 		const [observeData, setObserveData] = useState<unknown>();
 		const [internalValues, setInternalValues] = useState<string[]>(values);
 
-		const triggerRef = useRef<HTMLButtonElement>(null);
 		const dropdownRef = useRef<HTMLDivElement>(null);
 		const dropdownContainerRef = useRef<HTMLDivElement>(null);
 		const searchInputRef = useRef<HTMLInputElement>(null);
+
+		const setTriggerButtonRef = useCallback((node: HTMLButtonElement | null) => {
+			setTriggerElement(node);
+
+			if (typeof ref === "function") {
+				ref(node);
+				return;
+			}
+
+			if (ref) {
+				(ref as { current: HTMLButtonElement | null }).current = node;
+			}
+		}, [ref]);
 
 		const subject = useMemo(() => new Subject<string>(), [])
 
@@ -155,35 +169,64 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 			handleValuesChange(newValues);
 		}, [internalValues, handleValuesChange])
 
+		const updateDropdownPosition = useCallback(() => {
+			const triggerEl = triggerElement ?? dropdownRef.current;
+			if (!triggerEl) return;
+			if (typeof window === "undefined") return;
+
+			const rect = triggerEl.getBoundingClientRect();
+			const modalContent = triggerEl.closest(".modal-content") as HTMLElement | null;
+			const modalRect = modalContent?.getBoundingClientRect() ?? null;
+			const boundaryTop = modalRect?.top ?? 0;
+			const boundaryBottom = modalRect?.bottom ?? window.innerHeight;
+
+			const viewportPadding = 8;
+			const triggerGap = 4;
+			const dropdownHeaderHeight = 44;
+			const maxHeight = 280;
+			const preferredListHeight = Math.max(120, maxHeight - dropdownHeaderHeight);
+			const minListHeight = 80;
+			const estimatedDropdownHeight = dropdownHeaderHeight + preferredListHeight;
+
+			const spaceBelow = boundaryBottom - rect.bottom - triggerGap - viewportPadding;
+			const spaceAbove = rect.top - boundaryTop - triggerGap - viewportPadding;
+			const shouldShowAbove = spaceBelow < estimatedDropdownHeight && spaceAbove > spaceBelow;
+			const availableListSpace = (shouldShowAbove ? spaceAbove : spaceBelow) - dropdownHeaderHeight;
+
+			const computedListHeight = Math.max(
+				minListHeight,
+				Math.min(preferredListHeight, availableListSpace)
+			);
+
+			// `.modal-content` uses transform/backdrop-filter, which makes it the
+			// containing block for position: fixed descendants. Coordinates must
+			// then be relative to the modal box instead of the viewport.
+			const styles: CSSProperties = {
+				position: "fixed",
+				left: rect.left - (modalRect?.left ?? 0),
+				width: rect.width,
+				zIndex: 100000,
+			};
+
+			if (shouldShowAbove) {
+				styles.bottom = (modalRect?.bottom ?? window.innerHeight) - rect.top + triggerGap;
+			} else {
+				styles.top = rect.bottom - (modalRect?.top ?? 0) + triggerGap;
+			}
+
+			setDropdownStyles(styles);
+			setDropdownListMaxHeight(computedListHeight);
+		}, [triggerElement]);
+
 		const openDropdown = useCallback(() => {
-			if (triggerRef.current) {
-				const rect = triggerRef.current.getBoundingClientRect();
-				const spaceBelow = window.innerHeight - rect.bottom;
-				const spaceAbove = rect.top;
-				const dropdownHeight = 280;
-				const shouldShowAbove = spaceBelow < dropdownHeight && spaceAbove > spaceBelow;
-
-				const styles: CSSProperties = {
-					position: 'fixed',
-					zIndex: 50,
-					left: rect.left,
-					width: rect.width,
-				}
-
-				if (shouldShowAbove) {
-					styles.bottom = window.innerHeight - rect.top + 4
-				} else {
-					styles.top = rect.bottom + 4;
-				}
-
-				setDropdownStyles(styles);
+			if (!isOpen) {
+				updateDropdownPosition();
 			}
 			setIsOpen(prev => !prev);
 			setTimeout(() => {
-				dropdownContainerRef.current?.classList.add('opacity-100');
 				searchInputRef.current?.focus();
 			}, 0)
-		}, []);
+		}, [updateDropdownPosition, isOpen]);
 
 		const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
 			if (!isOpen) {
@@ -212,13 +255,13 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 				case 'Escape':
 					setIsOpen(false);
 					setSelectedIndex(-1);
-					triggerRef.current?.focus();
+					triggerElement?.focus();
 					break;
 				case 'Tab':
 					setIsOpen(false);
 					break;
 			}
-		}, [isOpen, openDropdown, selectedIndex, filteredItems, handleSelect, triggerRef]);
+		}, [isOpen, openDropdown, selectedIndex, filteredItems, handleSelect, triggerElement]);
 
 		// Handle click outside
 		useEffect(() => {
@@ -226,7 +269,7 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 				const target = event.target as Node;
 
 				// Check if click is outside both the trigger button and dropdown
-				const isOutsideTrigger = dropdownRef.current && !dropdownRef.current.contains(target);
+				const isOutsideTrigger = triggerElement && !triggerElement.contains(target);
 				const isOutsideDropdown = dropdownContainerRef.current && !dropdownContainerRef.current.contains(target);
 
 				if (isOpen && isOutsideTrigger && isOutsideDropdown) {
@@ -243,7 +286,24 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 			return () => {
 				document.removeEventListener('mousedown', handleClickOutside);
 			};
-		}, [isOpen]);
+		}, [isOpen, triggerElement]);
+
+		useEffect(() => {
+			if (!isOpen) return;
+
+			const handleScroll = () => updateDropdownPosition();
+			const handleResize = () => updateDropdownPosition();
+
+			updateDropdownPosition();
+
+			window.addEventListener("scroll", handleScroll, true);
+			window.addEventListener("resize", handleResize);
+
+			return () => {
+				window.removeEventListener("scroll", handleScroll, true);
+				window.removeEventListener("resize", handleResize);
+			};
+		}, [isOpen, updateDropdownPosition]);
 
 		useEffect(() => setSelectedIndex(-1), [query])
 
@@ -327,7 +387,7 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 			}
 			<div className="relative mb-2" ref={dropdownRef}>
 				<button
-					ref={ref || triggerRef}
+					ref={setTriggerButtonRef}
 					onClick={openDropdown}
 					className={cn("w-full min-h-[40px] px-4 py-2 text-sm flex items-center justify-between",
 						"bg-white border rounded-md shadow-sm transition-all duration-200",
@@ -393,7 +453,7 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 				<div
 					ref={dropdownContainerRef}
 					style={dropdownStyles}
-					className="absolute bg-white border ring-2 ring-blue-400 border-transparent rounded-md shadow-lg overflow-hidden ease-in duration-100 opacity-0 z-20"
+					className="flex flex-col bg-white border ring-2 ring-blue-400 border-transparent rounded-md shadow-lg overflow-hidden ease-in duration-100 opacity-100 z-[100000]"
 				>
 					<div className="flex items-center border-b border-gray-100 px-3">
 						<Search className="h-4 w-4 text-gray-400 mr-2" />
@@ -421,7 +481,9 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 					</div>
 					<div
 						id={listboxId}
-						className="max-h-64 overflow-auto py-1">
+						className="flex-1 min-h-0 overflow-auto py-1"
+						style={{ maxHeight: `${dropdownListMaxHeight}px`, overscrollBehavior: "contain" }}
+					>
 						{filteredItems?.length === 0
 							? <div className="flex justify-center text-sm">
 								No results found

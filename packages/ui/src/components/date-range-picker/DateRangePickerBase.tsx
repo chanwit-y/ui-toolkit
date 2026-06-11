@@ -7,6 +7,7 @@ import {
 	useMemo,
 	useRef,
 	useState,
+	type CSSProperties,
 	type MutableRefObject,
 } from "react"
 import { Box, Text } from "@radix-ui/themes"
@@ -122,7 +123,7 @@ export const DateRangePickerBase = forwardRef<HTMLButtonElement, DateRangePicker
 		const endDate = useMemo(() => parseDate(currentValue?.end), [currentValue?.end])
 
 		const [isOpen, setIsOpen] = useState(false)
-		const [placement, setPlacement] = useState<"bottom" | "top">("bottom")
+		const [dropdownStyles, setDropdownStyles] = useState<CSSProperties>({})
 		const [selecting, setSelecting] = useState<"start" | "end">("start")
 		const [hoverDate, setHoverDate] = useState<Date | null>(null)
 		const [tempStart, setTempStart] = useState<Date | null>(null)
@@ -148,20 +149,43 @@ export const DateRangePickerBase = forwardRef<HTMLButtonElement, DateRangePicker
 			const trigger = triggerRef.current
 			if (!trigger) return
 			const rect = trigger.getBoundingClientRect()
-			const dropdownHeight = dropdownRef.current?.offsetHeight ?? 360
+			const dropdownHeight = dropdownRef.current?.offsetHeight ?? 380
+			const dropdownWidth = dropdownRef.current?.offsetWidth ?? 640
 
 			const modalContent = trigger.closest(".modal-content") as HTMLElement | null
-			const boundaryTop = modalContent ? modalContent.getBoundingClientRect().top : 0
-			const boundaryBottom = modalContent
-				? modalContent.getBoundingClientRect().bottom
-				: window.innerHeight
+			const modalRect = modalContent?.getBoundingClientRect() ?? null
+			const boundaryTop = modalRect?.top ?? 0
+			const boundaryBottom = modalRect?.bottom ?? window.innerHeight
 
 			const margin = 8
-			const spaceBelow = boundaryBottom - rect.bottom - margin
-			const spaceAbove = rect.top - boundaryTop - margin
-			const needed = dropdownHeight + margin
+			const triggerGap = 5
+			const spaceBelow = boundaryBottom - rect.bottom - triggerGap - margin
+			const spaceAbove = rect.top - boundaryTop - triggerGap - margin
+			const needed = dropdownHeight + triggerGap + margin
+			const showAbove = spaceBelow < needed && spaceAbove > spaceBelow
 
-			setPlacement(spaceBelow < needed && spaceAbove > spaceBelow ? "top" : "bottom")
+			// `.modal-content` uses transform, which makes it the containing block
+			// for position: fixed descendants. Coordinates must then be relative to
+			// the modal box instead of the viewport.
+			const offsetLeft = modalRect?.left ?? 0
+			const viewportLeft = Math.max(
+				margin,
+				Math.min(rect.left, window.innerWidth - dropdownWidth - margin),
+			)
+
+			const styles: CSSProperties = {
+				position: "fixed",
+				left: viewportLeft - offsetLeft,
+				zIndex: 100000,
+			}
+
+			if (showAbove) {
+				styles.bottom = (modalRect?.bottom ?? window.innerHeight) - rect.top + triggerGap
+			} else {
+				styles.top = rect.bottom - (modalRect?.top ?? 0) + triggerGap
+			}
+
+			setDropdownStyles(styles)
 		}, [])
 
 		const closeDropdown = useCallback(() => {
@@ -169,7 +193,6 @@ export const DateRangePickerBase = forwardRef<HTMLButtonElement, DateRangePicker
 			setSelecting("start")
 			setTempStart(null)
 			setHoverDate(null)
-			setPlacement("bottom")
 			onBlur?.()
 		}, [onBlur])
 
@@ -384,7 +407,7 @@ export const DateRangePickerBase = forwardRef<HTMLButtonElement, DateRangePicker
 		}, [])
 
 		const renderCalendar = (year: number, month: number, showPrev?: boolean, showNext?: boolean) => (
-			<div className="p-3 min-w-[240px]">
+			<div className="p-4 min-w-[248px]">
 				<div className="flex items-center justify-between mb-2">
 					{showPrev ? (
 						<button
@@ -508,14 +531,11 @@ export const DateRangePickerBase = forwardRef<HTMLButtonElement, DateRangePicker
 							ref={dropdownRef}
 							role="dialog"
 							aria-label="Choose date range"
-							className={cn(
-								"date-range-picker-dropdown bg-white border border-gray-200 rounded-md shadow-lg z-[100000]",
-								"absolute left-0 w-max max-w-[92vw]",
-								placement === "top" ? "bottom-full mb-1" : "top-full mt-1",
-							)}
+							style={dropdownStyles}
+							className="date-range-picker-dropdown bg-white border ring-2 ring-blue-400 border-transparent rounded-md shadow-lg z-[100000] w-max max-w-[92vw] p-1"
 						>
 							<div className="flex">
-								<div className="flex flex-col gap-0.5 p-2 border-r border-gray-100 min-w-[130px]">
+								<div className="flex flex-col gap-1 p-3 border-r border-gray-100 min-w-[140px]">
 									{presets.map((p) => (
 										<button
 											key={p.label}
@@ -529,7 +549,7 @@ export const DateRangePickerBase = forwardRef<HTMLButtonElement, DateRangePicker
 												closeDropdown()
 												triggerRef.current?.focus()
 											}}
-											className="text-xs px-2.5 py-1.5 text-left rounded-md text-gray-700 hover:bg-gray-100 transition-colors whitespace-nowrap"
+											className="text-xs px-3 py-2 text-left rounded-md text-gray-700 hover:bg-gray-100 transition-colors whitespace-nowrap"
 										>
 											{p.label}
 										</button>
@@ -542,7 +562,7 @@ export const DateRangePickerBase = forwardRef<HTMLButtonElement, DateRangePicker
 								</div>
 							</div>
 
-							<div className="px-3 py-2 border-t border-gray-100 text-center">
+							<div className="px-4 py-3 border-t border-gray-100 text-center">
 								<Text size="1" className="text-gray-500">
 									{selecting === "end" && tempStart
 										? `${formatShort(tempStart)} — ...`
