@@ -11,7 +11,7 @@ import {
 import type { AutocompleteItem2, AutocompleteProps2, DataValue, Obs } from "./@types";
 import { Box, Text } from "@radix-ui/themes";
 import { cn } from "../util/utils";
-import { AlertCircle, Check, ChevronDown, Loader2, Search, X } from "lucide-react";
+import { AlertCircle, Check, ChevronDown, Loader2, Search, X, type LucideIcon } from "lucide-react";
 import { useCore } from "./core/context";
 import { debounce, distinct, interval, Subject, switchMap } from "rxjs";
 import { isEmpty } from "lodash";
@@ -19,6 +19,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useObservableCleanup } from "../hooks";
 import { ConditionExpression } from "./core/expression";
 import { useData } from "./context/DataProvider";
+import { IconData } from "./core/const/iconData";
 
 const createAutocomplete = <T extends Record<string, any>>() => {
 	return forwardRef<
@@ -28,6 +29,7 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 		label,
 		name,
 		placeholder,
+		inputIcon,
 		options,
 		searchKey,
 		idKey,
@@ -517,7 +519,19 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 					{...props}
 				>
 					<div className="flex flex-1 min-w-0 items-center gap-3">
-						<Search className="h-4 w-4 text-gray-400 flex-shrink-0" />
+						{(() => {
+							let IconComponent: LucideIcon;
+							if (inputIcon) {
+								if (typeof inputIcon === 'string') {
+									IconComponent = IconData[inputIcon as keyof typeof IconData] as LucideIcon || Search;
+								} else {
+									IconComponent = inputIcon;
+								}
+							} else {
+								IconComponent = Search;
+							}
+							return <IconComponent className="h-4 w-4 text-gray-400 flex-shrink-0" />;
+						})()}
 						<span className={`truncate ${!selectedItem ? 'text-gray-400' : 'text-gray-900'}`}>
 							{selectedItem ? selectedItem[displayKey] : placeholder}
 						</span>

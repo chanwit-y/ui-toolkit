@@ -293,6 +293,7 @@ export type AutocompleteProps2<T extends Record<string, any> = {}> =
       variant?: "classic" | "surface" | "soft";
       size?: "1" | "2" | "3";
       radius?: "none" | "small" | "medium" | "large" | "full";
+      inputIcon?: keyof typeof IconData | LucideIcon;
       options: T[];
       searchKey: keyof T;
       idKey: keyof T;
@@ -330,6 +331,7 @@ export type MultiAutocompleteProps<T extends Record<string, any> = {}> =
       variant?: "classic" | "surface" | "soft";
       size?: "1" | "2" | "3";
       radius?: "none" | "small" | "medium" | "large" | "full";
+      inputIcon?: keyof typeof IconData | LucideIcon;
       options: T[];
       searchKey: keyof T;
       idKey: keyof T;
@@ -482,6 +484,7 @@ export type AutocompleteElement = {
   options: any[];
   orientation?: "horizontal" | "vertical";
   maxHeight?: number | string;
+  inputIcon?: keyof typeof IconData | LucideIcon;
 };
 
 export type ColumnDef = {

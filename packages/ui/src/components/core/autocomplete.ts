@@ -35,6 +35,7 @@ export class Autocomplete<M extends TModelMaster, A extends TApiMaster<M>>
       options: props.options ?? [], // Add required options property
       isSingleLoad: props.isSingleLoad,
       maxHeight: props.maxHeight,
+      inputIcon: props.inputIcon,
     });
   }
 }
@@ -60,6 +61,7 @@ export class MultiAutocomplete<M extends TModelMaster, A extends TApiMaster<M>>
 
       // defaultData: props.defaultData ?? {},
       options: [], // Add required options property
+      inputIcon: props.inputIcon,
     });
   }
 }

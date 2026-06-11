@@ -76,6 +76,7 @@ export const countryDetail: Bin[] = [
       canObserve: false,
       observeTo: "",
       isSingleLoad: false,
+      inputIcon: "globe",
       keys: {
         id: "_id",
         search: "name",
@@ -109,6 +110,7 @@ export const countryDetail: Bin[] = [
       canObserve: false,
       observeTo: "",
       isSingleLoad: false,
+      inputIcon: "flag",
       keys: {
         id: "_id",
         search: "name",

@@ -11,7 +11,8 @@ import {
 import type { MultiAutocompleteProps } from "./@types";
 import { Box, Text } from "@radix-ui/themes";
 import { cn } from "../util/utils";
-import { AlertCircle, Check, ChevronDown, Search, X } from "lucide-react";
+import { AlertCircle, Check, ChevronDown, Search, X, type LucideIcon } from "lucide-react";
+import { IconData } from "./core/const/iconData";
 import { useCore } from "./core/context";
 import { debounce, distinct, interval, Subject, switchMap } from "rxjs";
 import { isEmpty } from "lodash";
@@ -25,6 +26,7 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 		label,
 		name,
 		placeholder,
+		inputIcon,
 		options,
 		searchKey,
 		idKey,
@@ -338,7 +340,19 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 					{...props}
 				>
 					<div className="flex flex-1 min-w-0 items-center gap-3">
-						<Search className="h-4 w-4 text-gray-400 flex-shrink-0" />
+						{(() => {
+							let IconComponent: LucideIcon;
+							if (inputIcon) {
+								if (typeof inputIcon === 'string') {
+									IconComponent = IconData[inputIcon as keyof typeof IconData] as LucideIcon || Search;
+								} else {
+									IconComponent = inputIcon;
+								}
+							} else {
+								IconComponent = Search;
+							}
+							return <IconComponent className="h-4 w-4 text-gray-400 flex-shrink-0" />;
+						})()}
 						<div className="flex-1 min-w-0">
 							{selectedItems.length > 0 && (
 								<div className="flex flex-wrap gap-1 mb-1 max-h-24 overflow-y-auto">
