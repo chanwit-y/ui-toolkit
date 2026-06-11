@@ -70,6 +70,7 @@ export const countryDetail: Bin[] = [
     element: {
       name: "relatedCountryId",
       label: "Related Country",
+      subtitle: "Choose a country that has diplomatic relations",
       dataType: "string",
       isRequired: false,
       errorMessage: "Related country is required",
@@ -78,6 +79,7 @@ export const countryDetail: Bin[] = [
       isSingleLoad: false,
       inputIcon: "globe",
       itemIcon: "mapPin",
+      itemSubtitle: "name",
       keys: {
         id: "_id",
         search: "name",
@@ -173,6 +175,7 @@ export const countryDetail: Bin[] = [
     element: {
       name: "capitalCityId",
       label: "Capital City",
+      subtitle: "Select the administrative capital city",
       dataType: "string",
       isRequired: false,
       errorMessage: "Capital city is required",
@@ -181,6 +184,7 @@ export const countryDetail: Bin[] = [
       isSingleLoad: false,
       inputIcon: "building",
       itemIcon: "mapPin",
+      itemSubtitle: "code",
       keys: {
         id: "_id",
         search: "name",
@@ -242,6 +246,7 @@ export const countryDetail: Bin[] = [
     element: {
       name: "languageId",
       label: "Primary Language",
+      subtitle: "The most widely spoken official language",
       dataType: "string",
       isRequired: false,
       errorMessage: "Language is required",
@@ -318,7 +323,8 @@ export const countryDetail: Bin[] = [
       observeTo: "",
       isSingleLoad: false,
       inputIcon: "compass",
-      itemIcon: "globe",
+      itemIcon: "globe", 
+      itemSubtitle: "name",
       keys: {
         id: "_id",
         search: "name",

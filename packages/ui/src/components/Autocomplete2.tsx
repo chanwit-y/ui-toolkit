@@ -27,10 +27,12 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 		AutocompleteProps2<T> & { onChange?: (value: string) => void }
 	>(({
 		label,
+		subtitle,
 		name,
 		placeholder,
 		inputIcon,
 		itemIcon,
+		itemSubtitle,
 		options,
 		searchKey,
 		idKey,
@@ -495,20 +497,36 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 									ItemIconComponent = itemIcon as LucideIcon;
 								}
 							}
+
+							// Determine the subtitle for this item
+							let itemSubtitleText: string | null = null;
+							if (itemSubtitle) {
+								if (typeof itemSubtitle === 'function') {
+									itemSubtitleText = itemSubtitle(item);
+								} else {
+									itemSubtitleText = item[itemSubtitle] as string;
+								}
+							}
 							
 							return (<button key={item[idKey]}
 								onClick={() => handleSelect(item)}
 								aria-selected={isCurrent}
 								data-focused={isSelected}
-								className={cn("w-full flex items-center justify-between px-3 py-2 text-sm text-left transition-colors cursor-pointer",
+								className={cn("w-full flex items-center justify-between px-3 text-sm text-left transition-colors cursor-pointer",
+									itemSubtitleText ? "py-2" : "py-2",
 									isSelected
 										? "bg-blue-50 text-blue-700 font-semibold"
 										: "text-gray-700 hover:bg-gray-50",
 									isCurrent ? "bg-blue-50 text-blue-700 font-semibold" : ""
 								)}>
-								<div className="flex items-center gap-2">
+								<div className="flex items-center gap-2 flex-1 min-w-0">
 									{ItemIconComponent && <ItemIconComponent className="h-4 w-4 text-gray-400 flex-shrink-0" />}
-									<span>{item[displayKey]}</span>
+									<div className="flex flex-col gap-0.5 min-w-0 flex-1">
+										<span className="truncate">{item[displayKey]}</span>
+										{itemSubtitleText && (
+											<span className="text-xs text-gray-500 truncate">{itemSubtitleText}</span>
+										)}
+									</div>
 								</div>
 								{isCurrent && (<Check className="h-4 w-4 text-blue-600 ml-2 flex-shrink-0" />)}
 							</button>)
@@ -522,6 +540,13 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 				label && (
 					<Text as="label" size="2" weight="medium" className="block mb-1">
 						{label}
+					</Text>
+				)
+			}
+			{
+				subtitle && (
+					<Text size="1" className="block mb-1 text-gray-600">
+						{subtitle}
 					</Text>
 				)
 			}

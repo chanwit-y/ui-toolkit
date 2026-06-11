@@ -18,6 +18,7 @@ export class Autocomplete<M extends TModelMaster, A extends TApiMaster<M>>
       name: props.name,
       form: this._context.form,
       label: props.label,
+      subtitle: props.subtitle,
       searchKey: props.keys.search,
       idKey: props.keys.id,
       displayKey: props.keys.display,
@@ -37,6 +38,7 @@ export class Autocomplete<M extends TModelMaster, A extends TApiMaster<M>>
       maxHeight: props.maxHeight,
       inputIcon: props.inputIcon,
       itemIcon: props.itemIcon,
+      itemSubtitle: props.itemSubtitle as any,
     });
   }
 }

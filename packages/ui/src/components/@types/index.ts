@@ -286,6 +286,7 @@ export type AutocompleteProps2<T extends Record<string, any> = {}> =
     {
       // name?: string;
       label?: string;
+      subtitle?: string;
       placeholder?: string;
       helperText?: string;
       error?: boolean;
@@ -295,6 +296,7 @@ export type AutocompleteProps2<T extends Record<string, any> = {}> =
       radius?: "none" | "small" | "medium" | "large" | "full";
       inputIcon?: keyof typeof IconData | LucideIcon;
       itemIcon?: keyof typeof IconData | LucideIcon | ((item: T) => keyof typeof IconData | LucideIcon);
+      itemSubtitle?: keyof T | ((item: T) => string);
       options: T[];
       searchKey: keyof T;
       idKey: keyof T;
@@ -465,6 +467,7 @@ export type AutocompleteElement = {
   name: string;
   dataType: string;
   label: string;
+  subtitle?: string;
   canObserve: boolean;
   observeTo: string;
   // enabledWhen: ConditionTerm;
@@ -487,6 +490,7 @@ export type AutocompleteElement = {
   maxHeight?: number | string;
   inputIcon?: keyof typeof IconData | LucideIcon;
   itemIcon?: keyof typeof IconData | LucideIcon | ((item: any) => keyof typeof IconData | LucideIcon);
+  itemSubtitle?: keyof any | ((item: any) => string);
 };
 
 export type ColumnDef = {
