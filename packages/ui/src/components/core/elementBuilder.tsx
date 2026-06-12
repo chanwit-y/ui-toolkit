@@ -59,9 +59,7 @@ export class ElementContext<M extends TModelMaster, A extends TApiMaster<M>> {
 
 	public get api() {
 		const apiName = this._element && 'api' in this._element && this._element.api ? this._element.api.name : undefined;
-		console.log('ElementContext.api - looking for:', apiName, 'available APIs:', this._apis?.apiNames);
 		const api = apiName ? this._apis?.api?.[apiName] as APIFunction : undefined;
-		console.log('ElementContext.api - found:', !!api);
 		if (!api) return undefined;
 		return api
 	}

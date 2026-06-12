@@ -30,8 +30,20 @@ export type TApiMaster<T extends TModelMaster> = {
   };
 };
 
+type BuiltApi<M extends TModelMaster, A extends TApiMaster<M>> = {
+  [K in keyof A]: Func<
+    Record<string, any>,
+    A[K]["query"] extends string ? Record<string, any> : undefined,
+    A[K]["parameter"] extends string ? Record<string, any> : undefined,
+    A[K]["body"] extends string ? Record<string, any> : undefined,
+    0
+  >;
+};
+
 export class ApiMaster<M extends TModelMaster, A extends TApiMaster<M>> {
   private _models: ModelFactory<M, { [K in keyof M]: M[K] }>;
+  private _apiNames?: { [K in keyof A]: Extract<keyof A, string> };
+  private _builtApi?: BuiltApi<M, A>;
 
   constructor(
     private _modelConfig: M,
@@ -41,12 +53,16 @@ export class ApiMaster<M extends TModelMaster, A extends TApiMaster<M>> {
     this._models = new ModelFactory(this._modelConfig);
   }
   public get apiNames(): { [K in keyof A]: Extract<keyof A, string> } {
-    return Object.keys(this._apis).reduce(
-      (acc, key) => {
-        return { ...acc, [key]: key };
-      },
-      {} as { [K in keyof A]: Extract<keyof A, string> }
-    );
+    if (!this._apiNames) {
+      this._apiNames = Object.keys(this._apis).reduce(
+        (acc, key) => {
+          acc[key as keyof A] = key as Extract<keyof A, string>;
+          return acc;
+        },
+        {} as { [K in keyof A]: Extract<keyof A, string> }
+      );
+    }
+    return this._apiNames;
   }
 
   public get models() {
@@ -57,43 +73,42 @@ export class ApiMaster<M extends TModelMaster, A extends TApiMaster<M>> {
     return this._apis
   }
 
-  public get api(): {
-    [K in keyof A]: Func<
-      Record<string, any>,
-      A[K]["query"] extends string ? Record<string, any> : undefined,
-      A[K]["parameter"] extends string ? Record<string, any> : undefined,
-      A[K]["body"] extends string ? Record<string, any> : undefined,
-      0
-    >;
-  } {
+  public get api(): BuiltApi<M, A> {
+    // Schema conversion and service creation are expensive; build once and
+    // reuse — this getter is hit on every element render in the core engine.
+    if (!this._builtApi) {
+      this._builtApi = this._buildApi();
+    }
+    return this._builtApi;
+  }
+
+  private _buildApi(): BuiltApi<M, A> {
     const apis = Object.entries(this._apis).reduce((acc, [key, value]) => {
-      return {
-        ...acc,
-        [key]: {
-          url: value.url,
-          method: methods(value.methods),
-          response:
-            this._modelConfig[value.response as keyof M]["type"] === "array"
-              ? convertTModelToTArray(
-                this._modelConfig[value.response as keyof M]
-              )
-              : convertTModelToTypeBox(
-                this._modelConfig[value.response as keyof M]
-              ),
-          query: value.query
-            ? convertTModelToTypeBox(this._modelConfig[value.query as keyof M])
-            : t.Undefined(),
-          parameter: value.parameter
-            ? convertTModelToTypeBox(
-              this._modelConfig[value.parameter as keyof M]
+      acc[key] = {
+        url: value.url,
+        method: methods(value.methods),
+        response:
+          this._modelConfig[value.response as keyof M]["type"] === "array"
+            ? convertTModelToTArray(
+              this._modelConfig[value.response as keyof M]
             )
-            : t.Undefined(),
-          body: value.body
-            ? convertTModelToTypeBox(this._modelConfig[value.body as keyof M])
-            : t.Undefined(),
-          withOptions: t.Literal(value.withOptions),
-        },
+            : convertTModelToTypeBox(
+              this._modelConfig[value.response as keyof M]
+            ),
+        query: value.query
+          ? convertTModelToTypeBox(this._modelConfig[value.query as keyof M])
+          : t.Undefined(),
+        parameter: value.parameter
+          ? convertTModelToTypeBox(
+            this._modelConfig[value.parameter as keyof M]
+          )
+          : t.Undefined(),
+        body: value.body
+          ? convertTModelToTypeBox(this._modelConfig[value.body as keyof M])
+          : t.Undefined(),
+        withOptions: t.Literal(value.withOptions),
       };
+      return acc;
     }, {} as Config);
 
     return this._apiFactory.createService(apis as Config).api as any;

@@ -37,6 +37,7 @@ type Context = {
   config?: AxiosRequestConfig;
   isNotUnwrap?: boolean;
   cacheTime?: number;
+  staleTime?: number;
 };
 
 type Request<Q, P, B, R> = Q extends Map
@@ -87,12 +88,19 @@ export class ApiFactory<_A extends Config, MapFunc extends Map> {
   ) {
   }
 
-  private async _call<R, Q, P, B>(ctx: Context, req: Req<Q, P, B>): Promise<R> {
+  private async _call<R, Q, P, B>(
+    ctx: Context,
+    req: Req<Q, P, B>,
+    signal?: AbortSignal
+  ): Promise<R> {
+    // Thread the React Query abort signal into axios so superseded
+    // requests (e.g. rapid autocomplete searches) are cancelled.
+    const config = signal ? { ...ctx.config, signal } : ctx.config;
     const res = await this._http.handler<R, Q, P, B>(
       ctx.url,
       ctx.method.const as HttpMethod,
       req,
-      ctx.config,
+      config,
       ctx.isNotUnwrap
     );
     return res;
@@ -105,18 +113,20 @@ export class ApiFactory<_A extends Config, MapFunc extends Map> {
           use: (options?: UseQueryOptions<R, unknown, R, [string, Req<Q, P, B>]>) =>
             useQuery<R, unknown, R, [string, Req<Q, P, B>]>({
               queryKey: [ctx.url, { ...req }],
-              queryFn: () => this._call<R, Q, P, B>(ctx, req),
+              queryFn: ({ signal }) => this._call<R, Q, P, B>(ctx, req, signal),
               refetchOnWindowFocus: false,
               gcTime: ctx.cacheTime,
+              staleTime: ctx.staleTime,
               ...options,
             }),
         };
       } else {
-        return useQuery<R, unknown, [string, Req<Q, P, B>]>({
+        return useQuery<R, unknown, R, [string, Req<Q, P, B>]>({
           queryKey: [ctx.url, { ...req }],
-          queryFn: () => this._call<R, Q, P, B>(ctx, req),
+          queryFn: ({ signal }) => this._call<R, Q, P, B>(ctx, req, signal),
           refetchOnWindowFocus: false,
           gcTime: ctx.cacheTime,
+          staleTime: ctx.staleTime,
         });
       }
     } else {
@@ -124,8 +134,6 @@ export class ApiFactory<_A extends Config, MapFunc extends Map> {
         mutationFn: (req) => this._call<R, Q, P, B>(ctx, req),
       });
     }
-
-    return () => { };
   }
 
   public createService<C extends Config>(
@@ -142,34 +150,33 @@ export class ApiFactory<_A extends Config, MapFunc extends Map> {
       >;
     }
   > {
+    const fns: Map = { ...this._fn };
     Object.entries(c).forEach(([key, ctx]) => {
       type Query = Static<typeof ctx.query>;
       type Parameter = Static<typeof ctx.parameter>;
       type Body = Static<typeof ctx.body>;
 
-      this._fn = {
-        ...this._fn,
-        [key]:
-          ctx.query.type !== "undefined"
-            ? ctx.parameter.type !== "undefined"
-              ? ctx.body.type !== "undefined"
-                ? (query: Query, param: Parameter, body: Body) =>
-                  this._call(ctx, { query, parameter: param, body })
-                : (query: Query, param: Parameter) =>
-                  this._call(ctx, { query, parameter: param })
-              : ctx.body.type !== "undefined"
-                ? (query: Query, body: Body) => this._call(ctx, { query, body })
-                : (query: Query) => this._call(ctx, { query })
-            : ctx.parameter.type !== "undefined"
-              ? ctx.body.type !== "undefined"
-                ? (param: Parameter, body: Body) =>
-                  this._call(ctx, { parameter: param, body })
-                : (param: Parameter) => this._call(ctx, { parameter: param })
-              : ctx.body.type !== "undefined"
-                ? (body: Body) => this._call(ctx, { body })
-                : () => this._call(ctx, {}),
-      };
+      fns[key] =
+        ctx.query.type !== "undefined"
+          ? ctx.parameter.type !== "undefined"
+            ? ctx.body.type !== "undefined"
+              ? (query: Query, param: Parameter, body: Body) =>
+                this._call(ctx, { query, parameter: param, body })
+              : (query: Query, param: Parameter) =>
+                this._call(ctx, { query, parameter: param })
+            : ctx.body.type !== "undefined"
+              ? (query: Query, body: Body) => this._call(ctx, { query, body })
+              : (query: Query) => this._call(ctx, { query })
+          : ctx.parameter.type !== "undefined"
+            ? ctx.body.type !== "undefined"
+              ? (param: Parameter, body: Body) =>
+                this._call(ctx, { parameter: param, body })
+              : (param: Parameter) => this._call(ctx, { parameter: param })
+            : ctx.body.type !== "undefined"
+              ? (body: Body) => this._call(ctx, { body })
+              : () => this._call(ctx, {});
     });
+    this._fn = fns as MapFunc;
 
     return new ApiFactory<
       C,
@@ -213,6 +220,7 @@ export class ApiFactory<_A extends Config, MapFunc extends Map> {
       >;
     }
   > {
+    const fns: Map = { ...this._fn };
     Object.entries(c).forEach(([key, ctx]) => {
       type Response = Static<typeof ctx.response>;
       type Query = Static<typeof ctx.query>;
@@ -223,45 +231,43 @@ export class ApiFactory<_A extends Config, MapFunc extends Map> {
         return this._action<R, Q, P, B>(ctx, req);
       };
 
-      this._fn = {
-        ...this._fn,
-        [key]:
-          ctx.query.type !== "undefined"
-            ? ctx.parameter.type !== "undefined"
-              ? ctx.body.type !== "undefined"
-                ? (query: Query, param: Parameter, body: Body) =>
-                  action<Response, Query, Parameter, Body>({
-                    query,
-                    parameter: param,
-                    body,
-                  })
-                : (query: Query, param: Parameter) =>
-                  action<Response, Query, Parameter, Body>({
-                    query,
-                    parameter: param,
-                  })
-              : ctx.body.type !== "undefined"
-                ? (query: Query, body: Body) =>
-                  action<Response, Query, Parameter, Body>({ query, body })
-                : (query: Query) =>
-                  action<Response, Query, Parameter, Body>({ query })
-            : ctx.parameter.type !== "undefined"
-              ? ctx.body.type !== "undefined"
-                ? (param: Parameter, body: Body) =>
-                  action<Response, Query, Parameter, Body>({
-                    parameter: param,
-                    body,
-                  })
-                : (param: Parameter) =>
-                  action<Response, Query, Parameter, Body>({
-                    parameter: param,
-                  })
-              : ctx.body.type !== "undefined"
-                ? (body: Body) =>
-                  action<Response, Query, Parameter, Body>({ body })
-                : () => action<Response, Query, Parameter, Body>({}),
-      };
+      fns[key] =
+        ctx.query.type !== "undefined"
+          ? ctx.parameter.type !== "undefined"
+            ? ctx.body.type !== "undefined"
+              ? (query: Query, param: Parameter, body: Body) =>
+                action<Response, Query, Parameter, Body>({
+                  query,
+                  parameter: param,
+                  body,
+                })
+              : (query: Query, param: Parameter) =>
+                action<Response, Query, Parameter, Body>({
+                  query,
+                  parameter: param,
+                })
+            : ctx.body.type !== "undefined"
+              ? (query: Query, body: Body) =>
+                action<Response, Query, Parameter, Body>({ query, body })
+              : (query: Query) =>
+                action<Response, Query, Parameter, Body>({ query })
+          : ctx.parameter.type !== "undefined"
+            ? ctx.body.type !== "undefined"
+              ? (param: Parameter, body: Body) =>
+                action<Response, Query, Parameter, Body>({
+                  parameter: param,
+                  body,
+                })
+              : (param: Parameter) =>
+                action<Response, Query, Parameter, Body>({
+                  parameter: param,
+                })
+            : ctx.body.type !== "undefined"
+              ? (body: Body) =>
+                action<Response, Query, Parameter, Body>({ body })
+              : () => action<Response, Query, Parameter, Body>({});
     });
+    this._fn = fns as MapFunc;
 
     return new ApiFactory<
       C,

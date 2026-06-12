@@ -88,21 +88,17 @@ export class HttpClientFactory
     config?: AxiosRequestConfig,
     isNotUnwrap?: boolean 
   ): Promise<R> {
-    // if (api) {
     let url = `${this._baseUrl}${apiURL}`;
 
-
-
-    if (request?.query ) {
+    if (request?.query) {
       const stringQuery = this.getUrlQueryString(request.query);
-      url = `${url}?${stringQuery}`;
+      if (stringQuery) url = `${url}?${stringQuery}`;
     }
     if (request?.parameter) {
       url = this.getUrlParameter(request.parameter, url);
     }
 
     let res: AxiosResponse<R, any>;
-
 
 
     switch (method) {
@@ -122,7 +118,7 @@ export class HttpClientFactory
         break;
       }
       case HttpMethod.DELETE: {
-        res = await this.delete(url);
+        res = await this.delete(url, config);
         break;
       }
       default:

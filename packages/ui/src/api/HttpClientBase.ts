@@ -219,21 +219,19 @@ export class HttpClientBase {
   }
 
   protected getUrlQueryString<T extends object>(params: T) {
-    return Object.keys(params)
-      .reduce((query, param) => {
-        const value = (params as { [key: string]: any })[param];
+    return Object.entries(params as { [key: string]: any })
+      .map(([key, value]) => {
         if (!value && value !== 0) {
-          return `${query}${param}=&`;
+          return `${encodeURIComponent(key)}=`;
         }
-        return `${query}${param}=${(params as { [key: string]: any })[param]}&`;
-      }, '')
-      .slice(0, -1);
+        return `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`;
+      })
+      .join('&');
   }
 
   protected getUrlParameter<T extends object>(parameter: T, url: string) {
-    Object.entries(parameter).map((e) => {
-      const [key, value] = e;
-      url = url.replace(`:${key}`, value);
+    Object.entries(parameter).forEach(([key, value]) => {
+      url = url.replace(`:${key}`, encodeURIComponent(String(value)));
     });
     return url;
   }
