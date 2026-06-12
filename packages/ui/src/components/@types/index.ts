@@ -105,6 +105,20 @@ export type TextFieldProps = BaseComponentProps<
     isFullWidth?: boolean;
     width?: number;
     isFixedHeight?: boolean;
+    /**
+     * Restrict input to values matching this regular expression. Provided as a
+     * string (e.g. "^[A-Za-z]*$") or a RegExp. While typing, any change that
+     * would produce a value not matching the pattern is rejected, so the field
+     * never holds an invalid character. An empty value is always allowed so the
+     * field can be cleared.
+     */
+    regex?: string | RegExp;
+    /**
+     * Message shown briefly when a keystroke is rejected by `regex`. The hint
+     * auto-clears shortly after the user stops typing invalid characters.
+     * Defaults to "Invalid character". Only used when `regex` is set.
+     */
+    regexErrorMessage?: string;
   }
 >;
 

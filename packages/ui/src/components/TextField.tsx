@@ -1,7 +1,7 @@
 import type { TextFieldProps } from "./@types"
-import type { ElementRef } from "react"
+import type { ChangeEvent, ElementRef } from "react"
 
-import { forwardRef, useMemo } from "react"
+import { forwardRef, useEffect, useMemo, useRef, useState } from "react"
 import { TextField as RadixTextField, Text, Box } from '@radix-ui/themes'
 import { cn } from "../util/utils"
 // import { withTheam } from "./context"
@@ -24,11 +24,47 @@ const TextFieldBase = forwardRef<
 	isFullWidth = false,
 	isFixedHeight = true,
 	width,
+	regex,
+	regexErrorMessage = "Invalid character",
+	onChange,
 	...props
 }, ref) => {
+	const pattern = useMemo(
+		() => (regex ? (typeof regex === "string" ? new RegExp(regex) : regex) : undefined),
+		[regex],
+	)
+
+	// Transient hint shown when a keystroke is rejected by `regex`. It auto-clears
+	// shortly after the user stops typing invalid characters.
+	const [regexError, setRegexError] = useState(false)
+	const regexErrorTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+	useEffect(() => () => {
+		if (regexErrorTimer.current) clearTimeout(regexErrorTimer.current)
+	}, [])
+
 	// const hasError = error || !!errorMessage
-	const hasError = useMemo(() => error || !!errorMessage, [error, errorMessage])
-	const displayHelperText = hasError ? errorMessage : helperText
+	const hasError = useMemo(
+		() => error || !!errorMessage || regexError,
+		[error, errorMessage, regexError],
+	)
+	const displayHelperText = hasError
+		? (errorMessage || (regexError ? regexErrorMessage : undefined))
+		: helperText
+
+	const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
+		// Reject any change that would leave the field holding a value that does
+		// not match the pattern. An empty value is always allowed so the field
+		// can be cleared. Surface a brief error hint on rejection.
+		if (pattern && event.target.value !== "" && !pattern.test(event.target.value)) {
+			setRegexError(true)
+			if (regexErrorTimer.current) clearTimeout(regexErrorTimer.current)
+			regexErrorTimer.current = setTimeout(() => setRegexError(false), 1500)
+			return
+		}
+		setRegexError(false)
+		onChange?.(event)
+	}
 
 	return (
 		<Box
@@ -77,6 +113,7 @@ const TextFieldBase = forwardRef<
 				// )}
 
 				{...props}
+				onChange={handleChange}
 				{...(hasError && { 'data-error': 'true' })}
 			/>
 			{/* {String(hasError)} */}

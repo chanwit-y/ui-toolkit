@@ -18,6 +18,9 @@ export class TextField<M extends TModelMaster, A extends TApiMaster<M>>
       form: this._context.form,
       label: props.label,
       dataType: props.dataType,
+      placeholder: props.placeholder,
+      regex: props.regex,
+      regexErrorMessage: props.regexErrorMessage,
     });
   }
 }

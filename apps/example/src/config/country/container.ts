@@ -1903,6 +1903,131 @@ export const containerCountryTypography: Container = {
   gap: "3",
 };
 
+/**
+ * Regex demo bins — each TextField uses the `regex` prop to restrict input.
+ * Any keystroke that would make the value not match the pattern is rejected,
+ * so the field can never hold an invalid character (an empty value is always
+ * allowed so the field can be cleared).
+ */
+export const countryRegexBins: Bin[] = [
+  {
+    sm: "12",
+    md: "12",
+    lg: "12",
+    xl: "12",
+    type: "text",
+    justifySelf: "start",
+    alignSelf: "end",
+    element: {
+      text: "Regex-restricted inputs",
+      isLabel: true,
+    },
+  },
+  {
+    sm: "12",
+    md: "6",
+    lg: "6",
+    xl: "6",
+    type: "textfield",
+    justifySelf: "stretch",
+    alignSelf: "stretch",
+    element: {
+      name: "lettersOnly",
+      label: "Letters only",
+      dataType: "text",
+      isRequired: false,
+      errorMessage: "",
+      placeholder: "abcDEF",
+      regex: "^[A-Za-z]*$",
+      regexErrorMessage: "Only letters (A–Z) are allowed",
+    },
+  },
+  {
+    sm: "12",
+    md: "6",
+    lg: "6",
+    xl: "6",
+    type: "textfield",
+    justifySelf: "stretch",
+    alignSelf: "stretch",
+    element: {
+      name: "digitsOnly",
+      label: "Digits only",
+      dataType: "text",
+      isRequired: false,
+      errorMessage: "",
+      placeholder: "123456",
+      regex: "^[0-9]*$",
+      regexErrorMessage: "Only digits (0–9) are allowed",
+    },
+  },
+  {
+    sm: "12",
+    md: "6",
+    lg: "6",
+    xl: "6",
+    type: "textfield",
+    justifySelf: "stretch",
+    alignSelf: "stretch",
+    element: {
+      name: "countryCode",
+      label: "Country code (upper-case letters)",
+      dataType: "text",
+      isRequired: false,
+      errorMessage: "",
+      placeholder: "TH",
+      regex: "^[A-Z]*$",
+      regexErrorMessage: "Only upper-case letters (A–Z) are allowed",
+    },
+  },
+  {
+    sm: "12",
+    md: "6",
+    lg: "6",
+    xl: "6",
+    type: "textfield",
+    justifySelf: "stretch",
+    alignSelf: "stretch",
+    element: {
+      name: "phone",
+      label: "Phone (digits, +, -, space)",
+      dataType: "tel",
+      isRequired: false,
+      errorMessage: "",
+      placeholder: "+66 2-123-4567",
+      regex: "^[0-9+\\-\\s]*$",
+      regexErrorMessage: "Only digits, +, - and spaces are allowed",
+    },
+  },
+  {
+    sm: "12",
+    md: "6",
+    lg: "6",
+    xl: "6",
+    type: "textfield",
+    justifySelf: "stretch",
+    alignSelf: "stretch",
+    element: {
+      name: "email",
+      label: "Email",
+      dataType: "email",
+      isRequired: false,
+      errorMessage: "",
+      placeholder: "name@example.com",
+      regex: "^[A-Za-z0-9._%+\\-]*@?[A-Za-z0-9.\\-]*\\.?[A-Za-z]*$",
+    },
+  },
+];
+
+export const containerCountryRegex: Container = {
+  id: "d4e5f6a7-b8c9-0123-def0-345678901234",
+  name: "CountryRegex",
+  isArray: false,
+  bins: countryRegexBins,
+  ...DEFAULT_CONTAINER_GRID,
+  gap: "3",
+};
+
 export const groupList: Bin[] = [
   {
     sm: "12",
@@ -1929,6 +2054,11 @@ export const groupList: Bin[] = [
           label: "Typography",
           value: "typography",
           container: containerCountryTypography,
+        },
+        {
+          label: "Regex",
+          value: "regex",
+          container: containerCountryRegex,
         },
       ],
     },
