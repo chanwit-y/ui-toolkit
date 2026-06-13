@@ -980,7 +980,8 @@ export type TElement =
   | ModalElement
   | ButtonElement
   | TabElement
-  | PaperElement;
+  | PaperElement
+  | DividerElement;
 
 export type BinType =
   | "hidden"
@@ -1006,6 +1007,7 @@ export type BinType =
   | "container"
   | "tab"
   | "paper"
+  | "divider"
   | "empty";
 
 type BoxRange =
@@ -1150,6 +1152,15 @@ export type TabElement = {
   defaultValue?: string;
   className?: string;
   tabs: TabItem[];
+};
+
+export type DividerElement = {
+  /** "fullWidth" spans edge to edge, "inset" indents the left edge, "middle" indents both edges. */
+  variant?: "fullWidth" | "inset" | "middle";
+  /** Margin above and below the line. Number → px, or any CSS length. */
+  spacing?: number | string;
+  className?: string;
+  style?: CSSProperties;
 };
 
 export type PaperElement = {

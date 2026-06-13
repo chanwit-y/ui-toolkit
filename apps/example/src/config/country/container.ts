@@ -734,6 +734,18 @@ const countryOverviewBins: Bin[] = [
   },
   {
     sm: "12",
+    md: "12",
+    lg: "12",
+    xl: "12",
+    type: "divider",
+    justifySelf: "stretch",
+    element: {
+      variant: "fullWidth",
+      spacing: "4px",
+    },
+  },
+  {
+    sm: "12",
     md: "6",
     lg: "4",
     xl: "4",
