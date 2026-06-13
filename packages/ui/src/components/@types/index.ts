@@ -258,6 +258,31 @@ export type RadioButtonProps = BaseComponentProps<
   }
 >;
 
+/**
+ * Props for the engine-aware radio (RadioButtonBase2): the static-options
+ * RadioButtonProps plus API-driven options and observe/enabledWhen reactivity.
+ * Mirrors AutocompleteProps2's data-field surface.
+ */
+export type RadioButtonProps2 = RadioButtonProps & {
+  name?: string;
+  dataType?: string;
+  /** Bound API caller (provided by the engine). */
+  api?: APIFunction;
+  /** API config (name/paths/query/body/params) the caller was built from. */
+  apiInfo?: API;
+  /** Maps a fetched object onto an option: value/label keys. */
+  keys?: { value: string; label: string };
+  /** Fetch options once; don't refetch on observe changes. */
+  isSingleLoad?: boolean;
+  /** Publish this field's value so other fields can observe it. */
+  canObserve?: boolean;
+  /** Observe another field's value to feed this radio's API params. */
+  observeTo?: string;
+  /** Conditionally disable the group based on another field. */
+  enabledWhen?: CondExpression;
+  onChange?: (value: string) => void;
+};
+
 export type AutocompleteItem = {
   id: string;
   label: string;
@@ -961,8 +986,46 @@ export type UploadFileElement = {
   errorMessage?: string;
 } & UploadFileProps;
 
+/**
+ * Declarative radio config. Like AutocompleteElement: options can be static
+ * (`options`) or API-driven (`api` + `keys`), with optional observe/enabledWhen
+ * reactivity. Rendered by core/radio.ts.
+ */
+export type RadioElement = {
+  name: string;
+  dataType: string;
+  label?: string;
+  helperText?: string;
+  isRequired: boolean;
+  errorMessage?: string;
+  size?: "1" | "2" | "3";
+  variant?: "classic" | "surface" | "soft";
+  orientation?: "horizontal" | "vertical";
+  defaultValue?: string;
+  /** Static options. Used when no `api` is provided. */
+  options?: Array<{
+    value: string;
+    label: string;
+    disabled?: boolean;
+    helperText?: string;
+  }>;
+  /** API-driven options. When present, fetched rows are mapped via `keys`. */
+  api?: API;
+  /** Maps a fetched object onto an option. */
+  keys?: { value: string; label: string };
+  /** Fetch options once; don't refetch on observe changes. */
+  isSingleLoad?: boolean;
+  /** Publish this field's value so other fields can observe it. */
+  canObserve?: boolean;
+  /** Observe another field's value to feed this radio's API params. */
+  observeTo?: string;
+  /** Conditionally disable the group based on another field. */
+  enabledWhen?: CondExpression;
+};
+
 export type TElement =
   | HiddenElement
+  | RadioElement
   | AutocompleteElement
   | TextFieldElement
   | TextareaElement

@@ -51,7 +51,7 @@ const RadioButtonBase = forwardRef<
 	}
 
 	return (
-		<Box className="w-full h-16">
+		<Box className="w-full">
 			{label && (
 				<Text as="label" size="2" weight="medium" className="block mb-2">
 					{label}

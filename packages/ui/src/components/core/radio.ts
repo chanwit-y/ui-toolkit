@@ -1,8 +1,8 @@
 import type { ElementContext } from "./elementBuilder";
-import type { IElement, RadioButtonProps } from "../@types";
+import type { IElement, RadioElement } from "../@types";
 
 import { createElement, type JSX } from "react";
-import { RadioButton as RadioButtonComponent } from "../form/RadioButton";
+import { RadioButtonF2 } from "../form/RadioButton";
 import type { TApiMaster } from "../../api/APIMaster";
 import type { TModelMaster } from "../../model/master";
 
@@ -12,19 +12,28 @@ export class Radio<M extends TModelMaster, A extends TApiMaster<M>>
   constructor(private _context: ElementContext<M, A>) {}
 
   create(): JSX.Element {
-    const props = this._context.props as RadioButtonProps & { name: string };
-    return createElement(RadioButtonComponent, {
+    const props = this._context.props as RadioElement;
+    return createElement(RadioButtonF2 as any, {
       name: props.name,
+      dataType: props.dataType,
       form: this._context.form,
       label: props.label,
       helperText: props.helperText,
-      error: props.error,
       errorMessage: props.errorMessage,
       size: props.size,
       variant: props.variant,
       defaultValue: props.defaultValue,
-      options: props.options,
       orientation: props.orientation,
+      options: props.options,
+      // API-driven options (caller bound by the engine + its config)
+      api: this._context.api,
+      apiInfo: props.api,
+      keys: props.keys,
+      isSingleLoad: props.isSingleLoad,
+      // reactivity
+      canObserve: props.canObserve,
+      observeTo: props.observeTo,
+      enabledWhen: props.enabledWhen,
     });
   }
 }
