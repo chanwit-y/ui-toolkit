@@ -33,6 +33,8 @@ export * from "./components/Icon";
 // export * from "./components/Icon.example";
 export * from "./components/Modal";
 export * from "./components/Tab";
+export * from "./components/Paper";
+export type { PaperProps } from "./components/Paper";
 export * from "./components/ConfirmBox";
 
 export * from "./components/Snackbar";

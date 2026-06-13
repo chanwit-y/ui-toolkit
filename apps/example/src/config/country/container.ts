@@ -1903,6 +1903,102 @@ export const containerCountryTypography: Container = {
   gap: "3",
 };
 
+/** Content rendered inside each Paper surface in the Paper demo tab. */
+const paperCardContent: Bin[] = [
+  {
+    sm: "12",
+    md: "12",
+    lg: "12",
+    xl: "12",
+    type: "typography",
+    justifySelf: "start",
+    alignSelf: "start",
+    element: {
+      text: "Paper surface",
+      variant: "subtitle1",
+      weight: "bold",
+    },
+  },
+  {
+    sm: "12",
+    md: "12",
+    lg: "12",
+    xl: "12",
+    type: "text",
+    justifySelf: "start",
+    alignSelf: "start",
+    element: {
+      text: "Paper wraps a nested container and renders it on an elevated surface, mirroring MUI's Paper.",
+    },
+  },
+];
+
+const containerPaperCardContent: Container = {
+  id: "p1a2b3c4-d5e6-7890-abcd-ef1234567890",
+  name: "PaperCardContent",
+  isArray: false,
+  bins: paperCardContent,
+  ...DEFAULT_CONTAINER_GRID,
+  gap: "2",
+};
+
+/** Paper demo bins — shows the elevation scale and the outlined variant side by side. */
+export const countryPaperBins: Bin[] = [
+  {
+    sm: "12",
+    md: "4",
+    lg: "4",
+    xl: "4",
+    type: "paper",
+    justifySelf: "stretch",
+    alignSelf: "start",
+    element: {
+      container: containerPaperCardContent,
+      elevation: 1,
+      variant: "elevation",
+      style: { padding: "20px" },
+    },
+  },
+  {
+    sm: "12",
+    md: "4",
+    lg: "4",
+    xl: "4",
+    type: "paper",
+    justifySelf: "stretch",
+    alignSelf: "start",
+    element: {
+      container: containerPaperCardContent,
+      elevation: 8,
+      variant: "elevation",
+      style: { padding: "20px" },
+    },
+  },
+  {
+    sm: "12",
+    md: "4",
+    lg: "4",
+    xl: "4",
+    type: "paper",
+    justifySelf: "stretch",
+    alignSelf: "start",
+    element: {
+      container: containerPaperCardContent,
+      variant: "outlined",
+      style: { padding: "20px" },
+    },
+  },
+];
+
+export const containerCountryPaper: Container = {
+  id: "d4e5f6g7-h8i9-0123-defg-h34567890123",
+  name: "CountryPaper",
+  isArray: false,
+  bins: countryPaperBins,
+  ...DEFAULT_CONTAINER_GRID,
+  gap: "3",
+};
+
 /**
  * Regex demo bins — each TextField uses the `regex` prop to restrict input.
  * Any keystroke that would make the value not match the pattern is rejected,
@@ -2028,7 +2124,8 @@ export const containerCountryRegex: Container = {
   gap: "3",
 };
 
-export const groupList: Bin[] = [
+/** The country tabs, extracted so they can be wrapped in a Paper surface. */
+const countryTabsBins: Bin[] = [
   {
     sm: "12",
     md: "12",
@@ -2060,7 +2157,39 @@ export const groupList: Bin[] = [
           value: "regex",
           container: containerCountryRegex,
         },
+        {
+          label: "Paper",
+          value: "paper",
+          container: containerCountryPaper,
+        },
       ],
+    },
+  },
+];
+
+export const containerCountryTabs: Container = {
+  id: "e5f6g7h8-i9j0-1234-efgh-i45678901234",
+  name: "CountryTabs",
+  isArray: false,
+  bins: countryTabsBins,
+  ...DEFAULT_CONTAINER_GRID,
+  gap: "3",
+};
+
+export const groupList: Bin[] = [
+  {
+    sm: "12",
+    md: "12",
+    lg: "12",
+    xl: "12",
+    type: "paper",
+    justifySelf: "stretch",
+    alignSelf: "stretch",
+    element: {
+      container: containerCountryTabs,
+      elevation: 2,
+      variant: "elevation",
+      style: { padding: "16px" },
     },
   },
   {

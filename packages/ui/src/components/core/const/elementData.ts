@@ -18,6 +18,7 @@ import { Textarea } from "../textarea";
 import { Text } from "../text";
 import { Typography } from "../typography";
 import { Tab } from "../tab";
+import { Paper } from "../paper";
 import { UploadImage } from "../uploadImage";
 import { UploadFile } from "../uploadFile";
 // import type { IElement } from "../@types";
@@ -50,6 +51,7 @@ export const ElementData = {
 	text: Text,
 	typography: Typography,
 	tab: Tab,
+	paper: Paper,
 	uploadimage: UploadImage,
 	uploadfile: UploadFile,
 }

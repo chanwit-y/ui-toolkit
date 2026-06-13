@@ -1,6 +1,7 @@
 import type {
   ComponentPropsWithoutRef,
   Context,
+  CSSProperties,
   ElementType,
   JSX,
 } from "react";
@@ -978,7 +979,8 @@ export type TElement =
   | UploadFileElement
   | ModalElement
   | ButtonElement
-  | TabElement;
+  | TabElement
+  | PaperElement;
 
 export type BinType =
   | "hidden"
@@ -1003,6 +1005,7 @@ export type BinType =
   | "uploadfile"
   | "container"
   | "tab"
+  | "paper"
   | "empty";
 
 type BoxRange =
@@ -1147,6 +1150,19 @@ export type TabElement = {
   defaultValue?: string;
   className?: string;
   tabs: TabItem[];
+};
+
+export type PaperElement = {
+  /** Nested content rendered inside the elevated surface. */
+  container: Container;
+  /** Shadow depth on the elevation scale (0–24). Ignored when variant is "outlined". */
+  elevation?: number;
+  /** "elevation" draws a shadow; "outlined" draws a 1px border and no shadow. */
+  variant?: "elevation" | "outlined";
+  /** When true, corners are not rounded. */
+  square?: boolean;
+  className?: string;
+  style?: CSSProperties;
 };
 
 export type Modals = Record<string, ModalElement>;
