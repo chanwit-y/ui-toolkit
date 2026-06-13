@@ -228,7 +228,7 @@ const DatePickerBase = forwardRef<
 						radiusClass,
 						hasError
 							? "border-red-300 hover:border-red-400"
-							: "border-gray-300 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent",
+							: "border-gray-300 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--accent-8,#3b82f6)] focus:border-transparent",
 						disabled && "opacity-60 cursor-not-allowed bg-gray-50",
 						className
 					)}

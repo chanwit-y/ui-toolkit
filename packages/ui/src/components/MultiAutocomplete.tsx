@@ -391,7 +391,7 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 					onClick={openDropdown}
 					className={cn("w-full min-h-[40px] px-4 py-2 text-sm flex items-center justify-between",
 						"bg-white border rounded-md shadow-sm transition-all duration-200",
-						"text-left focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+						"text-left focus:ring-2 focus:ring-[var(--accent-8,#3b82f6)] focus:border-transparent",
 						hasError
 							? "border-red-300 hover:border-red-400"
 							: "border-gray-300 hover:border-gray-400",
@@ -419,13 +419,13 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 									{selectedItems.slice(0, showSelectedCount ? 10 : 6).map((item) => (
 										<span
 											key={item[idKey]}
-											className="flex items-center justify-between gap-1 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-md max-w-[120px] border border-blue-200"
+											className="flex items-center justify-between gap-1 px-2 py-1 bg-[var(--accent-3,#dbeafe)] text-[var(--accent-12,#1e40af)] text-xs rounded-md max-w-[120px] border border-[var(--accent-6,#bfdbfe)]"
 										>
 											<span className="truncate">{item[displayKey]}</span>
 											<button
 												type="button"
 												onClick={(e) => handleRemoveSelected(String(item[idKey]), e)}
-												className="hover:bg-blue-200 rounded-full p-0.5 flex-shrink-0"
+												className="hover:bg-[var(--accent-4,#bfdbfe)] rounded-full p-0.5 flex-shrink-0"
 											>
 												<X className="h-3 w-3" />
 											</button>
@@ -453,7 +453,7 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 				<div
 					ref={dropdownContainerRef}
 					style={dropdownStyles}
-					className="flex flex-col bg-white border ring-2 ring-blue-400 border-transparent rounded-md shadow-lg overflow-hidden ease-in duration-100 opacity-100 z-[100000]"
+					className="flex flex-col bg-white border ring-2 ring-[var(--accent-8,#60a5fa)] border-transparent rounded-md shadow-lg overflow-hidden ease-in duration-100 opacity-100 z-[100000]"
 				>
 					<div className="flex items-center border-b border-gray-100 px-3">
 						<Search className="h-4 w-4 text-gray-400 mr-2" />
@@ -502,12 +502,12 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 										isDisabled
 											? "text-gray-400 cursor-not-allowed bg-gray-50"
 											: isSelected
-												? "bg-blue-50 text-blue-700 font-semibold"
+												? "bg-[var(--accent-3,#eff6ff)] text-[var(--accent-11,#1d4ed8)] font-semibold"
 												: "text-gray-700 hover:bg-gray-50",
-										isCurrent ? "bg-blue-50 text-blue-700 font-semibold" : ""
+										isCurrent ? "bg-[var(--accent-3,#eff6ff)] text-[var(--accent-11,#1d4ed8)] font-semibold" : ""
 									)}>
 									{item[displayKey]}
-									{isCurrent && (<Check className="h-4 w-4 text-blue-600 ml-2 flex-shrink-0" />)}
+									{isCurrent && (<Check className="h-4 w-4 text-[var(--accent-11,#2563eb)] ml-2 flex-shrink-0" />)}
 								</button>)
 							})}
 					</div>

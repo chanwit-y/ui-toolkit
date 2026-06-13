@@ -89,7 +89,7 @@ const RadioButtonBase = forwardRef<
 										"transition duration-200 ease-in-out",
 										hasError
 											? "focus:outline-none focus:ring-2 focus:ring-red-500 data-[state=checked]:border-red-500"
-											: "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+											: "focus:outline-none focus:ring-2 focus:ring-[var(--accent-8,#3b82f6)] focus:border-transparent",
 										option.disabled && "opacity-50 cursor-not-allowed"
 									)}
 								/>

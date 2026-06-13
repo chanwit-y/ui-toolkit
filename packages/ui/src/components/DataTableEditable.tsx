@@ -87,7 +87,8 @@ export const DataTableEditable = <T extends Record<string, any>>({
 
 	const updateFnCtxs = useStord((state) => state.updateFnCtxs)
 
-	const editButtonColor = (theme.components.dataTable?.editButtonColor as ThemeProps['accentColor']) || 'blue'
+	// Edit icon follows the theme, same as DataTable2.
+	const editButtonColor = (theme.components.dataTable?.editButtonColor as ThemeProps['accentColor']) || (theme.components.button?.color as ThemeProps['accentColor']) || 'blue'
 	const saveButtonColor: ThemeProps['accentColor'] = 'green'
 	const cancelButtonColor: ThemeProps['accentColor'] = 'gray'
 
@@ -483,7 +484,7 @@ export const DataTableEditable = <T extends Record<string, any>>({
 						onClick={startAdd}
 						aria-label="Add row"
 						title="Add row"
-						className="flex items-center justify-center mb-2 p-2 text-white rounded cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-[var(--violet-10)] hover:bg-[var(--violet-11)]"
+						className="flex items-center justify-center mb-2 p-2 text-white rounded cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-[var(--accent-10,var(--violet-10))] hover:bg-[var(--accent-11,var(--violet-11))]"
 					>
 						<Icon icon="puls" size={16} />
 					</button>
@@ -533,7 +534,7 @@ export const DataTableEditable = <T extends Record<string, any>>({
 																</div>
 																<button
 																	onClick={() => header.column.setFilterValue(undefined)}
-																	className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+																	className="text-xs text-[var(--accent-11,#2563eb)] hover:text-[var(--accent-12,#1e40af)] font-medium"
 																>
 																	Clear All
 																</button>
@@ -609,7 +610,7 @@ export const DataTableEditable = <T extends Record<string, any>>({
 
 				<tbody className={`datatable-tbody ${isPageChanging ? 'page-changing' : ''} ${isFiltering ? 'filtering' : ''}`}>
 					{editingRowId === NEW_ROW_ID && (
-						<tr className="datatable-body-row bg-blue-50/50">
+						<tr className="datatable-body-row bg-[var(--accent-a3,#eff6ff80)]">
 							{visibleColumns.map((column) => {
 								if (column.id === '__actions__') {
 									return (
@@ -647,7 +648,7 @@ export const DataTableEditable = <T extends Record<string, any>>({
 						: table.getPaginationRowModel().rows.map(row => (
 							<tr key={row.id} className={`datatable-body-row
 							${rowHoverBgColors[theme.components.dataTable?.rowHoverColor || 'blue']}
-							${editingRowId === row.id ? 'bg-blue-50/50' : ''}`}>
+							${editingRowId === row.id ? 'bg-[var(--accent-a3,#eff6ff80)]' : ''}`}>
 								{row.getVisibleCells().map(cell => {
 									const col = columnMap[cell.column.id]
 									const isEditingCell = editingRowId === row.id && col && (col.editable ?? true)
@@ -674,7 +675,7 @@ export const DataTableEditable = <T extends Record<string, any>>({
 								onChange={e => {
 									table.setPageSize(Number(e.target.value))
 								}}
-								className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 hover:bg-blue-300"
+								className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent-8,#3b82f6)] hover:bg-[var(--accent-5,#93c5fd)]"
 							>
 								{[5, 10, 20, 30, 40, 50].map(pageSize => (
 									<option key={pageSize} value={pageSize}>

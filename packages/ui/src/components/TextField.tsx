@@ -101,7 +101,7 @@ const TextFieldBase = forwardRef<
 					// hasError && "border-red-500 focus-within:ring-red-500 focus-within:border-red-500",
 					//focus:outline-none
 					// hasError ? "border border-red-500 focus:outline-none  focus:border-red-500" : "focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent",
-					hasError ? "border border-red-300  hover:border-red-400  " : "focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent",
+					hasError ? "border border-red-300  hover:border-red-400  " : "focus:outline-none focus:ring-2 focus:ring-[var(--accent-8,#3b82f6)] focus:border-transparent",
 					className)}
 				// className="border border-amber-600"
 				// className={cn(

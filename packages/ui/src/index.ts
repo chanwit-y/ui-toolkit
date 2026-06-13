@@ -64,5 +64,7 @@ export * from "./util/file";
 export { uploadFileToApi, deleteFileFromApi } from "./util/uploadApi";
 
 export type { Bin, Container, DataTableElement } from "./components/@types"
+export type { ThemeComponents, ThemeProviderProps } from "./components/@types"
+export type { ThemeProps } from "@radix-ui/themes"
 export type * from "./model/master"
 export * from "./model/master"

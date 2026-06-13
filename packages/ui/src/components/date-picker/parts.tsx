@@ -75,14 +75,14 @@ export const CalendarGrid = ({
 					aria-pressed={isSelected}
 					className={cn(
 						"h-8 w-full flex items-center justify-center text-xs rounded-md transition-colors",
-						"focus:outline-none focus:ring-2 focus:ring-blue-500",
+						"focus:outline-none focus:ring-2 focus:ring-[var(--accent-8,#3b82f6)]",
 						!isCurrentMonth && "text-gray-300",
 						isCurrentMonth &&
 							!isSelected &&
 							!disabledDay &&
-							"text-gray-700 hover:bg-blue-50 hover:text-blue-700",
-						isSelected && "bg-blue-600 text-white font-semibold hover:bg-blue-700",
-						!isSelected && isToday && "border border-blue-500",
+							"text-gray-700 hover:bg-[var(--accent-3,#eff6ff)] hover:text-[var(--accent-11,#1d4ed8)]",
+						isSelected && "bg-[var(--accent-9,#2563eb)] text-white font-semibold hover:bg-[var(--accent-10,#1d4ed8)]",
+						!isSelected && isToday && "border border-[var(--accent-8,#3b82f6)]",
 						disabledDay &&
 							"opacity-40 cursor-not-allowed hover:bg-transparent hover:text-gray-300"
 					)}
@@ -103,7 +103,7 @@ export const CalendarFooter = ({
 		<button
 			type="button"
 			onClick={onToday}
-			className="text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors"
+			className="text-xs font-medium text-[var(--accent-11,#2563eb)] hover:text-[var(--accent-11,#1d4ed8)] transition-colors"
 		>
 			Today
 		</button>
@@ -138,7 +138,7 @@ export const CalendarDropdown = ({
 	<div
 		ref={dropdownRef}
 		style={dropdownStyles}
-		className="date-picker-dropdown bg-white border ring-2 ring-blue-400 border-transparent rounded-md shadow-lg p-3"
+		className="date-picker-dropdown bg-white border ring-2 ring-[var(--accent-8,#60a5fa)] border-transparent rounded-md shadow-lg p-3"
 	>
 		<CalendarHeader
 			cursor={cursor}

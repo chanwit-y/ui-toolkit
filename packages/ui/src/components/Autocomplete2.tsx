@@ -435,7 +435,7 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 			<div
 				ref={dropdownContainerRef}
 				style={dropdownStyles}
-				className="dropdown flex flex-col bg-white border ring-2 ring-blue-400 border-transparent rounded-md shadow-lg overflow-hidden ease-in duration-100 opacity-100 z-[100000]"
+				className="dropdown flex flex-col bg-white border ring-2 ring-[var(--accent-8,#60a5fa)] border-transparent rounded-md shadow-lg overflow-hidden ease-in duration-100 opacity-100 z-[100000]"
 			>
 				<div className="flex items-center border-b border-gray-100 px-3">
 					<Search className="h-4 w-4 text-gray-400 mr-2" />
@@ -545,9 +545,9 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 								className={cn("w-full flex items-center justify-between px-3 text-sm text-left transition-colors cursor-pointer",
 									itemSubtitleText ? "py-2" : "py-2",
 									isSelected
-										? "bg-blue-50 text-blue-700 font-semibold"
+										? "bg-[var(--accent-3,#eff6ff)] text-[var(--accent-11,#1d4ed8)] font-semibold"
 										: "text-gray-700 hover:bg-gray-50",
-									isCurrent ? "bg-blue-50 text-blue-700 font-semibold" : ""
+									isCurrent ? "bg-[var(--accent-3,#eff6ff)] text-[var(--accent-11,#1d4ed8)] font-semibold" : ""
 								)}>
 								<div className="flex items-center gap-2 flex-1 min-w-0">
 									{itemAvatarProps && <Avatar 
@@ -565,7 +565,7 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 										)}
 									</div>
 								</div>
-								{isCurrent && (<Check className="h-4 w-4 text-blue-600 ml-2 flex-shrink-0" />)}
+								{isCurrent && (<Check className="h-4 w-4 text-[var(--accent-11,#2563eb)] ml-2 flex-shrink-0" />)}
 							</button>)
 						})}
 				</div>
@@ -594,7 +594,7 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 					disabled={!isObserveEnabled}
 					className={cn("w-full h-[40px] px-4 text-sm flex items-center justify-between",
 						"bg-white border rounded-md shadow-sm transition-all duration-200",
-						"text-left focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+						"text-left focus:ring-2 focus:ring-[var(--accent-8,#3b82f6)] focus:border-transparent",
 						hasError
 							? "border-red-300 hover:border-red-400"
 							: "border-gray-300 hover:border-gray-400",

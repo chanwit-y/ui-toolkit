@@ -185,7 +185,7 @@ const UploadImageBase = forwardRef<
 			{uploading ? (
 				<div
 					className={cn(
-						"flex flex-col items-center justify-center gap-2 rounded-md border-2 border-dashed border-blue-400 bg-blue-50/50",
+						"flex flex-col items-center justify-center gap-2 rounded-md border-2 border-dashed border-[var(--accent-8,#60a5fa)] bg-[var(--accent-a3,#eff6ff80)]",
 						shape === "circle" ? "rounded-full mx-auto" : ""
 					)}
 					style={
@@ -194,8 +194,8 @@ const UploadImageBase = forwardRef<
 							: { height: `${previewHeight}px` }
 					}
 				>
-					<Loader2 className="h-8 w-8 text-blue-500 animate-spin" />
-					<Text size="2" className="text-blue-600">Uploading...</Text>
+					<Loader2 className="h-8 w-8 text-[var(--accent-11,#2563eb)] animate-spin" />
+					<Text size="2" className="text-[var(--accent-11,#2563eb)]">Uploading...</Text>
 				</div>
 			) : previewSrc ? (
 				<div
@@ -253,8 +253,8 @@ const UploadImageBase = forwardRef<
 						"flex flex-col items-center justify-center gap-2 rounded-md border-2 border-dashed transition duration-200 ease-in-out",
 						disabled
 							? "cursor-not-allowed bg-gray-50 border-gray-200 text-gray-400"
-							: "cursor-pointer text-gray-500 hover:border-blue-400 hover:bg-blue-50/50",
-						isDragging ? "border-blue-500 bg-blue-50" : "border-gray-300",
+							: "cursor-pointer text-gray-500 hover:border-[var(--accent-8,#60a5fa)] hover:bg-[var(--accent-a3,#eff6ff80)]",
+						isDragging ? "border-[var(--accent-8,#3b82f6)] bg-[var(--accent-3,#eff6ff)]" : "border-gray-300",
 						hasError && "border-red-300 hover:border-red-400"
 					)}
 					style={{ height: `${previewHeight}px` }}

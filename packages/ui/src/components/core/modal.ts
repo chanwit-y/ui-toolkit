@@ -28,7 +28,9 @@ export class Modal<M extends TModelMaster, A extends TApiMaster<M>>
 
 
 
-    const triggerCtx = new ElementContext(props.trigger).Fns(this._context.fns)
+    const triggerCtx = new ElementContext(props.trigger)
+      .Fns(this._context.fns)
+      .Theme(this._context.theme);
     const trigger = new Button(triggerCtx).create();
 
 

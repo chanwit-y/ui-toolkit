@@ -378,11 +378,11 @@ export const DateRangePickerBase = forwardRef<HTMLButtonElement, DateRangePicker
 						className={cn(
 							"h-8 w-full flex items-center justify-center text-xs transition-colors",
 							isStart || isEnd
-								? "bg-blue-600 text-white font-semibold rounded-full"
+								? "bg-[var(--accent-9,#2563eb)] text-white font-semibold rounded-full"
 								: inRange || isHoverRange
-									? "bg-blue-50 text-gray-700 rounded-none"
+									? "bg-[var(--accent-3,#eff6ff)] text-gray-700 rounded-none"
 									: "rounded-full text-gray-700",
-							isToday && !isStart && !isEnd && "border border-blue-500 font-semibold",
+							isToday && !isStart && !isEnd && "border border-[var(--accent-8,#3b82f6)] font-semibold",
 							!isDayDisabled && !isStart && !isEnd && !inRange && !isHoverRange && "hover:bg-gray-100",
 							isDayDisabled && "opacity-40 cursor-not-allowed",
 						)}
@@ -488,7 +488,7 @@ export const DateRangePickerBase = forwardRef<HTMLButtonElement, DateRangePicker
 							radiusClass,
 							hasError
 								? "border-red-300 hover:border-red-400"
-								: "border-gray-300 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent",
+								: "border-gray-300 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--accent-8,#3b82f6)] focus:border-transparent",
 							disabled && "opacity-60 cursor-not-allowed bg-gray-50",
 							className,
 						)}
@@ -532,7 +532,7 @@ export const DateRangePickerBase = forwardRef<HTMLButtonElement, DateRangePicker
 							role="dialog"
 							aria-label="Choose date range"
 							style={dropdownStyles}
-							className="date-range-picker-dropdown bg-white border ring-2 ring-blue-400 border-transparent rounded-md shadow-lg z-[100000] w-max max-w-[92vw] p-1"
+							className="date-range-picker-dropdown bg-white border ring-2 ring-[var(--accent-8,#60a5fa)] border-transparent rounded-md shadow-lg z-[100000] w-max max-w-[92vw] p-1"
 						>
 							<div className="flex">
 								<div className="flex flex-col gap-1 p-3 border-r border-gray-100 min-w-[140px]">

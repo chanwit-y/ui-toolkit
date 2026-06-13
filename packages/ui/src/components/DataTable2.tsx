@@ -180,8 +180,8 @@ export const DataTable2 = <T extends Record<string, any>>({
 	const dataCtx = useData()
 
 	// Prepend a default display column with an icon
-	const editButtonColor = (theme.components.button?.color as ThemeProps['accentColor']) || 'blue'
-	const deleteButtonColor: ThemeProps['accentColor'] = 'red'
+	const editButtonColor = (theme.components.dataTable?.editButtonColor as ThemeProps['accentColor']) || (theme.components.button?.color as ThemeProps['accentColor']) || 'blue'
+	// Delete icon is a fixed red (matching DataTableEditable), not theme-driven.
 
 	const enhancedColumns = useMemo<ColumnDef<T, unknown>[]>(() => {
 		const actionIconColumn: ColumnDef<T, unknown> = {
@@ -207,7 +207,7 @@ export const DataTable2 = <T extends Record<string, any>>({
 					{canDelete && (
 						<button
 							type="button"
-							className={getActionButtonClassName(deleteButtonColor)}
+							className={`datatable-action-button ${tableBgColors.red} ${tableHoverBgColors.red} text-red-700 hover:ring-1 ring-red-100`}
 							aria-label="Delete row"
 							onClick={() => {
 								setSelectedRow(row.original)
@@ -406,7 +406,7 @@ export const DataTable2 = <T extends Record<string, any>>({
 																</div>
 																<button
 																	onClick={() => header.column.setFilterValue(undefined)}
-																	className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+																	className="text-xs text-[var(--accent-11,#2563eb)] hover:text-[var(--accent-12,#1e40af)] font-medium"
 																>
 																	Clear All
 																</button>
@@ -521,7 +521,7 @@ export const DataTable2 = <T extends Record<string, any>>({
 								onChange={e => {
 									table.setPageSize(Number(e.target.value))
 								}}
-								className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 hover:bg-blue-300"
+								className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent-8,#3b82f6)] hover:bg-[var(--accent-5,#93c5fd)]"
 							>
 								{[5, 10, 20, 30, 40, 50].map(pageSize => (
 									<option key={pageSize} value={pageSize}>

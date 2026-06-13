@@ -593,7 +593,7 @@ const DraggableRow = ({ row, children }: DraggableRowProps) => {
 			style={style}
 			{...attributes}
 			className={`hover:bg-gray-50 transition-colors duration-200 ${
-				isDragging ? 'bg-blue-50 shadow-lg z-10' : ''
+				isDragging ? 'bg-[var(--accent-3,#eff6ff)] shadow-lg z-10' : ''
 			}`}
 		>
 			<td className="px-2 py-4 whitespace-nowrap text-sm text-gray-400">
@@ -710,7 +710,7 @@ export const DataTable = () => {
 					<input
 						value={globalFilter ?? ''}
 						onChange={(e) => setGlobalFilter(e.target.value)}
-						className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+						className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent-8,#3b82f6)] focus:border-transparent"
 						placeholder="Search all columns..."
 					/>
 					<span className="text-sm text-gray-500">
@@ -764,7 +764,7 @@ export const DataTable = () => {
 																</div>
 																<button
 																	onClick={() => header.column.setFilterValue(undefined)}
-																	className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+																	className="text-xs text-[var(--accent-11,#2563eb)] hover:text-[var(--accent-12,#1e40af)] font-medium"
 																>
 																	Clear All
 																</button>
@@ -791,7 +791,7 @@ export const DataTable = () => {
 																					
 																					header.column.setFilterValue(newValues.length > 0 ? newValues : undefined);
 																				}}
-																				className="text-blue-600 focus:ring-blue-500 rounded"
+																				className="text-[var(--accent-11,#2563eb)] focus:ring-[var(--accent-8,#3b82f6)] rounded"
 																			/>
 																			<span>{value}</span>
 																		</label>
@@ -870,7 +870,7 @@ export const DataTable = () => {
 								onChange={e => {
 									table.setPageSize(Number(e.target.value))
 								}}
-								className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+								className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent-8,#3b82f6)]"
 							>
 								{[5, 10, 20, 30, 40, 50].map(pageSize => (
 									<option key={pageSize} value={pageSize}>
@@ -943,7 +943,7 @@ export const DataTable = () => {
 											onClick={() => table.setPageIndex(Number(page) - 1)}
 											className={`px-3 py-1 text-sm border rounded transition-colors ${
 												currentPage === page
-													? 'bg-blue-500 text-white border-blue-500'
+													? 'bg-[var(--accent-9,#3b82f6)] text-white border-[var(--accent-8,#3b82f6)]'
 													: 'border-gray-300 hover:bg-gray-50'
 											}`}
 										>

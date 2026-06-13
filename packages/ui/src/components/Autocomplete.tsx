@@ -253,7 +253,7 @@ const AutocompleteBase = forwardRef<
             "w-full flex items-center justify-between px-4 text-sm h-[40px]",
             "bg-white border rounded-lg shadow-sm transition-all duration-200",
             // "text-left group focus:ring-2 focus:ring-blue-500 focus:border-transparent",
-            "text-left focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+            "text-left focus:ring-2 focus:ring-[var(--accent-8,#3b82f6)] focus:border-transparent",
             hasError
               ? "border-red-300 hover:border-red-400"
               : "border-gray-300 hover:border-gray-400",
@@ -349,7 +349,7 @@ const AutocompleteBase = forwardRef<
               Object.entries(groupedItems).map(([category, categoryItems]) => (
                 <div key={category}>
                   <div className={`px-3 py-1 text-xs font-medium uppercase tracking-wider transition-colors ${
-                    focusedGroup === category ? 'text-blue-600 bg-blue-50' : 'text-gray-500'
+                    focusedGroup === category ? 'text-[var(--accent-11,#2563eb)] bg-[var(--accent-3,#eff6ff)]' : 'text-gray-500'
                   }`}>
                     {category}
                   </div>
@@ -368,7 +368,7 @@ const AutocompleteBase = forwardRef<
                           item.disabled
                             ? 'text-gray-400 cursor-not-allowed'
                             : isSelected
-                            ? 'bg-blue-50 text-blue-700'
+                            ? 'bg-[var(--accent-3,#eff6ff)] text-[var(--accent-11,#1d4ed8)]'
                             : 'text-gray-700 hover:bg-gray-50'
                         }`}
                         role="option"
@@ -378,7 +378,7 @@ const AutocompleteBase = forwardRef<
                       >
                         <span className="font-medium truncate">{item.label}</span>
                         {isCurrent && (
-                          <Check className="h-4 w-4 text-blue-600 ml-2 flex-shrink-0" />
+                          <Check className="h-4 w-4 text-[var(--accent-11,#2563eb)] ml-2 flex-shrink-0" />
                         )}
                       </button>
                     );
