@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "example",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["run", "--cwd", "apps/example", "dev"],
+      "port": 3200
+    }
+  ]
+}
