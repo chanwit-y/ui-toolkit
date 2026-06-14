@@ -302,10 +302,6 @@ export const DataTable2 = <T extends Record<string, any>>({
 		updateFnCtxs("modalEdit", (f: boolean) => setOpenModal(f))
 	}, [name, updateFnCtxs, refetch])
 
-	useEffect(() => {
-		filterRef.current?.focus()
-	}, [filterRef])
-
 	// Handle page change animation
 	useEffect(() => {
 		if (prevPageIndexRef.current !== pagination.pageIndex) {
