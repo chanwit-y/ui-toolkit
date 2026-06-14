@@ -1052,6 +1052,7 @@ export type TElement =
   | ButtonElement
   | TabElement
   | PaperElement
+  | PopoverElement
   | DividerElement;
 
 export type BinType =
@@ -1078,6 +1079,7 @@ export type BinType =
   | "container"
   | "tab"
   | "paper"
+  | "popover"
   | "divider"
   | "empty";
 
@@ -1237,6 +1239,41 @@ export type ModalElement = {
   maxWidth?: string;
   minWidth?: string;
   maxHeight?: string;
+};
+
+/**
+ * A popover trigger described as a mini-Bin: its `type` selects the element
+ * builder and `element` is that builder's config. Lets any element (button,
+ * icon, avatar, text, …) open the popover — not just a button.
+ */
+export type PopoverTrigger = {
+  type: BinType;
+  element: TElement;
+};
+
+/**
+ * Config-driven Popover. The content is a self-contained {@link Container}
+ * (its own form + DataProvider, like a modal), opened by an arbitrary
+ * `trigger` element. Any panel chrome comes from the container's own
+ * `surface`; the popover itself supplies the floating card.
+ */
+export type PopoverElement = {
+  id?: string;
+  container: Container;
+  trigger: PopoverTrigger;
+  placement?:
+    | "top"
+    | "bottom"
+    | "left"
+    | "right"
+    | "top-start"
+    | "top-end"
+    | "bottom-start"
+    | "bottom-end";
+  /** Open on click (default) or hover. Maps to the Popover `trigger` prop. */
+  triggerMode?: "click" | "hover";
+  /** Gap in px between trigger and content. Default: 8. */
+  offset?: number;
 };
 
 export type TabItem = {

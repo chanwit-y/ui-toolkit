@@ -2268,6 +2268,71 @@ export const containerCountryTabs: Container = {
   gap: "3",
 };
 
+/**
+ * Popover demo content — an isolated mini "quick filter" panel. It is its own
+ * container (own form/schema), opened from the toolbar. The chrome-less surface
+ * only adds padding so the popover's own floating card stays the single box.
+ */
+const popoverFilterBins: Bin[] = [
+  {
+    sm: "12",
+    md: "12",
+    lg: "12",
+    xl: "12",
+    type: "text",
+    justifySelf: "start",
+    alignSelf: "end",
+    element: {
+      text: "Quick filter",
+      isLabel: true,
+    },
+  },
+  {
+    sm: "12",
+    md: "12",
+    lg: "12",
+    xl: "12",
+    type: "textfield",
+    justifySelf: "stretch",
+    alignSelf: "stretch",
+    element: {
+      name: "filterName",
+      label: "Name contains",
+      dataType: "text",
+      isRequired: false,
+      errorMessage: "",
+      placeholder: "e.g. land",
+    },
+  },
+  {
+    sm: "12",
+    md: "12",
+    lg: "12",
+    xl: "12",
+    type: "textfield",
+    justifySelf: "stretch",
+    alignSelf: "stretch",
+    element: {
+      name: "filterCode",
+      label: "Code",
+      dataType: "text",
+      isRequired: false,
+      errorMessage: "",
+      placeholder: "e.g. TH",
+    },
+  },
+];
+
+const containerPopoverFilter: Container = {
+  id: "containerPopoverFilter",
+  name: "popoverFilter",
+  isArray: false,
+  bins: popoverFilterBins,
+  // No card/border here — the popover supplies the floating card; this only
+  // adds inner padding so fields don't touch the popover edges.
+  surface: { background: false, border: false, shadow: "none", padding: "4" },
+};
+
 export const groupList: Bin[] = [
   {
     sm: "12",
@@ -2286,12 +2351,36 @@ export const groupList: Bin[] = [
   },
   {
     type: "empty",
-    sm: "11",
-    md: "11",
-    lg: "11",
-    xl: "11",
+    sm: "10",
+    md: "10",
+    lg: "10",
+    xl: "10",
     justifySelf: "stretch",
     alignSelf: "center",
+  },
+  {
+    type: "popover",
+    sm: "1",
+    md: "1",
+    lg: "1",
+    xl: "1",
+    align: "end",
+    justifySelf: "end",
+    alignSelf: "center",
+    element: {
+      id: "popoverFilter",
+      container: containerPopoverFilter,
+      placement: "bottom-end",
+      triggerMode: "click",
+      trigger: {
+        type: "button",
+        element: {
+          label: "Filter",
+          // No button action — the popover wrapper handles open/close on click.
+          actions: [],
+        },
+      },
+    },
   },
   {
     type: "modal",

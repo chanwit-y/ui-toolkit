@@ -37,6 +37,8 @@ export * from "./components/Modal";
 export * from "./components/Tab";
 export * from "./components/Paper";
 export type { PaperProps } from "./components/Paper";
+export * from "./components/Popover";
+export type { PopoverProps } from "./components/Popover";
 export * from "./components/Divider";
 export type { DividerProps } from "./components/Divider";
 export * from "./components/ConfirmBox";
