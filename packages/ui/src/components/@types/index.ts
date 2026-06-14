@@ -414,7 +414,7 @@ export type DataTableProps = {
   apiDeleteInfo?: APIDelete;
   api?: APIFunction;
   apiDelete?: APIFunction;
-  apiInfo?: API;
+  apiInfo?: DataTableApi;
   modalContainer?: JSX.Element;
   modalMaxWidth?: string;
   modalMinWidth?: string;
@@ -599,6 +599,31 @@ export type API = {
   body?: Record<string, DataValue>;
 };
 
+/**
+ * Server-side pagination config for a DataTable. When present on the table's
+ * `api`, the table switches from client-side paging (fetch-all + slice in
+ * memory) to manual/server paging: it sends offset/limit (and optionally a
+ * search term) on every page change and reads the total row count out of the
+ * response. Absent ⇒ today's client-side behavior is unchanged.
+ */
+export type DataTablePagination = {
+  /** Body key that receives `pageIndex * pageSize`. */
+  offsetKey: string;
+  /** Body key that receives `pageSize`. */
+  limitKey: string;
+  /** Body key for the global search term. Present ⇒ server-side search enabled. */
+  searchKey?: string;
+  /** Path into the response for the total (unpaged) row count, e.g. ["total"]. */
+  totalPath: string[];
+  /** Initial page size. Defaults to 10. */
+  defaultPageSize?: number;
+  /** Page-size dropdown options. Defaults to [5, 10, 20, 30, 40, 50]. */
+  pageSizeOptions?: number[];
+};
+
+/** {@link API} plus the optional server-pagination block used by DataTable. */
+export type DataTableApi = API & { pagination?: DataTablePagination };
+
 export type Term = {
   type: "observe" | "value";
   name?: string;
@@ -682,7 +707,7 @@ export type DataTableElement = {
   name: string;
   title: string;
   columns: ColumnDef[];
-  api: API & {};
+  api: DataTableApi;
   apiDeleteInfo?: APIDelete;
   modalContainer?: Container;
   modalMaxWidth?: string;

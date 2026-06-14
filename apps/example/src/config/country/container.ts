@@ -2481,6 +2481,71 @@ export const groupList: Bin[] = [
     md: "12",
     lg: "12",
     xl: "12",
+    type: "datatable",
+    justifySelf: "stretch",
+    alignSelf: "stretch",
+    element: {
+      name: "dtCountryServerPaged",
+      title: "Countries (server paged)",
+      columns: [
+        {
+          accessor: "code",
+          header: "Code",
+          align: "start",
+          enableSorting: false,
+          enableColumnFilter: false,
+        },
+        {
+          accessor: "name",
+          header: "Name",
+          align: "start",
+          enableSorting: false,
+          enableColumnFilter: false,
+        },
+        {
+          accessor: "updated_at",
+          header: "Update Date",
+          align: "start",
+          useDateFormat: "DD/MM/YYYY HH:mm:ss",
+          enableSorting: false,
+          enableColumnFilter: false,
+        },
+        {
+          accessor: "updated_by_name",
+          header: "Updated By",
+          align: "start",
+          enableSorting: false,
+          enableColumnFilter: false,
+        },
+      ],
+      // Presence of `pagination` switches this table to server-side paging:
+      // it sends offset/limit/search to /collection/page and reads `total`
+      // from the response. The static body values below are placeholders the
+      // table overwrites each fetch.
+      api: {
+        name: "countriesPaged",
+        paths: ["data"],
+        body: {
+          offset: { type: "value", key: "offset", value: 0 },
+          limit: { type: "value", key: "limit", value: 10 },
+          search: { type: "value", key: "search", value: "" },
+        },
+        pagination: {
+          offsetKey: "offset",
+          limitKey: "limit",
+          searchKey: "search",
+          totalPath: ["total"],
+          defaultPageSize: 10,
+          pageSizeOptions: [5, 10, 20],
+        },
+      },
+    },
+  },
+  {
+    sm: "12",
+    md: "12",
+    lg: "12",
+    xl: "12",
     type: "datatableeditable",
     justifySelf: "stretch",
     alignSelf: "stretch",

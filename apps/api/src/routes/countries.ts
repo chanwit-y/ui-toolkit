@@ -45,6 +45,35 @@ countryRoutes.post('/collection/get-all', async (c) => {
   }
 });
 
+// Paginated countries - POST /collection/page  { offset, limit, search }
+// Returns one page of rows plus the total matching count (server-side paging).
+countryRoutes.post('/collection/page', async (c) => {
+  try {
+    const body = await c.req.json().catch(() => ({}));
+    const offset = Number(body?.offset ?? 0);
+    const limit = Number(body?.limit ?? 10);
+    const search = typeof body?.search === 'string' ? body.search : '';
+
+    const { rows, total } = countryService.getPage({ offset, limit, search });
+
+    return c.json({
+      data: rows,
+      total,
+      status: 200,
+      success: true,
+      message: 'Countries page retrieved successfully',
+    });
+  } catch (error) {
+    return c.json({
+      data: [],
+      total: 0,
+      status: 500,
+      success: false,
+      message: 'Failed to retrieve countries page',
+    }, 500);
+  }
+});
+
 // Create country - matches existing API contract: POST /collection/create/691e9963992636eb1560eadb
 countryRoutes.post('/collection/create/691e9963992636eb1560eadb', async (c) => {
   try {

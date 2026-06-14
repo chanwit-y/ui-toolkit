@@ -1,6 +1,6 @@
 import * as Popover from "@radix-ui/react-popover"
 import { Text, type ThemeProps } from "@radix-ui/themes"
-import { useQuery } from "@tanstack/react-query"
+import { keepPreviousData, useQuery } from "@tanstack/react-query"
 import { flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable, type ColumnDef, type ColumnFiltersState, type PaginationState, type SortingState } from "@tanstack/react-table"
 import { ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, ListFilter } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
@@ -88,13 +88,23 @@ export const DataTable2 = <T extends Record<string, any>>({
 	const [openModal, setOpenModal] = useState(false)
 	const [openConfirmBox, setOpenConfirmBox] = useState(false)
 
+	// Server-side pagination config. Present ⇒ the table sends offset/limit (and
+	// optionally a search term) to the API per page and reads the total count out
+	// of the response, instead of fetching everything and slicing in memory.
+	const pageCfg = apiInfo?.pagination
+	const isServer = !!pageCfg
+	const pageSizeOptions = pageCfg?.pageSizeOptions ?? [5, 10, 20, 30, 40, 50]
+
 	const [data, setData] = useState<T[]>([])
+	const [total, setTotal] = useState(0)
 	const [globalFilter, setGlobalFilter] = useState('')
+	// Debounced search term sent to the API in server mode (searchKey present).
+	const [serverSearch, setServerSearch] = useState('')
 	const [sorting, setSorting] = useState<SortingState>([])
 	const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
 	const [pagination, setPagination] = useState<PaginationState>({
 		pageIndex: 0,
-		pageSize: 10,
+		pageSize: pageCfg?.defaultPageSize ?? 10,
 	})
 	const [isPageChanging, setIsPageChanging] = useState(false)
 	const [isFiltering, setIsFiltering] = useState(false)
@@ -233,7 +243,10 @@ export const DataTable2 = <T extends Record<string, any>>({
 		data,
 		columns: enhancedColumns,
 		state: {
-			globalFilter,
+			// In server mode the search box drives a server query, not the
+			// in-memory global filter — keep TanStack's client filter empty so it
+			// doesn't re-filter the already-paged page.
+			globalFilter: isServer ? '' : globalFilter,
 			pagination,
 			sorting,
 			columnFilters,
@@ -246,55 +259,87 @@ export const DataTable2 = <T extends Record<string, any>>({
 		getPaginationRowModel: getPaginationRowModel(),
 		getSortedRowModel: getSortedRowModel(),
 		onPaginationChange: setPagination,
-		manualPagination: false,
+		manualPagination: isServer,
+		manualFiltering: isServer,
+		...(isServer ? { rowCount: total } : {}),
 	})
 
 
-	const fetchData = useCallback(async () => {
-		console.log('DataTable2 fetchData called', { api, apiInfo, hasApi: !!api });
-		
+	const fetchData = useCallback(async (): Promise<{ rows: T[]; total: number }> => {
 		const q = Object.entries(apiInfo?.query ?? {}).reduce((acc, [key, value]) => {
 			return { ...acc, [key]: value.type === "value" ? value.value : undefined }
-		}, {})
+		}, {} as Record<string, any>)
 
 		const b = Object.entries(apiInfo?.body ?? {}).reduce((acc, [key, value]) => {
 			return { ...acc, [key]: value.type === "value" ? value.value : undefined }
-		}, {})
+		}, {} as Record<string, any>)
 
-		console.log('DataTable2 request params', { query: q, body: b });
-
-		if (!!api) {
-			let result;
-
-			if (!!apiInfo?.query) {
-				result = await api({ ...q } as any)
-			} else {
-				result = await api({ ...q, ...b })
-			}
-
-			console.log('DataTable2 API result', result);
-
-			let data = result
-
-			apiInfo?.paths?.forEach((path) => {
-				data = data[path]
-			})
-
-			console.log('DataTable2 final data', data);
-			return data ?? []
+		// Server pagination: overwrite the configured body keys with the live
+		// page offset/limit (and search term, when a searchKey is configured).
+		if (pageCfg) {
+			b[pageCfg.offsetKey] = pagination.pageIndex * pagination.pageSize
+			b[pageCfg.limitKey] = pagination.pageSize
+			if (pageCfg.searchKey) b[pageCfg.searchKey] = serverSearch
 		}
-		console.log('DataTable2: No API provided, returning empty array');
-		return []
-	}, [api, apiInfo])
 
-	const { data: tableData, refetch, isLoading, isFetching } = useQuery({ queryKey: [`table-data-${title}`], queryFn: fetchData })
+		if (!api) return { rows: [], total: 0 }
+
+		let result
+		// Client mode preserves the original query-only call shape; server mode
+		// always sends the body so offset/limit/search reach the API.
+		if (!isServer && !!apiInfo?.query) {
+			result = await api({ ...q } as any)
+		} else {
+			result = await api({ ...q, ...b })
+		}
+
+		let rows: any = result
+		apiInfo?.paths?.forEach((path) => {
+			rows = rows?.[path]
+		})
+		rows = (rows ?? []) as T[]
+
+		let totalCount = Array.isArray(rows) ? rows.length : 0
+		if (pageCfg) {
+			let t: any = result
+			pageCfg.totalPath.forEach((path) => {
+				t = t?.[path]
+			})
+			if (typeof t === "number") totalCount = t
+		}
+
+		return { rows, total: totalCount }
+	}, [api, apiInfo, isServer, pageCfg, pagination.pageIndex, pagination.pageSize, serverSearch])
+
+	const { data: queryResult, refetch, isLoading, isFetching } = useQuery({
+		// Server mode refetches on page/size/search change; client mode keeps a
+		// single stable key (fetch once, page in memory) as before.
+		queryKey: isServer
+			? [`table-data-${title}`, pagination.pageIndex, pagination.pageSize, serverSearch]
+			: [`table-data-${title}`],
+		queryFn: fetchData,
+		// Keep the current page visible while the next one loads (no empty flash).
+		placeholderData: keepPreviousData,
+	})
 
 	const showSkeleton = (isLoading || isFetching) && data.length === 0
 	const visibleColumns = table.getVisibleLeafColumns()
 
 	useEffect(() => {
-		setData(tableData ?? [])
-	}, [tableData])
+		setData(queryResult?.rows ?? [])
+		setTotal(queryResult?.total ?? 0)
+	}, [queryResult])
+
+	// Debounce the search box into the server query and reset to the first page
+	// whenever the term changes (only when server search is configured).
+	useEffect(() => {
+		if (!isServer || !pageCfg?.searchKey) return undefined
+		const t = setTimeout(() => {
+			setServerSearch(globalFilter)
+			setPagination((p) => ({ ...p, pageIndex: 0 }))
+		}, 300)
+		return () => clearTimeout(t)
+	}, [globalFilter, isServer, pageCfg?.searchKey])
 
 
 	useEffect(() => {
@@ -341,7 +386,7 @@ export const DataTable2 = <T extends Record<string, any>>({
 		<div className="datatable-header">
 			<div className="datatable-title">{title}</div>
 
-			{canSearchAllColumns && (
+			{(isServer ? !!pageCfg?.searchKey : canSearchAllColumns) && (
 				<div className="datatable-controls-wrapper">
 					<TextField
 						ref={filterRef}
@@ -353,7 +398,9 @@ export const DataTable2 = <T extends Record<string, any>>({
 						onChange={(e) => setGlobalFilter(e.target.value)} />
 
 					<span className="datatable-row-count">
-						{table.getFilteredRowModel().rows.length} of {table.getCoreRowModel().rows.length} total rows
+						{isServer
+							? `${total} total rows`
+							: `${table.getFilteredRowModel().rows.length} of ${table.getCoreRowModel().rows.length} total rows`}
 					</span>
 				</div>
 			)}
@@ -376,7 +423,7 @@ export const DataTable2 = <T extends Record<string, any>>({
 									style={{ width: header.getSize() }}>
 									<div className="datatable-header-content" >
 										{header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-										{header.column.getCanSort() && (
+										{!isServer && header.column.getCanSort() && (
 											<span className="datatable-sort-icon" onClick={header.column.getToggleSortingHandler()}>
 												{{
 													asc: <Icon icon="arrowUp" size={14} className="datatable-sort-icon-bounce" />,
@@ -385,7 +432,7 @@ export const DataTable2 = <T extends Record<string, any>>({
 
 											</span>
 										)}
-										{header.column.getCanFilter() && (
+										{!isServer && header.column.getCanFilter() && (
 											<Popover.Root>
 												<Popover.Trigger asChild>
 													<ListFilter size={14} className="datatable-filter-icon" />
@@ -521,7 +568,7 @@ export const DataTable2 = <T extends Record<string, any>>({
 								}}
 								className="border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent-8,#3b82f6)] hover:bg-[var(--accent-5,#93c5fd)]"
 							>
-								{[5, 10, 20, 30, 40, 50].map(pageSize => (
+								{pageSizeOptions.map(pageSize => (
 									<option key={pageSize} value={pageSize}>
 										{pageSize}
 									</option>
@@ -529,12 +576,13 @@ export const DataTable2 = <T extends Record<string, any>>({
 							</select>
 						</div>
 						<div>
-							Showing {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} to{' '}
-							{Math.min(
-								(table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
-								table.getFilteredRowModel().rows.length
-							)}{' '}
-							of {table.getFilteredRowModel().rows.length} entries
+							{(() => {
+								const totalRows = isServer ? total : table.getFilteredRowModel().rows.length
+								const { pageIndex, pageSize } = table.getState().pagination
+								const from = totalRows === 0 ? 0 : pageIndex * pageSize + 1
+								const to = Math.min((pageIndex + 1) * pageSize, totalRows)
+								return `Showing ${from} to ${to} of ${totalRows} entries`
+							})()}
 						</div>
 					</div>
 
