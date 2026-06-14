@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { Link, Route, Routes, useParams } from "react-router-dom";
+import { Link, Route, Routes, useLocation, useParams } from "react-router-dom";
 import {
   Core,
   DataProvider,
@@ -83,6 +83,20 @@ function DetailPage() {
   );
 }
 
+/**
+ * Replays a page-enter animation on every navigation. Keying the wrapper by the
+ * route pathname forces a remount, so the CSS `.page-enter` animation restarts
+ * each time the user lands on a new page.
+ */
+function PageTransition({ children }: { children: React.ReactNode }) {
+  const { pathname } = useLocation();
+  return (
+    <div key={pathname} className="page-enter">
+      {children}
+    </div>
+  );
+}
+
 function AppContent() {
   return (
     <>
@@ -93,10 +107,12 @@ function AppContent() {
         <ThemeToggle />
       </header>
       <main className="p-8 flex-1 overflow-auto">
-        <Routes>
-          <Route path="/" element={<ListPage />} />
-          <Route path="/country/:id" element={<DetailPage />} />
-        </Routes>
+        <PageTransition>
+          <Routes>
+            <Route path="/" element={<ListPage />} />
+            <Route path="/country/:id" element={<DetailPage />} />
+          </Routes>
+        </PageTransition>
       </main>
     </>
   );
