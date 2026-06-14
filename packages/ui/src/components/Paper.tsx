@@ -38,15 +38,23 @@ export function Paper({
   style,
 }: PaperProps) {
   const isOutlined = variant === "outlined";
+  // Background/text/border follow the theme via Tailwind `dark:` classes (the
+  // `dark` class lives on <html>), so Paper flips with light/dark mode. Only the
+  // dynamic elevation shadow stays inline.
+  const classes = [
+    "bg-white dark:bg-gray-900",
+    "text-slate-800 dark:text-gray-100",
+    square ? "" : "rounded-lg",
+    isOutlined ? "border border-slate-200 dark:border-gray-700" : "",
+    className ?? "",
+  ]
+    .filter(Boolean)
+    .join(" ");
   return (
     <div
-      className={className}
+      className={classes}
       style={{
-        background: "#fff",
-        color: "#1e293b",
-        borderRadius: square ? "0" : "8px",
         boxShadow: isOutlined ? "none" : elevationShadow(elevation),
-        border: isOutlined ? "1px solid #e2e8f0" : "none",
         ...style,
       }}
     >

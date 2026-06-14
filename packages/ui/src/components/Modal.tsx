@@ -101,7 +101,7 @@ const Modal = forwardRef<HTMLDivElement, ModalProps>(
 					<AlertDialog.Content
 						ref={ref}
 						style={contentStyle}
-						className="modal-content fixed top-1/2 left-1/2 z-99999 mx-4 min-w-[400px] max-w-lg max-h-[90vh] transform -translate-x-1/2 -translate-y-1/2 rounded-lg bg-white shadow-lg flex flex-col"
+						className="modal-content fixed top-1/2 left-1/2 z-99999 mx-4 min-w-[400px] max-w-lg max-h-[90vh] transform -translate-x-1/2 -translate-y-1/2 rounded-lg bg-white dark:bg-gray-900 shadow-lg flex flex-col"
 					>
 
 						<ThemeProvider
@@ -113,7 +113,7 @@ const Modal = forwardRef<HTMLDivElement, ModalProps>(
 								}
 							}}
 							className="flex flex-col flex-1 min-h-0">
-							<div className={`flex items-start justify-between gap-4 flex-shrink-0 bg-white py-4 px-6 ${isHideTitleLine ? "" : "border-b border-gray-200"}`}>
+							<div className={`flex items-start justify-between gap-4 flex-shrink-0 bg-white dark:bg-gray-900 py-4 px-6 ${isHideTitleLine ? "" : "border-b border-gray-200 dark:border-gray-700"}`}>
 								<div className="flex-1">
 									{title && (
 										<AlertDialog.Title className="text-lg font-semibold">

@@ -251,12 +251,12 @@ const AutocompleteBase = forwardRef<
           onKeyDown={handleKeyDown}
           className={cn(
             "w-full flex items-center justify-between px-4 text-sm h-[40px]",
-            "bg-white border rounded-lg shadow-sm transition-all duration-200",
+            "bg-white dark:bg-gray-900 border rounded-lg shadow-sm transition-all duration-200",
             // "text-left group focus:ring-2 focus:ring-blue-500 focus:border-transparent",
             "text-left focus:ring-2 focus:ring-[var(--accent-8,#3b82f6)] focus:border-transparent",
             hasError
               ? "border-red-300 hover:border-red-400"
-              : "border-gray-300 hover:border-gray-400",
+              : "border-gray-300 dark:border-gray-600 hover:border-gray-400",
             className
           )}
           aria-expanded={isOpen}
@@ -269,8 +269,8 @@ const AutocompleteBase = forwardRef<
           {...(hasError && { 'data-error': 'true' })}
         >
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          <Search className="h-4 w-4 text-gray-400 flex-shrink-0" />
-          <span className={`truncate ${!selectedItem ? 'text-gray-400' : 'text-gray-900'}`}>
+          <Search className="h-4 w-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />
+          <span className={`truncate ${!selectedItem ? 'text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'}`}>
             {selectedItem ? selectedItem.label : placeholder}
           </span>
         </div>
@@ -278,17 +278,17 @@ const AutocompleteBase = forwardRef<
           {selectedItem && (
             <button
               onClick={clearSelection}
-              className="p-1 hover:bg-gray-100 rounded-full transition-colors opacity-0 group-hover:opacity-100"
+              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors opacity-0 group-hover:opacity-100"
               aria-label="Clear selection"
               tabIndex={-1}
             >
-              <X className="h-3 w-3 text-gray-400" />
+              <X className="h-3 w-3 text-gray-400 dark:text-gray-500" />
             </button>
           )}
           <ChevronDown 
-            className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${
+            className={`h-4 w-4 text-gray-400 dark:text-gray-500 transition-transform duration-200 ${
               isOpen ? 'rotate-180' : ''
-            }`} 
+            }`}
           />
         </div>
       </button>
@@ -299,7 +299,7 @@ const AutocompleteBase = forwardRef<
             id="autocomplete-helper"
             className={cn(
               "block mt-1",
-              hasError ? "text-red-500" : "text-gray-600"
+              hasError ? "text-red-500" : "text-gray-600 dark:text-gray-400"
             )}
           >
             {hasError && <AlertCircle className="inline h-3 w-3 mr-1" />}
@@ -311,10 +311,10 @@ const AutocompleteBase = forwardRef<
       {isOpen && (
         <div 
           style={dropdownStyles}
-          className="bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden animate-in duration-200"
+          className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden animate-in duration-200"
         >
-          <div className="flex items-center border-b border-gray-100 px-3">
-            <Search className="h-4 w-4 text-gray-400 mr-2" />
+          <div className="flex items-center border-b border-gray-100 dark:border-gray-800 px-3">
+            <Search className="h-4 w-4 text-gray-400 dark:text-gray-500 mr-2" />
             <input
               ref={searchInputRef}
               type="text"
@@ -323,14 +323,14 @@ const AutocompleteBase = forwardRef<
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
               className="flex-1 py-2 text-sm bg-transparent border-none outline-none
-                         placeholder:text-gray-400"
+                         placeholder:text-gray-400 dark:placeholder:text-gray-500"
             />
             {query && (
               <button
                 onClick={() => setQuery('')}
-                className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
               >
-                <X className="h-3 w-3 text-gray-400" />
+                <X className="h-3 w-3 text-gray-400 dark:text-gray-500" />
               </button>
             )}
           </div>
@@ -342,14 +342,14 @@ const AutocompleteBase = forwardRef<
             aria-label="Autocomplete options"
           >
             {filteredItems.length === 0 ? (
-              <div className="px-3 py-4 text-center text-sm text-gray-500">
+              <div className="px-3 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
                 No results found{query && ` for "${query}"`}
               </div>
             ) : (
               Object.entries(groupedItems).map(([category, categoryItems]) => (
                 <div key={category}>
                   <div className={`px-3 py-1 text-xs font-medium uppercase tracking-wider transition-colors ${
-                    focusedGroup === category ? 'text-[var(--accent-11,#2563eb)] bg-[var(--accent-3,#eff6ff)]' : 'text-gray-500'
+                    focusedGroup === category ? 'text-[var(--accent-11,#2563eb)] bg-[var(--accent-3,#eff6ff)]' : 'text-gray-500 dark:text-gray-400'
                   }`}>
                     {category}
                   </div>
@@ -366,10 +366,10 @@ const AutocompleteBase = forwardRef<
                         className={`w-full flex items-center justify-between px-3 py-2 text-sm
                                    text-left transition-colors ${
                           item.disabled
-                            ? 'text-gray-400 cursor-not-allowed'
+                            ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
                             : isSelected
                             ? 'bg-[var(--accent-3,#eff6ff)] text-[var(--accent-11,#1d4ed8)]'
-                            : 'text-gray-700 hover:bg-gray-50'
+                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
                         }`}
                         role="option"
                         aria-selected={isCurrent}

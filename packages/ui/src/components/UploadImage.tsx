@@ -200,7 +200,7 @@ const UploadImageBase = forwardRef<
 			) : previewSrc ? (
 				<div
 					className={cn(
-						"relative group overflow-hidden border border-gray-200",
+						"relative group overflow-hidden border border-gray-200 dark:border-gray-700",
 						shape === "circle" ? "rounded-full mx-auto" : "rounded-md w-full"
 					)}
 					style={
@@ -220,7 +220,7 @@ const UploadImageBase = forwardRef<
 								type="button"
 								title="Replace image"
 								onClick={openFileDialog}
-								className="rounded-full bg-white/90 p-2 text-gray-700 hover:bg-white transition"
+								className="rounded-full bg-white/90 dark:bg-gray-900/90 p-2 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-900 transition"
 							>
 								<RefreshCw className="h-4 w-4" />
 							</button>
@@ -228,7 +228,7 @@ const UploadImageBase = forwardRef<
 								type="button"
 								title="Remove image"
 								onClick={handleRemove}
-								className="rounded-full bg-white/90 p-2 text-red-600 hover:bg-white transition"
+								className="rounded-full bg-white/90 dark:bg-gray-900/90 p-2 text-red-600 hover:bg-white dark:hover:bg-gray-900 transition"
 							>
 								<Trash2 className="h-4 w-4" />
 							</button>
@@ -252,9 +252,9 @@ const UploadImageBase = forwardRef<
 					className={cn(
 						"flex flex-col items-center justify-center gap-2 rounded-md border-2 border-dashed transition duration-200 ease-in-out",
 						disabled
-							? "cursor-not-allowed bg-gray-50 border-gray-200 text-gray-400"
-							: "cursor-pointer text-gray-500 hover:border-[var(--accent-8,#60a5fa)] hover:bg-[var(--accent-a3,#eff6ff80)]",
-						isDragging ? "border-[var(--accent-8,#3b82f6)] bg-[var(--accent-3,#eff6ff)]" : "border-gray-300",
+							? "cursor-not-allowed bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500"
+							: "cursor-pointer text-gray-500 dark:text-gray-400 hover:border-[var(--accent-8,#60a5fa)] hover:bg-[var(--accent-a3,#eff6ff80)]",
+						isDragging ? "border-[var(--accent-8,#3b82f6)] bg-[var(--accent-3,#eff6ff)]" : "border-gray-300 dark:border-gray-600",
 						hasError && "border-red-300 hover:border-red-400"
 					)}
 					style={{ height: `${previewHeight}px` }}
@@ -264,7 +264,7 @@ const UploadImageBase = forwardRef<
 						Click or drag an image here to upload
 					</Text>
 					{maxSizeMB && (
-						<Text size="1" className="text-gray-400">
+						<Text size="1" className="text-gray-400 dark:text-gray-500">
 							Max size {maxSizeMB} MB
 						</Text>
 					)}
@@ -276,7 +276,7 @@ const UploadImageBase = forwardRef<
 					size="1"
 					className={cn(
 						"block mr-1 mt-1",
-						hasError ? "text-red-500 flex items-center gap-0.5" : "text-gray-600"
+						hasError ? "text-red-500 flex items-center gap-0.5" : "text-gray-600 dark:text-gray-400"
 					)}
 				>
 					{hasError && <AlertCircle className="inline-block h-3 w-3 mr-[0.1rem]" />}

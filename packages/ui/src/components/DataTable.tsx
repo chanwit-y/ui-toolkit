@@ -592,14 +592,14 @@ const DraggableRow = ({ row, children }: DraggableRowProps) => {
 			ref={setNodeRef}
 			style={style}
 			{...attributes}
-			className={`hover:bg-gray-50 transition-colors duration-200 ${
+			className={`hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200 ${
 				isDragging ? 'bg-[var(--accent-3,#eff6ff)] shadow-lg z-10' : ''
 			}`}
 		>
-			<td className="px-2 py-4 whitespace-nowrap text-sm text-gray-400">
+			<td className="px-2 py-4 whitespace-nowrap text-sm text-gray-400 dark:text-gray-500">
 				<div
 					{...listeners}
-					className="cursor-grab hover:cursor-grabbing p-1 hover:bg-gray-200 rounded transition-colors"
+					className="cursor-grab hover:cursor-grabbing p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
 					title="Drag to reorder"
 				>
 					<svg
@@ -607,7 +607,7 @@ const DraggableRow = ({ row, children }: DraggableRowProps) => {
 						height="16"
 						viewBox="0 0 16 16"
 						fill="currentColor"
-						className="text-gray-400"
+						className="text-gray-400 dark:text-gray-500"
 					>
 						<path d="M3 7a1 1 0 0 1 1-1h8a1 1 0 1 1 0 2H4a1 1 0 0 1-1-1zM3 11a1 1 0 0 1 1-1h8a1 1 0 1 1 0 2H4a1 1 0 0 1-1-1z" />
 					</svg>
@@ -710,25 +710,25 @@ export const DataTable = () => {
 					<input
 						value={globalFilter ?? ''}
 						onChange={(e) => setGlobalFilter(e.target.value)}
-						className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent-8,#3b82f6)] focus:border-transparent"
+						className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent-8,#3b82f6)] focus:border-transparent"
 						placeholder="Search all columns..."
 					/>
-					<span className="text-sm text-gray-500">
+					<span className="text-sm text-gray-500 dark:text-gray-400">
 						{table.getFilteredRowModel().rows.length} of {table.getCoreRowModel().rows.length} total rows
 					</span>
 				</div>
 				
 				<div className="overflow-x-auto shadow-lg rounded-lg">
-					<table className="w-full bg-white border border-gray-200">
-					<thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
+					<table className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
+					<thead className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-800 border-b-2 border-gray-200 dark:border-gray-700">
 						{table.getHeaderGroups().map(headerGroup => (
 							<tr key={headerGroup.id}>
 								<th></th>
 								{headerGroup.headers.map(header => (
-									<th key={header.id} className={`py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-widest border-r border-gray-200 last:border-r-0 transition-colors duration-200 select-none ${
-										header.column.id === 'drag-handle' 
-											? 'w-12 px-2 cursor-default' 
-											: 'px-6 hover:bg-gray-200 cursor-pointer'
+									<th key={header.id} className={`py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-widest border-r border-gray-200 dark:border-gray-700 last:border-r-0 transition-colors duration-200 select-none ${
+										header.column.id === 'drag-handle'
+											? 'w-12 px-2 cursor-default'
+											: 'px-6 hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer'
 									}`}>
 										<div className="flex flex-col space-y-1">
 											<div 
@@ -759,7 +759,7 @@ export const DataTable = () => {
 													content={
 														<div className="p-3 min-w-[200px]">
 															<div className="flex items-center justify-between mb-3">
-																<div className="text-xs font-medium text-gray-700">
+																<div className="text-xs font-medium text-gray-700 dark:text-gray-300">
 																	Filter {typeof header.column.columnDef.header === 'function' ? header.column.columnDef.header(header.getContext()) : header.column.columnDef.header}
 																</div>
 																<button
@@ -775,7 +775,7 @@ export const DataTable = () => {
 																	const isChecked = currentFilter.includes(value);
 																	
 																	return (
-																		<label key={value} className="flex items-center space-x-2 text-xs hover:bg-gray-50 p-1 rounded cursor-pointer">
+																		<label key={value} className="flex items-center space-x-2 text-xs hover:bg-gray-50 dark:hover:bg-gray-800 p-1 rounded cursor-pointer">
 																			<input
 																				type="checkbox"
 																				checked={isChecked}
@@ -799,20 +799,20 @@ export const DataTable = () => {
 																})}
 															</div>
 															{columnValues[header.column.id]?.length > 0 && (
-																<div className="mt-2 pt-2 border-t border-gray-200">
+																<div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
 																	<div className="flex space-x-2">
 																		<button
 																			onClick={() => {
 																				header.column.setFilterValue(columnValues[header.column.id]);
 																			}}
-																			className="text-xs text-gray-600 hover:text-gray-800 font-medium"
+																			className="text-xs text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 font-medium"
 																		>
 																			Select All
 																		</button>
-																		<span className="text-xs text-gray-400">|</span>
+																		<span className="text-xs text-gray-400 dark:text-gray-500">|</span>
 																		<button
 																			onClick={() => header.column.setFilterValue(undefined)}
-																			className="text-xs text-gray-600 hover:text-gray-800 font-medium"
+																			className="text-xs text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 font-medium"
 																		>
 																			Deselect All
 																		</button>
@@ -823,7 +823,7 @@ export const DataTable = () => {
 													}
 												>
 													<button
-														className="p-1 hover:bg-gray-200 rounded transition-colors duration-200"
+														className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors duration-200"
 														onClick={(e) => e.stopPropagation()}
 													>
 														<FilterIcon 
@@ -843,11 +843,11 @@ export const DataTable = () => {
 						items={table.getPaginationRowModel().rows.map(row => row.original.id)}
 						strategy={verticalListSortingStrategy}
 					>
-						<tbody className="bg-white divide-y divide-gray-200">
+						<tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
 							{table.getPaginationRowModel().rows.map(row => (
 								<DraggableRow key={row.original.id} row={row}>
 									{row.getVisibleCells().map(cell => (
-										<td key={cell.id} className={`py-4 whitespace-nowrap text-sm text-gray-900 ${
+										<td key={cell.id} className={`py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 ${
 											cell.column.id === 'drag-handle' ? 'px-2 w-12' : 'px-6'
 										}`}>
 											{cell.column.id !== 'drag-handle' && flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -861,8 +861,8 @@ export const DataTable = () => {
 				</div>
 				
 				{/* Pagination Controls */}
-				<div className="flex items-center justify-between px-2 py-4 bg-white border-t border-gray-200">
-					<div className="flex items-center space-x-6 text-sm text-gray-700">
+				<div className="flex items-center justify-between px-2 py-4 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
+					<div className="flex items-center space-x-6 text-sm text-gray-700 dark:text-gray-300">
 						<div className="flex items-center space-x-2">
 							<span>Rows per page:</span>
 							<select
@@ -870,7 +870,7 @@ export const DataTable = () => {
 								onChange={e => {
 									table.setPageSize(Number(e.target.value))
 								}}
-								className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent-8,#3b82f6)]"
+								className="border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent-8,#3b82f6)]"
 							>
 								{[5, 10, 20, 30, 40, 50].map(pageSize => (
 									<option key={pageSize} value={pageSize}>
@@ -893,14 +893,14 @@ export const DataTable = () => {
 						<button
 							onClick={() => table.setPageIndex(0)}
 							disabled={!table.getCanPreviousPage()}
-							className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+							className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 						>
 							{'<<'}
 						</button>
 						<button
 							onClick={() => table.previousPage()}
 							disabled={!table.getCanPreviousPage()}
-							className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+							className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 						>
 							{'<'}
 						</button>
@@ -934,7 +934,7 @@ export const DataTable = () => {
 								
 								return pages.map((page, index) => (
 									page === '...' ? (
-										<span key={`ellipsis-${index}`} className="px-2 py-1 text-sm text-gray-500">
+										<span key={`ellipsis-${index}`} className="px-2 py-1 text-sm text-gray-500 dark:text-gray-400">
 											...
 										</span>
 									) : (
@@ -944,7 +944,7 @@ export const DataTable = () => {
 											className={`px-3 py-1 text-sm border rounded transition-colors ${
 												currentPage === page
 													? 'bg-[var(--accent-9,#3b82f6)] text-white border-[var(--accent-8,#3b82f6)]'
-													: 'border-gray-300 hover:bg-gray-50'
+													: 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800'
 											}`}
 										>
 											{page}
@@ -957,14 +957,14 @@ export const DataTable = () => {
 						<button
 							onClick={() => table.nextPage()}
 							disabled={!table.getCanNextPage()}
-							className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+							className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 						>
 							{'>'}
 						</button>
 						<button
 							onClick={() => table.setPageIndex(table.getPageCount() - 1)}
 							disabled={!table.getCanNextPage()}
-							className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+							className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 						>
 							{'>>'}
 						</button>

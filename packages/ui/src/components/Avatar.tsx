@@ -30,7 +30,7 @@ export const Avatar: React.FC<AvatarProps> = ({
 
   const showFallback = !src || imageError;
 
-  const baseClasses = "inline-flex items-center justify-center rounded-full overflow-hidden bg-gray-200 text-gray-600 font-medium";
+  const baseClasses = "inline-flex items-center justify-center rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 font-medium";
   const combinedClassName = className ? `${baseClasses} ${className}` : baseClasses;
 
   const containerStyle = {

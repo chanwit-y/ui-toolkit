@@ -200,3 +200,56 @@ export const paginationHoverBgColors: { [key: string]: string } = {
   mint: 'hover:bg-emerald-400',
   sky: 'hover:bg-sky-400',
 }
+
+/**
+ * DataTable theming.
+ *
+ * By default the DataTable follows the **theme accent color** via the Radix
+ * `--accent-*` CSS vars. Those vars are re-tinted automatically by Radix for
+ * dark appearance, so the table flips light/dark with no extra config and
+ * tracks whatever `accentColor` the theme sets.
+ *
+ * Passing an explicit named color (from `theme.components.dataTable`) opts back
+ * into the legacy static color map for that role — kept for back-compat and for
+ * intentionally semantic colors (e.g. a green "save" / gray "cancel" button).
+ *
+ * All accent classes are written as literal strings so Tailwind's content
+ * scanner emits them (the `tableBgColors` pattern).
+ */
+// Header + edit action use the SOLID primary color (--accent-9) with contrast
+// text, so they read unmistakably as the theme's primary color (and flip in
+// dark mode). Row-hover/ring stay subtle. `--accent-contrast` is Radix's
+// auto-computed readable foreground for the solid accent (white for most hues).
+const ACCENT_HEADER_BG = 'bg-[var(--accent-9,#3b82f6)]'
+const ACCENT_HEADER_TEXT = 'text-[var(--accent-contrast,#ffffff)]'
+const ACCENT_HEADER_HOVER = 'hover:bg-[var(--accent-10,#2563eb)]'
+const ACCENT_ROW_HOVER = 'hover:bg-[var(--accent-2,#f8fafc)]'
+const ACCENT_RING = 'ring-[var(--accent-6,#bfdbfe)]'
+const ACCENT_ACTION_BG = 'bg-[var(--accent-9,#3b82f6)]'
+const ACCENT_ACTION_HOVER = 'hover:bg-[var(--accent-10,#2563eb)]'
+const ACCENT_ACTION_TEXT = 'text-[var(--accent-contrast,#ffffff)]'
+const ACCENT_PAGINATION_BG = 'bg-[var(--accent-9,#3b82f6)]'
+const ACCENT_PAGINATION_HOVER = 'hover:bg-[var(--accent-10,#2563eb)]'
+
+// Accent header carries its own contrast text; named colors keep the inherited
+// neutral header text (the light static maps need a dark foreground).
+const ACCENT_HEADER = `${ACCENT_HEADER_BG} ${ACCENT_HEADER_TEXT}`
+
+export const dtHeaderBgClass = (color?: string) =>
+  color ? tableBgColors[color] ?? ACCENT_HEADER : ACCENT_HEADER
+export const dtHeaderHoverClass = (color?: string) =>
+  color ? tableHoverBgColors[color] ?? ACCENT_HEADER_HOVER : ACCENT_HEADER_HOVER
+export const dtRowHoverClass = (color?: string) =>
+  color ? rowHoverBgColors[color] ?? ACCENT_ROW_HOVER : ACCENT_ROW_HOVER
+export const dtRingClass = (color?: string) =>
+  color ? ringColors[color] ?? ACCENT_RING : ACCENT_RING
+export const dtPaginationBgClass = (color?: string) =>
+  color ? paginationBgColors[color] ?? ACCENT_PAGINATION_BG : ACCENT_PAGINATION_BG
+export const dtPaginationHoverClass = (color?: string) =>
+  color ? paginationHoverBgColors[color] ?? ACCENT_PAGINATION_HOVER : ACCENT_PAGINATION_HOVER
+
+/** Full className for a DataTable row-action button. Accent by default; named color when provided. */
+export const dtActionButtonClass = (color?: string) =>
+  color
+    ? `datatable-action-button ${tableBgColors[color] ?? ACCENT_ACTION_BG} ${tableHoverBgColors[color] ?? ACCENT_ACTION_HOVER} ${actionButtonTextColors[color] ?? ACCENT_ACTION_TEXT} hover:ring-1 ${ringColors[color] ?? ACCENT_RING}`
+    : `datatable-action-button ${ACCENT_ACTION_BG} ${ACCENT_ACTION_HOVER} ${ACCENT_ACTION_TEXT} hover:ring-1 ${ACCENT_RING}`

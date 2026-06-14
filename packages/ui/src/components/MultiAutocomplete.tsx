@@ -380,7 +380,7 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 					<Text as="label" size="2" weight="medium" className="block mb-1">
 						{label}
 						{maxSelections && (
-							<span className="text-gray-500 ml-1">({internalValues.length}/{maxSelections})</span>
+							<span className="text-gray-500 dark:text-gray-400 ml-1">({internalValues.length}/{maxSelections})</span>
 						)}
 					</Text>
 				)
@@ -390,11 +390,11 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 					ref={setTriggerButtonRef}
 					onClick={openDropdown}
 					className={cn("w-full min-h-[40px] px-4 py-2 text-sm flex items-center justify-between",
-						"bg-white border rounded-md shadow-sm transition-all duration-200",
+						"bg-white dark:bg-gray-900 border rounded-md shadow-sm transition-all duration-200",
 						"text-left focus:ring-2 focus:ring-[var(--accent-8,#3b82f6)] focus:border-transparent",
 						hasError
 							? "border-red-300 hover:border-red-400"
-							: "border-gray-300 hover:border-gray-400",
+							: "border-gray-300 dark:border-gray-600 hover:border-gray-400",
 							className,)}
 					data-error={String(hasError)}
 					{...props}
@@ -411,7 +411,7 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 							} else {
 								IconComponent = Search;
 							}
-							return <IconComponent className="h-4 w-4 text-gray-400 flex-shrink-0" />;
+							return <IconComponent className="h-4 w-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />;
 						})()}
 						<div className="flex-1 min-w-0">
 							{selectedItems.length > 0 && (
@@ -432,19 +432,19 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 										</span>
 									))}
 									{selectedItems.length > (showSelectedCount ? 10 : 6) && (
-										<span className="text-xs text-gray-500 flex items-center">
+										<span className="text-xs text-gray-500 dark:text-gray-400 flex items-center">
 											+{selectedItems.length - (showSelectedCount ? 4 : 6)} more
 										</span>
 									)}
 								</div>
 							)}
-							<span className={`truncate ${selectedItems.length === 0 ? 'text-gray-400' : 'text-gray-900'}`}>
+							<span className={`truncate ${selectedItems.length === 0 ? 'text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'}`}>
 								{displayText}
 							</span>
 						</div>
 					</div>
 					<div className="flex items-center flex-shrink-0">
-						<ChevronDown className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+						<ChevronDown className={`h-4 w-4 text-gray-400 dark:text-gray-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
 					</div>
 				</button>
 
@@ -453,10 +453,10 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 				<div
 					ref={dropdownContainerRef}
 					style={dropdownStyles}
-					className="flex flex-col bg-white border ring-2 ring-[var(--accent-8,#60a5fa)] border-transparent rounded-md shadow-lg overflow-hidden ease-in duration-100 opacity-100 z-[100000]"
+					className="flex flex-col bg-white dark:bg-gray-900 border ring-2 ring-[var(--accent-8,#60a5fa)] border-transparent rounded-md shadow-lg overflow-hidden ease-in duration-100 opacity-100 z-[100000]"
 				>
-					<div className="flex items-center border-b border-gray-100 px-3">
-						<Search className="h-4 w-4 text-gray-400 mr-2" />
+					<div className="flex items-center border-b border-gray-100 dark:border-gray-800 px-3">
+						<Search className="h-4 w-4 text-gray-400 dark:text-gray-500 mr-2" />
 						<input
 							type="text"
 							ref={searchInputRef}
@@ -467,14 +467,14 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 							}}
 							onKeyDown={handleKeyDown}
 							placeholder="Type to search..."
-							className="flex-1 py-2 text-sm border-none outline-none bg-transparent placeholder:text-gray-400"
+							className="flex-1 py-2 text-sm border-none outline-none bg-transparent placeholder:text-gray-400 dark:placeholder:text-gray-500"
 						/>
 						{query && (
 							<button
 								onClick={() => setQuery('')}
-								className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+								className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
 							>
-								<X className="h-3 w-3 text-gray-400" />
+								<X className="h-3 w-3 text-gray-400 dark:text-gray-500" />
 							</button>
 						)}
 
@@ -500,10 +500,10 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 									data-focused={isSelected}
 									className={cn("w-full flex items-center justify-between px-3 py-2 text-sm text-left transition-colors cursor-pointer",
 										isDisabled
-											? "text-gray-400 cursor-not-allowed bg-gray-50"
+											? "text-gray-400 dark:text-gray-500 cursor-not-allowed bg-gray-50 dark:bg-gray-800"
 											: isSelected
 												? "bg-[var(--accent-3,#eff6ff)] text-[var(--accent-11,#1d4ed8)] font-semibold"
-												: "text-gray-700 hover:bg-gray-50",
+												: "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800",
 										isCurrent ? "bg-[var(--accent-3,#eff6ff)] text-[var(--accent-11,#1d4ed8)] font-semibold" : ""
 									)}>
 									{item[displayKey]}
@@ -520,7 +520,7 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 						id="autocomplete-helper"
 						className={cn(
 							"block mt-2 mr-1 item-center",
-							hasError ? "text-red-500" : "text-gray-600"
+							hasError ? "text-red-500" : "text-gray-600 dark:text-gray-400"
 						)}>
 						{hasError && <AlertCircle className=" inline-block h-3 w-3 mr-[0.1rem]" />}
 						{displayHelperText}

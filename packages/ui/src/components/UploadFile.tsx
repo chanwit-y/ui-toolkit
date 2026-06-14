@@ -237,9 +237,9 @@ const UploadFileBase = forwardRef<
 					className={cn(
 						"flex flex-col items-center justify-center gap-1.5 rounded-md border-2 border-dashed px-4 py-6 transition duration-200 ease-in-out",
 						disabled
-							? "cursor-not-allowed bg-gray-50 border-gray-200 text-gray-400"
-							: "cursor-pointer text-gray-500 hover:border-[var(--accent-8,#60a5fa)] hover:bg-[var(--accent-a3,#eff6ff80)]",
-						isDragging ? "border-[var(--accent-8,#3b82f6)] bg-[var(--accent-3,#eff6ff)]" : "border-gray-300",
+							? "cursor-not-allowed bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500"
+							: "cursor-pointer text-gray-500 dark:text-gray-400 hover:border-[var(--accent-8,#60a5fa)] hover:bg-[var(--accent-a3,#eff6ff80)]",
+						isDragging ? "border-[var(--accent-8,#3b82f6)] bg-[var(--accent-3,#eff6ff)]" : "border-gray-300 dark:border-gray-600",
 						hasError && "border-red-300 hover:border-red-400"
 					)}
 				>
@@ -248,7 +248,7 @@ const UploadFileBase = forwardRef<
 						Click or drag {multiple ? "files" : "a file"} here to upload
 					</Text>
 					{(accept || maxSizeMB) && (
-						<Text size="1" className="text-gray-400 text-center">
+						<Text size="1" className="text-gray-400 dark:text-gray-500 text-center">
 							{[accept, maxSizeMB ? `max ${maxSizeMB} MB` : null]
 								.filter(Boolean)
 								.join(" · ")}
@@ -262,13 +262,13 @@ const UploadFileBase = forwardRef<
 					{files.map((file, index) => (
 						<li
 							key={`${file.name}-${index}`}
-							className="flex items-center gap-2 rounded-md border border-gray-200 bg-gray-50 px-3 py-2"
+							className="flex items-center gap-2 rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2"
 						>
-							<FileText className="h-4 w-4 shrink-0 text-gray-500" />
-							<span className="min-w-0 flex-1 truncate text-sm text-gray-700">
+							<FileText className="h-4 w-4 shrink-0 text-gray-500 dark:text-gray-400" />
+							<span className="min-w-0 flex-1 truncate text-sm text-gray-700 dark:text-gray-300">
 								{file.name}
 							</span>
-							<span className="shrink-0 text-xs text-gray-400">
+							<span className="shrink-0 text-xs text-gray-400 dark:text-gray-500">
 								{formatFileSize(file.size)}
 							</span>
 							{!disabled && (
@@ -279,7 +279,7 @@ const UploadFileBase = forwardRef<
 										e.stopPropagation()
 										handleRemove(index)
 									}}
-									className="shrink-0 rounded p-0.5 text-gray-400 hover:bg-gray-200 hover:text-red-500 transition"
+									className="shrink-0 rounded p-0.5 text-gray-400 dark:text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-red-500 transition"
 								>
 									<X className="h-4 w-4" />
 								</button>
@@ -294,7 +294,7 @@ const UploadFileBase = forwardRef<
 					size="1"
 					className={cn(
 						"block mr-1 mt-1",
-						hasError ? "text-red-500 flex items-center gap-0.5" : "text-gray-600"
+						hasError ? "text-red-500 flex items-center gap-0.5" : "text-gray-600 dark:text-gray-400"
 					)}
 				>
 					{hasError && <AlertCircle className="inline-block h-3 w-3 mr-[0.1rem]" />}

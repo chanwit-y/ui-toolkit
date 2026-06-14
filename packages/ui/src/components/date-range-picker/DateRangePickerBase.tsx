@@ -380,10 +380,10 @@ export const DateRangePickerBase = forwardRef<HTMLButtonElement, DateRangePicker
 							isStart || isEnd
 								? "bg-[var(--accent-9,#2563eb)] text-white font-semibold rounded-full"
 								: inRange || isHoverRange
-									? "bg-[var(--accent-3,#eff6ff)] text-gray-700 rounded-none"
-									: "rounded-full text-gray-700",
+									? "bg-[var(--accent-3,#eff6ff)] text-gray-700 dark:text-gray-300 rounded-none"
+									: "rounded-full text-gray-700 dark:text-gray-300",
 							isToday && !isStart && !isEnd && "border border-[var(--accent-8,#3b82f6)] font-semibold",
-							!isDayDisabled && !isStart && !isEnd && !inRange && !isHoverRange && "hover:bg-gray-100",
+							!isDayDisabled && !isStart && !isEnd && !inRange && !isHoverRange && "hover:bg-gray-100 dark:hover:bg-gray-800",
 							isDayDisabled && "opacity-40 cursor-not-allowed",
 						)}
 					>
@@ -414,14 +414,14 @@ export const DateRangePickerBase = forwardRef<HTMLButtonElement, DateRangePicker
 							type="button"
 							onClick={prevMonth}
 							tabIndex={-1}
-							className="p-1 rounded-md hover:bg-gray-100 transition-colors text-gray-600"
+							className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-400"
 						>
 							<ChevronLeft className="h-4 w-4" />
 						</button>
 					) : (
 						<div className="w-6" />
 					)}
-					<Text size="2" weight="medium" className="text-gray-800">
+					<Text size="2" weight="medium" className="text-gray-800 dark:text-gray-200">
 						{MONTHS[month]} {year}
 					</Text>
 					{showNext ? (
@@ -429,7 +429,7 @@ export const DateRangePickerBase = forwardRef<HTMLButtonElement, DateRangePicker
 							type="button"
 							onClick={nextMonth}
 							tabIndex={-1}
-							className="p-1 rounded-md hover:bg-gray-100 transition-colors text-gray-600"
+							className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-400"
 						>
 							<ChevronRight className="h-4 w-4" />
 						</button>
@@ -441,7 +441,7 @@ export const DateRangePickerBase = forwardRef<HTMLButtonElement, DateRangePicker
 					{DAYS.map((d) => (
 						<div
 							key={`${year}-${month}-${d}`}
-							className="h-7 flex items-center justify-center text-[11px] font-medium text-gray-500 uppercase"
+							className="h-7 flex items-center justify-center text-[11px] font-medium text-gray-500 dark:text-gray-400 uppercase"
 						>
 							{d}
 						</div>
@@ -482,25 +482,25 @@ export const DateRangePickerBase = forwardRef<HTMLButtonElement, DateRangePicker
 						onClick={toggleDropdown}
 						onKeyDown={handleKeyDown}
 						className={cn(
-							"w-full flex items-center justify-between bg-white border shadow-sm",
+							"w-full flex items-center justify-between bg-white dark:bg-gray-900 border shadow-sm",
 							"transition-all duration-200 text-left",
 							sizeClass,
 							radiusClass,
 							hasError
 								? "border-red-300 hover:border-red-400"
-								: "border-gray-300 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--accent-8,#3b82f6)] focus:border-transparent",
-							disabled && "opacity-60 cursor-not-allowed bg-gray-50",
+								: "border-gray-300 dark:border-gray-600 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--accent-8,#3b82f6)] focus:border-transparent",
+							disabled && "opacity-60 cursor-not-allowed bg-gray-50 dark:bg-gray-800",
 							className,
 						)}
 						data-error={hasError ? "true" : undefined}
 						{...props}
 					>
 						<div className="flex flex-1 min-w-0 items-center gap-3">
-							<Calendar className="h-4 w-4 text-gray-400 shrink-0" />
+							<Calendar className="h-4 w-4 text-gray-400 dark:text-gray-500 shrink-0" />
 							<span
 								className={cn(
 									"truncate",
-									displayValue ? "text-gray-900" : "text-gray-400",
+									displayValue ? "text-gray-900 dark:text-gray-100" : "text-gray-400 dark:text-gray-500",
 								)}
 							>
 								{displayValue ?? placeholder}
@@ -512,7 +512,7 @@ export const DateRangePickerBase = forwardRef<HTMLButtonElement, DateRangePicker
 								tabIndex={-1}
 								aria-label="Clear date range"
 								onClick={handleClear}
-								className="ml-2 inline-flex items-center justify-center rounded-full p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+								className="ml-2 inline-flex items-center justify-center rounded-full p-0.5 text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-600 dark:hover:text-gray-400 transition-colors"
 							>
 								<X className="h-3.5 w-3.5" />
 							</span>
@@ -532,10 +532,10 @@ export const DateRangePickerBase = forwardRef<HTMLButtonElement, DateRangePicker
 							role="dialog"
 							aria-label="Choose date range"
 							style={dropdownStyles}
-							className="date-range-picker-dropdown bg-white border ring-2 ring-[var(--accent-8,#60a5fa)] border-transparent rounded-md shadow-lg z-[100000] w-max max-w-[92vw] p-1"
+							className="date-range-picker-dropdown bg-white dark:bg-gray-900 border ring-2 ring-[var(--accent-8,#60a5fa)] border-transparent rounded-md shadow-lg z-[100000] w-max max-w-[92vw] p-1"
 						>
 							<div className="flex">
-								<div className="flex flex-col gap-1 p-3 border-r border-gray-100 min-w-[140px]">
+								<div className="flex flex-col gap-1 p-3 border-r border-gray-100 dark:border-gray-800 min-w-[140px]">
 									{presets.map((p) => (
 										<button
 											key={p.label}
@@ -549,7 +549,7 @@ export const DateRangePickerBase = forwardRef<HTMLButtonElement, DateRangePicker
 												closeDropdown()
 												triggerRef.current?.focus()
 											}}
-											className="text-xs px-3 py-2 text-left rounded-md text-gray-700 hover:bg-gray-100 transition-colors whitespace-nowrap"
+											className="text-xs px-3 py-2 text-left rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors whitespace-nowrap"
 										>
 											{p.label}
 										</button>
@@ -562,8 +562,8 @@ export const DateRangePickerBase = forwardRef<HTMLButtonElement, DateRangePicker
 								</div>
 							</div>
 
-							<div className="px-4 py-3 border-t border-gray-100 text-center">
-								<Text size="1" className="text-gray-500">
+							<div className="px-4 py-3 border-t border-gray-100 dark:border-gray-800 text-center">
+								<Text size="1" className="text-gray-500 dark:text-gray-400">
 									{selecting === "end" && tempStart
 										? `${formatShort(tempStart)} — ...`
 										: startDate && endDate

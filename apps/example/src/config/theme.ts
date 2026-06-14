@@ -16,6 +16,9 @@ export const theme: ThemeProps = {
 
 export const components: ThemeComponents = {
   button: { color: "teal" },
+  // DataTable colors. Every role is optional — any field left unset follows the
+  // global `accentColor` via Radix `--accent-*` vars and flips with dark mode.
+  // Set a field to pin a specific named color for that role.
   dataTable: {
     headerColor: "teal",
     headerHoverColor: "teal",
@@ -23,6 +26,6 @@ export const components: ThemeComponents = {
     paginationButtonHoverColor: "teal",
     rowHoverColor: "teal",
     editButtonColor: "teal",
-    deleteButtonColor: "teal",
+    deleteButtonColor: "red",
   },
 };

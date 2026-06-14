@@ -22,18 +22,18 @@ export const CalendarHeader = ({
 			type="button"
 			aria-label="Previous month"
 			onClick={onPreviousMonth}
-			className="p-1 rounded-md hover:bg-gray-100 transition-colors text-gray-600"
+			className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-400"
 		>
 			<ChevronLeft className="h-4 w-4" />
 		</button>
-		<Text size="2" weight="medium" className="text-gray-800">
+		<Text size="2" weight="medium" className="text-gray-800 dark:text-gray-200">
 			{cursor.format("MMMM YYYY")}
 		</Text>
 		<button
 			type="button"
 			aria-label="Next month"
 			onClick={onNextMonth}
-			className="p-1 rounded-md hover:bg-gray-100 transition-colors text-gray-600"
+			className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-400"
 		>
 			<ChevronRight className="h-4 w-4" />
 		</button>
@@ -45,7 +45,7 @@ export const WeekdayHeader = ({ labels }: { labels: string[] }) => (
 		{labels.map((day) => (
 			<div
 				key={day}
-				className="h-7 flex items-center justify-center text-[11px] font-medium text-gray-500 uppercase"
+				className="h-7 flex items-center justify-center text-[11px] font-medium text-gray-500 dark:text-gray-400 uppercase"
 			>
 				{day}
 			</div>
@@ -78,15 +78,15 @@ export const CalendarGrid = ({
 					className={cn(
 						"h-8 w-full flex items-center justify-center text-xs rounded-md transition-colors",
 						"focus:outline-none focus:ring-2 focus:ring-[var(--accent-8,#3b82f6)]",
-						!isCurrentMonth && "text-gray-300",
+						!isCurrentMonth && "text-gray-300 dark:text-gray-600",
 						isCurrentMonth &&
 							!isSelected &&
 							!disabledDay &&
-							"text-gray-700 hover:bg-[var(--accent-3,#eff6ff)] hover:text-[var(--accent-11,#1d4ed8)]",
+							"text-gray-700 dark:text-gray-300 hover:bg-[var(--accent-3,#eff6ff)] hover:text-[var(--accent-11,#1d4ed8)]",
 						isSelected && "bg-[var(--accent-9,#2563eb)] text-white font-semibold hover:bg-[var(--accent-10,#1d4ed8)]",
 						!isSelected && isToday && "border border-[var(--accent-8,#3b82f6)]",
 						disabledDay &&
-							"opacity-40 cursor-not-allowed hover:bg-transparent hover:text-gray-300"
+							"opacity-40 cursor-not-allowed hover:bg-transparent hover:text-gray-300 dark:hover:text-gray-600"
 					)}
 				>
 					{date.date()}
@@ -119,8 +119,8 @@ export const TimePicker = ({
 	}
 
 	return (
-		<div className="flex items-center justify-center gap-1 mt-3 pt-3 border-t border-gray-100">
-			<Text size="2" weight="medium" className="text-gray-600 mr-2">
+		<div className="flex items-center justify-center gap-1 mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+			<Text size="2" weight="medium" className="text-gray-600 dark:text-gray-400 mr-2">
 				Time:
 			</Text>
 			<div className="flex items-center gap-1">
@@ -128,7 +128,7 @@ export const TimePicker = ({
 					<button
 						type="button"
 						onClick={incrementHour}
-						className="p-0.5 rounded hover:bg-gray-100 transition-colors text-gray-500"
+						className="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500 dark:text-gray-400"
 						aria-label="Increment hour"
 					>
 						<ChevronUp className="h-3 w-3" />
@@ -136,7 +136,7 @@ export const TimePicker = ({
 					<select
 						value={hour}
 						onChange={(e) => onHourChange(Number(e.target.value))}
-						className="w-12 text-center text-sm border border-gray-200 rounded px-1 py-1 focus:outline-none focus:ring-2 focus:ring-[var(--accent-8,#3b82f6)]"
+						className="w-12 text-center text-sm border border-gray-200 dark:border-gray-700 rounded px-1 py-1 focus:outline-none focus:ring-2 focus:ring-[var(--accent-8,#3b82f6)]"
 						aria-label="Hour"
 					>
 						{HOURS.map((h) => (
@@ -148,18 +148,18 @@ export const TimePicker = ({
 					<button
 						type="button"
 						onClick={decrementHour}
-						className="p-0.5 rounded hover:bg-gray-100 transition-colors text-gray-500"
+						className="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500 dark:text-gray-400"
 						aria-label="Decrement hour"
 					>
 						<ChevronDown className="h-3 w-3" />
 					</button>
 				</div>
-				<span className="text-gray-600 font-medium">:</span>
+				<span className="text-gray-600 dark:text-gray-400 font-medium">:</span>
 				<div className="flex flex-col items-center">
 					<button
 						type="button"
 						onClick={incrementMinute}
-						className="p-0.5 rounded hover:bg-gray-100 transition-colors text-gray-500"
+						className="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500 dark:text-gray-400"
 						aria-label="Increment minute"
 					>
 						<ChevronUp className="h-3 w-3" />
@@ -167,7 +167,7 @@ export const TimePicker = ({
 					<select
 						value={minute}
 						onChange={(e) => onMinuteChange(Number(e.target.value))}
-						className="w-12 text-center text-sm border border-gray-200 rounded px-1 py-1 focus:outline-none focus:ring-2 focus:ring-[var(--accent-8,#3b82f6)]"
+						className="w-12 text-center text-sm border border-gray-200 dark:border-gray-700 rounded px-1 py-1 focus:outline-none focus:ring-2 focus:ring-[var(--accent-8,#3b82f6)]"
 						aria-label="Minute"
 					>
 						{filteredMinutes.map((m) => (
@@ -179,7 +179,7 @@ export const TimePicker = ({
 					<button
 						type="button"
 						onClick={decrementMinute}
-						className="p-0.5 rounded hover:bg-gray-100 transition-colors text-gray-500"
+						className="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500 dark:text-gray-400"
 						aria-label="Decrement minute"
 					>
 						<ChevronDown className="h-3 w-3" />
@@ -195,7 +195,7 @@ export const CalendarFooter = ({
 	onNow,
 	onClear,
 }: CalendarFooterProps) => (
-	<div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-100">
+	<div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-100 dark:border-gray-800">
 		<button
 			type="button"
 			onClick={onNow}
@@ -207,7 +207,7 @@ export const CalendarFooter = ({
 			<button
 				type="button"
 				onClick={onClear}
-				className="text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors"
+				className="text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
 			>
 				Clear
 			</button>
@@ -239,7 +239,7 @@ export const DateTimeDropdown = ({
 	<div
 		ref={dropdownRef}
 		style={dropdownStyles}
-		className="datetime-picker-dropdown bg-white border ring-2 ring-[var(--accent-8,#60a5fa)] border-transparent rounded-md shadow-lg p-3"
+		className="datetime-picker-dropdown bg-white dark:bg-gray-900 border ring-2 ring-[var(--accent-8,#60a5fa)] border-transparent rounded-md shadow-lg p-3"
 	>
 		<CalendarHeader
 			cursor={cursor}
@@ -285,7 +285,7 @@ export const HelperText = ({
 			id="datetimepicker-helper"
 			className={cn(
 				"block mt-2 mr-1",
-				hasError ? "text-red-500 flex items-center gap-0.5" : "text-gray-600"
+				hasError ? "text-red-500 flex items-center gap-0.5" : "text-gray-600 dark:text-gray-400"
 			)}
 		>
 			{hasError && (

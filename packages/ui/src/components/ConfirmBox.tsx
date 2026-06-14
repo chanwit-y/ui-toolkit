@@ -43,17 +43,17 @@ const ConfirmBox = forwardRef<HTMLDivElement, ConfirmBoxProps>(
 			>
 				<div className="flex flex-col gap-2 text-left">
 					{title && (
-						<h3 className="text-lg font-semibold text-slate-900">{title}</h3>
+						<h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{title}</h3>
 					)}
 					{description && (
-						<p className="text-sm text-slate-600">{description}</p>
+						<p className="text-sm text-slate-600 dark:text-slate-400">{description}</p>
 					)}
 					<div className="mt-6 flex justify-end gap-2">
 						<AlertDialog.Close asChild>
 							<button
 								type="button"
 								onClick={() => onConfirm(false)}
-								className="inline-flex items-center justify-center rounded-md px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2"
+								className="inline-flex items-center justify-center rounded-md px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 transition-colors hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2"
 							>
 								Close
 							</button>

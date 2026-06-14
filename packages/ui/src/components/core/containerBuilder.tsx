@@ -10,6 +10,7 @@ import { ConditionExpression } from "./expression";
 import { useTheme } from "../context";
 import { useData } from "../context/DataProvider";
 import { getBinGridItemStyle, getContainerGridStyle } from "./containerGrid";
+import { getContainerSurface } from "./containerSurface";
 
 type ContainerRendererProps = {
 	builder: ContainerBuilder<TModelMaster, TApiMaster<TModelMaster>>;
@@ -49,13 +50,14 @@ const ContainerRenderer = ({ builder, isRoot, withAuth }: ContainerRendererProps
 
 			return (
 				<Provider isRoot={isRoot} withAuth={withAuth}>
-					{containers.map((c) => (
-						<div
-							key={c.id}
-							className="grid grid-cols-12"
-							style={getContainerGridStyle(c)}
-						>
-							{c.bins.map((b, binIndex) => {
+					{containers.map((c) => {
+						const surface = getContainerSurface(c);
+						const grid = (
+							<div
+								className="grid grid-cols-12"
+								style={getContainerGridStyle(c)}
+							>
+								{c.bins.map((b, binIndex) => {
 								if (b.condition)
 									if (!(new ConditionExpression(ctx).expression(b.condition))) return null;
 
@@ -83,7 +85,19 @@ const ContainerRenderer = ({ builder, isRoot, withAuth }: ContainerRendererProps
 								);
 							})}
 						</div>
-					))}
+						);
+
+						if (!surface) return <div key={c.id}>{grid}</div>;
+
+						return (
+							<div key={c.id} className={surface.wrapperClass}>
+								{surface.title && (
+									<h3 className={surface.titleClass}>{surface.title}</h3>
+								)}
+								{grid}
+							</div>
+						);
+					})}
 				</Provider>
 			);
 		}}

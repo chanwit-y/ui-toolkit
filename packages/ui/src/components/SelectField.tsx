@@ -81,7 +81,7 @@ const SelectFieldBase = forwardRef<
 					size="1"
 					className={cn(
 						"block mt-1",
-						hasError ? "text-red-500" : "text-gray-600"
+						hasError ? "text-red-500" : "text-gray-600 dark:text-gray-400"
 					)}
 				>
 					{displayHelperText}

@@ -4,6 +4,7 @@ import type { TModelMaster } from "../../model/master";
 import type { IElement, TabElement } from "../@types";
 import { Tab as TabComponent } from "../Tab";
 import { ContainerBuilder } from "./containerBuilder";
+import { resolveSurface } from "./containerSurface";
 import type { ElementContext } from "./elementBuilder";
 
 export class Tab<M extends TModelMaster, A extends TApiMaster<M>>
@@ -24,10 +25,22 @@ export class Tab<M extends TModelMaster, A extends TApiMaster<M>>
 			).draw(false, false, this._context.theme),
 		}));
 
-		return createElement(TabComponent, {
+		const tab = createElement(TabComponent, {
 			defaultValue: props.defaultValue,
 			items,
 			className: props.className,
 		});
+
+		const surface = resolveSurface(props.surface);
+		if (!surface) return tab;
+
+		return createElement(
+			"div",
+			{ className: surface.wrapperClass },
+			surface.title
+				? createElement("h3", { className: surface.titleClass }, surface.title)
+				: null,
+			tab
+		);
 	}
 }

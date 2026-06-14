@@ -1957,6 +1957,14 @@ export const containerCountryOverview: Container = {
   bins: countryOverviewBins,
   ...DEFAULT_CONTAINER_GRID,
   gap: "3",
+  // Themed surface: flips light/dark automatically, accent-tinted border + title.
+  surface: {
+    title: "Country Overview",
+    accentBorder: true,
+    accentTitle: true,
+    radius: "lg",
+    padding: "6",
+  },
 };
 
 export const containerCountryMetadata: Container = {
@@ -2210,6 +2218,16 @@ const countryTabsBins: Bin[] = [
     alignSelf: "stretch",
     element: {
       defaultValue: "overview",
+      // Themed surface wrapping the whole tab widget: flips light/dark and
+      // tints the title + border with the theme accent.
+      surface: {
+        title: "Country Details",
+        accentTitle: true,
+        accentBorder: true,
+        radius: "lg",
+        padding: "5",
+        shadow: "none",
+      },
       tabs: [
         {
           label: "Overview",

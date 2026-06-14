@@ -183,7 +183,7 @@ export const Popover: React.FC<PopoverProps> = ({
           {/* Popover content */}
           <div
             ref={contentRef}
-            className={`fixed z-50 bg-white border border-gray-200 rounded-lg shadow-lg ${contentClassName}`}
+            className={`fixed z-50 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg ${contentClassName}`}
             style={{
               top: `${position.top}px`,
               left: `${position.left}px`,

@@ -134,7 +134,7 @@ const TextFieldBase = forwardRef<
 					id="autocomplete-helper"
 					className={cn(
 						"block mr-1 ",
-						hasError ? "text-red-500 flex items-center gap-0.5" : "text-gray-600"
+						hasError ? "text-red-500 flex items-center gap-0.5" : "text-gray-600 dark:text-gray-400"
 					)}>
 					{hasError && <AlertCircle className=" inline-block h-3 w-3 mr-[0.1rem]" />}
 					<span>{displayHelperText}</span>

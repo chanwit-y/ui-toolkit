@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query"
 import { flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable, type ColumnDef, type ColumnFiltersState, type FilterFn, type PaginationState, type Row, type SortingState } from "@tanstack/react-table"
 import { AlertCircle, ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, ListFilter } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { actionButtonTextColors, paginationBgColors, paginationHoverBgColors, ringColors, rowHoverBgColors, tableBgColors, tableHoverBgColors } from "../util/constant"
+import { dtActionButtonClass, dtHeaderBgClass, dtHeaderHoverClass, dtPaginationBgClass, dtPaginationHoverClass, dtRingClass, dtRowHoverClass, tableBgColors, tableHoverBgColors } from "../util/constant"
 import type { CrudMutationApi, DataTableEditableColumn, DataTableEditableProps, SnackbarElement } from "./@types"
 import { ConfirmBox } from "./ConfirmBox"
 import Icon from "./Icon"
@@ -16,8 +16,6 @@ import { useStord } from "./core/stord"
 
 const NEW_ROW_ID = "__new__"
 
-const getActionButtonClassName = (color: string) =>
-	`datatable-action-button ${tableBgColors[color] ?? tableBgColors.blue} ${tableHoverBgColors[color] ?? tableHoverBgColors.blue} ${actionButtonTextColors[color] ?? actionButtonTextColors.blue} hover:ring-1 ${ringColors[color] ?? ringColors.blue}`
 
 const multiSelectFilter: FilterFn<any> = (row, columnId, filterValue) => {
 	const values = filterValue as string[]
@@ -87,8 +85,9 @@ export const DataTableEditable = <T extends Record<string, any>>({
 
 	const updateFnCtxs = useStord((state) => state.updateFnCtxs)
 
-	// Edit icon follows the theme, same as DataTable2.
-	const editButtonColor = (theme.components.dataTable?.editButtonColor as ThemeProps['accentColor']) || (theme.components.button?.color as ThemeProps['accentColor']) || 'blue'
+	// Edit icon follows the theme accent by default (and flips in dark mode);
+	// set theme.components.dataTable.editButtonColor to pin a specific named color.
+	const editButtonColor = (theme.components.dataTable?.editButtonColor as ThemeProps['accentColor']) || (theme.components.button?.color as ThemeProps['accentColor']) || undefined
 	const saveButtonColor: ThemeProps['accentColor'] = 'green'
 	const cancelButtonColor: ThemeProps['accentColor'] = 'gray'
 
@@ -339,7 +338,7 @@ export const DataTableEditable = <T extends Record<string, any>>({
 		<div className="datatable-action-cell">
 			<button
 				type="button"
-				className={getActionButtonClassName(saveButtonColor)}
+				className={dtActionButtonClass(saveButtonColor)}
 				aria-label="Save row"
 				onClick={handleSave}
 			>
@@ -347,7 +346,7 @@ export const DataTableEditable = <T extends Record<string, any>>({
 			</button>
 			<button
 				type="button"
-				className={getActionButtonClassName(cancelButtonColor)}
+				className={dtActionButtonClass(cancelButtonColor)}
 				aria-label="Cancel editing"
 				onClick={cancelEdit}
 			>
@@ -383,7 +382,7 @@ export const DataTableEditable = <T extends Record<string, any>>({
 						{canEdit && (
 							<button
 								type="button"
-								className={getActionButtonClassName(editButtonColor)}
+								className={dtActionButtonClass(editButtonColor)}
 								aria-label="Edit row"
 								disabled={editingRowId !== null}
 								onClick={() => startEdit(row)}
@@ -501,8 +500,8 @@ export const DataTableEditable = <T extends Record<string, any>>({
 						<tr key={headerGroup.id} className="datatable-header-row">
 							{headerGroup.headers.map(header => (
 								header.column.columnDef.header && <th key={header.id} className={`datatable-header-cell
-									 ${tableBgColors[theme.components.dataTable?.headerColor || 'blue']}
-									 ${tableHoverBgColors[theme.components.dataTable?.headerHoverColor || 'blue']} text-gray-500 cursor-pointer`}
+									 ${dtHeaderBgClass(theme.components.dataTable?.headerColor)}
+									 ${dtHeaderHoverClass(theme.components.dataTable?.headerHoverColor)} cursor-pointer`}
 									style={{ width: header.getSize() }}>
 									<div className="datatable-header-content" >
 										{header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
@@ -527,9 +526,9 @@ export const DataTableEditable = <T extends Record<string, any>>({
 														align="center"
 														sideOffset={5}
 													>
-														<div className="p-1 bg-white ">
+														<div className="p-1 bg-white dark:bg-gray-900 ">
 															<div className="flex items-center justify-between mb-3">
-																<div className="text-xs font-medium text-gray-700">
+																<div className="text-xs font-medium text-gray-700 dark:text-gray-300">
 																	Filter {typeof header.column.columnDef.header === 'function' ? header.column.columnDef.header(header.getContext()) : header.column.columnDef.header}
 																</div>
 																<button
@@ -547,7 +546,7 @@ export const DataTableEditable = <T extends Record<string, any>>({
 																	const isChecked = currentFilter.includes(value);
 
 																	return (
-																		<div key={value} className="flex  p-1 hover:bg-gray-50 rounded">
+																		<div key={value} className="flex  p-1 hover:bg-gray-50 dark:hover:bg-gray-800 rounded">
 																			<input
 																				type="checkbox"
 																				checked={isChecked}
@@ -575,20 +574,20 @@ export const DataTableEditable = <T extends Record<string, any>>({
 																})}
 															</div>
 															{columnValues[header.column.id]?.length > 0 && (
-																<div className="mt-2 pt-2 border-t border-gray-200">
+																<div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
 																	<div className="flex space-x-2 justify-around">
 																		<button
 																			onClick={() => {
 																				header.column.setFilterValue(columnValues[header.column.id]);
 																			}}
-																			className=" text-xs text-gray-600 hover:text-gray-800 font-medium cursor-pointer"
+																			className=" text-xs text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 font-medium cursor-pointer"
 																		>
 																			Select All
 																		</button>
-																		<span className="text-xs text-gray-400">|</span>
+																		<span className="text-xs text-gray-400 dark:text-gray-500">|</span>
 																		<button
 																			onClick={() => header.column.setFilterValue(undefined)}
-																			className=" text-xs text-gray-600 hover:text-gray-800 font-medium cursor-pointer"
+																			className=" text-xs text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 font-medium cursor-pointer"
 																		>
 																			Deselect All
 																		</button>
@@ -640,14 +639,14 @@ export const DataTableEditable = <T extends Record<string, any>>({
 										className="datatable-body-cell px-4 py-1"
 										style={{ width: column.getSize(), textAlign: cellAlign(column.id) }}
 									>
-										<div className="h-4 w-full rounded bg-gray-200 animate-pulse" />
+										<div className="h-4 w-full rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
 									</td>
 								))}
 							</tr>
 						))
 						: table.getPaginationRowModel().rows.map(row => (
 							<tr key={row.id} className={`datatable-body-row
-							${rowHoverBgColors[theme.components.dataTable?.rowHoverColor || 'blue']}
+							${dtRowHoverClass(theme.components.dataTable?.rowHoverColor)}
 							${editingRowId === row.id ? 'bg-[var(--accent-a3,#eff6ff80)]' : ''}`}>
 								{row.getVisibleCells().map(cell => {
 									const col = columnMap[cell.column.id]
@@ -667,7 +666,7 @@ export const DataTableEditable = <T extends Record<string, any>>({
 				</table>
 			</div>
 			<div className="datatable-footer">
-				<div className="flex items-center space-x-6 text-sm text-gray-700">
+				<div className="flex items-center space-x-6 text-sm text-gray-700 dark:text-gray-300">
 						<div className="flex items-center space-x-2">
 							<span>Rows per page:</span>
 							<select
@@ -675,7 +674,7 @@ export const DataTableEditable = <T extends Record<string, any>>({
 								onChange={e => {
 									table.setPageSize(Number(e.target.value))
 								}}
-								className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent-8,#3b82f6)] hover:bg-[var(--accent-5,#93c5fd)]"
+								className="border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent-8,#3b82f6)] hover:bg-[var(--accent-5,#93c5fd)]"
 							>
 								{[5, 10, 20, 30, 40, 50].map(pageSize => (
 									<option key={pageSize} value={pageSize}>
@@ -698,14 +697,14 @@ export const DataTableEditable = <T extends Record<string, any>>({
 						<button
 							onClick={() => table.setPageIndex(0)}
 							disabled={!table.getCanPreviousPage()}
-							className="px-2 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+							className="px-2 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 						>
 							<ChevronFirst className="w-4 h-4" />
 						</button>
 						<button
 							onClick={() => table.previousPage()}
 							disabled={!table.getCanPreviousPage()}
-							className="px-2 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+							className="px-2 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 						>
 							<ChevronLeft className="w-4 h-4" />
 						</button>
@@ -739,7 +738,7 @@ export const DataTableEditable = <T extends Record<string, any>>({
 
 								return pages.map((page, index) => (
 									page === '...' ? (
-										<span key={`ellipsis-${index}`} className="px-2 py-1 text-sm text-gray-500">
+										<span key={`ellipsis-${index}`} className="px-2 py-1 text-sm text-gray-500 dark:text-gray-400">
 											...
 										</span>
 									) : (
@@ -747,10 +746,10 @@ export const DataTableEditable = <T extends Record<string, any>>({
 											key={page}
 											onClick={() => table.setPageIndex(Number(page) - 1)}
 											className={`px-3 py-1 text-sm cursor-pointer border rounded transition-colors ${currentPage === page
-													? `${paginationBgColors[theme.components.dataTable?.paginationButtonColor || 'blue']}
-													${paginationHoverBgColors[theme.components.dataTable?.paginationButtonHoverColor || 'blue']}
-													text-white ring-1 ${ringColors[theme.components.dataTable?.paginationButtonColor || 'blue']}`
-												: 'border-gray-300 hover:bg-gray-50'
+													? `${dtPaginationBgClass(theme.components.dataTable?.paginationButtonColor)}
+													${dtPaginationHoverClass(theme.components.dataTable?.paginationButtonHoverColor)}
+													text-white ring-1 ${dtRingClass(theme.components.dataTable?.paginationButtonColor)}`
+												: 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800'
 												}`}
 										>
 											{page}
@@ -763,14 +762,14 @@ export const DataTableEditable = <T extends Record<string, any>>({
 						<button
 							onClick={() => table.nextPage()}
 							disabled={!table.getCanNextPage()}
-							className="px-2 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+							className="px-2 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 						>
 							<ChevronRight className="w-4 h-4" />
 						</button>
 						<button
 							onClick={() => table.setPageIndex(table.getPageCount() - 1)}
 							disabled={!table.getCanNextPage()}
-							className="px-2 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+							className="px-2 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 						>
 							<ChevronLast className="w-4 h-4" />
 						</button>

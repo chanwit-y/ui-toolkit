@@ -69,3 +69,14 @@ The public surface is curated in `packages/ui/src/index.ts` — add new exports 
 - Functional components + hooks; Tailwind for styling (no inline styles); Radix UI primitives for accessibility.
 - PascalCase component files, camelCase utilities. Type all props; use Zod/TypeBox for runtime validation where the engine expects it.
 - Match the config shapes (`TModelMaster`, `TApiMaster`, `Bin`/`Container`) exactly — they are the contract the builders rely on.
+
+## Theming rule (apply when creating or editing any component)
+
+Every component you add or change **must follow the theme** in two ways. Don't hardcode colors:
+
+1. **Light/dark mode.** Surfaces, text, and borders flip with the `dark` class on `<html>` (Tailwind `darkMode: 'class'`). Use `dark:` variant classes (`bg-white dark:bg-gray-900`, `text-slate-800 dark:text-gray-100`, `border-slate-200 dark:border-gray-700`) — never a bare `#fff`/hex/static `bg-white`. Inline styles are only acceptable for genuinely dynamic values that can't be a class (e.g. a computed elevation shadow); everything else goes through classes so `dark:` resolves.
+2. **Accent (primary) color.** For brand/primary surfaces follow the Radix accent via the `--accent-*` CSS vars (`bg-[var(--accent-9)]`, `text-[var(--accent-contrast)]`, `hover:bg-[var(--accent-10)]`, `ring-[var(--accent-6)]`). These re-tint automatically for dark appearance and track the configured `accentColor` — prefer them over named Tailwind palette colors. Read per-component overrides from `useTheme()` (`theme.components.*`) and fall back to the accent vars when unset.
+
+Two constraints that make this work:
+- **Tailwind only emits classes that appear as literal strings** in scanned source (`packages/ui/src/**`). Runtime-built class names are dropped — keep accent/dark classes as literal constants or static lookup maps (see `tableBgColors` and the `ACCENT_*` constants in `src/util/constant/colors.ts`).
+- **`@apply dark:…` compiles to the portal-safe descendant form** `.sel:is(.dark *){…}`, which covers Radix-portaled content (modals/popovers at body level). Use it in `src/styles.css` rather than `.dark .sel {}` so portaled chrome flips too.

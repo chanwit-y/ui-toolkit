@@ -347,11 +347,11 @@ textarea::-webkit-scrollbar-thumb:hover {
 }
 
 .datatable-header {
-  @apply flex flex-row justify-between items-start  bg-white z-10;
+  @apply flex flex-row justify-between items-start  bg-white dark:bg-gray-900 z-10;
 }
 
 .datatable-title {
-  @apply text-2xl shrink-0 text-gray-500 font-semibold;
+  @apply text-2xl shrink-0 text-gray-500 dark:text-gray-400 font-semibold;
 }
 
 .datatable-controls-wrapper {
@@ -371,7 +371,7 @@ textarea::-webkit-scrollbar-thumb:hover {
 }
 
 .datatable-row-count {
-  @apply text-xs text-gray-500;
+  @apply text-xs text-gray-500 dark:text-gray-400;
 }
 
 .datatable-table-wrapper {
@@ -383,23 +383,23 @@ textarea::-webkit-scrollbar-thumb:hover {
 }
 
 .datatable-table {
-  @apply w-full bg-white border border-gray-200 table-fixed;
+  @apply w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 table-fixed;
 }
 
 .datatable-thead {
-  @apply bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200 block overflow-hidden;
+  @apply bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-800 border-b-2 border-gray-200 dark:border-gray-700 block overflow-hidden;
 }
 
 .datatable-header-row {
-  @apply text-center text-xs font-bold text-gray-700 tracking-widest table w-full table-fixed;
+  @apply text-center text-xs font-bold text-gray-700 dark:text-gray-300 tracking-widest table w-full table-fixed;
 }
 
 .datatable-header-cell-icon {
-  @apply py-4 border-r border-gray-200 flex justify-center items-center;
+  @apply py-4 border-r border-gray-200 dark:border-gray-700 flex justify-center items-center;
 }
 
 .datatable-header-cell {
-  @apply py-4 border-r border-gray-200 last:border-r-0 transition-colors duration-200 select-none;
+  @apply py-4 border-r border-gray-200 dark:border-gray-700 last:border-r-0 transition-colors duration-200 select-none;
 }
 
 .datatable-header-content {
@@ -429,8 +429,14 @@ textarea::-webkit-scrollbar-thumb:hover {
   outline: none;
 }
 
+.dark .datatable-popover-content {
+  background-color: rgb(17 24 39); /* gray-900 */
+  border-color: rgb(55 65 81); /* gray-700 */
+  color: rgb(229 231 235); /* gray-200 */
+}
+
 .datatable-popover-content:focus {
-  box-shadow: 0 0 0 2px rgb(96 165 250 / 0.5);
+  box-shadow: 0 0 0 2px var(--accent-8, rgb(96 165 250 / 0.5));
 }
 
 .datatable-popover-content[data-state="open"][data-side="bottom"] {
@@ -509,8 +515,8 @@ textarea::-webkit-scrollbar-thumb:hover {
 }
 
 .datatable-popover-content .rt-CheckboxRoot[data-state="checked"] {
-  background-color: rgb(59 130 246); /* blue-500 */
-  border-color: rgb(59 130 246);
+  background-color: var(--accent-9, rgb(59 130 246)); /* theme accent */
+  border-color: var(--accent-9, rgb(59 130 246));
 }
 
 .datatable-popover-content .rt-CheckboxRoot[data-state="unchecked"] {
@@ -518,14 +524,19 @@ textarea::-webkit-scrollbar-thumb:hover {
   background-color: white;
 }
 
+.dark .datatable-popover-content .rt-CheckboxRoot[data-state="unchecked"] {
+  border-color: rgb(75 85 99); /* gray-600 */
+  background-color: rgb(17 24 39); /* gray-900 */
+}
+
 .datatable-popover-content .rt-CheckboxRoot[data-state="checked"]:hover {
-  background-color: rgb(37 99 235); /* blue-600 */
-  border-color: rgb(37 99 235);
+  background-color: var(--accent-10, rgb(37 99 235)); /* theme accent (hover) */
+  border-color: var(--accent-10, rgb(37 99 235));
 }
 
 .datatable-popover-content .rt-CheckboxRoot[data-state="unchecked"]:hover {
-  border-color: rgb(59 130 246); /* blue-500 */
-  background-color: rgb(239 246 255); /* blue-50 */
+  border-color: var(--accent-8, rgb(59 130 246)); /* theme accent */
+  background-color: var(--accent-3, rgb(239 246 255)); /* theme accent (subtle) */
 }
 
 .datatable-popover-content .rt-Text {
@@ -536,7 +547,7 @@ textarea::-webkit-scrollbar-thumb:hover {
 }
 
 .datatable-popover-content .rt-Text:hover {
-  color: rgb(59 130 246); /* blue-500 */
+  color: var(--accent-11, rgb(59 130 246)); /* theme accent */
 }
 
 /* Checkbox item container styling */
@@ -551,27 +562,31 @@ textarea::-webkit-scrollbar-thumb:hover {
   background-color: rgb(249 250 251); /* gray-50 */
 }
 
+.dark .datatable-popover-content .rt-Flex:hover {
+  background-color: rgb(31 41 55); /* gray-800 */
+}
+
 /* Checkbox indicator styling */
 .datatable-popover-content .rt-CheckboxIndicator {
-  color: white;
+  color: var(--accent-contrast, white);
   font-size: 10px;
   font-weight: bold;
 }
 
 .datatable-tbody {
-  @apply bg-white divide-y divide-gray-200 block h-[460px] overflow-y-auto overflow-x-hidden;
+  @apply bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700 block h-[460px] overflow-y-auto overflow-x-hidden;
 }
 
 .datatable-footer {
-  @apply flex items-center justify-between px-2 py-4 bg-white border-t border-gray-200;
+  @apply flex items-center justify-between px-2 py-4 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700;
 }
 
 .datatable-body-row {
-  @apply text-center text-xs font-bold text-gray-700 tracking-widest table w-full table-fixed;
+  @apply text-center text-xs font-bold text-gray-700 dark:text-gray-300 tracking-widest table w-full table-fixed;
 }
 
 .datatable-body-cell {
-  @apply py-4 border-r border-b border-gray-200 last:border-r-0 transition-colors duration-200 select-none;
+  @apply py-4 border-r border-b border-gray-200 dark:border-gray-700 last:border-r-0 transition-colors duration-200 select-none;
 }
 
 /* Popover focus-visible styles */
@@ -590,14 +605,19 @@ textarea::-webkit-scrollbar-thumb:hover {
   background-color: white;
 }
 
+.dark .datatable-popover-content input[type="checkbox"] {
+  border-color: rgb(75 85 99); /* gray-600 */
+  background-color: rgb(17 24 39); /* gray-900 */
+}
+
 .datatable-popover-content input[type="checkbox"]:hover {
-  border-color: rgb(96 165 250); /* blue-400 */
-  background-color: rgb(239 246 255); /* blue-50 */
+  border-color: var(--accent-8, rgb(96 165 250)); /* theme accent */
+  background-color: var(--accent-3, rgb(239 246 255)); /* theme accent (subtle) */
 }
 
 .datatable-popover-content input[type="checkbox"]:checked {
-  background-color: rgb(96 165 250); /* blue-400 */
-  border-color: rgb(96 165 250); /* blue-400 */
+  background-color: var(--accent-9, rgb(96 165 250)); /* theme accent */
+  border-color: var(--accent-9, rgb(96 165 250));
 }
 
 .datatable-popover-content input[type="checkbox"]:checked::after {
@@ -608,13 +628,13 @@ textarea::-webkit-scrollbar-thumb:hover {
   transform: translate(-50%, -50%) rotate(45deg);
   width: 0.25rem;
   height: 0.5rem;
-  border: solid white;
+  border: solid var(--accent-contrast, white);
   border-width: 0 2px 2px 0;
 }
 
 .datatable-popover-content input[type="checkbox"]:checked:hover {
-  background-color: rgb(59 130 246); /* blue-500 */
-  border-color: rgb(59 130 246); /* blue-500 */
+  background-color: var(--accent-10, rgb(59 130 246)); /* theme accent (hover) */
+  border-color: var(--accent-10, rgb(59 130 246));
 }
 
 /* Text highlighting styles for DataTable2 */

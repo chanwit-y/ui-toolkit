@@ -12,6 +12,8 @@ export {
 	getContainerGridStyle,
 	resolveContainerGap,
 } from "./components/core/containerGrid";
+export { getContainerSurface, resolveSurface } from "./components/core/containerSurface";
+export type { ResolvedContainerSurface } from "./components/core/containerSurface";
 export * from "./api/APIMaster";
 export * from "./components/DataTable2";
 export * from "./components/DataTableEditable";
@@ -64,8 +66,10 @@ export * from "./util/file";
 export { uploadFileToApi, deleteFileFromApi } from "./util/uploadApi";
 
 export * from "./components/RadioButton2"
-export type { Bin, Container, DataTableElement, RadioElement } from "./components/@types"
-export type { ThemeComponents, ThemeProviderProps } from "./components/@types"
+export * from "./components/ThemeToggle"
+export type { ThemeToggleProps } from "./components/ThemeToggle"
+export type { Bin, Container, ContainerSurface, DataTableElement, RadioElement } from "./components/@types"
+export type { Appearance, ThemeComponents, ThemeProviderProps } from "./components/@types"
 export type { ThemeProps } from "@radix-ui/themes"
 export type * from "./model/master"
 export * from "./model/master"

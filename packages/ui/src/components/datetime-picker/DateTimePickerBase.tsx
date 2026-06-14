@@ -268,25 +268,25 @@ const DateTimePickerBase = forwardRef<
 					aria-haspopup="dialog"
 					aria-expanded={isOpen}
 					className={cn(
-						"w-full flex items-center justify-between bg-white border shadow-sm",
+						"w-full flex items-center justify-between bg-white dark:bg-gray-900 border shadow-sm",
 						"transition-all duration-200 text-left",
 						sizeClass,
 						radiusClass,
 						hasError
 							? "border-red-300 hover:border-red-400"
-							: "border-gray-300 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--accent-8,#3b82f6)] focus:border-transparent",
-						disabled && "opacity-60 cursor-not-allowed bg-gray-50",
+							: "border-gray-300 dark:border-gray-600 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--accent-8,#3b82f6)] focus:border-transparent",
+						disabled && "opacity-60 cursor-not-allowed bg-gray-50 dark:bg-gray-800",
 						className
 					)}
 					data-error={hasError ? "true" : undefined}
 					{...props}
 				>
 					<div className="flex flex-1 min-w-0 items-center gap-3">
-						<CalendarIcon className="h-4 w-4 text-gray-400 shrink-0" />
+						<CalendarIcon className="h-4 w-4 text-gray-400 dark:text-gray-500 shrink-0" />
 						<span
 							className={cn(
 								"truncate",
-								selectedDateTime ? "text-gray-900" : "text-gray-400"
+								selectedDateTime ? "text-gray-900 dark:text-gray-100" : "text-gray-400 dark:text-gray-500"
 							)}
 						>
 							{selectedDateTime ? selectedDateTime.format(displayFormat) : placeholder}
@@ -298,7 +298,7 @@ const DateTimePickerBase = forwardRef<
 							tabIndex={-1}
 							aria-label="Clear datetime"
 							onClick={handleClear}
-							className="ml-2 inline-flex items-center justify-center rounded-full p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+							className="ml-2 inline-flex items-center justify-center rounded-full p-0.5 text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-600 dark:hover:text-gray-400 transition-colors"
 						>
 							<X className="h-3.5 w-3.5" />
 						</span>

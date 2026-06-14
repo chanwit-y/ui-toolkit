@@ -20,18 +20,18 @@ export const CalendarHeader = ({
 			type="button"
 			aria-label="Previous month"
 			onClick={onPreviousMonth}
-			className="p-1 rounded-md hover:bg-gray-100 transition-colors text-gray-600"
+			className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-400"
 		>
 			<ChevronLeft className="h-4 w-4" />
 		</button>
-		<Text size="2" weight="medium" className="text-gray-800">
+		<Text size="2" weight="medium" className="text-gray-800 dark:text-gray-200">
 			{cursor.format("MMMM YYYY")}
 		</Text>
 		<button
 			type="button"
 			aria-label="Next month"
 			onClick={onNextMonth}
-			className="p-1 rounded-md hover:bg-gray-100 transition-colors text-gray-600"
+			className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-400"
 		>
 			<ChevronRight className="h-4 w-4" />
 		</button>
@@ -43,7 +43,7 @@ export const WeekdayHeader = ({ labels }: { labels: string[] }) => (
 		{labels.map((day) => (
 			<div
 				key={day}
-				className="h-7 flex items-center justify-center text-[11px] font-medium text-gray-500 uppercase"
+				className="h-7 flex items-center justify-center text-[11px] font-medium text-gray-500 dark:text-gray-400 uppercase"
 			>
 				{day}
 			</div>
@@ -76,15 +76,15 @@ export const CalendarGrid = ({
 					className={cn(
 						"h-8 w-full flex items-center justify-center text-xs rounded-md transition-colors",
 						"focus:outline-none focus:ring-2 focus:ring-[var(--accent-8,#3b82f6)]",
-						!isCurrentMonth && "text-gray-300",
+						!isCurrentMonth && "text-gray-300 dark:text-gray-600",
 						isCurrentMonth &&
 							!isSelected &&
 							!disabledDay &&
-							"text-gray-700 hover:bg-[var(--accent-3,#eff6ff)] hover:text-[var(--accent-11,#1d4ed8)]",
+							"text-gray-700 dark:text-gray-300 hover:bg-[var(--accent-3,#eff6ff)] hover:text-[var(--accent-11,#1d4ed8)]",
 						isSelected && "bg-[var(--accent-9,#2563eb)] text-white font-semibold hover:bg-[var(--accent-10,#1d4ed8)]",
 						!isSelected && isToday && "border border-[var(--accent-8,#3b82f6)]",
 						disabledDay &&
-							"opacity-40 cursor-not-allowed hover:bg-transparent hover:text-gray-300"
+							"opacity-40 cursor-not-allowed hover:bg-transparent hover:text-gray-300 dark:hover:text-gray-600"
 					)}
 				>
 					{date.date()}
@@ -99,7 +99,7 @@ export const CalendarFooter = ({
 	onToday,
 	onClear,
 }: CalendarFooterProps) => (
-	<div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-100">
+	<div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-100 dark:border-gray-800">
 		<button
 			type="button"
 			onClick={onToday}
@@ -111,7 +111,7 @@ export const CalendarFooter = ({
 			<button
 				type="button"
 				onClick={onClear}
-				className="text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors"
+				className="text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
 			>
 				Clear
 			</button>
@@ -138,7 +138,7 @@ export const CalendarDropdown = ({
 	<div
 		ref={dropdownRef}
 		style={dropdownStyles}
-		className="date-picker-dropdown bg-white border ring-2 ring-[var(--accent-8,#60a5fa)] border-transparent rounded-md shadow-lg p-3"
+		className="date-picker-dropdown bg-white dark:bg-gray-900 border ring-2 ring-[var(--accent-8,#60a5fa)] border-transparent rounded-md shadow-lg p-3"
 	>
 		<CalendarHeader
 			cursor={cursor}
@@ -177,7 +177,7 @@ export const HelperText = ({
 			id="datepicker-helper"
 			className={cn(
 				"block mt-2 mr-1",
-				hasError ? "text-red-500 flex items-center gap-0.5" : "text-gray-600"
+				hasError ? "text-red-500 flex items-center gap-0.5" : "text-gray-600 dark:text-gray-400"
 			)}
 		>
 			{hasError && (

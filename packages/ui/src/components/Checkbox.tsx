@@ -117,7 +117,7 @@ const CheckboxBase = forwardRef<
 									<Text as="label" size="2" weight="medium" className={cn("cursor-pointer", hasError && "text-red-500")}>
 										{option.label}
 									</Text>
-									{option.helperText && <Text size="1" className="text-gray-600">{option.helperText}</Text>}
+									{option.helperText && <Text size="1" className="text-gray-600 dark:text-gray-400">{option.helperText}</Text>}
 								</Flex>
 							</Flex>
 						))}
@@ -125,7 +125,7 @@ const CheckboxBase = forwardRef<
 				)}
 
 				{displayHelperText && (
-					<Text size="1" className={cn("block mt-1 mr-1", hasError ? "text-red-500 flex items-center gap-0.5" : "text-gray-600")}>
+					<Text size="1" className={cn("block mt-1 mr-1", hasError ? "text-red-500 flex items-center gap-0.5" : "text-gray-600 dark:text-gray-400")}>
 						{hasError && <AlertCircle className="inline-block h-3 w-3 mr-[0.1rem]" />}
 						<span>{displayHelperText}</span>
 					</Text>

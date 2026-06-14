@@ -41,9 +41,17 @@ import { TApiMaster } from "../../api/APIMaster";
 //   Icon?: IconProps;
 // };
 
+export type Appearance = "light" | "dark";
+
 export type ThemeContextType = {
   theme?: ThemeProps;
   components: ThemeComponents;
+  /** Current resolved appearance (light/dark). */
+  appearance?: Appearance;
+  /** Set the appearance explicitly. */
+  setAppearance?: (appearance: Appearance) => void;
+  /** Flip between light and dark. */
+  toggleAppearance?: () => void;
 };
 
 export type ThemeProviderProps = {
@@ -1144,6 +1152,30 @@ export type ContainerGridAutoFlow =
   | "row dense"
   | "column dense";
 
+/**
+ * Optional themed surface for a container. When set, the container's grid is
+ * wrapped in a panel that flips light/dark automatically and can opt into the
+ * theme accent color. Omit (or set `false`) to keep the container transparent.
+ */
+export type ContainerSurface = {
+  /** Paint a panel background (white in light, gray-900 in dark). Default: true. */
+  background?: boolean;
+  /** Draw a border. Default: true. */
+  border?: boolean;
+  /** Tint the border with the theme accent instead of neutral gray. Default: false. */
+  accentBorder?: boolean;
+  /** Corner radius. Default: "md". */
+  radius?: "none" | "sm" | "md" | "lg" | "xl";
+  /** Inner padding (Tailwind spacing key). Default: "4". */
+  padding?: "0" | "2" | "3" | "4" | "5" | "6" | "8";
+  /** Drop shadow. Default: "sm". */
+  shadow?: "none" | "sm" | "md" | "lg";
+  /** Optional heading rendered at the top of the surface. */
+  title?: string;
+  /** Tint the title with the theme accent color. Default: false. */
+  accentTitle?: boolean;
+};
+
 export type Container = {
   id: string;
   name: string;
@@ -1157,6 +1189,8 @@ export type Container = {
   justifyContent?: ContainerGridContent;
   alignContent?: ContainerGridContent;
   gridAutoFlow?: ContainerGridAutoFlow;
+  /** Themed panel wrapping the grid. `true` uses defaults; an object customizes it. */
+  surface?: boolean | ContainerSurface;
 };
 
 export type ConfirmBoxElement = {
@@ -1215,6 +1249,8 @@ export type TabElement = {
   defaultValue?: string;
   className?: string;
   tabs: TabItem[];
+  /** Themed panel wrapping the whole tab widget. `true` uses defaults; an object customizes it. */
+  surface?: boolean | ContainerSurface;
 };
 
 export type DividerElement = {
@@ -1302,14 +1338,19 @@ export type ThemeComponents = {
   button?: {
     color: ThemeProps["accentColor"];
   };
+  /**
+   * Per-role color overrides for the DataTable. Every field is optional: any
+   * role left unset follows the theme accent (`--accent-*`) and flips with dark
+   * mode automatically. Set a field to pin a specific named color for that role.
+   */
   dataTable?: {
-    headerColor: ThemeProps["accentColor"];
-    headerHoverColor: ThemeProps["accentColor"];
-    paginationButtonColor: ThemeProps["accentColor"];
-    paginationButtonHoverColor: ThemeProps["accentColor"];
-    rowHoverColor: ThemeProps["accentColor"];
-    editButtonColor: ThemeProps["accentColor"];
-    deleteButtonColor: ThemeProps["accentColor"];
+    headerColor?: ThemeProps["accentColor"];
+    headerHoverColor?: ThemeProps["accentColor"];
+    paginationButtonColor?: ThemeProps["accentColor"];
+    paginationButtonHoverColor?: ThemeProps["accentColor"];
+    rowHoverColor?: ThemeProps["accentColor"];
+    editButtonColor?: ThemeProps["accentColor"];
+    deleteButtonColor?: ThemeProps["accentColor"];
   };
   textField?: {};
 };

@@ -435,10 +435,10 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 			<div
 				ref={dropdownContainerRef}
 				style={dropdownStyles}
-				className="dropdown flex flex-col bg-white border ring-2 ring-[var(--accent-8,#60a5fa)] border-transparent rounded-md shadow-lg overflow-hidden ease-in duration-100 opacity-100 z-[100000]"
+				className="dropdown flex flex-col bg-white dark:bg-gray-900 border ring-2 ring-[var(--accent-8,#60a5fa)] border-transparent rounded-md shadow-lg overflow-hidden ease-in duration-100 opacity-100 z-[100000]"
 			>
-				<div className="flex items-center border-b border-gray-100 px-3">
-					<Search className="h-4 w-4 text-gray-400 mr-2" />
+				<div className="flex items-center border-b border-gray-100 dark:border-gray-800 px-3">
+					<Search className="h-4 w-4 text-gray-400 dark:text-gray-500 mr-2" />
 					<input
 						type="text"
 						ref={searchInputRef}
@@ -449,14 +449,14 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 						}}
 						onKeyDown={handleKeyDown}
 						placeholder="Type to search..."
-						className="flex-1 py-2 text-sm border-none outline-none bg-transparent placeholder:text-gray-400"
+						className="flex-1 py-2 text-sm border-none outline-none bg-transparent placeholder:text-gray-400 dark:placeholder:text-gray-500"
 					/>
 					{query && (
 						<button
 							onClick={() => setQuery('')}
-							className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+							className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
 						>
-							<X className="h-3 w-3 text-gray-400" />
+							<X className="h-3 w-3 text-gray-400 dark:text-gray-500" />
 						</button>
 					)}
 
@@ -470,13 +470,13 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 				>
 
 					{showFetching && (
-						<div className="flex items-center justify-center gap-2 py-3 text-sm text-gray-500">
+						<div className="flex items-center justify-center gap-2 py-3 text-sm text-gray-500 dark:text-gray-400">
 							<Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
 							Loading...
 						</div>
 					)}
 					{filteredItems?.length === 0 && !showFetching
-						? <div className="flex justify-center py-3 text-sm text-gray-500">
+						? <div className="flex justify-center py-3 text-sm text-gray-500 dark:text-gray-400">
 							No results found
 						</div>
 						: filteredItems.map((item, index) => {
@@ -546,7 +546,7 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 									itemSubtitleText ? "py-2" : "py-2",
 									isSelected
 										? "bg-[var(--accent-3,#eff6ff)] text-[var(--accent-11,#1d4ed8)] font-semibold"
-										: "text-gray-700 hover:bg-gray-50",
+										: "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800",
 									isCurrent ? "bg-[var(--accent-3,#eff6ff)] text-[var(--accent-11,#1d4ed8)] font-semibold" : ""
 								)}>
 								<div className="flex items-center gap-2 flex-1 min-w-0">
@@ -557,11 +557,11 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 										fallback={itemAvatarProps.fallback}
 										className="flex-shrink-0" 
 									/>}
-									{!itemAvatarProps && ItemIconComponent && <ItemIconComponent className="h-4 w-4 text-gray-400 flex-shrink-0" />}
+									{!itemAvatarProps && ItemIconComponent && <ItemIconComponent className="h-4 w-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />}
 									<div className="flex flex-col gap-0.5 min-w-0 flex-1">
 										<span className="truncate">{item[displayKey]}</span>
 										{itemSubtitleText && (
-											<span className="text-xs text-gray-500 truncate">{itemSubtitleText}</span>
+											<span className="text-xs text-gray-500 dark:text-gray-400 truncate">{itemSubtitleText}</span>
 										)}
 									</div>
 								</div>
@@ -582,7 +582,7 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 			}
 			{
 				subtitle && (
-					<Text size="1" className="block mb-1 text-gray-600">
+					<Text size="1" className="block mb-1 text-gray-600 dark:text-gray-400">
 						{subtitle}
 					</Text>
 				)
@@ -593,11 +593,11 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 					onClick={openDropdown}
 					disabled={!isObserveEnabled}
 					className={cn("w-full h-[40px] px-4 text-sm flex items-center justify-between",
-						"bg-white border rounded-md shadow-sm transition-all duration-200",
+						"bg-white dark:bg-gray-900 border rounded-md shadow-sm transition-all duration-200",
 						"text-left focus:ring-2 focus:ring-[var(--accent-8,#3b82f6)] focus:border-transparent",
 						hasError
 							? "border-red-300 hover:border-red-400"
-							: "border-gray-300 hover:border-gray-400",
+							: "border-gray-300 dark:border-gray-600 hover:border-gray-400",
 						className,)}
 					data-error={String(hasError)}
 					{...props}
@@ -614,15 +614,15 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 							} else {
 								IconComponent = Search;
 							}
-							return <IconComponent className="h-4 w-4 text-gray-400 flex-shrink-0" />;
+							return <IconComponent className="h-4 w-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />;
 						})()}
-						<span className={`truncate ${!selectedItem ? 'text-gray-400' : 'text-gray-900'}`}>
+						<span className={`truncate ${!selectedItem ? 'text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'}`}>
 							{selectedItem ? selectedItem[displayKey] : placeholder}
 						</span>
 					</div>
 					<div className="flex items-center flex-shrink-0 gap-2">
-						{showFetching && <Loader2 className="h-4 w-4 text-gray-400 animate-spin" aria-hidden="true" />}
-						<ChevronDown className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+						{showFetching && <Loader2 className="h-4 w-4 text-gray-400 dark:text-gray-500 animate-spin" aria-hidden="true" />}
+						<ChevronDown className={`h-4 w-4 text-gray-400 dark:text-gray-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
 					</div>
 				</button>
 			</div>
@@ -634,7 +634,7 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 						id="autocomplete-helper"
 						className={cn(
 							"block mt-2 mr-1 item-center",
-							hasError ? "text-red-500 flex items-center gap-0.5" : "text-gray-600"
+							hasError ? "text-red-500 flex items-center gap-0.5" : "text-gray-600 dark:text-gray-400"
 						)}>
 						{hasError && <AlertCircle className=" inline-block h-3 w-3 mr-[0.1rem]" />}
 						{displayHelperText}
