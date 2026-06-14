@@ -90,6 +90,8 @@ export const countryService = {
     };
   },
   
+  getById: (id: string) => countries.find((c) => c._id === id) ?? null,
+
   create: (data: { name: string; code: string }) => {
     const newCountry: Country = {
       _id: String(nextId++),

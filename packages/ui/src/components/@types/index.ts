@@ -586,9 +586,20 @@ export type IconProps = BaseComponentProps<
 >;
 
 export type DataValue = {
-  type: "variable" | "state" | "observe" | "value" | "selectedRow";
+  type: "variable" | "state" | "observe" | "value" | "selectedRow" | "url";
   key: "none" | string;
   value?: any;
+  /**
+   * Lodash path into the source object. For `type:"state"` it drills into the
+   * named global-state slice (e.g. "name", "address.city"); for `type:"value"`
+   * it is ignored. Optional — omit to take the whole slice.
+   */
+  path?: string;
+  /**
+   * Only meaningful for `type:"url"`: read the value from the route path param
+   * (default) or from the query string. `key` is the param/query name.
+   */
+  source?: "param" | "query";
 };
 
 export type API = {
@@ -624,6 +635,22 @@ export type DataTablePagination = {
 /** {@link API} plus the optional server-pagination block used by DataTable. */
 export type DataTableApi = API & { pagination?: DataTablePagination };
 
+/**
+ * Declarative API loader for a {@link Container}. When set, the container fires
+ * `api` (the standard {@link API} config — params/query/body can be sourced from
+ * the URL via `type:"url"` {@link DataValue}s) on mount, drills `api.paths` into
+ * the response, and writes the result into the global state slice named `key`
+ * (one zustand store per key). It refetches when the resolved URL params change
+ * and clears the slice on unmount. Input elements can then read-bind their
+ * initial value from that slice via `value:{ type:"state", key, path }`.
+ */
+export type ContainerLoad = {
+  /** Unique global-state key the (path-drilled) response is stored under. */
+  key: string;
+  /** Standard API config used to fetch the data. */
+  api: API;
+};
+
 export type Term = {
   type: "observe" | "value";
   name?: string;
@@ -651,6 +678,8 @@ export type CheckboxElement = {
   dataType: string;
   isRequired: boolean;
   errorMessage: string;
+  /** Read-only initial value bound from a global-state slice. */
+  value?: DataValue;
 } & CheckboxProps;
 
 export type APIDelete = {
@@ -725,6 +754,8 @@ export type TextFieldElement = {
   dataType: string;
   isRequired: boolean;
   errorMessage: string;
+  /** Read-only initial value bound from a global-state slice. */
+  value?: DataValue;
 } & TextFieldProps;
 
 export type TextareaElement = {
@@ -732,6 +763,8 @@ export type TextareaElement = {
   dataType: string;
   isRequired: boolean;
   errorMessage: string;
+  /** Read-only initial value bound from a global-state slice. */
+  value?: DataValue;
 } & TextareaProps;
 
 export type HiddenElement = {
@@ -744,6 +777,8 @@ export type DatePickerElement = {
   dataType: string;
   isRequired?: boolean;
   errorMessage?: string;
+  /** Read-only initial value bound from a global-state slice. */
+  value?: DataValue;
 } & DatePickerProps;
 
 export type DateRange = {
@@ -1035,6 +1070,8 @@ export type RadioElement = {
   variant?: "classic" | "surface" | "soft";
   orientation?: "horizontal" | "vertical";
   defaultValue?: string;
+  /** Read-only initial value bound from a global-state slice. */
+  value?: DataValue;
   /** Static options. Used when no `api` is provided. */
   options?: Array<{
     value: string;
@@ -1207,6 +1244,8 @@ export type Container = {
   id: string;
   name: string;
   contextData?: string;
+  /** Fetch an API on mount and store the result into a global-state key. */
+  load?: ContainerLoad;
   isArray: boolean;
   bins: Bin[];
   /** Grid gap — Tailwind scale key (e.g. "2") or CSS length (e.g. "1rem", "8px"). Default: "2" */

@@ -2639,3 +2639,98 @@ export const containerCountryList: Container[] = [
     alignContent: "start",
   },
 ];
+
+/**
+ * State-loader demo bins. Every input reads its initial value (read-only) out
+ * of the `countryDetail` global-state slice that the container's `load` fills.
+ */
+const countryStateDetailBins: Bin[] = [
+  {
+    sm: "12", md: "12", lg: "12", xl: "12",
+    type: "hidden",
+    element: {
+      name: "_id",
+      dataType: "string",
+      value: { type: "state", key: "countryDetail", path: "_id" },
+    },
+  },
+  {
+    sm: "12", md: "12", lg: "12", xl: "12",
+    type: "text",
+    element: { text: "Country detail (loaded into global state from /country/:id)", isLabel: true },
+  },
+  {
+    sm: "12", md: "6", lg: "6", xl: "6",
+    type: "textfield",
+    element: {
+      name: "name",
+      label: "Name",
+      dataType: "string",
+      isRequired: false,
+      errorMessage: "",
+      value: { type: "state", key: "countryDetail", path: "name" },
+    },
+  },
+  {
+    sm: "12", md: "6", lg: "6", xl: "6",
+    type: "textfield",
+    element: {
+      name: "code",
+      label: "Code",
+      dataType: "string",
+      isRequired: false,
+      errorMessage: "",
+      value: { type: "state", key: "countryDetail", path: "code" },
+    },
+  },
+  {
+    sm: "12", md: "6", lg: "6", xl: "6",
+    type: "textfield",
+    element: {
+      name: "updated_by_name",
+      label: "Updated by",
+      dataType: "string",
+      isRequired: false,
+      errorMessage: "",
+      value: { type: "state", key: "countryDetail", path: "updated_by_name" },
+    },
+  },
+  {
+    sm: "12", md: "6", lg: "6", xl: "6",
+    type: "textfield",
+    element: {
+      name: "updated_at",
+      label: "Updated at",
+      dataType: "string",
+      isRequired: false,
+      errorMessage: "",
+      value: { type: "state", key: "countryDetail", path: "updated_at" },
+    },
+  },
+];
+
+export const containerCountryStateDetail: Container[] = [
+  {
+    id: "state-detail-1",
+    name: "CountryStateDetail",
+    isArray: false,
+    // Fire countryDetail with :id from the URL, store the response object
+    // (drilled at "data") into the global-state key "countryDetail".
+    load: {
+      key: "countryDetail",
+      api: {
+        name: "countryDetail",
+        paths: ["data"],
+        params: { id: { type: "url", key: "id" } },
+      },
+    },
+    bins: countryStateDetailBins,
+    ...DEFAULT_CONTAINER_GRID,
+    gap: "4",
+    justifyItems: "stretch",
+    alignItems: "start",
+    justifyContent: "start",
+    alignContent: "start",
+    surface: { title: "State Loader Demo" },
+  },
+];

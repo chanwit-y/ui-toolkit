@@ -74,6 +74,38 @@ countryRoutes.post('/collection/page', async (c) => {
   }
 });
 
+// Country detail by id - GET /collection/detail/:id
+// Returns a SINGLE country object (not an array) for the state-loader demo.
+countryRoutes.get('/collection/detail/:id', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const country = countryService.getById(id);
+
+    if (!country) {
+      return c.json({
+        data: null,
+        status: 404,
+        success: false,
+        message: 'Country not found',
+      }, 404);
+    }
+
+    return c.json({
+      data: country,
+      status: 200,
+      success: true,
+      message: 'Country detail retrieved successfully',
+    });
+  } catch (error) {
+    return c.json({
+      data: null,
+      status: 500,
+      success: false,
+      message: 'Failed to retrieve country detail',
+    }, 500);
+  }
+});
+
 // Create country - matches existing API contract: POST /collection/create/691e9963992636eb1560eadb
 countryRoutes.post('/collection/create/691e9963992636eb1560eadb', async (c) => {
   try {

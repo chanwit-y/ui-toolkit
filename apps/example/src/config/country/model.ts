@@ -34,6 +34,22 @@ export const model: TModelMaster = {
     success: "boolean",
     message: "string",
   },
+  countryDetailRes: {
+    data: {
+      type: "object",
+      collection: {
+        _id: "string",
+        name: "string",
+        code: "string",
+        avatar: "any",
+        updated_at: "string",
+        updated_by_name: "string",
+      },
+    },
+    status: "number",
+    success: "boolean",
+    message: "string",
+  },
   countryPageBody: {
     offset: "number",
     limit: "number",
