@@ -16,15 +16,18 @@ export const theme: ThemeProps = {
 
 export const components: ThemeComponents = {
   button: { color: "teal" },
-  // DataTable colors. Every role is optional — any field left unset follows the
+  // DataTable styling. Every role is optional — any field left unset follows the
   // global `accentColor` via Radix `--accent-*` vars and flips with dark mode.
-  // Set a field to pin a specific named color for that role.
+  //
+  // header background/hover, pagination and row-hover are left UNSET here so the
+  // header renders as the solid accent (teal) and correctly flips in dark mode.
+  // Pinning a named color (e.g. `headerColor: "teal"`) opts into the legacy
+  // static map, which is a light-only tint with no dark variant.
   dataTable: {
-    headerColor: "teal",
-    headerHoverColor: "teal",
-    paginationButtonColor: "teal",
-    paginationButtonHoverColor: "teal",
-    rowHoverColor: "teal",
+    // Header font (header-only). Unset → text-xs / font-bold.
+    headerFontSize: "sm",
+    headerFontWeight: "semibold",
+    // headerTextColor: "teal", // tint the label; pairs with a named light headerColor
     editButtonColor: "teal",
     deleteButtonColor: "red",
   },

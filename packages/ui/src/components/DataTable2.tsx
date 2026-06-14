@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query"
 import { flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable, type ColumnDef, type ColumnFiltersState, type PaginationState, type SortingState } from "@tanstack/react-table"
 import { ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, ListFilter } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { dtActionButtonClass, dtHeaderBgClass, dtHeaderHoverClass, dtPaginationBgClass, dtPaginationHoverClass, dtRingClass, dtRowHoverClass, tableBgColors, tableHoverBgColors } from "../util/constant"
+import { dtActionButtonClass, dtHeaderBgClass, dtHeaderTextClass, dtHeaderFontSizeClass, dtHeaderFontWeightClass, dtHeaderHoverClass, dtPaginationBgClass, dtPaginationHoverClass, dtRingClass, dtRowHoverClass, tableBgColors, tableHoverBgColors } from "../util/constant"
 import type { ButtonAction, DataTableProps } from "./@types"
 import { ConfirmBox } from "./ConfirmBox"
 import Icon from "./Icon"
@@ -373,6 +373,9 @@ export const DataTable2 = <T extends Record<string, any>>({
 							{headerGroup.headers.map(header => (
 								header.column.columnDef.header && <th key={header.id} className={`datatable-header-cell
 									 ${dtHeaderBgClass(theme.components.dataTable?.headerColor)}
+									 ${dtHeaderTextClass(theme.components.dataTable?.headerTextColor, theme.components.dataTable?.headerColor)}
+									 ${dtHeaderFontSizeClass(theme.components.dataTable?.headerFontSize)}
+									 ${dtHeaderFontWeightClass(theme.components.dataTable?.headerFontWeight)}
 									 ${dtHeaderHoverClass(theme.components.dataTable?.headerHoverColor)} cursor-pointer`}
 									style={{ width: header.getSize() }}>
 									<div className="datatable-header-content" >

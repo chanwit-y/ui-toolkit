@@ -1344,7 +1344,14 @@ export type ThemeComponents = {
    * mode automatically. Set a field to pin a specific named color for that role.
    */
   dataTable?: {
+    /** Header background color. Unset → solid theme accent (auto dark-flip). */
     headerColor?: ThemeProps["accentColor"];
+    /** Header label color. Unset → accent contrast (or neutral on a named bg). */
+    headerTextColor?: ThemeProps["accentColor"];
+    /** Header font size. Unset → default `text-xs`. */
+    headerFontSize?: "xs" | "sm" | "base" | "lg" | "xl";
+    /** Header font weight. Unset → default `font-bold`. */
+    headerFontWeight?: "normal" | "medium" | "semibold" | "bold";
     headerHoverColor?: ThemeProps["accentColor"];
     paginationButtonColor?: ThemeProps["accentColor"];
     paginationButtonHoverColor?: ThemeProps["accentColor"];

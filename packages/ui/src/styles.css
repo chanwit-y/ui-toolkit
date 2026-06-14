@@ -387,7 +387,10 @@ textarea::-webkit-scrollbar-thumb:hover {
 }
 
 .datatable-thead {
-  @apply bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-800 border-b-2 border-gray-200 dark:border-gray-700 block overflow-hidden;
+  /* Transparent so the solid accent header cells (bg-[var(--accent-9)]) read as
+     a clean primary bar in both light and dark, with no gray peeking through
+     gaps (e.g. columns that render no <th>). */
+  @apply bg-transparent border-b-2 border-gray-200 dark:border-gray-700 block overflow-hidden;
 }
 
 .datatable-header-row {

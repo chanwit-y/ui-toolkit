@@ -30,11 +30,10 @@ const defaultComponents: ThemeComponents = {
     color: 'blue',
   },
   dataTable: {
-    headerColor: 'blue',
-    headerHoverColor: 'blue',
-    paginationButtonColor: 'blue',
-    paginationButtonHoverColor: 'blue',
-    rowHoverColor: 'blue',
+    // header / row-hover / pagination are intentionally left unset so they
+    // resolve to the Radix accent (--accent-*) and flip with light/dark.
+    // A named color here would route into the legacy static map (no dark
+    // variant). editButton follows button.color; delete stays semantic red.
     editButtonColor: 'blue',
     deleteButtonColor: 'red',
   },
@@ -118,11 +117,17 @@ export function ThemeProvider({
         color: nextComponents.button?.color ?? parentComponents.button?.color ?? defaultButtonColor,
       },
       dataTable: {
-        headerColor: nextComponents.dataTable?.headerColor ?? parentComponents.dataTable?.headerColor ?? defaultComponents.dataTable?.headerColor ?? 'blue',
-        headerHoverColor: nextComponents.dataTable?.headerHoverColor ?? parentComponents.dataTable?.headerHoverColor ?? defaultComponents.dataTable?.headerHoverColor ?? 'blue',
-        paginationButtonColor: nextComponents.dataTable?.paginationButtonColor ?? parentComponents.dataTable?.paginationButtonColor ?? defaultComponents.dataTable?.paginationButtonColor ?? 'blue',
-        paginationButtonHoverColor: nextComponents.dataTable?.paginationButtonHoverColor ?? parentComponents.dataTable?.paginationButtonHoverColor ?? defaultComponents.dataTable?.paginationButtonHoverColor ?? 'blue',
-        rowHoverColor: nextComponents.dataTable?.rowHoverColor ?? parentComponents.dataTable?.rowHoverColor ?? defaultComponents.dataTable?.rowHoverColor ?? 'blue',
+        // Leave these undefined when unconfigured so the dt*Class helpers fall
+        // back to the Radix accent (solid --accent-9, auto dark-flip). Naming a
+        // color opts into the legacy static map (light-only) on purpose.
+        headerColor: nextComponents.dataTable?.headerColor ?? parentComponents.dataTable?.headerColor ?? defaultComponents.dataTable?.headerColor,
+        headerTextColor: nextComponents.dataTable?.headerTextColor ?? parentComponents.dataTable?.headerTextColor ?? defaultComponents.dataTable?.headerTextColor,
+        headerFontSize: nextComponents.dataTable?.headerFontSize ?? parentComponents.dataTable?.headerFontSize ?? defaultComponents.dataTable?.headerFontSize,
+        headerFontWeight: nextComponents.dataTable?.headerFontWeight ?? parentComponents.dataTable?.headerFontWeight ?? defaultComponents.dataTable?.headerFontWeight,
+        headerHoverColor: nextComponents.dataTable?.headerHoverColor ?? parentComponents.dataTable?.headerHoverColor ?? defaultComponents.dataTable?.headerHoverColor,
+        paginationButtonColor: nextComponents.dataTable?.paginationButtonColor ?? parentComponents.dataTable?.paginationButtonColor ?? defaultComponents.dataTable?.paginationButtonColor,
+        paginationButtonHoverColor: nextComponents.dataTable?.paginationButtonHoverColor ?? parentComponents.dataTable?.paginationButtonHoverColor ?? defaultComponents.dataTable?.paginationButtonHoverColor,
+        rowHoverColor: nextComponents.dataTable?.rowHoverColor ?? parentComponents.dataTable?.rowHoverColor ?? defaultComponents.dataTable?.rowHoverColor,
         editButtonColor: nextComponents.dataTable?.editButtonColor ?? parentComponents.dataTable?.editButtonColor ?? defaultComponents.dataTable?.editButtonColor ?? 'blue',
         deleteButtonColor: nextComponents.dataTable?.deleteButtonColor ?? parentComponents.dataTable?.deleteButtonColor ?? defaultComponents.dataTable?.deleteButtonColor ?? 'red',
       },
