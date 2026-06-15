@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
+import { ThemeProvider, useTheme } from './context';
 
 /**
  * Click targets matching these selectors are treated as "inside" the popover,
@@ -45,6 +47,12 @@ export const Popover: React.FC<PopoverProps> = ({
   const [entered, setEntered] = useState(false);
   const triggerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+
+  // Content is portaled to document.body (so `position: fixed` resolves against
+  // the viewport, not a transformed ancestor). That moves it outside the Radix
+  // <Theme> wrapper, so re-apply the current theme to restore `--accent-*` for
+  // themed content. Mirrors Modal / the date pickers.
+  const { theme: currentTheme, components: currentComponents } = useTheme();
 
   const isOpen = controlledOpen !== undefined ? controlledOpen : internalOpen;
   
@@ -223,31 +231,33 @@ export const Popover: React.FC<PopoverProps> = ({
         {children}
       </div>
       
-      {mounted && (
-        <>
-          {/* Backdrop for mobile/touch devices */}
-          <div
-            className={`fixed inset-0 z-40 md:hidden transition-opacity duration-150 ease-out ${entered ? 'opacity-100' : 'opacity-0'}`}
-            onClick={handleClose}
-          />
+      {mounted &&
+        createPortal(
+          <ThemeProvider theme={currentTheme} components={currentComponents}>
+            {/* Backdrop for mobile/touch devices */}
+            <div
+              className={`fixed inset-0 z-40 md:hidden transition-opacity duration-150 ease-out ${entered ? 'opacity-100' : 'opacity-0'}`}
+              onClick={handleClose}
+            />
 
-          {/* Popover content — fades + slides in from the trigger's side.
-              Only opacity/translate animate (not scale) so getBoundingClientRect
-              width/height stay stable for positioning. */}
-          <div
-            ref={contentRef}
-            className={`fixed z-50 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg transition duration-150 ease-out ${entered ? 'opacity-100 translate-x-0 translate-y-0' : `opacity-0 ${enterOffsetClass}`} ${contentClassName}`}
-            style={{
-              top: `${position.top}px`,
-              left: `${position.left}px`,
-            }}
-            onMouseEnter={trigger === 'hover' ? () => setInternalOpen(true) : undefined}
-            onMouseLeave={trigger === 'hover' ? () => handleClose() : undefined}
-          >
-            {content}
-          </div>
-        </>
-      )}
+            {/* Popover content — fades + slides in from the trigger's side.
+                Only opacity/translate animate (not scale) so getBoundingClientRect
+                width/height stay stable for positioning. */}
+            <div
+              ref={contentRef}
+              className={`fixed z-50 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg transition duration-150 ease-out ${entered ? 'opacity-100 translate-x-0 translate-y-0' : `opacity-0 ${enterOffsetClass}`} ${contentClassName}`}
+              style={{
+                top: `${position.top}px`,
+                left: `${position.left}px`,
+              }}
+              onMouseEnter={trigger === 'hover' ? () => setInternalOpen(true) : undefined}
+              onMouseLeave={trigger === 'hover' ? () => handleClose() : undefined}
+            >
+              {content}
+            </div>
+          </ThemeProvider>,
+          document.body,
+        )}
     </>
   );
 };
