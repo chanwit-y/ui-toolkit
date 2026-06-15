@@ -9,7 +9,9 @@ import {
 	type KeyboardEvent,
 	type MouseEvent,
 } from "react"
+import { createPortal } from "react-dom"
 import { Box, Text } from "@radix-ui/themes"
+import { ThemeProvider, useTheme } from "../context"
 import { Calendar as CalendarIcon, X } from "lucide-react"
 import dayjs, { type Dayjs } from "dayjs"
 import { cn } from "../../util/utils"
@@ -62,6 +64,11 @@ const DateTimePickerBase = forwardRef<
 	onBlur,
 	...props
 }, ref) => {
+	// The dropdown is portaled to document.body, outside the Radix <Theme>
+	// wrapper, so re-apply the current theme inside the portal to restore the
+	// `--accent-*` vars and appearance (mirrors Modal's portaled content).
+	const { theme: currentTheme, components: currentComponents } = useTheme()
+
 	const { hasError, displayHelperText } = useValidationMessage({
 		error,
 		errorMessage,
@@ -305,29 +312,33 @@ const DateTimePickerBase = forwardRef<
 					)}
 				</button>
 
-				{isOpen && (
-					<DateTimeDropdown
-						dropdownRef={dropdownRef}
-						dropdownStyles={dropdownStyles}
-						cursor={cursor}
-						calendar={calendar}
-						weekdayLabels={weekdayLabels}
-						selectedDateTime={selectedDateTime}
-						today={today}
-						clearable={clearable}
-						hour={hour}
-						minute={minute}
-						minuteStep={minuteStep}
-						isDisabledDate={isDisabledDate}
-						onSelectDate={handleSelectDate}
-						onNow={handleNow}
-						onClear={handleClearFromDropdown}
-						onPreviousMonth={handlePreviousMonth}
-						onNextMonth={handleNextMonth}
-						onHourChange={handleHourChange}
-						onMinuteChange={handleMinuteChange}
-					/>
-				)}
+				{isOpen &&
+					createPortal(
+						<ThemeProvider theme={currentTheme} components={currentComponents}>
+							<DateTimeDropdown
+								dropdownRef={dropdownRef}
+								dropdownStyles={dropdownStyles}
+								cursor={cursor}
+								calendar={calendar}
+								weekdayLabels={weekdayLabels}
+								selectedDateTime={selectedDateTime}
+								today={today}
+								clearable={clearable}
+								hour={hour}
+								minute={minute}
+								minuteStep={minuteStep}
+								isDisabledDate={isDisabledDate}
+								onSelectDate={handleSelectDate}
+								onNow={handleNow}
+								onClear={handleClearFromDropdown}
+								onPreviousMonth={handlePreviousMonth}
+								onNextMonth={handleNextMonth}
+								onHourChange={handleHourChange}
+								onMinuteChange={handleMinuteChange}
+							/>
+						</ThemeProvider>,
+						document.body,
+					)}
 			</div>
 
 			<HelperText hasError={hasError} message={displayHelperText} />
