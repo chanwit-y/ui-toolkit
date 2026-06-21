@@ -8,7 +8,7 @@ function App() {
     <ThemeProvider
       theme={{ accentColor: 'violet', appearance: 'light' }}
       components={{}}
-      className="flex min-h-screen flex-col"
+      className="flex h-dvh flex-col overflow-hidden"
     >
       <Grid />
     </ThemeProvider>
