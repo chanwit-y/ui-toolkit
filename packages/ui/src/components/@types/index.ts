@@ -201,6 +201,8 @@ export type SelectFieldProps = BaseComponentProps<
     radius?: "none" | "small" | "medium" | "large" | "full";
     options: Array<{ value: string; label: string; disabled?: boolean }>;
     value?: string;
+    /** Disable the whole control (no opening, no selection). */
+    disabled?: boolean;
     onValueChange?: (value: string) => void;
   }
 >;

@@ -20,6 +20,7 @@ const SelectFieldBase = forwardRef<
 	radius = "medium",
 	options,
 	value,
+	disabled = false,
 	onValueChange,
 	onChange,
 	className,
@@ -45,6 +46,7 @@ const SelectFieldBase = forwardRef<
 
 			<RadixSelect.Root
 				value={value}
+				disabled={disabled}
 				onValueChange={handleValueChange}
 			>
 				<RadixSelect.Trigger

@@ -5,10 +5,16 @@ export { Form } from "./components/form/Form";
 export { TextFieldBase } from "./components/TextField";
 // Un-form-wrapped textarea for display-only previews (e.g. the studio canvas).
 export { TextareaBase } from "./components/Textarea";
-export type { TextFieldProps, TextFieldElement, DataType, TextareaProps, TextareaElement } from "./components/@types";
+// Un-form-wrapped select for display-only previews (e.g. the studio canvas).
+export { SelectFieldBase } from "./components/SelectField";
+export type { TextFieldProps, TextFieldElement, DataType, TextareaProps, TextareaElement, SelectFieldProps } from "./components/@types";
 export * from "./hooks";
 
 export * from "./components/Autocomplete2";
+// Core context provider (observe table + Data/Query/Loading/Snackbar) — required
+// by engine-aware components like Autocomplete2 when used outside the engine
+// (e.g. the studio canvas live preview).
+export { Provider as CoreProvider } from "./components/core/context";
 export * from "./components/core/core";
 export * from "./components/core/containerBuilder";
 export {
