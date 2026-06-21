@@ -1,4 +1,3 @@
-import { TextFieldBase } from '@gummy-ui/ui'
 import type { DataType } from '@gummy-ui/ui'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -46,28 +45,12 @@ function iconForDataType(dataType: DataType): LucideIcon {
 }
 
 /**
- * The cell's visual content. A textfield shows a compact chip (icon + label +
- * dataType) by default; when the cell is selected it expands to the real
- * (display-only) `TextFieldBase` preview and the grid row grows to fit. Every
- * other component type shows its label as a placeholder.
+ * The cell's visual content when NOT active. A textfield shows a compact,
+ * size-aware chip (icon + label + dataType); every other component type shows
+ * its label as a placeholder.
  */
-function CellContent({
-  item,
-  isSelected,
-}: {
-  item: GridItemData
-  isSelected: boolean
-}) {
+function CellContent({ item }: { item: GridItemData }) {
   if (item.type === 'textfield' && item.config) {
-    if (isSelected) {
-      // Expanded detail. `pointer-events-none` so clicks/drag target the cell,
-      // not the preview input.
-      return (
-        <div data-grid-item-content className="pointer-events-none h-full w-full">
-          <TextFieldPreview config={item.config} />
-        </div>
-      )
-    }
     return <TextFieldChip config={item.config} />
   }
   return (
@@ -81,10 +64,32 @@ function CellContent({
 }
 
 /**
- * The component-type label pill straddling the cell's top border. Reads from
- * `item.type` (the palette type), not the user-editable `item.label`. Hidden at
- * rest; revealed on cell hover or while the cell is selected. Neutral on hover,
- * violet accent when selected.
+ * The active cell's body: the component glyph in the same position as the
+ * non-active chip's icon (left, after the grip) so selecting doesn't shift it.
+ * Uses the dataType icon for a textfield. The type pill is rendered separately on
+ * the top border by `TypeLabel` (shown for active and hover alike); non-textfield
+ * types render no body icon — the pill carries it.
+ */
+function ActiveBody({ item }: { item: GridItemData }) {
+  const Icon =
+    item.type === 'textfield' && item.config
+      ? iconForDataType(item.config.dataType)
+      : null
+  if (!Icon) return null
+  return (
+    <div
+      data-grid-item-content
+      className="@container flex h-full w-full items-center justify-center gap-2 px-1 @min-[8rem]:justify-start @min-[8rem]:pl-6"
+    >
+      <Icon className="h-4 w-4 shrink-0 text-violet-500" aria-hidden="true" />
+    </div>
+  )
+}
+
+/**
+ * The type-label pill straddling the cell's top border. Reads from `item.type`
+ * (the palette type), not the user-editable `item.label`. Same neutral styling
+ * in both states: revealed on hover, and kept visible while the cell is active.
  */
 function TypeLabel({
   type,
@@ -100,10 +105,8 @@ function TypeLabel({
     <span
       data-grid-item-type
       className={cn(
-        'pointer-events-none absolute left-1/2 top-0 z-20 inline-flex -translate-x-1/2 -translate-y-1/2 items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] font-medium shadow-sm transition-opacity duration-150',
-        isSelected
-          ? 'border-violet-500 bg-violet-500 text-white opacity-100'
-          : 'border-zinc-200 bg-white text-zinc-600 opacity-0 group-hover:opacity-100',
+        'pointer-events-none absolute left-1/2 top-0 z-20 inline-flex -translate-x-1/2 -translate-y-1/2 items-center gap-0.5 whitespace-nowrap rounded-full border border-zinc-200 bg-white px-2 py-0.5 text-[10px] font-medium text-zinc-600 shadow-sm transition-opacity duration-150',
+        isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
       )}
     >
       <Icon className="h-3 w-3" aria-hidden="true" />
@@ -112,44 +115,29 @@ function TypeLabel({
   )
 }
 
-/** Minimal collapsed representation: icon + label (+ required *) + dataType badge. */
+/**
+ * Minimal collapsed representation, size-aware via a container query on the
+ * cell's measured width (colSpan makes cells narrower at smaller breakpoints):
+ * icon is always shown; the label appears once there's room (~8rem); the
+ * dataType badge only when the cell is wide (~13rem). Keeps the chip readable
+ * instead of truncating to noise on narrow cells.
+ */
 function TextFieldChip({ config }: { config: TextFieldConfig }) {
   const Icon = iconForDataType(config.dataType)
   return (
     <div
       data-grid-item-content
-      className="flex h-full w-full items-center gap-2 pl-6 pr-1"
+      className="@container flex h-full w-full items-center justify-center gap-2 px-1 @min-[8rem]:justify-start @min-[8rem]:pl-6"
     >
       <Icon className="h-4 w-4 shrink-0 text-violet-500" aria-hidden="true" />
-      <span className="truncate text-xs font-medium text-zinc-700">
+      <span className="hidden min-w-0 truncate text-xs font-medium text-zinc-700 @min-[8rem]:block">
         {config.label}
         {config.isRequired && <span className="text-red-500"> *</span>}
       </span>
-      <span className="ml-auto shrink-0 rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-zinc-500">
+      <span className="ml-auto hidden shrink-0 rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-zinc-500 @min-[13rem]:inline-block">
         {config.dataType}
       </span>
     </div>
-  )
-}
-
-/** Maps a TextFieldConfig onto TextFieldBase for a faithful canvas preview. */
-function TextFieldPreview({ config }: { config: TextFieldConfig }) {
-  return (
-    <TextFieldBase
-      // Show the required marker the way a form would, without real validation.
-      label={config.isRequired ? `${config.label} *` : config.label}
-      placeholder={config.placeholder}
-      helperText={config.helperText}
-      dataType={config.dataType}
-      variant={config.variant}
-      size={config.size}
-      radius={config.radius}
-      isFullWidth={config.isFullWidth}
-      isFixedHeight={config.isFixedHeight}
-      width={config.width === '' ? undefined : config.width}
-      regex={config.regex || undefined}
-      regexErrorMessage={config.regexErrorMessage || undefined}
-    />
   )
 }
 
@@ -201,14 +189,19 @@ export function GridItem({ item, isSelected }: GridItemProps) {
       <IconButton
         ref={setActivatorNodeRef}
         label={`Move ${item.label}`}
-        className="absolute left-1 top-1 z-10 h-6! w-6! cursor-grab rounded-md opacity-60 shadow-sm transition-opacity group-hover:opacity-100 active:cursor-grabbing"
+        className={cn(
+          // Drag/drop indicator: hidden at rest, revealed on hover or while active.
+          'absolute left-1 top-1 z-10 h-6! w-6! cursor-grab rounded-md shadow-sm transition-opacity group-hover:opacity-100 active:cursor-grabbing',
+          isSelected ? 'opacity-100' : 'opacity-0',
+        )}
         {...listeners}
         {...attributes}
       >
         <GripVertical className="h-3.5 w-3.5" aria-hidden="true" />
       </IconButton>
       <TypeLabel type={item.type} isSelected={isSelected} />
-      <CellContent item={item} isSelected={isSelected} />
+      {/* Active cells collapse to just the component icon + the pill above. */}
+      {isSelected ? <ActiveBody item={item} /> : <CellContent item={item} />}
     </div>
   )
 }
