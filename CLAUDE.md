@@ -64,6 +64,17 @@ The builder layer lives in `packages/ui/src/components/core/` — `containerBuil
 
 The public surface is curated in `packages/ui/src/index.ts` — add new exports there.
 
+## Studio live cell previews (size-gated chip ↔ live component)
+
+`apps/studio` (the visual layout builder) renders the **real library component** inside a grid cell once the cell is big enough, and a compact **chip** when it isn't. When adding a live preview for another component type (Select, DatePicker, …), follow this recipe — it's implemented for `textfield` in `apps/studio/src/components/Layout/GridItem.tsx`:
+
+1. **Gate on measured cell width, not breakpoint.** `useIsLiveWidth(el)` decides chip vs live from the cell's content-box width against a single threshold (~14rem) with a **hysteresis band** (flip to live at `LIVE_MIN_PX`, back to chip only below `CHIP_MAX_PX`) so a cell resting on the boundary doesn't strobe between subtrees.
+2. **Measure synchronously, then observe.** Read the width in a `useLayoutEffect` (`clientWidth` − horizontal padding) so the correct state is set *before paint*, then attach a `ResizeObserver` for later resizes. Do **not** rely on the observer's async first callback alone — it flashes a chip on mount and never fires in throttled contexts (hidden/background tabs; see [[studio-preview-hidden-tab]]). The measured element is held in `useState` (callback ref) and merged with dnd-kit's `setNodeRef`; the decision stays local to `GridItem` — nothing goes in `gridStore`.
+3. **One generic seam.** `renderLive(item, isLive)` returns the real component or `null`; each new type is one branch there. Anything without a live render falls through to its chip even when wide.
+4. **Inert preview.** Wrap the live component in `pointer-events-none` so a click still selects the cell and drag still works via the grip — you preview the component, you don't interact with it on the canvas.
+5. **Let the cell own sizing.** Map the component's editable config 1:1 onto its props, but force `isFullWidth` and drop `isFixedHeight` in-cell so the field fills the cell width and the grid row controls height. Props with no equivalent (e.g. a required marker) get baked into an existing prop (the label).
+6. **Theme comes free.** Studio wraps the canvas in `ThemeProvider` (`App.tsx`); real library components inherit the accent/appearance — no extra wiring. (Studio consumes the library's built `dist/`, so rebuild the library after changing component source — see the studio toolchain notes.)
+
 ## Conventions
 
 - Functional components + hooks; Tailwind for styling (no inline styles); Radix UI primitives for accessibility.
