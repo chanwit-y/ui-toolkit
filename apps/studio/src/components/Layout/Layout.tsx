@@ -304,8 +304,26 @@ export function Layout() {
   const selectedItemId = useGridStore((s) => s.selectedItemId)
 
   const setAnimator = useGridStore((s) => s.setAnimator)
+  const clearSelection = useGridStore((s) => s.clearSelection)
 
   const activeItem = useActiveItem()
+
+  // Click-away deselect: a pointer-down anywhere that isn't on a grid item or
+  // inside a sidebar panel de-activates the current selection. Sidebars are
+  // exempt because the right one (the inspector) is where you edit the selected
+  // item — clicking into it must keep the cell active. Listens on `document` so
+  // clicking the gray frame, the preview toolbar, or off the editor entirely all
+  // count as "focus off". Capture phase so it runs regardless of inner handlers.
+  useEffect(() => {
+    const onPointerDown = (e: PointerEvent) => {
+      const target = e.target as HTMLElement | null
+      if (!target) return
+      if (target.closest('[data-grid-item]') || target.closest('aside')) return
+      clearSelection()
+    }
+    document.addEventListener('pointerdown', onPointerDown, true)
+    return () => document.removeEventListener('pointerdown', onPointerDown, true)
+  }, [clearSelection])
 
   // FLIP animation lives in React (DOM refs + effects); register its callbacks
   // with the store so data actions can animate layout changes.
