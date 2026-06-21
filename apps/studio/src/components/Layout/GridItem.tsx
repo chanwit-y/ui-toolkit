@@ -285,7 +285,7 @@ export function GridItem({ item, isSelected }: GridItemProps) {
         label={`Move ${item.label}`}
         className={cn(
           // Drag/drop indicator: hidden at rest, revealed on hover or while active.
-          'absolute left-1 top-1 z-10 h-6! w-6! cursor-grab rounded-md shadow-sm transition-opacity group-hover:opacity-100 active:cursor-grabbing',
+          'absolute right-1 top-1 z-10 h-6! w-6! cursor-grab rounded-md shadow-sm transition-opacity group-hover:opacity-100 active:cursor-grabbing',
           isSelected ? 'opacity-100' : 'opacity-0',
         )}
         {...listeners}
@@ -315,7 +315,7 @@ export const GridItemMemo = memo(GridItem)
 export function GridItemOverlay({ item }: { item: GridItemData }) {
   return (
     <div className="relative flex h-14 w-full cursor-grabbing items-center justify-center rounded-lg border-2 border-solid border-violet-500 bg-white p-2 shadow-2xl shadow-violet-500/30 ring-2 ring-violet-400/50">
-      <span className="absolute left-1 top-1 inline-flex h-6 w-6 items-center justify-center rounded-md border border-violet-500 bg-violet-50 text-violet-700 shadow-sm">
+      <span className="absolute right-1 top-1 inline-flex h-6 w-6 items-center justify-center rounded-md border border-violet-500 bg-violet-50 text-violet-700 shadow-sm">
         <GripVertical className="h-3.5 w-3.5" aria-hidden="true" />
       </span>
       <span className="text-xs font-medium text-zinc-400">{item.label}</span>
