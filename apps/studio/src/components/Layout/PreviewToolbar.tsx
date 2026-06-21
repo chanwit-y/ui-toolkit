@@ -16,16 +16,23 @@ export function PreviewToolbar() {
   const codeActive = sidebarView === 'code'
 
   return (
-    <div className="relative flex shrink-0 items-center justify-end gap-2 border-b border-zinc-200 bg-white/70 px-3 py-2">
-      <div className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-1 rounded-lg border border-zinc-200 bg-zinc-50 p-1">
-        <span className="px-1.5 text-xs font-medium text-zinc-500">Preview</span>
+    <div className="@container grid shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-1 border-b border-zinc-200 bg-white/70 px-3 py-2">
+      {/* Empty spacer column mirrors the actions column so the pill stays
+          centered over the canvas; grid (vs absolute) makes overlap impossible. */}
+      <div aria-hidden="true" />
+
+      <div className="flex items-center gap-1 justify-self-center rounded-lg border border-zinc-200 bg-zinc-50 p-1">
+        <span className="hidden px-1.5 text-xs font-medium text-zinc-500 @[28rem]:inline">
+          Preview
+        </span>
         <BreakpointSelector
           value={previewBreakpoint}
           onChange={setPreviewBreakpoint}
+          responsive
         />
       </div>
 
-      <div className="flex items-center gap-0.5 rounded-lg border border-zinc-200 bg-zinc-50 p-1">
+      <div className="flex items-center gap-0.5 justify-self-end rounded-lg border border-zinc-200 bg-zinc-50 p-1">
         <IconButton
           label="Grid container settings"
           active={containerActive}
