@@ -30,6 +30,45 @@ export type TextFieldConfig = {
   regexErrorMessage: string
 }
 
+/**
+ * Editable config for a textarea component. Maps onto the library's
+ * `TextareaElement` / `TextareaProps`. `dataType` is fixed to `'text'` (the base
+ * component ignores it) but kept so the exported `TextareaElement` stays
+ * contract-valid. `maxLength` is `''` when unset (mirrors `TextFieldConfig.width`).
+ */
+export type TextareaConfig = {
+  name: string
+  dataType: DataType
+  label: string
+  placeholder: string
+  helperText: string
+  isRequired: boolean
+  errorMessage: string
+  rows: number
+  resize: 'none' | 'both' | 'horizontal' | 'vertical'
+  autoResize: boolean
+  maxLength: number | ''
+  showCharCount: boolean
+}
+
+/** Defaults for a freshly dropped textarea. Mirrors TextareaBase's own defaults. */
+export function createDefaultTextareaConfig(name: string): TextareaConfig {
+  return {
+    name,
+    dataType: 'text',
+    label: 'Textarea',
+    placeholder: '',
+    helperText: '',
+    isRequired: false,
+    errorMessage: '',
+    rows: 4,
+    resize: 'vertical',
+    autoResize: false,
+    maxLength: '',
+    showCharCount: false,
+  }
+}
+
 /** Defaults for a freshly dropped textfield. Mirrors TextFieldBase's own defaults. */
 export function createDefaultTextFieldConfig(name: string): TextFieldConfig {
   return {
@@ -80,8 +119,11 @@ export type GridItemData = {
   /** Which palette component this cell represents (set on drop). */
   type: ComponentType
   settings: GridItemSettings
-  /** Component-specific config. Only textfield is populated for now. */
-  config?: TextFieldConfig
+  /**
+   * Component-specific config, discriminated by `type`: a textfield carries a
+   * `TextFieldConfig`, a textarea a `TextareaConfig`. Other types are config-less.
+   */
+  config?: TextFieldConfig | TextareaConfig
 }
 
 function responsive<T>(value: T): Responsive<T> {

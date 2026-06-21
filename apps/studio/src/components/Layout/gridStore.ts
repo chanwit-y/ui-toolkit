@@ -6,10 +6,12 @@ import { updateContainerBreakpoint, updateItemBreakpoint } from './gridSettings'
 import { readSeedCount } from './perf'
 import {
   createDefaultItemSettings,
+  createDefaultTextareaConfig,
   createDefaultTextFieldConfig,
   defaultContainerSettings,
   type GridContainerSettings,
   type GridItemData,
+  type TextareaConfig,
   type TextFieldConfig,
 } from './types'
 
@@ -63,7 +65,10 @@ type GridState = {
     animate?: boolean,
   ) => void
   updateItemLabel: (id: string, label: string) => void
-  updateItemConfig: (id: string, patch: Partial<TextFieldConfig>) => void
+  updateItemConfig: (
+    id: string,
+    patch: Partial<TextFieldConfig | TextareaConfig>,
+  ) => void
   moveItem: (activeId: string, overId: string) => void
 
   // Drag actions
@@ -145,13 +150,17 @@ export const useGridStore = create<GridState>((set, get) => {
         const bpCols = containerSettings.columns
         const type: ComponentType = component?.type ?? 'empty'
 
-        // Textfields get a unique binding name + a default config; other types
-        // are config-less for now (see the textfield-only scope).
-        let config: TextFieldConfig | undefined
+        // Textfields and textareas get a unique binding name + a default config
+        // (sharing the one `fieldSeq` counter for global uniqueness); other types
+        // are config-less.
+        let config: TextFieldConfig | TextareaConfig | undefined
         let nextSeq = fieldSeq
         if (type === 'textfield') {
           nextSeq = fieldSeq + 1
           config = createDefaultTextFieldConfig(`textField_${nextSeq}`)
+        } else if (type === 'textarea') {
+          nextSeq = fieldSeq + 1
+          config = createDefaultTextareaConfig(`textArea_${nextSeq}`)
         }
 
         const newItem: GridItemData = {

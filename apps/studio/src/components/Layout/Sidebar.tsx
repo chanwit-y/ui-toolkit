@@ -2,6 +2,8 @@ import { CodeViewer, SegmentedControl } from '../common'
 import { FieldConfigPanel } from './FieldConfigPanel'
 import { useGridStore, useSelectedItem, type SidebarView } from './gridStore'
 import { ContainerSettingsPanel, ItemSettingsPanel } from './SettingsPanel'
+import { TextareaConfigPanel } from './TextareaConfigPanel'
+import type { TextareaConfig, TextFieldConfig } from './types'
 
 const VIEW_OPTIONS = [
   { value: 'layout', label: 'Layout' },
@@ -63,7 +65,15 @@ export function Sidebar({ gridConfigJson, fullGridCss }: SidebarProps) {
           selectedItem ? <ItemSettingsPanel /> : <ContainerSettingsPanel />
         ) : selectedItem ? (
           selectedItem.type === 'textfield' && selectedItem.config ? (
-            <FieldConfigPanel itemId={selectedItem.id} config={selectedItem.config} />
+            <FieldConfigPanel
+              itemId={selectedItem.id}
+              config={selectedItem.config as TextFieldConfig}
+            />
+          ) : selectedItem.type === 'textarea' && selectedItem.config ? (
+            <TextareaConfigPanel
+              itemId={selectedItem.id}
+              config={selectedItem.config as TextareaConfig}
+            />
           ) : (
             <p className="px-1 py-6 text-center text-sm text-zinc-400">
               No field settings for this component yet.

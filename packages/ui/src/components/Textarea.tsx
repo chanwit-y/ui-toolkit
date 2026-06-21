@@ -62,13 +62,13 @@ const TextareaBase = forwardRef<
 				cols={cols}
 				maxLength={maxLength}
 				className={cn(
-					// Base styles matching Radix UI theme
-					"w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md px-3 py-2",
-					"text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500",
+					// Surface follows the Radix theme (light/dark via the active appearance,
+					// not the OS `prefers-color-scheme`) — same as RadixTextField does.
+					"w-full bg-[var(--color-surface)] border border-[var(--gray-a6)] rounded-md px-3 py-2",
+					"text-sm text-[var(--gray-12)] placeholder:text-[var(--gray-a9)]",
 					"transition duration-200 ease-in-out",
 					"",
-					// "hover:border-gray-300",
-					"disabled:bg-gray-50 dark:disabled:bg-gray-800 disabled:text-gray-500 dark:disabled:text-gray-400 disabled:cursor-not-allowed",
+					"disabled:bg-[var(--gray-a2)] disabled:text-[var(--gray-a8)] disabled:cursor-not-allowed",
 					// Resize styles
 					resize === "none" && "resize-none",
 					resize === "both" && "resize",
@@ -91,7 +91,7 @@ const TextareaBase = forwardRef<
 							size="1"
 							className={cn(
 								"block mt-1 mr-1",
-								hasError ? "text-red-500 flex items-center gap-0.5" : "text-gray-600 dark:text-gray-400"
+								hasError ? "text-red-500 flex items-center gap-0.5" : "text-[var(--gray-a11)]"
 							)}
 						>
 							{hasError && <AlertCircle className="inline-block h-3 w-3 mr-[0.1rem]" />}
@@ -106,7 +106,7 @@ const TextareaBase = forwardRef<
 							size="1"
 							className={cn(
 								"text-right ml-2",
-								maxLength && currentLength > maxLength ? "text-red-500" : "text-gray-500 dark:text-gray-400"
+								maxLength && currentLength > maxLength ? "text-red-500" : "text-[var(--gray-a10)]"
 							)}
 						>
 							{maxLength ? `${currentLength}/${maxLength}` : currentLength}

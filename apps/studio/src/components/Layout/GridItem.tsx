@@ -1,5 +1,5 @@
 import type { DataType } from '@gummy-ui/ui'
-import { TextFieldBase } from '@gummy-ui/ui'
+import { TextareaBase, TextFieldBase } from '@gummy-ui/ui'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import {
@@ -11,6 +11,7 @@ import {
   Mail,
   Phone,
   Search,
+  TextWrap,
   Type,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -18,7 +19,7 @@ import { memo, useCallback, useLayoutEffect, useState } from 'react'
 import { cn, IconButton } from '../common'
 import { COMPONENT_BY_TYPE } from './componentCatalog'
 import { useGridStore } from './gridStore'
-import type { GridItemData, TextFieldConfig } from './types'
+import type { GridItemData, TextareaConfig, TextFieldConfig } from './types'
 import { escapeClassName } from './utils'
 
 type GridItemProps = {
@@ -93,7 +94,10 @@ function useIsLiveWidth(el: HTMLElement | null): boolean {
  */
 function CellContent({ item }: { item: GridItemData }) {
   if (item.type === 'textfield' && item.config) {
-    return <TextFieldChip config={item.config} />
+    return <TextFieldChip config={item.config as TextFieldConfig} />
+  }
+  if (item.type === 'textarea' && item.config) {
+    return <GlyphChip Icon={TextWrap} />
   }
   return (
     <div
@@ -115,8 +119,10 @@ function CellContent({ item }: { item: GridItemData }) {
 function ActiveBody({ item }: { item: GridItemData }) {
   const Icon =
     item.type === 'textfield' && item.config
-      ? iconForDataType(item.config.dataType)
-      : null
+      ? iconForDataType((item.config as TextFieldConfig).dataType)
+      : item.type === 'textarea' && item.config
+        ? TextWrap
+        : null
   if (!Icon) return null
   return (
     <div
@@ -164,7 +170,15 @@ function TypeLabel({
  * this size a real field would be uselessly cramped, so we stay minimal.
  */
 function TextFieldChip({ config }: { config: TextFieldConfig }) {
-  const Icon = iconForDataType(config.dataType)
+  return <GlyphChip Icon={iconForDataType(config.dataType)} />
+}
+
+/**
+ * A centered glyph chip — the minimal representation for a field too narrow to
+ * host its live component. The label/config are carried by the `TypeLabel` pill
+ * and the inspector, so at this size we stay to a single icon.
+ */
+function GlyphChip({ Icon }: { Icon: LucideIcon }) {
   return (
     <div
       data-grid-item-content
@@ -209,14 +223,47 @@ function LivePreview({ config }: { config: TextFieldConfig }) {
 }
 
 /**
+ * The live, real `<TextareaBase>` from the library, rendered in-cell once the
+ * cell is wide enough. Inert (`pointer-events-none`) like the textfield preview.
+ * `resize` is forced to `'none'` in-canvas — the drag handle would be a dead
+ * affordance with pointer events off — but the configured `rows` is honored, so
+ * the cell auto-grows (grid `minmax(56px, auto)`) to the real textarea height.
+ * The required marker is baked into the label (TextareaBase has no `isRequired`).
+ */
+function TextareaLivePreview({ config }: { config: TextareaConfig }) {
+  const label = config.isRequired ? `${config.label} *` : config.label
+  return (
+    <div
+      data-grid-item-content
+      className="pointer-events-none flex h-full w-full items-center px-3"
+    >
+      <TextareaBase
+        label={label}
+        placeholder={config.placeholder}
+        helperText={config.helperText}
+        errorMessage={config.errorMessage}
+        rows={config.rows}
+        resize="none"
+        autoResize={config.autoResize}
+        maxLength={config.maxLength === '' ? undefined : config.maxLength}
+        showCharCount={config.showCharCount}
+      />
+    </div>
+  )
+}
+
+/**
  * The cell's live render, or null when the cell can't (or isn't wide enough to)
- * show one — the generic seam for adding more component types later. Today only
- * `textfield` (with config) goes live; everything else falls through to its chip.
+ * show one — the generic seam for adding more component types later. `textfield`
+ * and `textarea` (with config) go live; everything else falls through to its chip.
  */
 function renderLive(item: GridItemData, isLive: boolean) {
   if (!isLive) return null
   if (item.type === 'textfield' && item.config) {
-    return <LivePreview config={item.config} />
+    return <LivePreview config={item.config as TextFieldConfig} />
+  }
+  if (item.type === 'textarea' && item.config) {
+    return <TextareaLivePreview config={item.config as TextareaConfig} />
   }
   return null
 }

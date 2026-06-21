@@ -5,6 +5,7 @@ import type {
   GridItemData,
   GridItemSettings,
   Responsive,
+  TextareaConfig,
   TextFieldConfig,
 } from './types'
 
@@ -17,7 +18,7 @@ export type GridConfig = {
     label: string
     type: ComponentType
     settings: GridItemSettings
-    config?: TextFieldConfig
+    config?: TextFieldConfig | TextareaConfig
   }[]
 }
 
@@ -59,7 +60,7 @@ export function buildGridConfig(
       label: item.label,
       type: item.type,
       settings: compactRecord(item.settings),
-      // Only textfields carry config today; omit the key entirely otherwise.
+      // Textfields and textareas carry config; omit the key entirely otherwise.
       ...(item.config ? { config: item.config } : {}),
     })),
   }
