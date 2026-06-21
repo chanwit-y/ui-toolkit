@@ -1,9 +1,11 @@
+import type { ComponentType } from './componentCatalog'
 import { BREAKPOINTS, type Breakpoint } from './breakpoints'
 import type {
   GridContainerSettings,
   GridItemData,
   GridItemSettings,
   Responsive,
+  TextFieldConfig,
 } from './types'
 
 export type GridConfig = {
@@ -13,7 +15,9 @@ export type GridConfig = {
   items: {
     id: string
     label: string
+    type: ComponentType
     settings: GridItemSettings
+    config?: TextFieldConfig
   }[]
 }
 
@@ -53,7 +57,10 @@ export function buildGridConfig(
     items: items.map((item) => ({
       id: item.id,
       label: item.label,
+      type: item.type,
       settings: compactRecord(item.settings),
+      // Only textfields carry config today; omit the key entirely otherwise.
+      ...(item.config ? { config: item.config } : {}),
     })),
   }
 }

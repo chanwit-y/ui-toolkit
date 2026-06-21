@@ -1,16 +1,24 @@
 import { arrayMove } from '@dnd-kit/sortable'
 import { create } from 'zustand'
 import type { Breakpoint } from './breakpoints'
+import type { ComponentType } from './componentCatalog'
 import { updateContainerBreakpoint, updateItemBreakpoint } from './gridSettings'
 import { readSeedCount } from './perf'
 import {
   createDefaultItemSettings,
+  createDefaultTextFieldConfig,
   defaultContainerSettings,
   type GridContainerSettings,
   type GridItemData,
+  type TextFieldConfig,
 } from './types'
 
-export type SettingsTarget = 'item' | 'container' | 'code' | null
+/** A palette component being dropped onto the canvas. */
+export type NewComponent = { type: ComponentType; label: string }
+
+/** Which panel the right sidebar shows. `inspector` resolves to the selected
+ * item's config+layout, or the container settings when nothing is selected. */
+export type SidebarView = 'inspector' | 'code'
 
 /**
  * Bridge to the FLIP animation layer. The animation relies on DOM refs and
@@ -27,14 +35,15 @@ type GridState = {
   // Grid data
   items: GridItemData[]
   containerSettings: GridContainerSettings
+  // Monotonic counter for unique textfield binding names (textField_1, _2, …).
+  fieldSeq: number
 
   // Drag state
   activeId: string | null
 
   // UI / selection state
   selectedItemId: string | null
-  settingsTarget: SettingsTarget
-  popoverAnchor: DOMRect | null
+  sidebarView: SidebarView
   previewBreakpoint: Breakpoint
 
   // Animation bridge
@@ -42,7 +51,7 @@ type GridState = {
   setAnimator: (animator: AnimationBridge | null) => void
 
   // Data actions (animated)
-  addItem: (label?: string, index?: number) => void
+  addItem: (component?: NewComponent, index?: number) => void
   removeItem: (id: string) => void
   removeSelectedItem: () => void
   updateContainer: (bp: Breakpoint, key: string, value: string, animate?: boolean) => void
@@ -54,16 +63,17 @@ type GridState = {
     animate?: boolean,
   ) => void
   updateItemLabel: (id: string, label: string) => void
+  updateItemConfig: (id: string, patch: Partial<TextFieldConfig>) => void
   moveItem: (activeId: string, overId: string) => void
 
   // Drag actions
   setActiveId: (id: string | null) => void
 
   // UI actions
-  openContainerSettings: (rect: DOMRect) => void
-  openItemSettings: (id: string, rect: DOMRect) => void
-  openCodePanel: (rect: DOMRect) => void
-  closePopover: () => void
+  selectItem: (id: string) => void
+  clearSelection: () => void
+  showContainer: () => void
+  setSidebarView: (view: SidebarView) => void
   setPreviewBreakpoint: (bp: Breakpoint) => void
 }
 
@@ -78,6 +88,7 @@ function createInitialItems(): GridItemData[] {
     return Array.from({ length: seed }, (_, i) => ({
       id: createId(),
       label: `Item ${i + 1}`,
+      type: 'empty' as ComponentType,
       settings: createDefaultItemSettings({
         colSpan: { xs: 4, sm: 3, md: 2, lg: 2 },
       }),
@@ -85,10 +96,16 @@ function createInitialItems(): GridItemData[] {
   }
 
   return [
-    { id: createId(), label: 'Item 1', settings: createDefaultItemSettings() },
+    {
+      id: createId(),
+      label: 'Item 1',
+      type: 'empty' as ComponentType,
+      settings: createDefaultItemSettings(),
+    },
     {
       id: createId(),
       label: 'Item 2',
+      type: 'empty' as ComponentType,
       settings: createDefaultItemSettings({
         colSpan: { xs: 4, sm: 6, md: 4, lg: 4 },
       }),
@@ -108,12 +125,12 @@ export const useGridStore = create<GridState>((set, get) => {
   return {
     items: createInitialItems(),
     containerSettings: defaultContainerSettings,
+    fieldSeq: 0,
 
     activeId: null,
 
     selectedItemId: null,
-    settingsTarget: null,
-    popoverAnchor: null,
+    sidebarView: 'inspector',
     previewBreakpoint: 'lg',
 
     animator: null,
@@ -122,13 +139,25 @@ export const useGridStore = create<GridState>((set, get) => {
     // `index` (when provided) inserts the new item at that position, shifting the
     // rest right; otherwise it appends. The new id isn't in the pre-mutation FLIP
     // snapshot, so it gets the enter "pop" animation while shifted neighbors FLIP.
-    addItem: (label, index) =>
+    addItem: (component, index) =>
       animated(() => {
-        const { items, containerSettings } = get()
+        const { items, containerSettings, fieldSeq } = get()
         const bpCols = containerSettings.columns
+        const type: ComponentType = component?.type ?? 'empty'
+
+        // Textfields get a unique binding name + a default config; other types
+        // are config-less for now (see the textfield-only scope).
+        let config: TextFieldConfig | undefined
+        let nextSeq = fieldSeq
+        if (type === 'textfield') {
+          nextSeq = fieldSeq + 1
+          config = createDefaultTextFieldConfig(`textField_${nextSeq}`)
+        }
+
         const newItem: GridItemData = {
           id: createId(),
-          label: label ?? `Item ${items.length + 1}`,
+          label: component?.label ?? `Item ${items.length + 1}`,
+          type,
           settings: createDefaultItemSettings({
             colSpan: {
               xs: bpCols.xs,
@@ -137,12 +166,13 @@ export const useGridStore = create<GridState>((set, get) => {
               lg: Math.min(2, bpCols.lg),
             },
           }),
+          config,
         }
         const at =
           index == null ? items.length : Math.max(0, Math.min(index, items.length))
         const next = items.slice()
         next.splice(at, 0, newItem)
-        set({ items: next })
+        set({ items: next, fieldSeq: nextSeq })
       }),
 
     removeItem: (id) =>
@@ -151,11 +181,10 @@ export const useGridStore = create<GridState>((set, get) => {
       }),
 
     removeSelectedItem: () => {
-      const { selectedItemId, removeItem, closePopover } = get()
+      const { selectedItemId, removeItem } = get()
       if (!selectedItemId) return
       removeItem(selectedItemId)
       set({ selectedItemId: null })
-      closePopover()
     },
 
     // Text-field edits pass `animate: false` so live typing updates the grid
@@ -195,6 +224,17 @@ export const useGridStore = create<GridState>((set, get) => {
         ),
       }),
 
+    // Config edits change the cell's preview but never the grid layout, so they
+    // skip the FLIP animation. No-op for items without a config (non-textfield).
+    updateItemConfig: (id, patch) =>
+      set({
+        items: get().items.map((item) =>
+          item.id === id && item.config
+            ? { ...item, config: { ...item.config, ...patch } }
+            : item,
+        ),
+      }),
+
     // dnd-kit already animates items to their preview slots during the drag and
     // lands the dragged item via the DragOverlay drop animation, so we only
     // commit the new order here (no custom FLIP animation).
@@ -208,19 +248,15 @@ export const useGridStore = create<GridState>((set, get) => {
 
     setActiveId: (activeId) => set({ activeId }),
 
-    openContainerSettings: (rect) =>
-      set({ selectedItemId: null, settingsTarget: 'container', popoverAnchor: rect }),
+    // Clicking a cell selects it; the sidebar's inspector switches to that item.
+    selectItem: (id) => set({ selectedItemId: id, sidebarView: 'inspector' }),
 
-    openItemSettings: (id, rect) =>
-      set({ selectedItemId: id, settingsTarget: 'item', popoverAnchor: rect }),
+    // Canvas click clears selection so the inspector falls back to the container.
+    clearSelection: () => set({ selectedItemId: null }),
 
-    openCodePanel: (rect) =>
-      set({ selectedItemId: null, settingsTarget: 'code', popoverAnchor: rect }),
+    showContainer: () => set({ selectedItemId: null, sidebarView: 'inspector' }),
 
-    // Dismissing the popover (canvas click, click-outside, or Esc) also clears
-    // the item selection so the active cell's highlight goes away.
-    closePopover: () =>
-      set({ popoverAnchor: null, settingsTarget: null, selectedItemId: null }),
+    setSidebarView: (view) => set({ sidebarView: view }),
 
     setPreviewBreakpoint: (bp) => animated(() => set({ previewBreakpoint: bp }), 'all'),
   }

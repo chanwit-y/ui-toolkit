@@ -1,9 +1,55 @@
+import type { DataType } from '@gummy-ui/ui'
 import type { Breakpoint } from './breakpoints'
+import type { ComponentType } from './componentCatalog'
 
 export type { Breakpoint } from './breakpoints'
 export { MAX_GRID_COLUMNS } from './breakpoints'
 
 export type Responsive<T> = Record<Breakpoint, T>
+
+/**
+ * Editable config for a textfield component. Maps 1:1 onto the library's
+ * `TextFieldElement` / `TextFieldProps` so the exported JSON can drive the
+ * declarative engine. `width` is `''` when unset (otherwise a pixel number).
+ */
+export type TextFieldConfig = {
+  name: string
+  dataType: DataType
+  label: string
+  placeholder: string
+  helperText: string
+  isRequired: boolean
+  errorMessage: string
+  variant: 'classic' | 'surface' | 'soft'
+  size: '1' | '2' | '3'
+  radius: 'none' | 'small' | 'medium' | 'large' | 'full'
+  isFullWidth: boolean
+  isFixedHeight: boolean
+  width: number | ''
+  regex: string
+  regexErrorMessage: string
+}
+
+/** Defaults for a freshly dropped textfield. Mirrors TextFieldBase's own defaults. */
+export function createDefaultTextFieldConfig(name: string): TextFieldConfig {
+  return {
+    name,
+    dataType: 'text',
+    label: 'Text Field',
+    placeholder: '',
+    helperText: '',
+    isRequired: false,
+    errorMessage: '',
+    variant: 'surface',
+    size: '3',
+    radius: 'medium',
+    isFullWidth: true,
+    isFixedHeight: true,
+    width: '',
+    regex: '',
+    regexErrorMessage: '',
+  }
+}
 
 export type GridContainerSettings = {
   columns: Responsive<number>
@@ -31,7 +77,11 @@ export type GridItemSettings = {
 export type GridItemData = {
   id: string
   label: string
+  /** Which palette component this cell represents (set on drop). */
+  type: ComponentType
   settings: GridItemSettings
+  /** Component-specific config. Only textfield is populated for now. */
+  config?: TextFieldConfig
 }
 
 function responsive<T>(value: T): Responsive<T> {

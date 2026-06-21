@@ -21,16 +21,15 @@ import {
   useState,
   type ProfilerOnRenderCallback,
 } from 'react'
-import { CodeViewer, Popover } from '../common'
 import { BREAKPOINTS } from './breakpoints'
 import type { ComponentDef } from './componentCatalog'
 import { SMOOTH_EASING } from './gridAnimation'
 import { gridConfigToJson } from './gridConfig'
 import { GridItemMemo, GridItemOverlay } from './GridItem'
-import { useActiveItem, useGridStore, useSelectedItem } from './gridStore'
+import { useActiveItem, useGridStore } from './gridStore'
 import { generateGridStyles } from './gridStyles'
 import { PreviewToolbar } from './PreviewToolbar'
-import { ContainerSettingsPanel, ItemSettingsPanel } from './SettingsPanel'
+import { Sidebar } from './Sidebar'
 import { Toolbox, ToolboxDragOverlay, type ToolboxDragData } from './Toolbox'
 import type { GridItemData } from './types'
 import { useGridFlipAnimation } from './useGridFlipAnimation'
@@ -172,7 +171,7 @@ function EditorBodyInner({
   const addItem = useGridStore((s) => s.addItem)
   const moveItem = useGridStore((s) => s.moveItem)
   const setActiveId = useGridStore((s) => s.setActiveId)
-  const closePopover = useGridStore((s) => s.closePopover)
+  const clearSelection = useGridStore((s) => s.clearSelection)
 
   // The toolbox component being dragged (for the overlay preview), or null.
   const [activeToolbox, setActiveToolbox] = useState<ComponentDef | null>(null)
@@ -212,7 +211,10 @@ function EditorBodyInner({
         const activator = event.activatorEvent as PointerEvent
         const px = activator.clientX + event.delta.x
         const py = activator.clientY + event.delta.y
-        addItem(toolbox.def.label, computeInsertIndex(container, px, py))
+        addItem(
+          { type: toolbox.def.type, label: toolbox.def.label },
+          computeInsertIndex(container, px, py),
+        )
         return
       }
       // Reorder an existing item.
@@ -262,7 +264,7 @@ function EditorBodyInner({
                   selectedItemId={selectedItemId}
                   layoutId={layoutId}
                   gridRef={gridRef}
-                  onCanvasClick={closePopover}
+                  onCanvasClick={clearSelection}
                 />
               </div>
             </div>
@@ -298,14 +300,11 @@ export function Layout() {
   const items = useGridStore((s) => s.items)
   const containerSettings = useGridStore((s) => s.containerSettings)
   const previewBreakpoint = useGridStore((s) => s.previewBreakpoint)
-  const popoverAnchor = useGridStore((s) => s.popoverAnchor)
-  const settingsTarget = useGridStore((s) => s.settingsTarget)
+  const sidebarView = useGridStore((s) => s.sidebarView)
   const selectedItemId = useGridStore((s) => s.selectedItemId)
 
-  const closePopover = useGridStore((s) => s.closePopover)
   const setAnimator = useGridStore((s) => s.setAnimator)
 
-  const selectedItem = useSelectedItem()
   const activeItem = useActiveItem()
 
   // FLIP animation lives in React (DOM refs + effects); register its callbacks
@@ -332,10 +331,10 @@ export function Layout() {
     [idSequence],
   )
 
-  // The JSON config and full responsive CSS are only shown in the code panel,
+  // The JSON config and full responsive CSS are only shown in the code view,
   // so only build them when it's open — otherwise every edit pays to serialize
   // the whole config and regenerate the full stylesheet for nothing.
-  const computeCode = settingsTarget === 'code'
+  const computeCode = sidebarView === 'code'
 
   const gridConfigJson = useMemo(
     () => (computeCode ? gridConfigToJson(containerSettings, items) : ''),
@@ -371,29 +370,7 @@ export function Layout() {
           frameRef={frameRef}
         />
 
-        <Popover
-          anchor={popoverAnchor}
-          title={
-            settingsTarget === 'container'
-              ? 'Grid container (12-col max)'
-              : settingsTarget === 'code'
-                ? 'Component config'
-                : `Grid item: ${selectedItem?.label ?? 'Settings'}`
-          }
-          onClose={closePopover}
-        >
-          {settingsTarget === 'container' && <ContainerSettingsPanel />}
-          {settingsTarget === 'item' && selectedItem && <ItemSettingsPanel />}
-          {settingsTarget === 'code' && (
-            <CodeViewer
-              maxHeightClassName="max-h-96"
-              tabs={[
-                { id: 'json', label: 'JSON config', language: 'json', code: gridConfigJson },
-                { id: 'css', label: 'CSS', language: 'css', code: fullGridCss },
-              ]}
-            />
-          )}
-        </Popover>
+        <Sidebar gridConfigJson={gridConfigJson} fullGridCss={fullGridCss} />
       </div>
     </Profiler>
   )

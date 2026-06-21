@@ -142,3 +142,8 @@ export const COMPONENT_GROUPS: ComponentGroup[] = [
     ],
   },
 ]
+
+/** Flat lookup: ComponentType → its palette definition (type-name label + icon). */
+export const COMPONENT_BY_TYPE = Object.fromEntries(
+  COMPONENT_GROUPS.flatMap((group) => group.items).map((def) => [def.type, def]),
+) as Record<ComponentType, ComponentDef>

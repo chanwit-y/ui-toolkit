@@ -30,6 +30,9 @@ export function ItemSettingsPanel() {
 
   return (
     <div className="space-y-4">
+      <h3 className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400">
+        Layout
+      </h3>
       <label className="block space-y-1">
         <span className="text-xs font-medium text-zinc-600">Label</span>
         <Input

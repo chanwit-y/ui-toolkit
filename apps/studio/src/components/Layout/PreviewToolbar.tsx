@@ -5,11 +5,15 @@ import { useGridStore } from './gridStore'
 
 export function PreviewToolbar() {
   const previewBreakpoint = useGridStore((s) => s.previewBreakpoint)
-  const settingsTarget = useGridStore((s) => s.settingsTarget)
+  const sidebarView = useGridStore((s) => s.sidebarView)
+  const selectedItemId = useGridStore((s) => s.selectedItemId)
   const setPreviewBreakpoint = useGridStore((s) => s.setPreviewBreakpoint)
-  const openContainerSettings = useGridStore((s) => s.openContainerSettings)
-  const openCodePanel = useGridStore((s) => s.openCodePanel)
+  const showContainer = useGridStore((s) => s.showContainer)
+  const setSidebarView = useGridStore((s) => s.setSidebarView)
   const addItem = useGridStore((s) => s.addItem)
+
+  const containerActive = sidebarView === 'inspector' && !selectedItemId
+  const codeActive = sidebarView === 'code'
 
   return (
     <div className="relative flex shrink-0 items-center justify-end gap-2 border-b border-zinc-200 bg-white/70 px-3 py-2">
@@ -24,22 +28,22 @@ export function PreviewToolbar() {
       <div className="flex items-center gap-0.5 rounded-lg border border-zinc-200 bg-zinc-50 p-1">
         <IconButton
           label="Grid container settings"
-          active={settingsTarget === 'container'}
+          active={containerActive}
           className="h-8! w-8! border-0 bg-transparent shadow-none"
           onClick={(e) => {
             e.stopPropagation()
-            openContainerSettings(e.currentTarget.getBoundingClientRect())
+            showContainer()
           }}
         >
           <Settings size={18} aria-hidden="true" />
         </IconButton>
         <IconButton
           label="View component config (JSON / CSS)"
-          active={settingsTarget === 'code'}
+          active={codeActive}
           className="h-8! w-8! border-0 bg-transparent shadow-none"
           onClick={(e) => {
             e.stopPropagation()
-            openCodePanel(e.currentTarget.getBoundingClientRect())
+            setSidebarView(codeActive ? 'inspector' : 'code')
           }}
         >
           <Code size={18} aria-hidden="true" />

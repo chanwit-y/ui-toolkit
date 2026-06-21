@@ -1,6 +1,9 @@
 export * from "./components/context";
 export * from "./components/form";
 export { Form } from "./components/form/Form";
+// Un-form-wrapped textfield for display-only previews (e.g. the studio canvas).
+export { TextFieldBase } from "./components/TextField";
+export type { TextFieldProps, TextFieldElement, DataType } from "./components/@types";
 export * from "./hooks";
 
 export * from "./components/Autocomplete2";
