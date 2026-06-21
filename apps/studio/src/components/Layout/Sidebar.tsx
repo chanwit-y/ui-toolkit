@@ -4,6 +4,7 @@ import { useGridStore, useSelectedItem, type SidebarView } from './gridStore'
 import { ContainerSettingsPanel, ItemSettingsPanel } from './SettingsPanel'
 
 const VIEW_OPTIONS = [
+  { value: 'layout', label: 'Layout' },
   { value: 'inspector', label: 'Inspector' },
   { value: 'code', label: 'Code' },
 ]
@@ -14,10 +15,11 @@ type SidebarProps = {
 }
 
 /**
- * The right sidebar — the single home for all editing. In `inspector` view it
- * shows the selected item's field config (textfield only) + grid layout, or the
- * container settings when nothing is selected. In `code` view it shows the
- * exported JSON / CSS. Replaces the former anchored popovers.
+ * The right sidebar — the single home for all editing, split into three tabs:
+ * `inspector` shows the selected item's field config (textfield only);
+ * `layout` shows the grid config — the selected item's per-breakpoint spans, or
+ * the container settings when nothing is selected; `code` shows the exported
+ * JSON / CSS.
  */
 export function Sidebar({ gridConfigJson, fullGridCss }: SidebarProps) {
   const sidebarView = useGridStore((s) => s.sidebarView)
@@ -27,9 +29,13 @@ export function Sidebar({ gridConfigJson, fullGridCss }: SidebarProps) {
   const title =
     sidebarView === 'code'
       ? 'Component config'
-      : selectedItem
-        ? `Grid item: ${selectedItem.label}`
-        : 'Grid container'
+      : sidebarView === 'layout'
+        ? selectedItem
+          ? `Layout: ${selectedItem.label}`
+          : 'Grid container'
+        : selectedItem
+          ? `Grid item: ${selectedItem.label}`
+          : 'Inspector'
 
   return (
     <aside className="flex w-72 shrink-0 flex-col border-l border-zinc-200 bg-white">
@@ -53,15 +59,21 @@ export function Sidebar({ gridConfigJson, fullGridCss }: SidebarProps) {
               { id: 'css', label: 'CSS', language: 'css', code: fullGridCss },
             ]}
           />
+        ) : sidebarView === 'layout' ? (
+          selectedItem ? <ItemSettingsPanel /> : <ContainerSettingsPanel />
         ) : selectedItem ? (
-          <div className="space-y-6">
-            {selectedItem.type === 'textfield' && selectedItem.config && (
-              <FieldConfigPanel itemId={selectedItem.id} config={selectedItem.config} />
-            )}
-            <ItemSettingsPanel />
-          </div>
+          selectedItem.type === 'textfield' && selectedItem.config ? (
+            <FieldConfigPanel itemId={selectedItem.id} config={selectedItem.config} />
+          ) : (
+            <p className="px-1 py-6 text-center text-sm text-zinc-400">
+              No field settings for this component yet.
+            </p>
+          )
         ) : (
-          <ContainerSettingsPanel />
+          <p className="px-1 py-6 text-center text-sm text-zinc-400">
+            Select a grid item to edit its properties, or open the Layout tab for
+            container settings.
+          </p>
         )}
       </div>
     </aside>

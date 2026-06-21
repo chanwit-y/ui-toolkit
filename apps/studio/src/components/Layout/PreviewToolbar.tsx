@@ -12,7 +12,7 @@ export function PreviewToolbar() {
   const setSidebarView = useGridStore((s) => s.setSidebarView)
   const addItem = useGridStore((s) => s.addItem)
 
-  const containerActive = sidebarView === 'inspector' && !selectedItemId
+  const containerActive = sidebarView === 'layout' && !selectedItemId
   const codeActive = sidebarView === 'code'
 
   return (

@@ -18,7 +18,7 @@ export type NewComponent = { type: ComponentType; label: string }
 
 /** Which panel the right sidebar shows. `inspector` resolves to the selected
  * item's config+layout, or the container settings when nothing is selected. */
-export type SidebarView = 'inspector' | 'code'
+export type SidebarView = 'inspector' | 'layout' | 'code'
 
 /**
  * Bridge to the FLIP animation layer. The animation relies on DOM refs and
@@ -254,7 +254,7 @@ export const useGridStore = create<GridState>((set, get) => {
     // Canvas click clears selection so the inspector falls back to the container.
     clearSelection: () => set({ selectedItemId: null }),
 
-    showContainer: () => set({ selectedItemId: null, sidebarView: 'inspector' }),
+    showContainer: () => set({ selectedItemId: null, sidebarView: 'layout' }),
 
     setSidebarView: (view) => set({ sidebarView: view }),
 
