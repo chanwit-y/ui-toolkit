@@ -414,7 +414,7 @@ export type DataTableProps = {
   apiDeleteInfo?: APIDelete;
   api?: APIFunction;
   apiDelete?: APIFunction;
-  apiInfo?: API;
+  apiInfo?: DataTableApi;
   modalContainer?: JSX.Element;
   modalMaxWidth?: string;
   modalMinWidth?: string;
@@ -586,9 +586,20 @@ export type IconProps = BaseComponentProps<
 >;
 
 export type DataValue = {
-  type: "variable" | "state" | "observe" | "value" | "selectedRow";
+  type: "variable" | "state" | "observe" | "value" | "selectedRow" | "url";
   key: "none" | string;
   value?: any;
+  /**
+   * Lodash path into the source object. For `type:"state"` it drills into the
+   * named global-state slice (e.g. "name", "address.city"); for `type:"value"`
+   * it is ignored. Optional — omit to take the whole slice.
+   */
+  path?: string;
+  /**
+   * Only meaningful for `type:"url"`: read the value from the route path param
+   * (default) or from the query string. `key` is the param/query name.
+   */
+  source?: "param" | "query";
 };
 
 export type API = {
@@ -597,6 +608,47 @@ export type API = {
   query?: Record<string, DataValue>;
   params?: Record<string, DataValue>;
   body?: Record<string, DataValue>;
+};
+
+/**
+ * Server-side pagination config for a DataTable. When present on the table's
+ * `api`, the table switches from client-side paging (fetch-all + slice in
+ * memory) to manual/server paging: it sends offset/limit (and optionally a
+ * search term) on every page change and reads the total row count out of the
+ * response. Absent ⇒ today's client-side behavior is unchanged.
+ */
+export type DataTablePagination = {
+  /** Body key that receives `pageIndex * pageSize`. */
+  offsetKey: string;
+  /** Body key that receives `pageSize`. */
+  limitKey: string;
+  /** Body key for the global search term. Present ⇒ server-side search enabled. */
+  searchKey?: string;
+  /** Path into the response for the total (unpaged) row count, e.g. ["total"]. */
+  totalPath: string[];
+  /** Initial page size. Defaults to 10. */
+  defaultPageSize?: number;
+  /** Page-size dropdown options. Defaults to [5, 10, 20, 30, 40, 50]. */
+  pageSizeOptions?: number[];
+};
+
+/** {@link API} plus the optional server-pagination block used by DataTable. */
+export type DataTableApi = API & { pagination?: DataTablePagination };
+
+/**
+ * Declarative API loader for a {@link Container}. When set, the container fires
+ * `api` (the standard {@link API} config — params/query/body can be sourced from
+ * the URL via `type:"url"` {@link DataValue}s) on mount, drills `api.paths` into
+ * the response, and writes the result into the global state slice named `key`
+ * (one zustand store per key). It refetches when the resolved URL params change
+ * and clears the slice on unmount. Input elements can then read-bind their
+ * initial value from that slice via `value:{ type:"state", key, path }`.
+ */
+export type ContainerLoad = {
+  /** Unique global-state key the (path-drilled) response is stored under. */
+  key: string;
+  /** Standard API config used to fetch the data. */
+  api: API;
 };
 
 export type Term = {
@@ -626,6 +678,8 @@ export type CheckboxElement = {
   dataType: string;
   isRequired: boolean;
   errorMessage: string;
+  /** Read-only initial value bound from a global-state slice. */
+  value?: DataValue;
 } & CheckboxProps;
 
 export type APIDelete = {
@@ -682,7 +736,7 @@ export type DataTableElement = {
   name: string;
   title: string;
   columns: ColumnDef[];
-  api: API & {};
+  api: DataTableApi;
   apiDeleteInfo?: APIDelete;
   modalContainer?: Container;
   modalMaxWidth?: string;
@@ -700,6 +754,8 @@ export type TextFieldElement = {
   dataType: string;
   isRequired: boolean;
   errorMessage: string;
+  /** Read-only initial value bound from a global-state slice. */
+  value?: DataValue;
 } & TextFieldProps;
 
 export type TextareaElement = {
@@ -707,6 +763,8 @@ export type TextareaElement = {
   dataType: string;
   isRequired: boolean;
   errorMessage: string;
+  /** Read-only initial value bound from a global-state slice. */
+  value?: DataValue;
 } & TextareaProps;
 
 export type HiddenElement = {
@@ -719,6 +777,8 @@ export type DatePickerElement = {
   dataType: string;
   isRequired?: boolean;
   errorMessage?: string;
+  /** Read-only initial value bound from a global-state slice. */
+  value?: DataValue;
 } & DatePickerProps;
 
 export type DateRange = {
@@ -1010,6 +1070,8 @@ export type RadioElement = {
   variant?: "classic" | "surface" | "soft";
   orientation?: "horizontal" | "vertical";
   defaultValue?: string;
+  /** Read-only initial value bound from a global-state slice. */
+  value?: DataValue;
   /** Static options. Used when no `api` is provided. */
   options?: Array<{
     value: string;
@@ -1052,6 +1114,7 @@ export type TElement =
   | ButtonElement
   | TabElement
   | PaperElement
+  | PopoverElement
   | DividerElement;
 
 export type BinType =
@@ -1078,6 +1141,7 @@ export type BinType =
   | "container"
   | "tab"
   | "paper"
+  | "popover"
   | "divider"
   | "empty";
 
@@ -1180,6 +1244,8 @@ export type Container = {
   id: string;
   name: string;
   contextData?: string;
+  /** Fetch an API on mount and store the result into a global-state key. */
+  load?: ContainerLoad;
   isArray: boolean;
   bins: Bin[];
   /** Grid gap — Tailwind scale key (e.g. "2") or CSS length (e.g. "1rem", "8px"). Default: "2" */
@@ -1237,6 +1303,41 @@ export type ModalElement = {
   maxWidth?: string;
   minWidth?: string;
   maxHeight?: string;
+};
+
+/**
+ * A popover trigger described as a mini-Bin: its `type` selects the element
+ * builder and `element` is that builder's config. Lets any element (button,
+ * icon, avatar, text, …) open the popover — not just a button.
+ */
+export type PopoverTrigger = {
+  type: BinType;
+  element: TElement;
+};
+
+/**
+ * Config-driven Popover. The content is a self-contained {@link Container}
+ * (its own form + DataProvider, like a modal), opened by an arbitrary
+ * `trigger` element. Any panel chrome comes from the container's own
+ * `surface`; the popover itself supplies the floating card.
+ */
+export type PopoverElement = {
+  id?: string;
+  container: Container;
+  trigger: PopoverTrigger;
+  placement?:
+    | "top"
+    | "bottom"
+    | "left"
+    | "right"
+    | "top-start"
+    | "top-end"
+    | "bottom-start"
+    | "bottom-end";
+  /** Open on click (default) or hover. Maps to the Popover `trigger` prop. */
+  triggerMode?: "click" | "hover";
+  /** Gap in px between trigger and content. Default: 8. */
+  offset?: number;
 };
 
 export type TabItem = {
@@ -1344,7 +1445,14 @@ export type ThemeComponents = {
    * mode automatically. Set a field to pin a specific named color for that role.
    */
   dataTable?: {
+    /** Header background color. Unset → solid theme accent (auto dark-flip). */
     headerColor?: ThemeProps["accentColor"];
+    /** Header label color. Unset → accent contrast (or neutral on a named bg). */
+    headerTextColor?: ThemeProps["accentColor"];
+    /** Header font size. Unset → default `text-xs`. */
+    headerFontSize?: "xs" | "sm" | "base" | "lg" | "xl";
+    /** Header font weight. Unset → default `font-bold`. */
+    headerFontWeight?: "normal" | "medium" | "semibold" | "bold";
     headerHoverColor?: ThemeProps["accentColor"];
     paginationButtonColor?: ThemeProps["accentColor"];
     paginationButtonHoverColor?: ThemeProps["accentColor"];

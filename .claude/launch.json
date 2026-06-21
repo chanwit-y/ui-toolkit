@@ -1,0 +1,22 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "example",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["run", "--cwd", "apps/example", "dev"],
+      "port": 3200
+    },
+    {
+      "name": "studio",
+      "runtimeExecutable": "/opt/homebrew/bin/node",
+      "runtimeArgs": [
+        "apps/studio/node_modules/vite/bin/vite.js",
+        "apps/studio",
+        "--port",
+        "3300"
+      ],
+      "port": 3300
+    }
+  ]
+}

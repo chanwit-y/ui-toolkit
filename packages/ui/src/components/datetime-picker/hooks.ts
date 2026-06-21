@@ -112,39 +112,33 @@ export const useDropdownPlacement = (
 		const dropdownWidth =
 			dropdownRef.current?.offsetWidth ?? DEFAULT_DROPDOWN_WIDTH
 
-		const modalContent = trigger.closest(".modal-content") as HTMLElement | null
-		const modalRect = modalContent?.getBoundingClientRect() ?? null
-		const boundaryTop = modalRect?.top ?? 0
-		const boundaryBottom = modalRect?.bottom ?? window.innerHeight
-
+		// The dropdown is portaled to document.body, so `position: fixed`
+		// resolves against the viewport and the trigger's viewport-relative
+		// rect can be used directly — no containing-block correction needed.
 		const margin = DROPDOWN_VIEWPORT_MARGIN
 		const triggerGap = DROPDOWN_TRIGGER_GAP
-		const spaceBelow = boundaryBottom - rect.bottom - triggerGap - margin
-		const spaceAbove = rect.top - boundaryTop - triggerGap - margin
+		const spaceBelow = window.innerHeight - rect.bottom - triggerGap - margin
+		const spaceAbove = rect.top - triggerGap - margin
 		const needed = dropdownHeight + triggerGap + margin
 		const showAbove = spaceBelow < needed && spaceAbove > spaceBelow
 
-		// `.modal-content` uses transform, which makes it the containing block
-		// for position: fixed descendants. Coordinates must then be relative to
-		// the modal box instead of the viewport.
-		const offsetLeft = modalRect?.left ?? 0
-		const viewportLeft = Math.max(
+		const left = Math.max(
 			margin,
 			Math.min(rect.left, window.innerWidth - dropdownWidth - margin),
 		)
 
 		const styles: CSSProperties = {
 			position: "fixed",
-			left: viewportLeft - offsetLeft,
+			left,
 			width: rect.width,
 			minWidth: DEFAULT_DROPDOWN_WIDTH,
 			zIndex: 100000,
 		}
 
 		if (showAbove) {
-			styles.bottom = (modalRect?.bottom ?? window.innerHeight) - rect.top + triggerGap
+			styles.bottom = window.innerHeight - rect.top + triggerGap
 		} else {
-			styles.top = rect.bottom - (modalRect?.top ?? 0) + triggerGap
+			styles.top = rect.bottom + triggerGap
 		}
 
 		setDropdownStyles(styles)

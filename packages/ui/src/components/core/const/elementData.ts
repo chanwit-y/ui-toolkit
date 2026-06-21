@@ -19,6 +19,7 @@ import { Text } from "../text";
 import { Typography } from "../typography";
 import { Tab } from "../tab";
 import { Paper } from "../paper";
+import { Popover } from "../popover";
 import { Divider } from "../divider";
 import { UploadImage } from "../uploadImage";
 import { UploadFile } from "../uploadFile";
@@ -53,6 +54,7 @@ export const ElementData = {
 	typography: Typography,
 	tab: Tab,
 	paper: Paper,
+	popover: Popover,
 	divider: Divider,
 	uploadimage: UploadImage,
 	uploadfile: UploadFile,

@@ -12,9 +12,7 @@
     "build": "bun run --cwd packages/ui build && bun run --cwd apps/api build && bun run --cwd apps/example build && bun run --cwd apps/studio build",
     "studio": "bun run --cwd apps/studio dev",
     "example": "bun run --cwd apps/example dev",
-    "api": "bun run --cwd apps/api dev",
-    "tauri:dev": "bun run --cwd apps/studio tauri:dev",
-    "tauri:build": "bun run --cwd apps/studio tauri:build"
+    "api": "bun run --cwd apps/api dev"
   },
   "devDependencies": {
     "typescript": "^5.4.5"

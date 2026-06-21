@@ -17,7 +17,8 @@ The standalone components (Modal, DataTable2, Paper, Button, …) are also expor
   - [1. model](#1-model--data-shapes)
   - [2. api](#2-api--endpoints)
   - [3. container](#3-container--layout)
-  - [4. Wire it up](#4-wire-it-up)
+  - [4. Container API load](#4-container-api-load)
+  - [5. Wire it up](#5-wire-it-up)
 - [Configuration reference (property tables)](#configuration-reference)
 - [Theming](#theming)
 - [Standalone components](#standalone-components)
@@ -150,7 +151,81 @@ export const containerCountryList: Container[] = [
 ];
 ```
 
-### 4. Wire it up
+### 4. Container API load
+
+Use `load` on a `Container` to fetch data when the container mounts and store the result in a **global state slice** (one zustand store per `key`). Fields inside the container can then read from that slice via `value: { type: "state", key, path }`.
+
+On mount the loader:
+
+1. Resolves `load.api.params` / `query` / `body` (including `type: "url"` values from react-router).
+2. Calls the named endpoint from your `api` config.
+3. Drills into the response with `load.api.paths` (e.g. `["data"]` to unwrap `{ data: { … } }`).
+4. Writes the result under `load.key`.
+5. Refetches when resolved URL params change; clears the slice on unmount.
+
+**1. Declare the endpoint** in `api.ts` (same as any other endpoint):
+
+```ts
+countryDetail: {
+  url: "/collection/detail/:id",
+  description: "Get a single country by id",
+  methods: "GET" as const,
+  response: "countryDetailRes",
+  parameter: "countryParam", // { id: "string" }
+  withOptions: false,
+},
+```
+
+**2. Add `load` to the container** and bind fields to the slice:
+
+```ts
+export const containerCountryStateDetail: Container[] = [
+  {
+    id: "state-detail-1",
+    name: "CountryStateDetail",
+    isArray: false,
+    load: {
+      key: "countryDetail", // global-state slice name
+      api: {
+        name: "countryDetail",       // must match an entry in api.ts
+        paths: ["data"],             // drill response.data before storing
+        params: { id: { type: "url", key: "id" } }, // :id from the route
+      },
+    },
+    bins: [
+      {
+        sm: "12", md: "6", lg: "6", xl: "6",
+        type: "textfield",
+        element: {
+          name: "name",
+          label: "Name",
+          dataType: "string",
+          isRequired: false,
+          errorMessage: "",
+          // read initial value from the loaded slice
+          value: { type: "state", key: "countryDetail", path: "name" },
+        },
+      },
+      // …more bins bound to countryDetail.* paths
+    ],
+  },
+];
+```
+
+**3. Route the page** so URL params are available. The example app mounts a separate `Core` instance per route and passes `:id` through react-router:
+
+```tsx
+<Routes>
+  <Route path="/" element={<ListPage />} />
+  <Route path="/country/:id" element={<DetailPage />} />
+</Routes>
+```
+
+Open `/country/1` in the example app to see the state-loader demo (links on the list page).
+
+> **Note:** `load.api` is the runtime **API** config (name + paths + params/query/body), not the `TApiMaster` entry. `params` keys must match the endpoint's `parameter` model field names; `query`/`body` keys match their respective models.
+
+### 5. Wire it up
 
 `Core` must render inside `<DataProvider>` + `<ThemeProvider>`.
 
@@ -253,6 +328,48 @@ export function App() {
 | `justifyContent` / `alignContent` | `ContainerGridContent` | — | Grid content distribution. |
 | `gridAutoFlow` | `ContainerGridAutoFlow` | — | Grid auto-flow. |
 | `surface` | `boolean \| ContainerSurface` | — | Themed panel wrapping the grid. `true` = defaults. |
+| `load` | `ContainerLoad` | — | Fetch on mount; store response in global state under `load.key`. |
+
+### `ContainerLoad`
+
+| Property | Type | Required | Description |
+|----------|------|:---:|-------------|
+| `key` | `string` | ✔ | Global-state slice name. Must be unique per concurrent loader. |
+| `api` | `API` | ✔ | Runtime API call config (see below). |
+
+### Runtime `API` (element / loader binding)
+
+Used on `Container.load`, DataTable `api`, button actions, etc. References a named endpoint from `TApiMaster` and supplies runtime args.
+
+| Property | Type | Required | Description |
+|----------|------|:---:|-------------|
+| `name` | `string` | ✔ | Endpoint name from `api.ts`. |
+| `paths` | `string[]` | — | Drill into the response before storing or displaying (e.g. `["data"]`, `["data", "items"]`). |
+| `params` | `Record<string, DataValue>` | — | Path-param values (`:id` placeholders). Keys match the endpoint's `parameter` model. |
+| `query` | `Record<string, DataValue>` | — | Query-string values. Keys match the endpoint's `query` model. |
+| `body` | `Record<string, DataValue>` | — | Request-body values. Keys match the endpoint's `body` model. |
+| `pagination` | `DataTablePagination` | — | DataTable only — server-side paging config. |
+
+### `DataValue`
+
+Resolves a concrete value for API args or field `value` bindings.
+
+| Property | Type | Required | Description |
+|----------|------|:---:|-------------|
+| `type` | `"value" \| "state" \| "url" \| "variable" \| "observe" \| "selectedRow"` | ✔ | Source kind. |
+| `key` | `string \| "none"` | ✔ | Slice name (`state`), URL param/query name (`url`), etc. |
+| `path` | `string` | — | Lodash path into a `state` object (e.g. `"name"`, `"address.city"`). Omit to use the whole slice. |
+| `value` | `any` | — | Literal when `type: "value"`. |
+| `source` | `"param" \| "query"` | — | For `type: "url"`: read from route param (default) or query string. |
+
+Common patterns:
+
+| Pattern | Config | Use case |
+|---------|--------|----------|
+| Route param | `{ type: "url", key: "id" }` | `:id` in the URL → API path param |
+| Query string | `{ type: "url", key: "q", source: "query" }` | `?q=…` → API query param |
+| Literal | `{ type: "value", key: "none", value: 10 }` | Fixed body/query value |
+| Loaded field | `{ type: "state", key: "countryDetail", path: "name" }` | Bind input to data fetched by `load` |
 
 ### `Bin`
 

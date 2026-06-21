@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+/* The canvas renders the real `<TextFieldBase>` from @gummy-ui/ui, whose layout
+   relies on Tailwind utility classes baked into the library's built output.
+   Point Tailwind's scanner at the built library so those classes are emitted in
+   studio's stylesheet. `@source` overrides the default node_modules/.gitignore
+   exclusion. */
+@source "../../../packages/ui/dist/index.js";
+
+body {
+  margin: 0;
+}
+
+#root {
+  min-height: 100svh;
+}

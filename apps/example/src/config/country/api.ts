@@ -15,6 +15,22 @@ export const api = {
     body: "countryBody",
     withOptions: false,
   },
+  countriesPaged: {
+    url: "/collection/page",
+    description: "Get a page of countries (server-side pagination + search)",
+    methods: "POST" as const,
+    response: "countryPagedRes",
+    body: "countryPageBody",
+    withOptions: false,
+  },
+  countryDetail: {
+    url: "/collection/detail/:id",
+    description: "Get a single country by id (state-loader demo)",
+    methods: "GET" as const,
+    response: "countryDetailRes",
+    parameter: "countryParam",
+    withOptions: false,
+  },
   createCountry: {
     url: "/collection/create/691e9963992636eb1560eadb",
     description: "Create country",

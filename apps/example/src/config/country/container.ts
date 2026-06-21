@@ -2268,6 +2268,71 @@ export const containerCountryTabs: Container = {
   gap: "3",
 };
 
+/**
+ * Popover demo content — an isolated mini "quick filter" panel. It is its own
+ * container (own form/schema), opened from the toolbar. The chrome-less surface
+ * only adds padding so the popover's own floating card stays the single box.
+ */
+const popoverFilterBins: Bin[] = [
+  {
+    sm: "12",
+    md: "12",
+    lg: "12",
+    xl: "12",
+    type: "text",
+    justifySelf: "start",
+    alignSelf: "end",
+    element: {
+      text: "Quick filter",
+      isLabel: true,
+    },
+  },
+  {
+    sm: "12",
+    md: "12",
+    lg: "12",
+    xl: "12",
+    type: "textfield",
+    justifySelf: "stretch",
+    alignSelf: "stretch",
+    element: {
+      name: "filterName",
+      label: "Name contains",
+      dataType: "text",
+      isRequired: false,
+      errorMessage: "",
+      placeholder: "e.g. land",
+    },
+  },
+  {
+    sm: "12",
+    md: "12",
+    lg: "12",
+    xl: "12",
+    type: "textfield",
+    justifySelf: "stretch",
+    alignSelf: "stretch",
+    element: {
+      name: "filterCode",
+      label: "Code",
+      dataType: "text",
+      isRequired: false,
+      errorMessage: "",
+      placeholder: "e.g. TH",
+    },
+  },
+];
+
+const containerPopoverFilter: Container = {
+  id: "containerPopoverFilter",
+  name: "popoverFilter",
+  isArray: false,
+  bins: popoverFilterBins,
+  // No card/border here — the popover supplies the floating card; this only
+  // adds inner padding so fields don't touch the popover edges.
+  surface: { background: false, border: false, shadow: "none", padding: "4" },
+};
+
 export const groupList: Bin[] = [
   {
     sm: "12",
@@ -2286,12 +2351,36 @@ export const groupList: Bin[] = [
   },
   {
     type: "empty",
-    sm: "11",
-    md: "11",
-    lg: "11",
-    xl: "11",
+    sm: "10",
+    md: "10",
+    lg: "10",
+    xl: "10",
     justifySelf: "stretch",
     alignSelf: "center",
+  },
+  {
+    type: "popover",
+    sm: "1",
+    md: "1",
+    lg: "1",
+    xl: "1",
+    align: "end",
+    justifySelf: "end",
+    alignSelf: "center",
+    element: {
+      id: "popoverFilter",
+      container: containerPopoverFilter,
+      placement: "bottom-end",
+      triggerMode: "click",
+      trigger: {
+        type: "button",
+        element: {
+          label: "Filter",
+          // No button action — the popover wrapper handles open/close on click.
+          actions: [],
+        },
+      },
+    },
   },
   {
     type: "modal",
@@ -2392,6 +2481,71 @@ export const groupList: Bin[] = [
     md: "12",
     lg: "12",
     xl: "12",
+    type: "datatable",
+    justifySelf: "stretch",
+    alignSelf: "stretch",
+    element: {
+      name: "dtCountryServerPaged",
+      title: "Countries (server paged)",
+      columns: [
+        {
+          accessor: "code",
+          header: "Code",
+          align: "start",
+          enableSorting: false,
+          enableColumnFilter: false,
+        },
+        {
+          accessor: "name",
+          header: "Name",
+          align: "start",
+          enableSorting: false,
+          enableColumnFilter: false,
+        },
+        {
+          accessor: "updated_at",
+          header: "Update Date",
+          align: "start",
+          useDateFormat: "DD/MM/YYYY HH:mm:ss",
+          enableSorting: false,
+          enableColumnFilter: false,
+        },
+        {
+          accessor: "updated_by_name",
+          header: "Updated By",
+          align: "start",
+          enableSorting: false,
+          enableColumnFilter: false,
+        },
+      ],
+      // Presence of `pagination` switches this table to server-side paging:
+      // it sends offset/limit/search to /collection/page and reads `total`
+      // from the response. The static body values below are placeholders the
+      // table overwrites each fetch.
+      api: {
+        name: "countriesPaged",
+        paths: ["data"],
+        body: {
+          offset: { type: "value", key: "offset", value: 0 },
+          limit: { type: "value", key: "limit", value: 10 },
+          search: { type: "value", key: "search", value: "" },
+        },
+        pagination: {
+          offsetKey: "offset",
+          limitKey: "limit",
+          searchKey: "search",
+          totalPath: ["total"],
+          defaultPageSize: 10,
+          pageSizeOptions: [5, 10, 20],
+        },
+      },
+    },
+  },
+  {
+    sm: "12",
+    md: "12",
+    lg: "12",
+    xl: "12",
     type: "datatableeditable",
     justifySelf: "stretch",
     alignSelf: "stretch",
@@ -2483,5 +2637,100 @@ export const containerCountryList: Container[] = [
     alignItems: "start",
     justifyContent: "space-between",
     alignContent: "start",
+  },
+];
+
+/**
+ * State-loader demo bins. Every input reads its initial value (read-only) out
+ * of the `countryDetail` global-state slice that the container's `load` fills.
+ */
+const countryStateDetailBins: Bin[] = [
+  {
+    sm: "12", md: "12", lg: "12", xl: "12",
+    type: "hidden",
+    element: {
+      name: "_id",
+      dataType: "string",
+      value: { type: "state", key: "countryDetail", path: "_id" },
+    },
+  },
+  {
+    sm: "12", md: "12", lg: "12", xl: "12",
+    type: "text",
+    element: { text: "Country detail (loaded into global state from /country/:id)", isLabel: true },
+  },
+  {
+    sm: "12", md: "6", lg: "6", xl: "6",
+    type: "textfield",
+    element: {
+      name: "name",
+      label: "Name",
+      dataType: "string",
+      isRequired: false,
+      errorMessage: "",
+      value: { type: "state", key: "countryDetail", path: "name" },
+    },
+  },
+  {
+    sm: "12", md: "6", lg: "6", xl: "6",
+    type: "textfield",
+    element: {
+      name: "code",
+      label: "Code",
+      dataType: "string",
+      isRequired: false,
+      errorMessage: "",
+      value: { type: "state", key: "countryDetail", path: "code" },
+    },
+  },
+  {
+    sm: "12", md: "6", lg: "6", xl: "6",
+    type: "textfield",
+    element: {
+      name: "updated_by_name",
+      label: "Updated by",
+      dataType: "string",
+      isRequired: false,
+      errorMessage: "",
+      value: { type: "state", key: "countryDetail", path: "updated_by_name" },
+    },
+  },
+  {
+    sm: "12", md: "6", lg: "6", xl: "6",
+    type: "textfield",
+    element: {
+      name: "updated_at",
+      label: "Updated at",
+      dataType: "string",
+      isRequired: false,
+      errorMessage: "",
+      value: { type: "state", key: "countryDetail", path: "updated_at" },
+    },
+  },
+];
+
+export const containerCountryStateDetail: Container[] = [
+  {
+    id: "state-detail-1",
+    name: "CountryStateDetail",
+    isArray: false,
+    // Fire countryDetail with :id from the URL, store the response object
+    // (drilled at "data") into the global-state key "countryDetail".
+    load: {
+      key: "countryDetail",
+      api: {
+        name: "countryDetail",
+        paths: ["data"],
+        params: { id: { type: "url", key: "id" } },
+      },
+    },
+    bins: countryStateDetailBins,
+    ...DEFAULT_CONTAINER_GRID,
+    gap: "4",
+    justifyItems: "stretch",
+    alignItems: "start",
+    justifyContent: "start",
+    alignContent: "start",
+    surface: { title: "State Loader Demo" },
   },
 ];

@@ -1,4 +1,18 @@
 import React, { useState, useRef, useEffect, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
+import { ThemeProvider, useTheme } from './context';
+
+/**
+ * Click targets matching these selectors are treated as "inside" the popover,
+ * so clicking them does not close it. Covers portaled overlays that live
+ * outside contentRef in the DOM — Radix poppers, the autocomplete dropdown,
+ * and an opt-in `[data-popover-ignore]` hook for custom roots.
+ */
+const POPOVER_IGNORE_SELECTORS =
+  '[data-radix-popper-content-wrapper],[data-radix-portal],.dropdown,[data-popover-ignore]';
+
+/** Enter/exit transition duration (ms). Must match the `duration-150` class. */
+const TRANSITION_MS = 150;
 
 export interface PopoverProps {
   children: ReactNode;
@@ -27,9 +41,19 @@ export const Popover: React.FC<PopoverProps> = ({
 }) => {
   const [internalOpen, setInternalOpen] = useState(false);
   const [position, setPosition] = useState({ top: 0, left: 0 });
+  // `mounted` keeps the content in the DOM through the exit transition;
+  // `entered` is the transition target toggled a frame after mount.
+  const [mounted, setMounted] = useState(false);
+  const [entered, setEntered] = useState(false);
   const triggerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
-  
+
+  // Content is portaled to document.body (so `position: fixed` resolves against
+  // the viewport, not a transformed ancestor). That moves it outside the Radix
+  // <Theme> wrapper, so re-apply the current theme to restore `--accent-*` for
+  // themed content. Mirrors Modal / the date pickers.
+  const { theme: currentTheme, components: currentComponents } = useTheme();
+
   const isOpen = controlledOpen !== undefined ? controlledOpen : internalOpen;
   
   const updatePosition = () => {
@@ -109,26 +133,50 @@ export const Popover: React.FC<PopoverProps> = ({
     onOpenChange?.(false);
   };
   
+  // Drive mount/unmount and the enter/exit transition off the logical open
+  // state. On open: mount, then flip `entered` on the next frame so the browser
+  // paints the "from" state first. On close: clear `entered` to animate out,
+  // then unmount after the transition finishes.
   useEffect(() => {
     if (isOpen) {
+      setMounted(true);
+      // Flip to the "entered" state a tick after mount so the browser paints
+      // the "from" frame first and the transition runs. A timer (not rAF) is
+      // used so it still fires when the tab is backgrounded/hidden.
+      const t = setTimeout(() => setEntered(true), 20);
+      return () => clearTimeout(t);
+    }
+    setEntered(false);
+    const t = setTimeout(() => setMounted(false), TRANSITION_MS);
+    return () => clearTimeout(t);
+  }, [isOpen]);
+
+  // Measure (and keep tracking) position once the content is actually mounted.
+  useEffect(() => {
+    if (mounted) {
       updatePosition();
       const handleResize = () => updatePosition();
       const handleScroll = () => updatePosition();
-      
+
       window.addEventListener('resize', handleResize);
       window.addEventListener('scroll', handleScroll, true);
-      
+
       return () => {
         window.removeEventListener('resize', handleResize);
         window.removeEventListener('scroll', handleScroll, true);
       };
     }
     return undefined;
-  }, [isOpen, placement, offset]);
+  }, [mounted, placement, offset]);
   
   useEffect(() => {
     if (isOpen) {
       const handleClickOutside = (event: MouseEvent) => {
+        const target = event.target as Element | null;
+        // Keep open when the click lands inside a portaled overlay (e.g. an
+        // autocomplete/select dropdown) rendered outside contentRef; otherwise
+        // choosing an option would count as an outside click and close us.
+        if (target?.closest?.(POPOVER_IGNORE_SELECTORS)) return;
         if (
           triggerRef.current &&
           contentRef.current &&
@@ -161,6 +209,17 @@ export const Popover: React.FC<PopoverProps> = ({
     onMouseEnter: trigger === 'hover' ? () => handleToggle() : undefined,
     onMouseLeave: trigger === 'hover' ? () => handleClose() : undefined,
   };
+
+  // The popover slides in from the trigger's side: a panel below the trigger
+  // (bottom*) starts slightly up, one above (top*) starts slightly down, etc.
+  // Literal classes only, so Tailwind's content scanner emits them.
+  const enterOffsetClass = placement.startsWith('top')
+    ? 'translate-y-1'
+    : placement.startsWith('bottom')
+      ? '-translate-y-1'
+      : placement === 'left'
+        ? 'translate-x-1'
+        : '-translate-x-1';
   
   return (
     <>
@@ -172,29 +231,33 @@ export const Popover: React.FC<PopoverProps> = ({
         {children}
       </div>
       
-      {isOpen && (
-        <>
-          {/* Backdrop for mobile/touch devices */}
-          <div 
-            className="fixed inset-0 z-40 md:hidden" 
-            onClick={handleClose}
-          />
-          
-          {/* Popover content */}
-          <div
-            ref={contentRef}
-            className={`fixed z-50 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg ${contentClassName}`}
-            style={{
-              top: `${position.top}px`,
-              left: `${position.left}px`,
-            }}
-            onMouseEnter={trigger === 'hover' ? () => setInternalOpen(true) : undefined}
-            onMouseLeave={trigger === 'hover' ? () => handleClose() : undefined}
-          >
-            {content}
-          </div>
-        </>
-      )}
+      {mounted &&
+        createPortal(
+          <ThemeProvider theme={currentTheme} components={currentComponents}>
+            {/* Backdrop for mobile/touch devices */}
+            <div
+              className={`fixed inset-0 z-40 md:hidden transition-opacity duration-150 ease-out ${entered ? 'opacity-100' : 'opacity-0'}`}
+              onClick={handleClose}
+            />
+
+            {/* Popover content — fades + slides in from the trigger's side.
+                Only opacity/translate animate (not scale) so getBoundingClientRect
+                width/height stay stable for positioning. */}
+            <div
+              ref={contentRef}
+              className={`fixed z-50 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg transition duration-150 ease-out ${entered ? 'opacity-100 translate-x-0 translate-y-0' : `opacity-0 ${enterOffsetClass}`} ${contentClassName}`}
+              style={{
+                top: `${position.top}px`,
+                left: `${position.left}px`,
+              }}
+              onMouseEnter={trigger === 'hover' ? () => setInternalOpen(true) : undefined}
+              onMouseLeave={trigger === 'hover' ? () => handleClose() : undefined}
+            >
+              {content}
+            </div>
+          </ThemeProvider>,
+          document.body,
+        )}
     </>
   );
 };

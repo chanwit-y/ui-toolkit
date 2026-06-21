@@ -10,7 +10,9 @@ import {
 	type CSSProperties,
 	type MutableRefObject,
 } from "react"
+import { createPortal } from "react-dom"
 import { Box, Text } from "@radix-ui/themes"
+import { ThemeProvider, useTheme } from "../context"
 import { Calendar, ChevronLeft, ChevronRight, X } from "lucide-react"
 import { cn } from "../../util/utils"
 import { HelperText } from "../date-picker/parts"
@@ -107,6 +109,10 @@ export const DateRangePickerBase = forwardRef<HTMLButtonElement, DateRangePicker
 	) {
 		const autoId = useId()
 		const triggerId = id ?? autoId
+		// The dropdown is portaled to document.body, outside the Radix <Theme>
+		// wrapper, so re-apply the current theme inside the portal to restore the
+		// `--accent-*` vars and appearance (mirrors Modal's portaled content).
+		const { theme: currentTheme, components: currentComponents } = useTheme()
 		const hasError = useMemo(() => error || !!errorMessage, [error, errorMessage])
 		const displayHelperText = hasError ? errorMessage : helperText
 
@@ -152,37 +158,31 @@ export const DateRangePickerBase = forwardRef<HTMLButtonElement, DateRangePicker
 			const dropdownHeight = dropdownRef.current?.offsetHeight ?? 380
 			const dropdownWidth = dropdownRef.current?.offsetWidth ?? 640
 
-			const modalContent = trigger.closest(".modal-content") as HTMLElement | null
-			const modalRect = modalContent?.getBoundingClientRect() ?? null
-			const boundaryTop = modalRect?.top ?? 0
-			const boundaryBottom = modalRect?.bottom ?? window.innerHeight
-
+			// The dropdown is portaled to document.body, so `position: fixed`
+			// resolves against the viewport and the trigger's viewport-relative
+			// rect can be used directly — no containing-block correction needed.
 			const margin = 8
 			const triggerGap = 5
-			const spaceBelow = boundaryBottom - rect.bottom - triggerGap - margin
-			const spaceAbove = rect.top - boundaryTop - triggerGap - margin
+			const spaceBelow = window.innerHeight - rect.bottom - triggerGap - margin
+			const spaceAbove = rect.top - triggerGap - margin
 			const needed = dropdownHeight + triggerGap + margin
 			const showAbove = spaceBelow < needed && spaceAbove > spaceBelow
 
-			// `.modal-content` uses transform, which makes it the containing block
-			// for position: fixed descendants. Coordinates must then be relative to
-			// the modal box instead of the viewport.
-			const offsetLeft = modalRect?.left ?? 0
-			const viewportLeft = Math.max(
+			const left = Math.max(
 				margin,
 				Math.min(rect.left, window.innerWidth - dropdownWidth - margin),
 			)
 
 			const styles: CSSProperties = {
 				position: "fixed",
-				left: viewportLeft - offsetLeft,
+				left,
 				zIndex: 100000,
 			}
 
 			if (showAbove) {
-				styles.bottom = (modalRect?.bottom ?? window.innerHeight) - rect.top + triggerGap
+				styles.bottom = window.innerHeight - rect.top + triggerGap
 			} else {
-				styles.top = rect.bottom - (modalRect?.top ?? 0) + triggerGap
+				styles.top = rect.bottom + triggerGap
 			}
 
 			setDropdownStyles(styles)
@@ -526,7 +526,9 @@ export const DateRangePickerBase = forwardRef<HTMLButtonElement, DateRangePicker
 						</>
 					)}
 
-					{isOpen && (
+					{isOpen &&
+						createPortal(
+						<ThemeProvider theme={currentTheme} components={currentComponents}>
 						<div
 							ref={dropdownRef}
 							role="dialog"
@@ -572,6 +574,8 @@ export const DateRangePickerBase = forwardRef<HTMLButtonElement, DateRangePicker
 								</Text>
 							</div>
 						</div>
+						</ThemeProvider>,
+						document.body,
 					)}
 				</div>
 

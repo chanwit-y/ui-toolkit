@@ -231,12 +231,45 @@ const ACCENT_ACTION_TEXT = 'text-[var(--accent-contrast,#ffffff)]'
 const ACCENT_PAGINATION_BG = 'bg-[var(--accent-9,#3b82f6)]'
 const ACCENT_PAGINATION_HOVER = 'hover:bg-[var(--accent-10,#2563eb)]'
 
-// Accent header carries its own contrast text; named colors keep the inherited
-// neutral header text (the light static maps need a dark foreground).
-const ACCENT_HEADER = `${ACCENT_HEADER_BG} ${ACCENT_HEADER_TEXT}`
-
+// Header background only — text color is applied separately via
+// dtHeaderTextClass so it can be configured independently of the background.
 export const dtHeaderBgClass = (color?: string) =>
-  color ? tableBgColors[color] ?? ACCENT_HEADER : ACCENT_HEADER
+  color ? tableBgColors[color] ?? ACCENT_HEADER_BG : ACCENT_HEADER_BG
+
+/**
+ * Header label color.
+ * - explicit `textColor` → static named text class (e.g. `text-blue-700`)
+ * - else, accent background (no `bgColor`) → the accent contrast foreground
+ * - else, a named (light) background → empty so the th inherits the neutral
+ *   `.datatable-header-row` gray, which reads on the light static maps.
+ */
+export const dtHeaderTextClass = (textColor?: string, bgColor?: string) =>
+  textColor
+    ? actionButtonTextColors[textColor] ?? ACCENT_HEADER_TEXT
+    : bgColor
+      ? ''
+      : ACCENT_HEADER_TEXT
+
+// Header font — literal class maps so Tailwind's content scanner emits them.
+const headerFontSizes: { [key: string]: string } = {
+  xs: 'text-xs',
+  sm: 'text-sm',
+  base: 'text-base',
+  lg: 'text-lg',
+  xl: 'text-xl',
+}
+const headerFontWeights: { [key: string]: string } = {
+  normal: 'font-normal',
+  medium: 'font-medium',
+  semibold: 'font-semibold',
+  bold: 'font-bold',
+}
+/** Header font-size class; empty when unset so the `.datatable-header-row` default applies. */
+export const dtHeaderFontSizeClass = (size?: string) =>
+  size ? headerFontSizes[size] ?? '' : ''
+/** Header font-weight class; empty when unset so the default `font-bold` applies. */
+export const dtHeaderFontWeightClass = (weight?: string) =>
+  weight ? headerFontWeights[weight] ?? '' : ''
 export const dtHeaderHoverClass = (color?: string) =>
   color ? tableHoverBgColors[color] ?? ACCENT_HEADER_HOVER : ACCENT_HEADER_HOVER
 export const dtRowHoverClass = (color?: string) =>
