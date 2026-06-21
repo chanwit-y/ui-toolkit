@@ -137,6 +137,23 @@ export type SelectFieldConfig = {
   dataSource: { source: string; valueKey: string; labelKey: string }
 }
 
+/**
+ * Defaults for a freshly dropped autocomplete. Shares `SelectFieldConfig` with the
+ * select (studio's select also previews with `Autocomplete2`), but the two palette
+ * items differ by intent: a select picks from a hand-authored static list, an
+ * autocomplete is a type-ahead backed by a runtime `dataSource` — so this starts in
+ * `source` mode. The static `options`/keys are still carried (and editable) so an
+ * author can switch back without losing the starter records.
+ */
+export function createDefaultAutocompleteConfig(name: string): SelectFieldConfig {
+  return {
+    ...createDefaultSelectFieldConfig(name),
+    label: 'Autocomplete',
+    placeholder: 'Search…',
+    mode: 'source',
+  }
+}
+
 /** Defaults for a freshly dropped select. `mode` starts static with a couple of
  * starter records keyed `id`/`name`. */
 export function createDefaultSelectFieldConfig(name: string): SelectFieldConfig {
@@ -199,8 +216,9 @@ export type GridItemData = {
   settings: GridItemSettings
   /**
    * Component-specific config, discriminated by `type`: a textfield carries a
-   * `TextFieldConfig`, a textarea a `TextareaConfig`, a select a
-   * `SelectFieldConfig`. Other types are config-less.
+   * `TextFieldConfig`, a textarea a `TextareaConfig`, and a select or autocomplete
+   * a `SelectFieldConfig` (both preview with `Autocomplete2`). Other types are
+   * config-less.
    */
   config?: TextFieldConfig | TextareaConfig | SelectFieldConfig
 }

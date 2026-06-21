@@ -14,8 +14,9 @@ import type {
  *
  * Mapping rules (see the grilled design): every item becomes a Bin frame
  * (`sm/md/lg/xl` 12-col strings, `type`, `justifySelf/alignSelf`); `element` is
- * populated for `textfield`, `text`, `textarea`, and `select` (emitted as engine
- * type `autocomplete`) and omitted for every other type. The studio `xs`
+ * populated for `textfield`, `text`, `textarea`, `select` (emitted as engine type
+ * `autocomplete`), and `autocomplete` (which keeps its type) and omitted for every
+ * other type. The studio `xs`
  * breakpoint is dropped (the engine starts at `sm`) and `xl` mirrors `lg`.
  */
 
@@ -119,6 +120,7 @@ function buildElement(item: GridItemData): Record<string, unknown> | undefined {
     case 'textarea':
       return item.config ? textareaElement(item.config as TextareaConfig) : undefined
     case 'select':
+    case 'autocomplete':
       return item.config ? autocompleteElement(item.config as SelectFieldConfig) : undefined
     case 'text':
       return { text: item.label, isLabel: true }

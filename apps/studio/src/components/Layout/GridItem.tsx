@@ -108,6 +108,9 @@ function CellContent({ item }: { item: GridItemData }) {
   if (item.type === 'select' && item.config) {
     return <GlyphChip Icon={ListFilter} />
   }
+  if (item.type === 'autocomplete' && item.config) {
+    return <GlyphChip Icon={Search} />
+  }
   return (
     <div
       data-grid-item-content
@@ -133,7 +136,9 @@ function ActiveBody({ item }: { item: GridItemData }) {
         ? TextWrap
         : item.type === 'select' && item.config
           ? ListFilter
-          : null
+          : item.type === 'autocomplete' && item.config
+            ? Search
+            : null
   if (!Icon) return null
   return (
     <div
@@ -303,8 +308,9 @@ function SelectLivePreview({ config }: { config: SelectFieldConfig }) {
 /**
  * The cell's live render, or null when the cell can't (or isn't wide enough to)
  * show one — the generic seam for adding more component types later. `textfield`,
- * `textarea`, and `select` (with config) go live; everything else falls through
- * to its chip.
+ * `textarea`, `select`, and `autocomplete` (with config) go live; everything else
+ * falls through to its chip. `select`/`autocomplete` share `SelectLivePreview`
+ * (both preview with the library's `Autocomplete2`).
  */
 function renderLive(item: GridItemData, isLive: boolean) {
   if (!isLive) return null
@@ -315,6 +321,9 @@ function renderLive(item: GridItemData, isLive: boolean) {
     return <TextareaLivePreview config={item.config as TextareaConfig} />
   }
   if (item.type === 'select' && item.config) {
+    return <SelectLivePreview config={item.config as SelectFieldConfig} />
+  }
+  if (item.type === 'autocomplete' && item.config) {
     return <SelectLivePreview config={item.config as SelectFieldConfig} />
   }
   return null

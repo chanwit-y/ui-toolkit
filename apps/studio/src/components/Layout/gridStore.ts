@@ -5,6 +5,7 @@ import type { ComponentType } from './componentCatalog'
 import { updateContainerBreakpoint, updateItemBreakpoint } from './gridSettings'
 import { readSeedCount } from './perf'
 import {
+  createDefaultAutocompleteConfig,
   createDefaultItemSettings,
   createDefaultSelectFieldConfig,
   createDefaultTextareaConfig,
@@ -166,6 +167,9 @@ export const useGridStore = create<GridState>((set, get) => {
         } else if (type === 'select') {
           nextSeq = fieldSeq + 1
           config = createDefaultSelectFieldConfig(`select_${nextSeq}`)
+        } else if (type === 'autocomplete') {
+          nextSeq = fieldSeq + 1
+          config = createDefaultAutocompleteConfig(`autocomplete_${nextSeq}`)
         }
 
         const newItem: GridItemData = {

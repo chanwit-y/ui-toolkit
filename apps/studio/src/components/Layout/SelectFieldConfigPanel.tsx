@@ -145,6 +145,8 @@ function OptionsEditor({
 type SelectFieldConfigPanelProps = {
   itemId: string
   config: SelectFieldConfig
+  /** Section heading — defaults to "Select"; the autocomplete reuses this panel. */
+  heading?: string
 }
 
 /**
@@ -155,7 +157,11 @@ type SelectFieldConfigPanelProps = {
  * exported config stay uniform with the textfield. `mode` swaps the static
  * options editor for the data-source inputs.
  */
-export function SelectFieldConfigPanel({ itemId, config }: SelectFieldConfigPanelProps) {
+export function SelectFieldConfigPanel({
+  itemId,
+  config,
+  heading = 'Select',
+}: SelectFieldConfigPanelProps) {
   const updateItemConfig = useGridStore((s) => s.updateItemConfig)
   const set = <K extends keyof SelectFieldConfig>(key: K, value: SelectFieldConfig[K]) =>
     updateItemConfig(itemId, { [key]: value } as Partial<SelectFieldConfig>)
@@ -165,7 +171,7 @@ export function SelectFieldConfigPanel({ itemId, config }: SelectFieldConfigPane
   return (
     <div className="space-y-3">
       <h3 className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400">
-        Select
+        {heading}
       </h3>
 
       <Field label="Name (binding key)">
