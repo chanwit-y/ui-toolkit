@@ -1,74 +1,160 @@
-import type { ComponentType } from './componentCatalog'
-import { BREAKPOINTS, type Breakpoint } from './breakpoints'
+import { MAX_GRID_COLUMNS } from './breakpoints'
 import type {
   GridContainerSettings,
   GridItemData,
-  GridItemSettings,
-  Responsive,
+  SelectFieldConfig,
   TextareaConfig,
   TextFieldConfig,
 } from './types'
 
-export type GridConfig = {
-  version: number
-  breakpoints: Breakpoint[]
-  container: GridContainerSettings
-  items: {
-    id: string
-    label: string
-    type: ComponentType
-    settings: GridItemSettings
-    config?: TextFieldConfig | TextareaConfig
-  }[]
+/**
+ * Serializes the studio canvas into the declarative engine's `Bin[]` shape — the
+ * same structure as `apps/example/src/config/country/container.ts`. This is the
+ * canonical export shown in the sidebar's code tab.
+ *
+ * Mapping rules (see the grilled design): every item becomes a Bin frame
+ * (`sm/md/lg/xl` 12-col strings, `type`, `justifySelf/alignSelf`); `element` is
+ * populated for `textfield`, `text`, `textarea`, and `select` (emitted as engine
+ * type `autocomplete`) and omitted for every other type. The studio `xs`
+ * breakpoint is dropped (the engine starts at `sm`) and `xl` mirrors `lg`.
+ */
+
+/** Engine dataType convention: studio's `'text'` is the engine's `'string'`. */
+function normalizeDataType(dataType: string): string {
+  return dataType === 'text' ? 'string' : dataType
 }
 
 /**
- * Collapse a responsive value to a single value when every breakpoint shares
- * it, so the JSON config stays readable instead of repeating `xs/sm/md/lg`.
+ * Convert a studio column span (a count relative to that breakpoint's column
+ * total) into the engine's out-of-12 string. e.g. span 3 of 6 columns → "6".
  */
-function compactResponsive<T>(value: Responsive<T>): Responsive<T> | T {
-  const breakpoints = BREAKPOINTS.map((b) => b.key)
-  const first = value[breakpoints[0]]
-  const allEqual = breakpoints.every((bp) => value[bp] === first)
-  return allEqual ? first : value
+function toBoxRange(span: number, columns: number): string {
+  const cols = columns > 0 ? columns : MAX_GRID_COLUMNS
+  const scaled = Math.round((span / cols) * MAX_GRID_COLUMNS)
+  return String(Math.min(MAX_GRID_COLUMNS, Math.max(1, scaled)))
 }
 
-function compactRecord<T extends Record<string, Responsive<unknown>>>(
-  record: T,
-): Record<string, unknown> {
-  const out: Record<string, unknown> = {}
-  for (const [key, value] of Object.entries(record)) {
-    out[key] = compactResponsive(value)
+/** Drop empty-string / unset optionals so the emitted element stays readable. */
+function omitEmpty<T extends Record<string, unknown>>(obj: T): T {
+  const out = {} as Record<string, unknown>
+  for (const [k, v] of Object.entries(obj)) {
+    if (v !== '' && v !== undefined) out[k] = v
   }
-  return out
+  return out as T
+}
+
+/** `textfield` → engine `TextFieldElement`. The required engine fields (name,
+ * dataType, isRequired, errorMessage) are always emitted; empty optionals are
+ * dropped. */
+function textFieldElement(c: TextFieldConfig): Record<string, unknown> {
+  return {
+    name: c.name,
+    dataType: normalizeDataType(c.dataType),
+    label: c.label,
+    isRequired: c.isRequired,
+    errorMessage: c.errorMessage,
+    variant: c.variant,
+    size: c.size,
+    radius: c.radius,
+    isFullWidth: c.isFullWidth,
+    isFixedHeight: c.isFixedHeight,
+    ...omitEmpty({
+      placeholder: c.placeholder,
+      helperText: c.helperText,
+      width: c.width === '' ? undefined : c.width,
+      regex: c.regex,
+      regexErrorMessage: c.regexErrorMessage,
+    }),
+  }
+}
+
+/** `textarea` → engine `TextareaElement`. Required engine fields always emitted;
+ * empty optionals dropped. */
+function textareaElement(c: TextareaConfig): Record<string, unknown> {
+  return {
+    name: c.name,
+    dataType: normalizeDataType(c.dataType),
+    label: c.label,
+    isRequired: c.isRequired,
+    errorMessage: c.errorMessage,
+    rows: c.rows,
+    resize: c.resize,
+    autoResize: c.autoResize,
+    showCharCount: c.showCharCount,
+    ...omitEmpty({
+      placeholder: c.placeholder,
+      helperText: c.helperText,
+      maxLength: c.maxLength === '' ? undefined : c.maxLength,
+    }),
+  }
 }
 
 /**
- * Build a serializable JSON config describing the whole grid. Responsive values
- * that are identical across breakpoints are collapsed to a single value.
+ * `select` → engine `AutocompleteElement` (the studio select previews with
+ * Autocomplete2). `idKey/searchKey/displayKey` map onto `keys.{id,search,display}`;
+ * in `source` mode the data source becomes a minimal `api: { name }`.
  */
-export function buildGridConfig(
+function autocompleteElement(c: SelectFieldConfig): Record<string, unknown> {
+  return {
+    name: c.name,
+    dataType: normalizeDataType(c.dataType),
+    label: c.label,
+    isRequired: c.isRequired,
+    errorMessage: c.errorMessage,
+    canObserve: false,
+    observeTo: '',
+    isSingleLoad: false,
+    keys: { id: c.idKey, search: c.searchKey, display: c.displayKey },
+    defaultData: {},
+    options: c.options,
+    ...(c.mode === 'source' ? { api: { name: c.dataSource.source } } : {}),
+  }
+}
+
+/** The element for a Bin, or undefined for types without a mapped element. */
+function buildElement(item: GridItemData): Record<string, unknown> | undefined {
+  switch (item.type) {
+    case 'textfield':
+      return item.config ? textFieldElement(item.config as TextFieldConfig) : undefined
+    case 'textarea':
+      return item.config ? textareaElement(item.config as TextareaConfig) : undefined
+    case 'select':
+      return item.config ? autocompleteElement(item.config as SelectFieldConfig) : undefined
+    case 'text':
+      return { text: item.label, isLabel: true }
+    default:
+      return undefined
+  }
+}
+
+/** Build the `Bin[]` (plain objects) for the whole canvas. */
+export function buildBins(
   container: GridContainerSettings,
   items: GridItemData[],
-): Record<string, unknown> {
-  return {
-    version: 1,
-    breakpoints: BREAKPOINTS.map((b) => b.key),
-    container: compactRecord(container),
-    items: items.map((item) => ({
-      id: item.id,
-      label: item.label,
-      type: item.type,
-      settings: compactRecord(item.settings),
-      // Textfields and textareas carry config; omit the key entirely otherwise.
-      ...(item.config ? { config: item.config } : {}),
-    })),
-  }
+): Record<string, unknown>[] {
+  const cols = container.columns
+  return items.map((item) => {
+    const span = item.settings.colSpan
+    const lg = toBoxRange(span.lg, cols.lg)
+    const element = buildElement(item)
+    return {
+      sm: toBoxRange(span.sm, cols.sm),
+      md: toBoxRange(span.md, cols.md),
+      lg,
+      // The engine has no `xs`; `xl` mirrors `lg` (studio's widest breakpoint).
+      xl: lg,
+      // Studio's `select` is the engine's `autocomplete`; everything else passes through.
+      type: item.type === 'select' ? 'autocomplete' : item.type,
+      justifySelf: item.settings.justifySelf.lg,
+      alignSelf: item.settings.alignSelf.lg,
+      ...(element ? { element } : {}),
+    }
+  })
 }
 
 export function gridConfigToJson(
   container: GridContainerSettings,
   items: GridItemData[],
 ): string {
-  return JSON.stringify(buildGridConfig(container, items), null, 2)
+  return JSON.stringify(buildBins(container, items), null, 2)
 }

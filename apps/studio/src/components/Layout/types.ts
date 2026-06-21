@@ -90,6 +90,84 @@ export function createDefaultTextFieldConfig(name: string): TextFieldConfig {
   }
 }
 
+/**
+ * A single static option for the select. The select's live preview renders the
+ * library's `Autocomplete2`, whose options are arbitrary records keyed by
+ * `idKey`/`displayKey`/`searchKey` (not a fixed `{ value, label }`), so an option
+ * is an open record. The author picks which keys carry the id/label via the
+ * config's `idKey`/`displayKey`/`searchKey`.
+ */
+export type SelectOption = Record<string, unknown>
+
+/**
+ * Editable config for a select component. The select previews with the library's
+ * `Autocomplete2`; `options`/`idKey`/`displayKey`/`searchKey` map onto its
+ * record-array option model. The presentational fields (`variant`, `size`,
+ * `radius`) and the textfield-parity fields (`dataType`, `isFullWidth`,
+ * `isFixedHeight`, `width`, `regex`, `regexErrorMessage`) are kept for a uniform
+ * panel + exported JSON — `Autocomplete2` ignores them. `mode` discriminates a
+ * hand-authored static `options` array from a `dataSource` the declarative engine
+ * resolves at runtime; both halves are always carried (and exported) regardless
+ * of the active mode.
+ */
+export type SelectFieldConfig = {
+  name: string
+  dataType: DataType
+  label: string
+  placeholder: string
+  helperText: string
+  isRequired: boolean
+  errorMessage: string
+  variant: 'classic' | 'surface' | 'soft'
+  size: '1' | '2' | '3'
+  radius: 'none' | 'small' | 'medium' | 'large' | 'full'
+  isFullWidth: boolean
+  isFixedHeight: boolean
+  width: number | ''
+  regex: string
+  regexErrorMessage: string
+  mode: 'static' | 'source'
+  options: SelectOption[]
+  /** Which option-record key holds the stored value (Autocomplete2 `idKey`). */
+  idKey: string
+  /** Which option-record key is shown in the list/trigger (`displayKey`). */
+  displayKey: string
+  /** Which option-record key the type-ahead filters on (`searchKey`). */
+  searchKey: string
+  dataSource: { source: string; valueKey: string; labelKey: string }
+}
+
+/** Defaults for a freshly dropped select. `mode` starts static with a couple of
+ * starter records keyed `id`/`name`. */
+export function createDefaultSelectFieldConfig(name: string): SelectFieldConfig {
+  return {
+    name,
+    dataType: 'text',
+    label: 'Select',
+    placeholder: 'Select an option',
+    helperText: '',
+    isRequired: false,
+    errorMessage: '',
+    variant: 'surface',
+    size: '2',
+    radius: 'medium',
+    isFullWidth: true,
+    isFixedHeight: true,
+    width: '',
+    regex: '',
+    regexErrorMessage: '',
+    mode: 'static',
+    options: [
+      { id: '1', name: 'Option 1' },
+      { id: '2', name: 'Option 2' },
+    ],
+    idKey: 'id',
+    displayKey: 'name',
+    searchKey: 'name',
+    dataSource: { source: '', valueKey: '', labelKey: '' },
+  }
+}
+
 export type GridContainerSettings = {
   columns: Responsive<number>
   gap: Responsive<string>
@@ -121,9 +199,10 @@ export type GridItemData = {
   settings: GridItemSettings
   /**
    * Component-specific config, discriminated by `type`: a textfield carries a
-   * `TextFieldConfig`, a textarea a `TextareaConfig`. Other types are config-less.
+   * `TextFieldConfig`, a textarea a `TextareaConfig`, a select a
+   * `SelectFieldConfig`. Other types are config-less.
    */
-  config?: TextFieldConfig | TextareaConfig
+  config?: TextFieldConfig | TextareaConfig | SelectFieldConfig
 }
 
 function responsive<T>(value: T): Responsive<T> {

@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* Gate `dark:` on a `.dark` ancestor (the library's `darkMode: 'class'`
+   convention) instead of Tailwind 4's default `prefers-color-scheme` media
+   query. Studio never sets `.dark`, so library components (Autocomplete2, etc.)
+   stay light regardless of the OS theme — matching the light `ThemeProvider`. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* The canvas renders the real `<TextFieldBase>` from @gummy-ui/ui, whose layout
    relies on Tailwind utility classes baked into the library's built output.
    Point Tailwind's scanner at the built library so those classes are emitted in

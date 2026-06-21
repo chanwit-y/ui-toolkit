@@ -1,9 +1,10 @@
 import { CodeViewer, SegmentedControl } from '../common'
 import { FieldConfigPanel } from './FieldConfigPanel'
 import { useGridStore, useSelectedItem, type SidebarView } from './gridStore'
+import { SelectFieldConfigPanel } from './SelectFieldConfigPanel'
 import { ContainerSettingsPanel, ItemSettingsPanel } from './SettingsPanel'
 import { TextareaConfigPanel } from './TextareaConfigPanel'
-import type { TextareaConfig, TextFieldConfig } from './types'
+import type { SelectFieldConfig, TextareaConfig, TextFieldConfig } from './types'
 
 const VIEW_OPTIONS = [
   { value: 'layout', label: 'Layout' },
@@ -57,7 +58,7 @@ export function Sidebar({ gridConfigJson, fullGridCss }: SidebarProps) {
           <CodeViewer
             maxHeightClassName="max-h-[calc(100vh-12rem)]"
             tabs={[
-              { id: 'json', label: 'JSON config', language: 'json', code: gridConfigJson },
+              { id: 'json', label: 'Bins (engine)', language: 'json', code: gridConfigJson },
               { id: 'css', label: 'CSS', language: 'css', code: fullGridCss },
             ]}
           />
@@ -73,6 +74,11 @@ export function Sidebar({ gridConfigJson, fullGridCss }: SidebarProps) {
             <TextareaConfigPanel
               itemId={selectedItem.id}
               config={selectedItem.config as TextareaConfig}
+            />
+          ) : selectedItem.type === 'select' && selectedItem.config ? (
+            <SelectFieldConfigPanel
+              itemId={selectedItem.id}
+              config={selectedItem.config as SelectFieldConfig}
             />
           ) : (
             <p className="px-1 py-6 text-center text-sm text-zinc-400">

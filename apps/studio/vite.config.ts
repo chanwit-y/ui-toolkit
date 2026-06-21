@@ -16,8 +16,14 @@ const reactDomPath = fileURLToPath(
 )
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [react(), tailwindcss()],
+  // The library's CoreProvider (pulled in for the Autocomplete2 live preview)
+  // references `process.env.NODE_ENV` (react-query devtools gate). Browsers have
+  // no `process`, so define it to keep that guard from throwing.
+  define: {
+    'process.env.NODE_ENV': JSON.stringify(mode),
+  },
   resolve: {
     dedupe: ['react', 'react-dom'],
     alias: {
@@ -25,4 +31,4 @@ export default defineConfig({
       'react-dom': reactDomPath,
     },
   },
-})
+}))

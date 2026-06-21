@@ -1,5 +1,5 @@
 import type { DataType } from '@gummy-ui/ui'
-import { TextareaBase, TextFieldBase } from '@gummy-ui/ui'
+import { AutocompleteBase2, TextareaBase, TextFieldBase } from '@gummy-ui/ui'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import {
@@ -7,6 +7,7 @@ import {
   GripVertical,
   Hash,
   Link,
+  ListFilter,
   Lock,
   Mail,
   Phone,
@@ -19,7 +20,12 @@ import { memo, useCallback, useLayoutEffect, useState } from 'react'
 import { cn, IconButton } from '../common'
 import { COMPONENT_BY_TYPE } from './componentCatalog'
 import { useGridStore } from './gridStore'
-import type { GridItemData, TextareaConfig, TextFieldConfig } from './types'
+import type {
+  GridItemData,
+  SelectFieldConfig,
+  TextareaConfig,
+  TextFieldConfig,
+} from './types'
 import { escapeClassName } from './utils'
 
 type GridItemProps = {
@@ -99,6 +105,9 @@ function CellContent({ item }: { item: GridItemData }) {
   if (item.type === 'textarea' && item.config) {
     return <GlyphChip Icon={TextWrap} />
   }
+  if (item.type === 'select' && item.config) {
+    return <GlyphChip Icon={ListFilter} />
+  }
   return (
     <div
       data-grid-item-content
@@ -122,7 +131,9 @@ function ActiveBody({ item }: { item: GridItemData }) {
       ? iconForDataType((item.config as TextFieldConfig).dataType)
       : item.type === 'textarea' && item.config
         ? TextWrap
-        : null
+        : item.type === 'select' && item.config
+          ? ListFilter
+          : null
   if (!Icon) return null
   return (
     <div
@@ -253,9 +264,47 @@ function TextareaLivePreview({ config }: { config: TextareaConfig }) {
 }
 
 /**
+ * The live, real `<AutocompleteBase2>` from the library, rendered in-cell once the
+ * cell is wide enough. Inert (`pointer-events-none`) like the other previews. In
+ * `static` mode it shows the authored option records keyed by the configured
+ * `idKey`/`displayKey`/`searchKey` (an invalid edit never reaches here — the panel
+ * only commits valid arrays, so the preview holds the last-valid one). In `source`
+ * mode the cell can't fetch, so it renders an empty trigger with the configured
+ * placeholder. The required marker is baked into the label (Autocomplete2 has no
+ * `isRequired` prop). Options/keys are cast through `any` — Autocomplete2's generic
+ * is fixed to `{ id, label }` for typing, but it reads the keys off each record at
+ * runtime, so arbitrary record shapes work. Needs the core providers from
+ * `App.tsx` (useCore/useData/react-query).
+ */
+function SelectLivePreview({ config }: { config: SelectFieldConfig }) {
+  const label = config.isRequired ? `${config.label} *` : config.label
+  const isSource = config.mode === 'source'
+  return (
+    <div
+      data-grid-item-content
+      className="pointer-events-none flex h-full w-full items-center px-3"
+    >
+      <AutocompleteBase2
+        name={config.name}
+        label={label}
+        placeholder={config.placeholder}
+        helperText={config.helperText}
+        error={!!config.errorMessage}
+        errorMessage={config.errorMessage}
+        options={(isSource ? [] : config.options) as never}
+        idKey={config.idKey as never}
+        displayKey={config.displayKey as never}
+        searchKey={config.searchKey as never}
+      />
+    </div>
+  )
+}
+
+/**
  * The cell's live render, or null when the cell can't (or isn't wide enough to)
- * show one — the generic seam for adding more component types later. `textfield`
- * and `textarea` (with config) go live; everything else falls through to its chip.
+ * show one — the generic seam for adding more component types later. `textfield`,
+ * `textarea`, and `select` (with config) go live; everything else falls through
+ * to its chip.
  */
 function renderLive(item: GridItemData, isLive: boolean) {
   if (!isLive) return null
@@ -264,6 +313,9 @@ function renderLive(item: GridItemData, isLive: boolean) {
   }
   if (item.type === 'textarea' && item.config) {
     return <TextareaLivePreview config={item.config as TextareaConfig} />
+  }
+  if (item.type === 'select' && item.config) {
+    return <SelectLivePreview config={item.config as SelectFieldConfig} />
   }
   return null
 }
