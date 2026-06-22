@@ -281,9 +281,19 @@ export const useGridStore = create<GridState>((set, get) => {
           config = createDefaultUploadFileConfig(`uploadFile_${nextSeq}`)
         }
 
-        // Uploads need more room for their dropzone, so they default to a wider
-        // lg span (6 of 12) than the standard inputs (2).
+        // Default lg span (of 12) by component kind: uploads need room for their
+        // dropzone (6); the common text-ish inputs read better a touch wider (4);
+        // everything else falls back to the standard 2.
         const isUpload = type === 'uploadimage' || type === 'uploadfile'
+        const isWideInput =
+          type === 'textfield' ||
+          type === 'textarea' ||
+          type === 'select' ||
+          type === 'autocomplete' ||
+          type === 'multiAutocomplete' ||
+          type === 'checkbox' ||
+          type === 'radio'
+        const defaultLg = isUpload ? 6 : isWideInput ? 4 : 2
         const newItem: GridItemData = {
           id: createId(),
           label: component?.label ?? `Item ${items.length + 1}`,
@@ -293,7 +303,7 @@ export const useGridStore = create<GridState>((set, get) => {
               xs: bpCols.xs,
               sm: Math.min(3, bpCols.sm),
               md: Math.min(2, bpCols.md),
-              lg: Math.min(isUpload ? 6 : 2, bpCols.lg),
+              lg: Math.min(defaultLg, bpCols.lg),
             },
           }),
           config,
