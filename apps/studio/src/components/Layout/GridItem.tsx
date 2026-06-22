@@ -28,10 +28,11 @@ import {
   Type,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { memo, useCallback, useLayoutEffect, useState } from 'react'
+import { memo, useCallback, useLayoutEffect, useRef, useState } from 'react'
 import { cn, IconButton } from '../common'
 import { COMPONENT_BY_TYPE } from './componentCatalog'
-import { useGridStore } from './gridStore'
+import { ENTER_DURATION_MS, prefersReducedMotion, UPGRADE_FADE_MS } from './gridAnimation'
+import { useGridStore, useIsEntering } from './gridStore'
 import type {
   CheckboxConfig,
   DateConfig,
@@ -575,8 +576,43 @@ export function GridItem({ item, isSelected }: GridItemProps) {
     },
     [setNodeRef],
   )
-  const isLive = useIsLiveWidth(cellEl)
+  // Suppress the live preview until the entrance lands: a freshly appeared cell
+  // shows only its cheap chip during the pop, so no library component mounts
+  // mid-pop to reflow. When `isEntering` clears (timer in the store), the cell
+  // upgrades to live — making the drop animation identical across every type.
+  const isEntering = useIsEntering(item.id)
+  const isLive = useIsLiveWidth(cellEl) && !isEntering
   const live = renderLive(item, isLive)
+
+  // Fade the cell's content: the chip fades in over the enter "pop", and the
+  // live preview fades in the instant the cell finishes entering. Later
+  // width-driven chip↔live flips (resize) stay instant — only the entrance and
+  // its hand-off fade. WAAPI runs on the content wrapper (not the inner
+  // `[data-grid-item-content]`) so it never collides with the config-edit fade.
+  const contentRef = useRef<HTMLDivElement>(null)
+  const wasEntering = useRef(isEntering)
+  useLayoutEffect(() => {
+    const el = contentRef.current
+    const was = wasEntering.current
+    wasEntering.current = isEntering
+    if (!el || prefersReducedMotion()) return
+    if (isEntering) {
+      el.getAnimations().forEach((a) => a.cancel())
+      el.animate([{ opacity: 0 }, { opacity: 1 }], {
+        duration: ENTER_DURATION_MS,
+        easing: 'ease-out',
+        fill: 'both',
+      })
+    } else if (was) {
+      // entering → landed: fade the just-mounted live preview (or chip) in.
+      el.getAnimations().forEach((a) => a.cancel())
+      el.animate([{ opacity: 0 }, { opacity: 1 }], {
+        duration: UPGRADE_FADE_MS,
+        easing: 'ease-out',
+        fill: 'both',
+      })
+    }
+  }, [isEntering])
 
   const style = {
     transform: CSS.Translate.toString(transform),
@@ -623,11 +659,14 @@ export function GridItem({ item, isSelected }: GridItemProps) {
       </IconButton>
       <TypeLabel type={item.type} isSelected={isSelected} />
       {/*
-        Wide enough → the live component (regardless of selection; the border +
-        grip just overlay it). Otherwise a selected cell collapses to its glyph
-        and an idle cell shows its chip.
+        Wide enough (and landed) → the live component (regardless of selection;
+        the border + grip just overlay it). Otherwise a selected cell collapses
+        to its glyph and an idle/entering cell shows its chip. The wrapper is the
+        fade target for the entrance and chip→live hand-off.
       */}
-      {live ?? (isSelected ? <ActiveBody item={item} /> : <CellContent item={item} />)}
+      <div ref={contentRef} className="h-full w-full">
+        {live ?? (isSelected ? <ActiveBody item={item} /> : <CellContent item={item} />)}
+      </div>
     </div>
   )
 }
