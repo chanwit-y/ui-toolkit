@@ -1,6 +1,7 @@
 import { MAX_GRID_COLUMNS } from './breakpoints'
 import type {
   CheckboxConfig,
+  DateConfig,
   GridContainerSettings,
   GridItemData,
   RadioConfig,
@@ -18,8 +19,9 @@ import type {
  * (`sm/md/lg/xl` 12-col strings, `type`, `justifySelf/alignSelf`); `element` is
  * populated for `textfield`, `text`, `textarea`, `select` (emitted as engine type
  * `autocomplete`), `autocomplete`, `multiAutocomplete` (both keep their type and
- * share the autocomplete element shape), `checkbox`, and `radio`, and omitted for
- * every other type. The multi
+ * share the autocomplete element shape), `checkbox`, `radio`, and the three date
+ * pickers (`datepicker`/`daterangepicker`/`datetimepicker`, which keep their type and
+ * share one kind-discriminated `DateConfig`), and omitted for every other type. The multi
  * field's `maxSelections`/`showSelectedCount` are studio-preview-only and not emitted
  * (the engine's `AutocompleteElement` has no home for them). The studio `xs`
  * breakpoint is dropped (the engine starts at `sm`) and `xl` mirrors `lg`.
@@ -173,6 +175,51 @@ function radioElement(c: RadioConfig): Record<string, unknown> {
   }
 }
 
+/**
+ * `datepicker`/`daterangepicker`/`datetimepicker` → engine `DatePickerElement` /
+ * `DateRangePickerElement` / `DateTimePickerElement`, switched on `c.kind`. `dataType`
+ * is kind-derived: date/datetime store an ISO `string`, a range stores a `{start,end}`
+ * object so it's the engine's `any`. The shared `min`/`max` map to `minDate`/`maxDate`
+ * (date, range) or `minDateTime`/`maxDateTime` (datetime), and are dropped when empty.
+ * `weekStartsOn` is emitted for date+datetime, `minuteStep` for datetime only; a range
+ * emits neither. `displayFormat`, `variant`, `size`, `radius`, and `clearable` always
+ * emit; empty `placeholder`/`helperText` are dropped.
+ */
+function dateElement(c: DateConfig): Record<string, unknown> {
+  const base = {
+    name: c.name,
+    dataType: c.kind === 'range' ? 'any' : 'string',
+    label: c.label,
+    isRequired: c.isRequired,
+    errorMessage: c.errorMessage,
+    variant: c.variant,
+    size: c.size,
+    radius: c.radius,
+    clearable: c.clearable,
+    displayFormat: c.displayFormat,
+    ...omitEmpty({ placeholder: c.placeholder, helperText: c.helperText }),
+  }
+  if (c.kind === 'datetime') {
+    return {
+      ...base,
+      weekStartsOn: c.weekStartsOn,
+      minuteStep: c.minuteStep,
+      ...omitEmpty({ minDateTime: c.min, maxDateTime: c.max }),
+    }
+  }
+  if (c.kind === 'range') {
+    return {
+      ...base,
+      ...omitEmpty({ minDate: c.min, maxDate: c.max }),
+    }
+  }
+  return {
+    ...base,
+    weekStartsOn: c.weekStartsOn,
+    ...omitEmpty({ minDate: c.min, maxDate: c.max }),
+  }
+}
+
 /** The element for a Bin, or undefined for types without a mapped element. */
 function buildElement(item: GridItemData): Record<string, unknown> | undefined {
   switch (item.type) {
@@ -188,6 +235,10 @@ function buildElement(item: GridItemData): Record<string, unknown> | undefined {
       return item.config ? checkboxElement(item.config as CheckboxConfig) : undefined
     case 'radio':
       return item.config ? radioElement(item.config as RadioConfig) : undefined
+    case 'datepicker':
+    case 'daterangepicker':
+    case 'datetimepicker':
+      return item.config ? dateElement(item.config as DateConfig) : undefined
     case 'text':
       return { text: item.label, isLabel: true }
     default:

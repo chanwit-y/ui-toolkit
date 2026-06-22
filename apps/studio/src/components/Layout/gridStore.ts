@@ -7,6 +7,7 @@ import { readSeedCount } from './perf'
 import {
   createDefaultAutocompleteConfig,
   createDefaultCheckboxConfig,
+  createDefaultDateConfig,
   createDefaultItemSettings,
   createDefaultMultiAutocompleteConfig,
   createDefaultRadioConfig,
@@ -15,6 +16,7 @@ import {
   createDefaultTextFieldConfig,
   defaultContainerSettings,
   type CheckboxConfig,
+  type DateConfig,
   type GridContainerSettings,
   type GridItemData,
   type MultiAutocompleteConfig,
@@ -83,6 +85,7 @@ type GridState = {
       | MultiAutocompleteConfig
       | CheckboxConfig
       | RadioConfig
+      | DateConfig
     >,
   ) => void
   moveItem: (activeId: string, overId: string) => void
@@ -176,6 +179,7 @@ export const useGridStore = create<GridState>((set, get) => {
           | MultiAutocompleteConfig
           | CheckboxConfig
           | RadioConfig
+          | DateConfig
           | undefined
         let nextSeq = fieldSeq
         if (type === 'textfield') {
@@ -199,6 +203,15 @@ export const useGridStore = create<GridState>((set, get) => {
         } else if (type === 'radio') {
           nextSeq = fieldSeq + 1
           config = createDefaultRadioConfig(`radio_${nextSeq}`)
+        } else if (type === 'datepicker') {
+          nextSeq = fieldSeq + 1
+          config = createDefaultDateConfig('date', `datePicker_${nextSeq}`)
+        } else if (type === 'daterangepicker') {
+          nextSeq = fieldSeq + 1
+          config = createDefaultDateConfig('range', `dateRange_${nextSeq}`)
+        } else if (type === 'datetimepicker') {
+          nextSeq = fieldSeq + 1
+          config = createDefaultDateConfig('datetime', `dateTime_${nextSeq}`)
         }
 
         const newItem: GridItemData = {

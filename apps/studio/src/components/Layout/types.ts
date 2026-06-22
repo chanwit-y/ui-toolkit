@@ -337,6 +337,76 @@ export function createDefaultRadioConfig(name: string): RadioConfig {
   }
 }
 
+/**
+ * Editable config for the three date pickers, discriminated by `kind`:
+ * `'date'` → `DatePickerBase`/`DatePickerElement`, `'datetime'` →
+ * `DateTimePickerBase`/`DateTimePickerElement`, `'range'` →
+ * `DateRangePickerBase`/`DateRangePickerElement`. One shared config (mirroring how
+ * `SelectFieldConfig` is shared across select/autocomplete) carries every field;
+ * the panel and the exporter switch on `kind` to show/emit only the relevant ones:
+ * `weekStartsOn` is date+datetime only, `minuteStep` is datetime only, and `range`
+ * uses a fixed `displayFormat` enum. `min`/`max` are ISO strings (`''` = unset);
+ * the exporter maps them to `minDate`/`maxDate` (date, range) or
+ * `minDateTime`/`maxDateTime` (datetime). `dataType` is derived on export
+ * (date/datetime→`string`, range→`any`) so isn't edited here.
+ */
+export type DateConfig = {
+  kind: 'date' | 'datetime' | 'range'
+  name: string
+  label: string
+  placeholder: string
+  helperText: string
+  isRequired: boolean
+  errorMessage: string
+  variant: 'classic' | 'surface' | 'soft'
+  size: '1' | '2' | '3'
+  radius: 'none' | 'small' | 'medium' | 'large' | 'full'
+  clearable: boolean
+  /** dayjs tokens for date/datetime; one of the 3 range enums for `kind: 'range'`. */
+  displayFormat: string
+  /** Earliest selectable value as an ISO string; `''` = unset. */
+  min: string
+  /** Latest selectable value as an ISO string; `''` = unset. */
+  max: string
+  /** First day of week (date/datetime only): 0 = Sunday, 1 = Monday. */
+  weekStartsOn: 0 | 1
+  /** Time step in minutes (datetime only). */
+  minuteStep: number
+}
+
+/**
+ * Defaults for a freshly dropped date picker. `kind` selects the per-type display
+ * format default (matching each library component's own default) and seeds the
+ * shared shape; the other fields are common. Pickers start empty (no default value
+ * — see the grilled design).
+ */
+export function createDefaultDateConfig(
+  kind: DateConfig['kind'],
+  name: string,
+): DateConfig {
+  const label = kind === 'range' ? 'Date Range' : kind === 'datetime' ? 'Date Time' : 'Date'
+  const displayFormat =
+    kind === 'datetime' ? 'DD/MM/YYYY HH:mm' : kind === 'range' ? 'yyyy-MM-dd' : 'DD/MM/YYYY'
+  return {
+    kind,
+    name,
+    label,
+    placeholder: '',
+    helperText: '',
+    isRequired: false,
+    errorMessage: '',
+    variant: 'surface',
+    size: '2',
+    radius: 'medium',
+    clearable: true,
+    displayFormat,
+    min: '',
+    max: '',
+    weekStartsOn: 0,
+    minuteStep: 1,
+  }
+}
+
 export type GridContainerSettings = {
   columns: Responsive<number>
   gap: Responsive<string>
@@ -371,8 +441,11 @@ export type GridItemData = {
    * `TextFieldConfig`, a textarea a `TextareaConfig`, a select or autocomplete a
    * `SelectFieldConfig` (both preview with `Autocomplete2`), a multiAutocomplete
    * a `MultiAutocompleteConfig` (previews with `MultiAutocompleteBase`), a
-   * checkbox a `CheckboxConfig` (previews with `CheckboxBase`), and a radio a
-   * `RadioConfig` (previews with `RadioButtonBase`). Other types are config-less.
+   * checkbox a `CheckboxConfig` (previews with `CheckboxBase`), a radio a
+   * `RadioConfig` (previews with `RadioButtonBase`), and a datepicker/
+   * daterangepicker/datetimepicker a `DateConfig` discriminated by `kind` (previews
+   * with `DatePickerBase`/`DateRangePickerBase`/`DateTimePickerBase`). Other types
+   * are config-less.
    */
   config?:
     | TextFieldConfig
@@ -381,6 +454,7 @@ export type GridItemData = {
     | MultiAutocompleteConfig
     | CheckboxConfig
     | RadioConfig
+    | DateConfig
 }
 
 function responsive<T>(value: T): Responsive<T> {

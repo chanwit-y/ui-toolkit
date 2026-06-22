@@ -2,6 +2,9 @@ import type { DataType } from '@gummy-ui/ui'
 import {
   AutocompleteBase2,
   CheckboxBase,
+  DatePickerBase,
+  DateRangePickerBase,
+  DateTimePickerBase,
   MultiAutocompleteBase,
   RadioButtonBase,
   TextareaBase,
@@ -31,6 +34,7 @@ import { COMPONENT_BY_TYPE } from './componentCatalog'
 import { useGridStore } from './gridStore'
 import type {
   CheckboxConfig,
+  DateConfig,
   GridItemData,
   MultiAutocompleteConfig,
   RadioConfig,
@@ -431,13 +435,85 @@ function RadioLivePreview({ config }: { config: RadioConfig }) {
 }
 
 /**
+ * The live, real date picker from the library, rendered in-cell once the cell is
+ * wide enough. Inert (`pointer-events-none`) like the other previews. One shared
+ * `DateConfig` (discriminated by `kind`) maps onto whichever base component matches:
+ * `DatePickerBase` / `DateTimePickerBase` / `DateRangePickerBase`. Empty bounds
+ * (`min`/`max` = `''`) become `undefined`; `weekStartsOn` is date+datetime only and
+ * `minuteStep` is datetime only (range uses neither). The required marker is baked
+ * into the label for a uniform single asterisk (matching checkbox/radio); width is
+ * forced full so the cell owns sizing. These are display-only static bases (no Core
+ * provider needed). Pickers start with no value — the trigger shows its placeholder.
+ */
+function DateLivePreview({ config }: { config: DateConfig }) {
+  const label = config.isRequired ? `${config.label} *` : config.label
+  const common = {
+    label,
+    placeholder: config.placeholder || undefined,
+    helperText: config.helperText,
+    error: !!config.errorMessage,
+    errorMessage: config.errorMessage,
+    variant: config.variant,
+    size: config.size,
+    radius: config.radius,
+    clearable: config.clearable,
+    isFullWidth: true,
+  } as const
+  const min = config.min || undefined
+  const max = config.max || undefined
+
+  let picker
+  if (config.kind === 'range') {
+    picker = (
+      <DateRangePickerBase
+        {...common}
+        displayFormat={config.displayFormat as 'yyyy-MM-dd' | 'MM/dd/yyyy' | 'dd/MM/yyyy'}
+        minDate={min}
+        maxDate={max}
+      />
+    )
+  } else if (config.kind === 'datetime') {
+    picker = (
+      <DateTimePickerBase
+        {...common}
+        displayFormat={config.displayFormat}
+        minDateTime={min}
+        maxDateTime={max}
+        weekStartsOn={config.weekStartsOn}
+        minuteStep={config.minuteStep}
+      />
+    )
+  } else {
+    picker = (
+      <DatePickerBase
+        {...common}
+        displayFormat={config.displayFormat}
+        minDate={min}
+        maxDate={max}
+        weekStartsOn={config.weekStartsOn}
+      />
+    )
+  }
+
+  return (
+    <div
+      data-grid-item-content
+      className="pointer-events-none flex h-full w-full items-center px-3"
+    >
+      {picker}
+    </div>
+  )
+}
+
+/**
  * The cell's live render, or null when the cell can't (or isn't wide enough to)
  * show one — the generic seam for adding more component types later. `textfield`,
- * `textarea`, `select`, `autocomplete`, `multiAutocomplete`, `checkbox`, and `radio`
- * (with config) go live; everything else falls through to its chip. `select`/`autocomplete`
- * share `SelectLivePreview` (both preview with the library's `Autocomplete2`);
+ * `textarea`, `select`, `autocomplete`, `multiAutocomplete`, `checkbox`, `radio`, and
+ * the three date pickers (`datepicker`/`daterangepicker`/`datetimepicker`, with config)
+ * go live; everything else falls through to its chip. `select`/`autocomplete` share
+ * `SelectLivePreview` (both preview with the library's `Autocomplete2`);
  * `multiAutocomplete` previews with `MultiAutocompleteBase`; `checkbox` with `CheckboxBase`;
- * `radio` with `RadioButtonBase`.
+ * `radio` with `RadioButtonBase`; the date pickers with `Date*PickerBase`.
  */
 function renderLive(item: GridItemData, isLive: boolean) {
   if (!isLive) return null
@@ -461,6 +537,14 @@ function renderLive(item: GridItemData, isLive: boolean) {
   }
   if (item.type === 'radio' && item.config) {
     return <RadioLivePreview config={item.config as RadioConfig} />
+  }
+  if (
+    (item.type === 'datepicker' ||
+      item.type === 'daterangepicker' ||
+      item.type === 'datetimepicker') &&
+    item.config
+  ) {
+    return <DateLivePreview config={item.config as DateConfig} />
   }
   return null
 }

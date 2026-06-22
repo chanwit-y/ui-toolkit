@@ -1,5 +1,6 @@
 import { CodeViewer, SegmentedControl } from '../common'
 import { CheckboxConfigPanel } from './CheckboxConfigPanel'
+import { DateConfigPanel } from './DateConfigPanel'
 import { FieldConfigPanel } from './FieldConfigPanel'
 import { useGridStore, useSelectedItem, type SidebarView } from './gridStore'
 import { RadioConfigPanel } from './RadioConfigPanel'
@@ -8,6 +9,7 @@ import { ContainerSettingsPanel, ItemSettingsPanel } from './SettingsPanel'
 import { TextareaConfigPanel } from './TextareaConfigPanel'
 import type {
   CheckboxConfig,
+  DateConfig,
   RadioConfig,
   SelectFieldConfig,
   TextareaConfig,
@@ -110,6 +112,14 @@ export function Sidebar({ gridConfigJson, fullGridCss }: SidebarProps) {
             <RadioConfigPanel
               itemId={selectedItem.id}
               config={selectedItem.config as RadioConfig}
+            />
+          ) : (selectedItem.type === 'datepicker' ||
+              selectedItem.type === 'daterangepicker' ||
+              selectedItem.type === 'datetimepicker') &&
+            selectedItem.config ? (
+            <DateConfigPanel
+              itemId={selectedItem.id}
+              config={selectedItem.config as DateConfig}
             />
           ) : (
             <p className="px-1 py-6 text-center text-sm text-zinc-400">
