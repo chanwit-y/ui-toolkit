@@ -246,7 +246,7 @@ function EditorBodyInner({
             <PreviewToolbar />
 
             <div
-              className="flex min-h-0 flex-1 flex-col items-center p-4"
+              className="flex min-h-0 flex-1 flex-col items-center overflow-y-auto p-4"
               style={{
                 backgroundImage:
                   'linear-gradient(to right, rgba(113,113,122,0.12) 1px, transparent 1px), linear-gradient(to bottom, rgba(113,113,122,0.12) 1px, transparent 1px)',
