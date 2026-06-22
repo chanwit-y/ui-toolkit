@@ -9,6 +9,8 @@ export { TextareaBase } from "./components/Textarea";
 export { SelectFieldBase } from "./components/SelectField";
 // Un-form-wrapped checkbox for display-only previews (e.g. the studio canvas).
 export { CheckboxBase } from "./components/Checkbox";
+// Un-form-wrapped (static-options) radio for display-only previews (studio canvas).
+export { RadioButtonBase } from "./components/RadioButton";
 export type { CheckboxProps, CheckboxElement } from "./components/@types";
 export type { TextFieldProps, TextFieldElement, DataType, TextareaProps, TextareaElement, SelectFieldProps } from "./components/@types";
 export * from "./hooks";

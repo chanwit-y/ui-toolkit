@@ -9,6 +9,7 @@ import {
   createDefaultCheckboxConfig,
   createDefaultItemSettings,
   createDefaultMultiAutocompleteConfig,
+  createDefaultRadioConfig,
   createDefaultSelectFieldConfig,
   createDefaultTextareaConfig,
   createDefaultTextFieldConfig,
@@ -17,6 +18,7 @@ import {
   type GridContainerSettings,
   type GridItemData,
   type MultiAutocompleteConfig,
+  type RadioConfig,
   type SelectFieldConfig,
   type TextareaConfig,
   type TextFieldConfig,
@@ -80,6 +82,7 @@ type GridState = {
       | SelectFieldConfig
       | MultiAutocompleteConfig
       | CheckboxConfig
+      | RadioConfig
     >,
   ) => void
   moveItem: (activeId: string, overId: string) => void
@@ -172,6 +175,7 @@ export const useGridStore = create<GridState>((set, get) => {
           | SelectFieldConfig
           | MultiAutocompleteConfig
           | CheckboxConfig
+          | RadioConfig
           | undefined
         let nextSeq = fieldSeq
         if (type === 'textfield') {
@@ -192,6 +196,9 @@ export const useGridStore = create<GridState>((set, get) => {
         } else if (type === 'checkbox') {
           nextSeq = fieldSeq + 1
           config = createDefaultCheckboxConfig(`checkbox_${nextSeq}`)
+        } else if (type === 'radio') {
+          nextSeq = fieldSeq + 1
+          config = createDefaultRadioConfig(`radio_${nextSeq}`)
         }
 
         const newItem: GridItemData = {

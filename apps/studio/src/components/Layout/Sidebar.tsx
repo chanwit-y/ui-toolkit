@@ -2,11 +2,13 @@ import { CodeViewer, SegmentedControl } from '../common'
 import { CheckboxConfigPanel } from './CheckboxConfigPanel'
 import { FieldConfigPanel } from './FieldConfigPanel'
 import { useGridStore, useSelectedItem, type SidebarView } from './gridStore'
+import { RadioConfigPanel } from './RadioConfigPanel'
 import { SelectFieldConfigPanel } from './SelectFieldConfigPanel'
 import { ContainerSettingsPanel, ItemSettingsPanel } from './SettingsPanel'
 import { TextareaConfigPanel } from './TextareaConfigPanel'
 import type {
   CheckboxConfig,
+  RadioConfig,
   SelectFieldConfig,
   TextareaConfig,
   TextFieldConfig,
@@ -103,6 +105,11 @@ export function Sidebar({ gridConfigJson, fullGridCss }: SidebarProps) {
             <CheckboxConfigPanel
               itemId={selectedItem.id}
               config={selectedItem.config as CheckboxConfig}
+            />
+          ) : selectedItem.type === 'radio' && selectedItem.config ? (
+            <RadioConfigPanel
+              itemId={selectedItem.id}
+              config={selectedItem.config as RadioConfig}
             />
           ) : (
             <p className="px-1 py-6 text-center text-sm text-zinc-400">

@@ -3,6 +3,7 @@ import type {
   CheckboxConfig,
   GridContainerSettings,
   GridItemData,
+  RadioConfig,
   SelectFieldConfig,
   TextareaConfig,
   TextFieldConfig,
@@ -17,8 +18,8 @@ import type {
  * (`sm/md/lg/xl` 12-col strings, `type`, `justifySelf/alignSelf`); `element` is
  * populated for `textfield`, `text`, `textarea`, `select` (emitted as engine type
  * `autocomplete`), `autocomplete`, `multiAutocomplete` (both keep their type and
- * share the autocomplete element shape), and `checkbox`, and omitted for every other
- * type. The multi
+ * share the autocomplete element shape), `checkbox`, and `radio`, and omitted for
+ * every other type. The multi
  * field's `maxSelections`/`showSelectedCount` are studio-preview-only and not emitted
  * (the engine's `AutocompleteElement` has no home for them). The studio `xs`
  * breakpoint is dropped (the engine starts at `sm`) and `xl` mirrors `lg`.
@@ -147,6 +148,31 @@ function checkboxElement(c: CheckboxConfig): Record<string, unknown> {
   }
 }
 
+/**
+ * `radio` → engine `RadioElement`. `dataType` is fixed `string` (a radio stores one
+ * scalar value). Always emits the static `options` (`value`/`label`, plus `disabled`
+ * only when true) and `orientation`; `defaultValue` and `helperText` are dropped when
+ * empty. Static-only — no API `source` mode is emitted.
+ */
+function radioElement(c: RadioConfig): Record<string, unknown> {
+  return {
+    name: c.name,
+    dataType: 'string',
+    label: c.label,
+    isRequired: c.isRequired,
+    errorMessage: c.errorMessage,
+    variant: c.variant,
+    size: c.size,
+    orientation: c.orientation,
+    options: c.options.map((o) => ({
+      value: o.value,
+      label: o.label,
+      ...(o.disabled ? { disabled: true } : {}),
+    })),
+    ...omitEmpty({ helperText: c.helperText, defaultValue: c.defaultValue }),
+  }
+}
+
 /** The element for a Bin, or undefined for types without a mapped element. */
 function buildElement(item: GridItemData): Record<string, unknown> | undefined {
   switch (item.type) {
@@ -160,6 +186,8 @@ function buildElement(item: GridItemData): Record<string, unknown> | undefined {
       return item.config ? autocompleteElement(item.config as SelectFieldConfig) : undefined
     case 'checkbox':
       return item.config ? checkboxElement(item.config as CheckboxConfig) : undefined
+    case 'radio':
+      return item.config ? radioElement(item.config as RadioConfig) : undefined
     case 'text':
       return { text: item.label, isLabel: true }
     default:

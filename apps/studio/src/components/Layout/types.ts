@@ -280,6 +280,63 @@ export function createDefaultCheckboxConfig(name: string): CheckboxConfig {
   }
 }
 
+/**
+ * A single radio option. Maps onto the library `RadioButtonProps` option shape
+ * (`value`/`label`/`disabled`) minus `helperText` — per-option sub-labels are out
+ * of studio's scope, matching the checkbox option editor.
+ */
+export type RadioOption = {
+  value: string
+  label: string
+  disabled: boolean
+}
+
+/**
+ * Editable config for a radio component. Unlike the checkbox there is no
+ * single/group fork — a radio is always a single-select group of `options`.
+ * Static-only for now (no API/source mode); the engine `RadioElement` supports
+ * API-driven options, but studio defers that. `defaultValue` preselects one option
+ * (`''` = none). Maps onto the library's `RadioButtonBase` / engine `RadioElement`;
+ * `dataType` is fixed to `string` on export (a radio stores one scalar value) and
+ * so isn't edited here.
+ */
+export type RadioConfig = {
+  name: string
+  label: string
+  helperText: string
+  isRequired: boolean
+  errorMessage: string
+  variant: 'classic' | 'surface' | 'soft'
+  size: '1' | '2' | '3'
+  orientation: 'horizontal' | 'vertical'
+  options: RadioOption[]
+  /** Preselected option value; `''` means nothing is selected. */
+  defaultValue: string
+}
+
+/**
+ * Defaults for a freshly dropped radio. A couple of starter options keyed
+ * `option_n`, vertical, nothing preselected. `size: '2'` mirrors RadioButtonBase's
+ * own default.
+ */
+export function createDefaultRadioConfig(name: string): RadioConfig {
+  return {
+    name,
+    label: 'Radio',
+    helperText: '',
+    isRequired: false,
+    errorMessage: '',
+    variant: 'surface',
+    size: '2',
+    orientation: 'vertical',
+    options: [
+      { value: 'option_1', label: 'Option 1', disabled: false },
+      { value: 'option_2', label: 'Option 2', disabled: false },
+    ],
+    defaultValue: '',
+  }
+}
+
 export type GridContainerSettings = {
   columns: Responsive<number>
   gap: Responsive<string>
@@ -313,9 +370,9 @@ export type GridItemData = {
    * Component-specific config, discriminated by `type`: a textfield carries a
    * `TextFieldConfig`, a textarea a `TextareaConfig`, a select or autocomplete a
    * `SelectFieldConfig` (both preview with `Autocomplete2`), a multiAutocomplete
-   * a `MultiAutocompleteConfig` (previews with `MultiAutocompleteBase`), and a
-   * checkbox a `CheckboxConfig` (previews with `CheckboxBase`). Other types are
-   * config-less.
+   * a `MultiAutocompleteConfig` (previews with `MultiAutocompleteBase`), a
+   * checkbox a `CheckboxConfig` (previews with `CheckboxBase`), and a radio a
+   * `RadioConfig` (previews with `RadioButtonBase`). Other types are config-less.
    */
   config?:
     | TextFieldConfig
@@ -323,6 +380,7 @@ export type GridItemData = {
     | SelectFieldConfig
     | MultiAutocompleteConfig
     | CheckboxConfig
+    | RadioConfig
 }
 
 function responsive<T>(value: T): Responsive<T> {

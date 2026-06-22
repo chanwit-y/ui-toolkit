@@ -3,6 +3,7 @@ import {
   AutocompleteBase2,
   CheckboxBase,
   MultiAutocompleteBase,
+  RadioButtonBase,
   TextareaBase,
   TextFieldBase,
 } from '@gummy-ui/ui'
@@ -32,6 +33,7 @@ import type {
   CheckboxConfig,
   GridItemData,
   MultiAutocompleteConfig,
+  RadioConfig,
   SelectFieldConfig,
   TextareaConfig,
   TextFieldConfig,
@@ -397,12 +399,45 @@ function CheckboxLivePreview({ config }: { config: CheckboxConfig }) {
 }
 
 /**
+ * The live, real `<RadioButtonBase>` from the library, rendered in-cell once the
+ * cell is wide enough. Inert (`pointer-events-none`) like the other previews. A
+ * radio is always a single-select group, so the authored `options`/`orientation`
+ * feed straight through; `defaultValue` (when set) preselects an option via the
+ * controlled `value`. The required marker is baked into the label (RadioButtonBase
+ * has no `isRequired` prop). Per-option `disabled` flows straight through. Static
+ * options only (no API source), so the plain base — not the engine-aware variant —
+ * is used, needing no Core provider.
+ */
+function RadioLivePreview({ config }: { config: RadioConfig }) {
+  const label = config.isRequired ? `${config.label} *` : config.label
+  return (
+    <div
+      data-grid-item-content
+      className="pointer-events-none flex h-full w-full items-center px-3"
+    >
+      <RadioButtonBase
+        label={label}
+        helperText={config.helperText}
+        error={!!config.errorMessage}
+        errorMessage={config.errorMessage}
+        variant={config.variant}
+        size={config.size}
+        orientation={config.orientation}
+        options={config.options}
+        value={config.defaultValue || undefined}
+      />
+    </div>
+  )
+}
+
+/**
  * The cell's live render, or null when the cell can't (or isn't wide enough to)
  * show one — the generic seam for adding more component types later. `textfield`,
- * `textarea`, `select`, `autocomplete`, `multiAutocomplete`, and `checkbox` (with
- * config) go live; everything else falls through to its chip. `select`/`autocomplete`
+ * `textarea`, `select`, `autocomplete`, `multiAutocomplete`, `checkbox`, and `radio`
+ * (with config) go live; everything else falls through to its chip. `select`/`autocomplete`
  * share `SelectLivePreview` (both preview with the library's `Autocomplete2`);
- * `multiAutocomplete` previews with `MultiAutocompleteBase`; `checkbox` with `CheckboxBase`.
+ * `multiAutocomplete` previews with `MultiAutocompleteBase`; `checkbox` with `CheckboxBase`;
+ * `radio` with `RadioButtonBase`.
  */
 function renderLive(item: GridItemData, isLive: boolean) {
   if (!isLive) return null
@@ -423,6 +458,9 @@ function renderLive(item: GridItemData, isLive: boolean) {
   }
   if (item.type === 'checkbox' && item.config) {
     return <CheckboxLivePreview config={item.config as CheckboxConfig} />
+  }
+  if (item.type === 'radio' && item.config) {
+    return <RadioLivePreview config={item.config as RadioConfig} />
   }
   return null
 }
