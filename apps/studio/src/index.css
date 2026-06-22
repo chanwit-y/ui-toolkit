@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+/* The canvas renders the real `<DataTable2>`, which styles itself via semantic
+   `.datatable-*` classes (not Tailwind utilities, so the `@source` scan below
+   can't emit them). Pull in the library's TW3/TW4-portable datatable partial so
+   studio's Tailwind 4 compiles its `@apply` rules. We can't import the library's
+   full `styles.css` — its Tailwind-3-only directives break this pipeline. */
+@import "../../../packages/ui/src/styles/datatable.css";
+
 /* Gate `dark:` on a `.dark` ancestor (the library's `darkMode: 'class'`
    convention) instead of Tailwind 4's default `prefers-color-scheme` media
    query. Studio never sets `.dark`, so library components (Autocomplete2, etc.)

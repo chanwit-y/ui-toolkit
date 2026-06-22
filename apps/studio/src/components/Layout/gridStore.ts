@@ -281,9 +281,11 @@ export const useGridStore = create<GridState>((set, get) => {
           config = createDefaultUploadFileConfig(`uploadFile_${nextSeq}`)
         }
 
-        // Default lg span (of 12) by component kind: uploads need room for their
-        // dropzone (6); the common text-ish inputs read better a touch wider (4);
-        // everything else falls back to the standard 2.
+        // Default span (of 12) by component kind: a data table is full-bleed, so
+        // it spans the full width at every breakpoint; uploads need room for their
+        // dropzone (lg 6); the common text-ish inputs read better a touch wider
+        // (lg 4); everything else falls back to the standard 2.
+        const isTable = type === 'datatable'
         const isUpload = type === 'uploadimage' || type === 'uploadfile'
         const isWideInput =
           type === 'textfield' ||
@@ -294,18 +296,19 @@ export const useGridStore = create<GridState>((set, get) => {
           type === 'checkbox' ||
           type === 'radio'
         const defaultLg = isUpload ? 6 : isWideInput ? 4 : 2
-        const newItem: GridItemData = {
-          id: createId(),
-          label: component?.label ?? `Item ${items.length + 1}`,
-          type,
-          settings: createDefaultItemSettings({
-            colSpan: {
+        const colSpan = isTable
+          ? { xs: bpCols.xs, sm: bpCols.sm, md: bpCols.md, lg: bpCols.lg }
+          : {
               xs: bpCols.xs,
               sm: Math.min(3, bpCols.sm),
               md: Math.min(2, bpCols.md),
               lg: Math.min(defaultLg, bpCols.lg),
-            },
-          }),
+            }
+        const newItem: GridItemData = {
+          id: createId(),
+          label: component?.label ?? `Item ${items.length + 1}`,
+          type,
+          settings: createDefaultItemSettings({ colSpan }),
           config,
         }
         const at =
