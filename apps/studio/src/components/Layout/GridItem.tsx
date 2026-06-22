@@ -2,10 +2,15 @@ import type { DataType } from '@gummy-ui/ui'
 import {
   AutocompleteBase2,
   CheckboxBase,
+  DatePickerBase,
+  DateRangePickerBase,
+  DateTimePickerBase,
   MultiAutocompleteBase,
   RadioButtonBase,
   TextareaBase,
   TextFieldBase,
+  UploadFileBase,
+  UploadImageBase,
 } from '@gummy-ui/ui'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -13,6 +18,7 @@ import {
   Calendar,
   GripVertical,
   Hash,
+  ImagePlus,
   Link,
   ListChecks,
   ListFilter,
@@ -23,20 +29,25 @@ import {
   SquareCheck,
   TextWrap,
   Type,
+  Upload,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { memo, useCallback, useLayoutEffect, useState } from 'react'
+import { memo, useCallback, useLayoutEffect, useRef, useState } from 'react'
 import { cn, IconButton } from '../common'
 import { COMPONENT_BY_TYPE } from './componentCatalog'
-import { useGridStore } from './gridStore'
+import { ENTER_DURATION_MS, prefersReducedMotion, UPGRADE_FADE_MS } from './gridAnimation'
+import { useGridStore, useIsEntering } from './gridStore'
 import type {
   CheckboxConfig,
+  DateConfig,
   GridItemData,
   MultiAutocompleteConfig,
   RadioConfig,
   SelectFieldConfig,
   TextareaConfig,
   TextFieldConfig,
+  UploadFileConfig,
+  UploadImageConfig,
 } from './types'
 import { escapeClassName } from './utils'
 
@@ -129,6 +140,12 @@ function CellContent({ item }: { item: GridItemData }) {
   if (item.type === 'checkbox' && item.config) {
     return <GlyphChip Icon={SquareCheck} />
   }
+  if (item.type === 'uploadimage' && item.config) {
+    return <GlyphChip Icon={ImagePlus} />
+  }
+  if (item.type === 'uploadfile' && item.config) {
+    return <GlyphChip Icon={Upload} />
+  }
   return (
     <div
       data-grid-item-content
@@ -160,14 +177,18 @@ function ActiveBody({ item }: { item: GridItemData }) {
               ? ListChecks
               : item.type === 'checkbox' && item.config
                 ? SquareCheck
-                : null
+                : item.type === 'uploadimage' && item.config
+                  ? ImagePlus
+                  : item.type === 'uploadfile' && item.config
+                    ? Upload
+                    : null
   if (!Icon) return null
   return (
     <div
       data-grid-item-content
       className="@container flex h-full w-full items-center justify-center gap-2 px-1 @min-[8rem]:justify-start @min-[8rem]:pl-6"
     >
-      <Icon className="h-4 w-4 shrink-0 text-violet-500" aria-hidden="true" />
+      <Icon className="h-4 w-4 shrink-0 text-teal-500" aria-hidden="true" />
     </div>
   )
 }
@@ -222,7 +243,7 @@ function GlyphChip({ Icon }: { Icon: LucideIcon }) {
       data-grid-item-content
       className="flex h-full w-full items-center justify-center"
     >
-      <Icon className="h-4 w-4 shrink-0 text-violet-500" aria-hidden="true" />
+      <Icon className="h-4 w-4 shrink-0 text-teal-500" aria-hidden="true" />
     </div>
   )
 }
@@ -431,13 +452,151 @@ function RadioLivePreview({ config }: { config: RadioConfig }) {
 }
 
 /**
+ * The live, real date picker from the library, rendered in-cell once the cell is
+ * wide enough. Inert (`pointer-events-none`) like the other previews. One shared
+ * `DateConfig` (discriminated by `kind`) maps onto whichever base component matches:
+ * `DatePickerBase` / `DateTimePickerBase` / `DateRangePickerBase`. Empty bounds
+ * (`min`/`max` = `''`) become `undefined`; `weekStartsOn` is date+datetime only and
+ * `minuteStep` is datetime only (range uses neither). The required marker is baked
+ * into the label for a uniform single asterisk (matching checkbox/radio); width is
+ * forced full so the cell owns sizing. These are display-only static bases (no Core
+ * provider needed). Pickers start with no value — the trigger shows its placeholder.
+ */
+function DateLivePreview({ config }: { config: DateConfig }) {
+  const label = config.isRequired ? `${config.label} *` : config.label
+  const common = {
+    label,
+    placeholder: config.placeholder || undefined,
+    helperText: config.helperText,
+    error: !!config.errorMessage,
+    errorMessage: config.errorMessage,
+    variant: config.variant,
+    size: config.size,
+    radius: config.radius,
+    clearable: config.clearable,
+    isFullWidth: true,
+  } as const
+  const min = config.min || undefined
+  const max = config.max || undefined
+
+  let picker
+  if (config.kind === 'range') {
+    picker = (
+      <DateRangePickerBase
+        {...common}
+        displayFormat={config.displayFormat as 'yyyy-MM-dd' | 'MM/dd/yyyy' | 'dd/MM/yyyy'}
+        minDate={min}
+        maxDate={max}
+      />
+    )
+  } else if (config.kind === 'datetime') {
+    picker = (
+      <DateTimePickerBase
+        {...common}
+        displayFormat={config.displayFormat}
+        minDateTime={min}
+        maxDateTime={max}
+        weekStartsOn={config.weekStartsOn}
+        minuteStep={config.minuteStep}
+      />
+    )
+  } else {
+    picker = (
+      <DatePickerBase
+        {...common}
+        displayFormat={config.displayFormat}
+        minDate={min}
+        maxDate={max}
+        weekStartsOn={config.weekStartsOn}
+      />
+    )
+  }
+
+  return (
+    <div
+      data-grid-item-content
+      className="pointer-events-none flex h-full w-full items-center px-3"
+    >
+      {picker}
+    </div>
+  )
+}
+
+/**
+ * The live, real `<UploadImageBase>` from the library, rendered in-cell once the
+ * cell is wide enough. Inert (`pointer-events-none`) like the other previews — the
+ * dropzone shows its empty "click or drag" state (no value flows in on the canvas).
+ * Unlike the input components, UploadImage owns an `isRequired` prop that renders
+ * the asterisk, so it's passed straight through rather than baked into the label.
+ * `isFullWidth` is forced so the cell owns the width; `previewHeight` drives the
+ * dropzone height and the grid row (`minmax(56px, auto)`) grows to fit. Empty
+ * `accept`/`maxSizeMB` fall back to the component's defaults. Theme comes free from
+ * the canvas `ThemeProvider`.
+ */
+function UploadImageLivePreview({ config }: { config: UploadImageConfig }) {
+  return (
+    <div
+      data-grid-item-content
+      className="pointer-events-none flex h-full w-full items-center px-3 py-2"
+    >
+      <UploadImageBase
+        label={config.label}
+        helperText={config.helperText}
+        isRequired={config.isRequired}
+        error={!!config.errorMessage}
+        errorMessage={config.errorMessage}
+        accept={config.accept || undefined}
+        maxSizeMB={config.maxSizeMB === '' ? undefined : config.maxSizeMB}
+        shape={config.shape}
+        previewHeight={config.previewHeight}
+        valueFormat={config.valueFormat}
+        isFullWidth
+      />
+    </div>
+  )
+}
+
+/**
+ * The live, real `<UploadFileBase>` from the library, rendered in-cell once the
+ * cell is wide enough. Inert (`pointer-events-none`) like the other previews — the
+ * dropzone shows its empty state with no files listed. `multiple` flips the prompt
+ * copy ("a file" ↔ "files"); `maxFiles` only matters in multi mode. UploadFile owns
+ * its `isRequired` prop (asterisk), so it's passed through, not baked into the label.
+ * `isFullWidth` is forced so the cell owns sizing. Empty `accept`/`maxFiles`/`maxSizeMB`
+ * fall back to the component's defaults.
+ */
+function UploadFileLivePreview({ config }: { config: UploadFileConfig }) {
+  return (
+    <div
+      data-grid-item-content
+      className="pointer-events-none flex h-full w-full items-center px-3 py-2"
+    >
+      <UploadFileBase
+        label={config.label}
+        helperText={config.helperText}
+        isRequired={config.isRequired}
+        error={!!config.errorMessage}
+        errorMessage={config.errorMessage}
+        accept={config.accept || undefined}
+        multiple={config.multiple}
+        maxFiles={config.maxFiles === '' ? undefined : config.maxFiles}
+        maxSizeMB={config.maxSizeMB === '' ? undefined : config.maxSizeMB}
+        valueFormat={config.valueFormat}
+        isFullWidth
+      />
+    </div>
+  )
+}
+
+/**
  * The cell's live render, or null when the cell can't (or isn't wide enough to)
  * show one — the generic seam for adding more component types later. `textfield`,
- * `textarea`, `select`, `autocomplete`, `multiAutocomplete`, `checkbox`, and `radio`
- * (with config) go live; everything else falls through to its chip. `select`/`autocomplete`
- * share `SelectLivePreview` (both preview with the library's `Autocomplete2`);
+ * `textarea`, `select`, `autocomplete`, `multiAutocomplete`, `checkbox`, `radio`, and
+ * the three date pickers (`datepicker`/`daterangepicker`/`datetimepicker`, with config)
+ * go live; everything else falls through to its chip. `select`/`autocomplete` share
+ * `SelectLivePreview` (both preview with the library's `Autocomplete2`);
  * `multiAutocomplete` previews with `MultiAutocompleteBase`; `checkbox` with `CheckboxBase`;
- * `radio` with `RadioButtonBase`.
+ * `radio` with `RadioButtonBase`; the date pickers with `Date*PickerBase`.
  */
 function renderLive(item: GridItemData, isLive: boolean) {
   if (!isLive) return null
@@ -461,6 +620,20 @@ function renderLive(item: GridItemData, isLive: boolean) {
   }
   if (item.type === 'radio' && item.config) {
     return <RadioLivePreview config={item.config as RadioConfig} />
+  }
+  if (
+    (item.type === 'datepicker' ||
+      item.type === 'daterangepicker' ||
+      item.type === 'datetimepicker') &&
+    item.config
+  ) {
+    return <DateLivePreview config={item.config as DateConfig} />
+  }
+  if (item.type === 'uploadimage' && item.config) {
+    return <UploadImageLivePreview config={item.config as UploadImageConfig} />
+  }
+  if (item.type === 'uploadfile' && item.config) {
+    return <UploadFileLivePreview config={item.config as UploadFileConfig} />
   }
   return null
 }
@@ -491,8 +664,43 @@ export function GridItem({ item, isSelected }: GridItemProps) {
     },
     [setNodeRef],
   )
-  const isLive = useIsLiveWidth(cellEl)
+  // Suppress the live preview until the entrance lands: a freshly appeared cell
+  // shows only its cheap chip during the pop, so no library component mounts
+  // mid-pop to reflow. When `isEntering` clears (timer in the store), the cell
+  // upgrades to live — making the drop animation identical across every type.
+  const isEntering = useIsEntering(item.id)
+  const isLive = useIsLiveWidth(cellEl) && !isEntering
   const live = renderLive(item, isLive)
+
+  // Fade the cell's content: the chip fades in over the enter "pop", and the
+  // live preview fades in the instant the cell finishes entering. Later
+  // width-driven chip↔live flips (resize) stay instant — only the entrance and
+  // its hand-off fade. WAAPI runs on the content wrapper (not the inner
+  // `[data-grid-item-content]`) so it never collides with the config-edit fade.
+  const contentRef = useRef<HTMLDivElement>(null)
+  const wasEntering = useRef(isEntering)
+  useLayoutEffect(() => {
+    const el = contentRef.current
+    const was = wasEntering.current
+    wasEntering.current = isEntering
+    if (!el || prefersReducedMotion()) return
+    if (isEntering) {
+      el.getAnimations().forEach((a) => a.cancel())
+      el.animate([{ opacity: 0 }, { opacity: 1 }], {
+        duration: ENTER_DURATION_MS,
+        easing: 'ease-out',
+        fill: 'both',
+      })
+    } else if (was) {
+      // entering → landed: fade the just-mounted live preview (or chip) in.
+      el.getAnimations().forEach((a) => a.cancel())
+      el.animate([{ opacity: 0 }, { opacity: 1 }], {
+        duration: UPGRADE_FADE_MS,
+        easing: 'ease-out',
+        fill: 'both',
+      })
+    }
+  }, [isEntering])
 
   const style = {
     transform: CSS.Translate.toString(transform),
@@ -516,12 +724,12 @@ export function GridItem({ item, isSelected }: GridItemProps) {
         'grid-item-cell group relative flex min-h-14 touch-none items-center justify-center rounded-lg border-2 p-2',
         'transition-[border-color,background-color,box-shadow,opacity] duration-200 ease-out',
         isDragging
-          ? 'z-0 border-dashed border-violet-300 bg-violet-50/40 opacity-40'
+          ? 'z-0 border-dashed border-teal-300 bg-teal-50/40 opacity-40'
           : isOver
-            ? 'border-dashed border-violet-400 bg-violet-50 shadow-sm ring-2 ring-violet-300/60'
+            ? 'border-dashed border-teal-400 bg-teal-50 shadow-sm ring-2 ring-teal-300/60'
             : isSelected
-              ? 'border-dashed border-violet-500 bg-violet-50 ring-2 ring-violet-500/30'
-              : 'border-dashed border-zinc-300 bg-white hover:border-violet-400 hover:bg-violet-50/50 hover:shadow-sm',
+              ? 'border-dashed border-teal-500 bg-teal-50 ring-2 ring-teal-500/30'
+              : 'border-dashed border-zinc-300 bg-white hover:border-teal-400 hover:bg-teal-50/50 hover:shadow-sm',
       )}
     >
       <IconButton
@@ -539,11 +747,14 @@ export function GridItem({ item, isSelected }: GridItemProps) {
       </IconButton>
       <TypeLabel type={item.type} isSelected={isSelected} />
       {/*
-        Wide enough → the live component (regardless of selection; the border +
-        grip just overlay it). Otherwise a selected cell collapses to its glyph
-        and an idle cell shows its chip.
+        Wide enough (and landed) → the live component (regardless of selection;
+        the border + grip just overlay it). Otherwise a selected cell collapses
+        to its glyph and an idle/entering cell shows its chip. The wrapper is the
+        fade target for the entrance and chip→live hand-off.
       */}
-      {live ?? (isSelected ? <ActiveBody item={item} /> : <CellContent item={item} />)}
+      <div ref={contentRef} className="h-full w-full">
+        {live ?? (isSelected ? <ActiveBody item={item} /> : <CellContent item={item} />)}
+      </div>
     </div>
   )
 }
@@ -558,8 +769,8 @@ export const GridItemMemo = memo(GridItem)
 
 export function GridItemOverlay({ item }: { item: GridItemData }) {
   return (
-    <div className="relative flex h-14 w-full cursor-grabbing items-center justify-center rounded-lg border-2 border-solid border-violet-500 bg-white p-2 shadow-2xl shadow-violet-500/30 ring-2 ring-violet-400/50">
-      <span className="absolute right-1 top-1 inline-flex h-6 w-6 items-center justify-center rounded-md border border-violet-500 bg-violet-50 text-violet-700 shadow-sm">
+    <div className="relative flex h-14 w-full cursor-grabbing items-center justify-center rounded-lg border-2 border-solid border-teal-500 bg-white p-2 shadow-2xl shadow-teal-500/30 ring-2 ring-teal-400/50">
+      <span className="absolute right-1 top-1 inline-flex h-6 w-6 items-center justify-center rounded-md border border-teal-500 bg-teal-50 text-teal-700 shadow-sm">
         <GripVertical className="h-3.5 w-3.5" aria-hidden="true" />
       </span>
       <span className="text-xs font-medium text-zinc-400">{item.label}</span>

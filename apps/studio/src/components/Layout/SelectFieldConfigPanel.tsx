@@ -57,7 +57,7 @@ function Toggle({
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
-        className="h-4 w-4 rounded border-zinc-300 text-violet-600 focus:ring-violet-500/30"
+        className="h-4 w-4 rounded border-zinc-300 text-teal-600 focus:ring-teal-500/30"
       />
     </label>
   )
@@ -87,7 +87,7 @@ function parseOptions(text: string): SelectOption[] | null {
 }
 
 const TEXTAREA_CLASS =
-  'w-full rounded-md border border-zinc-300 bg-white px-2.5 py-1.5 font-mono text-xs text-zinc-900 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20'
+  'w-full rounded-md border border-zinc-300 bg-white px-2.5 py-1.5 font-mono text-xs text-zinc-900 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20'
 
 /**
  * The static-options editor: a raw-JSON textarea backed by local string state so

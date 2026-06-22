@@ -35,7 +35,7 @@ function Toggle({
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
-        className="h-4 w-4 rounded border-zinc-300 text-violet-600 focus:ring-violet-500/30"
+        className="h-4 w-4 rounded border-zinc-300 text-teal-600 focus:ring-teal-500/30"
       />
     </label>
   )

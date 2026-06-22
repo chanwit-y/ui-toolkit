@@ -27,13 +27,13 @@ const buttonBase: Record<NonNullable<SegmentedControlProps['variant']>, string> 
 }
 
 const buttonActive: Record<NonNullable<SegmentedControlProps['variant']>, string> = {
-  pills: 'bg-violet-600 text-white shadow-sm',
-  chips: 'border-violet-600 bg-violet-600 text-white shadow-sm',
+  pills: 'bg-teal-600 text-white shadow-sm',
+  chips: 'border-teal-600 bg-teal-600 text-white shadow-sm',
 }
 
 const buttonInactive: Record<NonNullable<SegmentedControlProps['variant']>, string> = {
   pills: 'text-zinc-600 hover:bg-white hover:text-zinc-900',
-  chips: 'border-zinc-300 bg-white text-zinc-700 hover:border-violet-400 hover:bg-violet-50',
+  chips: 'border-zinc-300 bg-white text-zinc-700 hover:border-teal-400 hover:bg-teal-50',
 }
 
 /**

@@ -337,6 +337,180 @@ export function createDefaultRadioConfig(name: string): RadioConfig {
   }
 }
 
+/**
+ * Editable config for the three date pickers, discriminated by `kind`:
+ * `'date'` → `DatePickerBase`/`DatePickerElement`, `'datetime'` →
+ * `DateTimePickerBase`/`DateTimePickerElement`, `'range'` →
+ * `DateRangePickerBase`/`DateRangePickerElement`. One shared config (mirroring how
+ * `SelectFieldConfig` is shared across select/autocomplete) carries every field;
+ * the panel and the exporter switch on `kind` to show/emit only the relevant ones:
+ * `weekStartsOn` is date+datetime only, `minuteStep` is datetime only, and `range`
+ * uses a fixed `displayFormat` enum. `min`/`max` are ISO strings (`''` = unset);
+ * the exporter maps them to `minDate`/`maxDate` (date, range) or
+ * `minDateTime`/`maxDateTime` (datetime). `dataType` is derived on export
+ * (date/datetime→`string`, range→`any`) so isn't edited here.
+ */
+export type DateConfig = {
+  kind: 'date' | 'datetime' | 'range'
+  name: string
+  label: string
+  placeholder: string
+  helperText: string
+  isRequired: boolean
+  errorMessage: string
+  variant: 'classic' | 'surface' | 'soft'
+  size: '1' | '2' | '3'
+  radius: 'none' | 'small' | 'medium' | 'large' | 'full'
+  clearable: boolean
+  /** dayjs tokens for date/datetime; one of the 3 range enums for `kind: 'range'`. */
+  displayFormat: string
+  /** Earliest selectable value as an ISO string; `''` = unset. */
+  min: string
+  /** Latest selectable value as an ISO string; `''` = unset. */
+  max: string
+  /** First day of week (date/datetime only): 0 = Sunday, 1 = Monday. */
+  weekStartsOn: 0 | 1
+  /** Time step in minutes (datetime only). */
+  minuteStep: number
+}
+
+/**
+ * Defaults for a freshly dropped date picker. `kind` selects the per-type display
+ * format default (matching each library component's own default) and seeds the
+ * shared shape; the other fields are common. Pickers start empty (no default value
+ * — see the grilled design).
+ */
+export function createDefaultDateConfig(
+  kind: DateConfig['kind'],
+  name: string,
+): DateConfig {
+  const label = kind === 'range' ? 'Date Range' : kind === 'datetime' ? 'Date Time' : 'Date'
+  const displayFormat =
+    kind === 'datetime' ? 'DD/MM/YYYY HH:mm' : kind === 'range' ? 'yyyy-MM-dd' : 'DD/MM/YYYY'
+  return {
+    kind,
+    name,
+    label,
+    placeholder: '',
+    helperText: '',
+    isRequired: false,
+    errorMessage: '',
+    variant: 'surface',
+    size: '2',
+    radius: 'medium',
+    clearable: true,
+    displayFormat,
+    min: '',
+    max: '',
+    weekStartsOn: 0,
+    minuteStep: 1,
+  }
+}
+
+/** How an upload stores its value. Mirrors the library's `UploadValueFormat`. */
+export type UploadValueFormat = 'dataUrl' | 'base64' | 'bytes' | 'api'
+
+/**
+ * API-upload wiring, used only when `valueFormat` is `'api'`. Mirrors the
+ * library's `UploadApiConfig`: the file is POSTed to `uploadUrl`, optionally
+ * DELETEd from `deleteUrl` (carrying a `:filename` placeholder), sent under
+ * `fieldName`, and the stored URL is read from `responsePath` in the response.
+ * Always carried (so toggling `valueFormat` away from `'api'` and back is
+ * lossless) but only emitted in `'api'` mode.
+ */
+export type UploadApiSettings = {
+  uploadUrl: string
+  deleteUrl: string
+  fieldName: string
+  responsePath: string
+}
+
+/**
+ * Editable config for an image upload. Maps onto the library's `UploadImageBase`
+ * / engine `UploadImageElement`. `accept` defaults to `image/*`; `maxSizeMB` is
+ * `''` when unset (mirroring `width`/`maxLength`). `valueFormat` chooses how the
+ * value is stored, and when it is `'api'` the `api` wiring is emitted too. Unlike
+ * the input components, `UploadImageBase` has its own `isRequired` prop, so the
+ * marker isn't baked into the label. `dataType` is derived on export
+ * (bytes→`any`, else `string`) so isn't edited here.
+ */
+export type UploadImageConfig = {
+  name: string
+  label: string
+  helperText: string
+  isRequired: boolean
+  errorMessage: string
+  accept: string
+  maxSizeMB: number | ''
+  shape: 'square' | 'circle'
+  previewHeight: number
+  valueFormat: UploadValueFormat
+  api: UploadApiSettings
+}
+
+/**
+ * Editable config for a file upload. Maps onto the library's `UploadFileBase` /
+ * engine `UploadFileElement`. `accept` is a comma list (e.g. `.pdf,.docx`);
+ * `multiple` enables multi-file selection with an optional `maxFiles` cap (`''` =
+ * unset). `valueFormat`/`api` behave as in the image upload. `dataType` is fixed
+ * to the engine's `any` on export (a file upload stores an array of files), so
+ * isn't edited here.
+ */
+export type UploadFileConfig = {
+  name: string
+  label: string
+  helperText: string
+  isRequired: boolean
+  errorMessage: string
+  accept: string
+  multiple: boolean
+  maxFiles: number | ''
+  maxSizeMB: number | ''
+  valueFormat: UploadValueFormat
+  api: UploadApiSettings
+}
+
+/** Empty API wiring — surfaced only when `valueFormat` is `'api'`. */
+function createDefaultUploadApiSettings(): UploadApiSettings {
+  return { uploadUrl: '', deleteUrl: '', fieldName: '', responsePath: '' }
+}
+
+/** Defaults for a freshly dropped image upload. Mirrors UploadImageBase's own
+ * defaults (`accept: 'image/*'`, square, 160px, dataUrl). */
+export function createDefaultUploadImageConfig(name: string): UploadImageConfig {
+  return {
+    name,
+    label: 'Upload Image',
+    helperText: '',
+    isRequired: false,
+    errorMessage: '',
+    accept: 'image/*',
+    maxSizeMB: '',
+    shape: 'square',
+    previewHeight: 160,
+    valueFormat: 'dataUrl',
+    api: createDefaultUploadApiSettings(),
+  }
+}
+
+/** Defaults for a freshly dropped file upload. Single-file, no accept filter,
+ * dataUrl — matching UploadFileBase's own defaults. */
+export function createDefaultUploadFileConfig(name: string): UploadFileConfig {
+  return {
+    name,
+    label: 'Upload File',
+    helperText: '',
+    isRequired: false,
+    errorMessage: '',
+    accept: '',
+    multiple: false,
+    maxFiles: '',
+    maxSizeMB: '',
+    valueFormat: 'dataUrl',
+    api: createDefaultUploadApiSettings(),
+  }
+}
+
 export type GridContainerSettings = {
   columns: Responsive<number>
   gap: Responsive<string>
@@ -371,8 +545,12 @@ export type GridItemData = {
    * `TextFieldConfig`, a textarea a `TextareaConfig`, a select or autocomplete a
    * `SelectFieldConfig` (both preview with `Autocomplete2`), a multiAutocomplete
    * a `MultiAutocompleteConfig` (previews with `MultiAutocompleteBase`), a
-   * checkbox a `CheckboxConfig` (previews with `CheckboxBase`), and a radio a
-   * `RadioConfig` (previews with `RadioButtonBase`). Other types are config-less.
+   * checkbox a `CheckboxConfig` (previews with `CheckboxBase`), a radio a
+   * `RadioConfig` (previews with `RadioButtonBase`), and a datepicker/
+   * daterangepicker/datetimepicker a `DateConfig` discriminated by `kind` (previews
+   * with `DatePickerBase`/`DateRangePickerBase`/`DateTimePickerBase`), an uploadimage
+   * an `UploadImageConfig` (previews with `UploadImageBase`), and an uploadfile an
+   * `UploadFileConfig` (previews with `UploadFileBase`). Other types are config-less.
    */
   config?:
     | TextFieldConfig
@@ -381,6 +559,9 @@ export type GridItemData = {
     | MultiAutocompleteConfig
     | CheckboxConfig
     | RadioConfig
+    | DateConfig
+    | UploadImageConfig
+    | UploadFileConfig
 }
 
 function responsive<T>(value: T): Responsive<T> {

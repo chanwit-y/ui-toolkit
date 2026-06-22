@@ -150,7 +150,7 @@ function highlight(line: string, language: CodeTab['language']): ReactNode {
       )
     } else if (keyword) {
       nodes.push(
-        <span key={key++} className="text-violet-300">
+        <span key={key++} className="text-teal-300">
           {text}
         </span>,
       )

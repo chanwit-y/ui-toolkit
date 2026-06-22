@@ -6,6 +6,10 @@ export const SMOOTH_EASING = 'cubic-bezier(0.4, 0, 0.2, 1)'
 export const ENTER_DURATION_MS = 420
 export const ENTER_EASING = 'cubic-bezier(0.34, 1.56, 0.64, 1)'
 
+// Quick crossfade when a landed cell swaps its chip for the live preview. Short
+// enough not to compete with the just-finished enter "pop".
+export const UPGRADE_FADE_MS = 200
+
 export const GRID_LAYOUT_TRANSITION = [
   `grid-template-columns ${SMOOTH_DURATION_MS}ms ${SMOOTH_EASING}`,
   `gap ${SMOOTH_DURATION_MS}ms ${SMOOTH_EASING}`,

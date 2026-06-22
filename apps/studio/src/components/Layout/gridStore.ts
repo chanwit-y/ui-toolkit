@@ -2,19 +2,24 @@ import { arrayMove } from '@dnd-kit/sortable'
 import { create } from 'zustand'
 import type { Breakpoint } from './breakpoints'
 import type { ComponentType } from './componentCatalog'
+import { ENTER_DURATION_MS, prefersReducedMotion } from './gridAnimation'
 import { updateContainerBreakpoint, updateItemBreakpoint } from './gridSettings'
 import { readSeedCount } from './perf'
 import {
   createDefaultAutocompleteConfig,
   createDefaultCheckboxConfig,
+  createDefaultDateConfig,
   createDefaultItemSettings,
   createDefaultMultiAutocompleteConfig,
   createDefaultRadioConfig,
   createDefaultSelectFieldConfig,
   createDefaultTextareaConfig,
   createDefaultTextFieldConfig,
+  createDefaultUploadFileConfig,
+  createDefaultUploadImageConfig,
   defaultContainerSettings,
   type CheckboxConfig,
+  type DateConfig,
   type GridContainerSettings,
   type GridItemData,
   type MultiAutocompleteConfig,
@@ -22,6 +27,8 @@ import {
   type SelectFieldConfig,
   type TextareaConfig,
   type TextFieldConfig,
+  type UploadFileConfig,
+  type UploadImageConfig,
 } from './types'
 
 /** A palette component being dropped onto the canvas. */
@@ -48,6 +55,13 @@ type GridState = {
   containerSettings: GridContainerSettings
   // Monotonic counter for unique textfield binding names (textField_1, _2, …).
   fieldSeq: number
+
+  // Ids of items still playing their entrance: a freshly appeared cell stays a
+  // cheap chip (suppressing its live preview) until its enter "pop" lands, so no
+  // library component mounts mid-pop and reflows. Seeded with the initial items
+  // and added to on every drop; each id is cleared by its own timer after
+  // `ENTER_DURATION_MS`. Empty under reduced motion (no pop ⇒ nothing to guard).
+  enteringIds: Set<string>
 
   // Drag state
   activeId: string | null
@@ -83,6 +97,7 @@ type GridState = {
       | MultiAutocompleteConfig
       | CheckboxConfig
       | RadioConfig
+      | DateConfig
     >,
   ) => void
   moveItem: (activeId: string, overId: string) => void
@@ -143,10 +158,57 @@ export const useGridStore = create<GridState>((set, get) => {
     animator?.schedule(changedItemId)
   }
 
+  // Per-id timers that clear an entering flag once the pop has landed. Tracked so
+  // a removed item (or a re-drop of the same id) never leaks a pending clear.
+  const enterTimers = new Map<string, ReturnType<typeof setTimeout>>()
+
+  /** True when an entrance animation will play — so the chip-stall is worth it. */
+  const canEnter = () => typeof window !== 'undefined' && !prefersReducedMotion()
+
+  /** Drop `id` from `enteringIds` after the enter "pop" duration, upgrading the
+   * cell from its chip to the live preview. */
+  const scheduleEnterClear = (id: string) => {
+    const prev = enterTimers.get(id)
+    if (prev) clearTimeout(prev)
+    enterTimers.set(
+      id,
+      setTimeout(() => {
+        enterTimers.delete(id)
+        set((s) => {
+          if (!s.enteringIds.has(id)) return {}
+          const next = new Set(s.enteringIds)
+          next.delete(id)
+          return { enteringIds: next }
+        })
+      }, ENTER_DURATION_MS),
+    )
+  }
+
+  /** Cancel a pending clear (item removed before its pop finished). */
+  const cancelEnter = (id: string) => {
+    const prev = enterTimers.get(id)
+    if (prev) {
+      clearTimeout(prev)
+      enterTimers.delete(id)
+    }
+  }
+
+  // Initial items land-as-chip too: seed their ids and arm the clear timers up
+  // front so first paint behaves exactly like a drop (chip → fade-to-live).
+  const initialItems = createInitialItems()
+  const initialEntering = new Set<string>()
+  if (canEnter()) {
+    for (const it of initialItems) {
+      initialEntering.add(it.id)
+      scheduleEnterClear(it.id)
+    }
+  }
+
   return {
-    items: createInitialItems(),
+    items: initialItems,
     containerSettings: defaultContainerSettings,
     fieldSeq: 0,
+    enteringIds: initialEntering,
 
     activeId: null,
 
@@ -176,6 +238,9 @@ export const useGridStore = create<GridState>((set, get) => {
           | MultiAutocompleteConfig
           | CheckboxConfig
           | RadioConfig
+          | DateConfig
+          | UploadImageConfig
+          | UploadFileConfig
           | undefined
         let nextSeq = fieldSeq
         if (type === 'textfield') {
@@ -199,8 +264,26 @@ export const useGridStore = create<GridState>((set, get) => {
         } else if (type === 'radio') {
           nextSeq = fieldSeq + 1
           config = createDefaultRadioConfig(`radio_${nextSeq}`)
+        } else if (type === 'datepicker') {
+          nextSeq = fieldSeq + 1
+          config = createDefaultDateConfig('date', `datePicker_${nextSeq}`)
+        } else if (type === 'daterangepicker') {
+          nextSeq = fieldSeq + 1
+          config = createDefaultDateConfig('range', `dateRange_${nextSeq}`)
+        } else if (type === 'datetimepicker') {
+          nextSeq = fieldSeq + 1
+          config = createDefaultDateConfig('datetime', `dateTime_${nextSeq}`)
+        } else if (type === 'uploadimage') {
+          nextSeq = fieldSeq + 1
+          config = createDefaultUploadImageConfig(`uploadImage_${nextSeq}`)
+        } else if (type === 'uploadfile') {
+          nextSeq = fieldSeq + 1
+          config = createDefaultUploadFileConfig(`uploadFile_${nextSeq}`)
         }
 
+        // Uploads need more room for their dropzone, so they default to a wider
+        // lg span (6 of 12) than the standard inputs (2).
+        const isUpload = type === 'uploadimage' || type === 'uploadfile'
         const newItem: GridItemData = {
           id: createId(),
           label: component?.label ?? `Item ${items.length + 1}`,
@@ -210,7 +293,7 @@ export const useGridStore = create<GridState>((set, get) => {
               xs: bpCols.xs,
               sm: Math.min(3, bpCols.sm),
               md: Math.min(2, bpCols.md),
-              lg: Math.min(2, bpCols.lg),
+              lg: Math.min(isUpload ? 6 : 2, bpCols.lg),
             },
           }),
           config,
@@ -219,12 +302,27 @@ export const useGridStore = create<GridState>((set, get) => {
           index == null ? items.length : Math.max(0, Math.min(index, items.length))
         const next = items.slice()
         next.splice(at, 0, newItem)
-        set({ items: next, fieldSeq: nextSeq })
+
+        // The new cell lands as a chip and upgrades to its live preview only once
+        // the enter "pop" finishes — so the pop is byte-identical across types.
+        const willEnter = canEnter()
+        const enteringIds = willEnter
+          ? new Set(get().enteringIds).add(newItem.id)
+          : get().enteringIds
+        set({ items: next, fieldSeq: nextSeq, enteringIds })
+        if (willEnter) scheduleEnterClear(newItem.id)
       }),
 
     removeItem: (id) =>
       animated(() => {
-        set({ items: get().items.filter((item) => item.id !== id) })
+        cancelEnter(id)
+        set((s) => {
+          const items = s.items.filter((item) => item.id !== id)
+          if (!s.enteringIds.has(id)) return { items }
+          const next = new Set(s.enteringIds)
+          next.delete(id)
+          return { items, enteringIds: next }
+        })
       }),
 
     removeSelectedItem: () => {
@@ -327,6 +425,12 @@ export function useSelectedItem(): GridItemData | null {
   return useGridStore(
     (s) => s.items.find((item) => item.id === s.selectedItemId) ?? null,
   )
+}
+
+/** Whether an item is still playing its entrance (chip-stall before live). The
+ * boolean result means only the cell whose membership flips re-renders. */
+export function useIsEntering(id: string): boolean {
+  return useGridStore((s) => s.enteringIds.has(id))
 }
 
 /** Selector helper for the item currently being dragged (or null). */

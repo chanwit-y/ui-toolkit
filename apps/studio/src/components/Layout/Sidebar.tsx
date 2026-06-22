@@ -1,17 +1,22 @@
 import { CodeViewer, SegmentedControl } from '../common'
 import { CheckboxConfigPanel } from './CheckboxConfigPanel'
+import { DateConfigPanel } from './DateConfigPanel'
 import { FieldConfigPanel } from './FieldConfigPanel'
 import { useGridStore, useSelectedItem, type SidebarView } from './gridStore'
 import { RadioConfigPanel } from './RadioConfigPanel'
 import { SelectFieldConfigPanel } from './SelectFieldConfigPanel'
 import { ContainerSettingsPanel, ItemSettingsPanel } from './SettingsPanel'
 import { TextareaConfigPanel } from './TextareaConfigPanel'
+import { UploadFileConfigPanel, UploadImageConfigPanel } from './UploadConfigPanel'
 import type {
   CheckboxConfig,
+  DateConfig,
   RadioConfig,
   SelectFieldConfig,
   TextareaConfig,
   TextFieldConfig,
+  UploadFileConfig,
+  UploadImageConfig,
 } from './types'
 
 const VIEW_OPTIONS = [
@@ -110,6 +115,24 @@ export function Sidebar({ gridConfigJson, fullGridCss }: SidebarProps) {
             <RadioConfigPanel
               itemId={selectedItem.id}
               config={selectedItem.config as RadioConfig}
+            />
+          ) : (selectedItem.type === 'datepicker' ||
+              selectedItem.type === 'daterangepicker' ||
+              selectedItem.type === 'datetimepicker') &&
+            selectedItem.config ? (
+            <DateConfigPanel
+              itemId={selectedItem.id}
+              config={selectedItem.config as DateConfig}
+            />
+          ) : selectedItem.type === 'uploadimage' && selectedItem.config ? (
+            <UploadImageConfigPanel
+              itemId={selectedItem.id}
+              config={selectedItem.config as UploadImageConfig}
+            />
+          ) : selectedItem.type === 'uploadfile' && selectedItem.config ? (
+            <UploadFileConfigPanel
+              itemId={selectedItem.id}
+              config={selectedItem.config as UploadFileConfig}
             />
           ) : (
             <p className="px-1 py-6 text-center text-sm text-zinc-400">

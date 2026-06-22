@@ -76,6 +76,11 @@ export * from "./components/Typography";
 export type { TypographyProps, TypographyVariant } from "./components/Typography";
 export * from "./components/DateRangePicker";
 export type { DateRange, DateRangePickerProps } from "./components/@types";
+// Un-form-wrapped (static) pickers for display-only previews (studio canvas).
+// DateRangePickerBase ships via the `export *` above; these two are otherwise unexported.
+export { DatePickerBase } from "./components/DatePicker";
+export { DateTimePickerBase } from "./components/DateTimePicker";
+export type { DatePickerProps, DateTimePickerProps } from "./components/@types";
 export * from "./components/UploadImage";
 export * from "./components/UploadFile";
 export type {
