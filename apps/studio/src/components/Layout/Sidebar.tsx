@@ -1,10 +1,16 @@
 import { CodeViewer, SegmentedControl } from '../common'
+import { CheckboxConfigPanel } from './CheckboxConfigPanel'
 import { FieldConfigPanel } from './FieldConfigPanel'
 import { useGridStore, useSelectedItem, type SidebarView } from './gridStore'
 import { SelectFieldConfigPanel } from './SelectFieldConfigPanel'
 import { ContainerSettingsPanel, ItemSettingsPanel } from './SettingsPanel'
 import { TextareaConfigPanel } from './TextareaConfigPanel'
-import type { SelectFieldConfig, TextareaConfig, TextFieldConfig } from './types'
+import type {
+  CheckboxConfig,
+  SelectFieldConfig,
+  TextareaConfig,
+  TextFieldConfig,
+} from './types'
 
 const VIEW_OPTIONS = [
   { value: 'layout', label: 'Layout' },
@@ -92,6 +98,11 @@ export function Sidebar({ gridConfigJson, fullGridCss }: SidebarProps) {
               config={selectedItem.config as SelectFieldConfig}
               heading="Multi Autocomplete"
               multi
+            />
+          ) : selectedItem.type === 'checkbox' && selectedItem.config ? (
+            <CheckboxConfigPanel
+              itemId={selectedItem.id}
+              config={selectedItem.config as CheckboxConfig}
             />
           ) : (
             <p className="px-1 py-6 text-center text-sm text-zinc-400">

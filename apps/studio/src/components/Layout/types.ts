@@ -218,6 +218,68 @@ export function createDefaultSelectFieldConfig(name: string): SelectFieldConfig 
   }
 }
 
+/**
+ * A single option in a checkbox group. Maps onto the library `CheckboxProps`
+ * option shape (`value`/`label`/`disabled`) minus `helperText` — per-option
+ * sub-labels are out of studio's scope. Carried even in `single` mode so toggling
+ * to `group` doesn't start empty.
+ */
+export type CheckboxOption = {
+  value: string
+  label: string
+  disabled: boolean
+}
+
+/**
+ * Editable config for a checkbox component. The checkbox is dual-natured, so
+ * `mode` discriminates a single boolean toggle from a multi-option group
+ * (mirroring how `SelectFieldConfig.mode` forks static/source). Both halves are
+ * always carried so switching modes loses nothing: `defaultChecked` drives the
+ * single toggle's initial state, `options`/`orientation` drive the group. Maps
+ * onto the library's `CheckboxBase` / engine `CheckboxElement`; `dataType` is
+ * derived on export (single→`boolean`, group→`any`), not edited here.
+ */
+export type CheckboxConfig = {
+  name: string
+  label: string
+  helperText: string
+  isRequired: boolean
+  errorMessage: string
+  variant: 'classic' | 'surface' | 'soft'
+  size: '1' | '2' | '3'
+  mode: 'single' | 'group'
+  /** Single-mode initial checked state (emitted as the element's `checked`). */
+  defaultChecked: boolean
+  /** Group-mode options. Carried in single mode too (so a mode switch is lossless). */
+  options: CheckboxOption[]
+  /** Group-mode layout direction. */
+  orientation: 'horizontal' | 'vertical'
+}
+
+/**
+ * Defaults for a freshly dropped checkbox. Starts as a single boolean toggle
+ * (the common case) but carries a couple of starter group options so switching
+ * to `group` mode isn't empty.
+ */
+export function createDefaultCheckboxConfig(name: string): CheckboxConfig {
+  return {
+    name,
+    label: 'Checkbox',
+    helperText: '',
+    isRequired: false,
+    errorMessage: '',
+    variant: 'surface',
+    size: '3',
+    mode: 'single',
+    defaultChecked: false,
+    options: [
+      { value: 'option_1', label: 'Option 1', disabled: false },
+      { value: 'option_2', label: 'Option 2', disabled: false },
+    ],
+    orientation: 'vertical',
+  }
+}
+
 export type GridContainerSettings = {
   columns: Responsive<number>
   gap: Responsive<string>
@@ -250,11 +312,17 @@ export type GridItemData = {
   /**
    * Component-specific config, discriminated by `type`: a textfield carries a
    * `TextFieldConfig`, a textarea a `TextareaConfig`, a select or autocomplete a
-   * `SelectFieldConfig` (both preview with `Autocomplete2`), and a multiAutocomplete
-   * a `MultiAutocompleteConfig` (previews with `MultiAutocompleteBase`). Other types
-   * are config-less.
+   * `SelectFieldConfig` (both preview with `Autocomplete2`), a multiAutocomplete
+   * a `MultiAutocompleteConfig` (previews with `MultiAutocompleteBase`), and a
+   * checkbox a `CheckboxConfig` (previews with `CheckboxBase`). Other types are
+   * config-less.
    */
-  config?: TextFieldConfig | TextareaConfig | SelectFieldConfig | MultiAutocompleteConfig
+  config?:
+    | TextFieldConfig
+    | TextareaConfig
+    | SelectFieldConfig
+    | MultiAutocompleteConfig
+    | CheckboxConfig
 }
 
 function responsive<T>(value: T): Responsive<T> {

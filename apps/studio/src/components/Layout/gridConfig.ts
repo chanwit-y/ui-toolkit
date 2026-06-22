@@ -1,5 +1,6 @@
 import { MAX_GRID_COLUMNS } from './breakpoints'
 import type {
+  CheckboxConfig,
   GridContainerSettings,
   GridItemData,
   SelectFieldConfig,
@@ -15,8 +16,9 @@ import type {
  * Mapping rules (see the grilled design): every item becomes a Bin frame
  * (`sm/md/lg/xl` 12-col strings, `type`, `justifySelf/alignSelf`); `element` is
  * populated for `textfield`, `text`, `textarea`, `select` (emitted as engine type
- * `autocomplete`), `autocomplete`, and `multiAutocomplete` (both keep their type and
- * share the autocomplete element shape) and omitted for every other type. The multi
+ * `autocomplete`), `autocomplete`, `multiAutocomplete` (both keep their type and
+ * share the autocomplete element shape), and `checkbox`, and omitted for every other
+ * type. The multi
  * field's `maxSelections`/`showSelectedCount` are studio-preview-only and not emitted
  * (the engine's `AutocompleteElement` has no home for them). The studio `xs`
  * breakpoint is dropped (the engine starts at `sm`) and `xl` mirrors `lg`.
@@ -114,6 +116,37 @@ function autocompleteElement(c: SelectFieldConfig): Record<string, unknown> {
   }
 }
 
+/**
+ * `checkbox` → engine `CheckboxElement`. `dataType` is mode-derived: a single
+ * boolean toggle stores `boolean`, a group stores an array of selected values so
+ * it's the engine's `any`. Single mode emits the authored `checked` default (and no
+ * `options`/`orientation`); group mode emits `options`/`orientation` (no initial
+ * selection). `indeterminate` is studio-preview-only and never emitted.
+ */
+function checkboxElement(c: CheckboxConfig): Record<string, unknown> {
+  const isGroup = c.mode === 'group'
+  return {
+    name: c.name,
+    dataType: isGroup ? 'any' : 'boolean',
+    label: c.label,
+    isRequired: c.isRequired,
+    errorMessage: c.errorMessage,
+    variant: c.variant,
+    size: c.size,
+    ...(isGroup
+      ? {
+          orientation: c.orientation,
+          options: c.options.map((o) => ({
+            value: o.value,
+            label: o.label,
+            ...(o.disabled ? { disabled: true } : {}),
+          })),
+        }
+      : { checked: c.defaultChecked }),
+    ...omitEmpty({ helperText: c.helperText }),
+  }
+}
+
 /** The element for a Bin, or undefined for types without a mapped element. */
 function buildElement(item: GridItemData): Record<string, unknown> | undefined {
   switch (item.type) {
@@ -125,6 +158,8 @@ function buildElement(item: GridItemData): Record<string, unknown> | undefined {
     case 'autocomplete':
     case 'multiAutocomplete':
       return item.config ? autocompleteElement(item.config as SelectFieldConfig) : undefined
+    case 'checkbox':
+      return item.config ? checkboxElement(item.config as CheckboxConfig) : undefined
     case 'text':
       return { text: item.label, isLabel: true }
     default:

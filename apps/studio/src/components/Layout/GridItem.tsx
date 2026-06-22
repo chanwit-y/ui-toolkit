@@ -1,6 +1,7 @@
 import type { DataType } from '@gummy-ui/ui'
 import {
   AutocompleteBase2,
+  CheckboxBase,
   MultiAutocompleteBase,
   TextareaBase,
   TextFieldBase,
@@ -18,6 +19,7 @@ import {
   Mail,
   Phone,
   Search,
+  SquareCheck,
   TextWrap,
   Type,
 } from 'lucide-react'
@@ -27,6 +29,7 @@ import { cn, IconButton } from '../common'
 import { COMPONENT_BY_TYPE } from './componentCatalog'
 import { useGridStore } from './gridStore'
 import type {
+  CheckboxConfig,
   GridItemData,
   MultiAutocompleteConfig,
   SelectFieldConfig,
@@ -121,6 +124,9 @@ function CellContent({ item }: { item: GridItemData }) {
   if (item.type === 'multiAutocomplete' && item.config) {
     return <GlyphChip Icon={ListChecks} />
   }
+  if (item.type === 'checkbox' && item.config) {
+    return <GlyphChip Icon={SquareCheck} />
+  }
   return (
     <div
       data-grid-item-content
@@ -150,7 +156,9 @@ function ActiveBody({ item }: { item: GridItemData }) {
             ? Search
             : item.type === 'multiAutocomplete' && item.config
               ? ListChecks
-              : null
+              : item.type === 'checkbox' && item.config
+                ? SquareCheck
+                : null
   if (!Icon) return null
   return (
     <div
@@ -358,12 +366,43 @@ function MultiAutocompleteLivePreview({ config }: { config: MultiAutocompleteCon
 }
 
 /**
+ * The live, real `<CheckboxBase>` from the library, rendered in-cell once the cell
+ * is wide enough. Inert (`pointer-events-none`) like the other previews. `single`
+ * mode renders one boolean checkbox (no `options`), reflecting the authored
+ * `defaultChecked`; `group` mode feeds the authored `options`/`orientation` with no
+ * pre-selection. The required marker is baked into the label (CheckboxBase has no
+ * `isRequired` prop). Per-option `disabled` flows straight through.
+ */
+function CheckboxLivePreview({ config }: { config: CheckboxConfig }) {
+  const label = config.isRequired ? `${config.label} *` : config.label
+  const isGroup = config.mode === 'group'
+  return (
+    <div
+      data-grid-item-content
+      className="pointer-events-none flex h-full w-full items-center px-3"
+    >
+      <CheckboxBase
+        label={label}
+        helperText={config.helperText}
+        error={!!config.errorMessage}
+        errorMessage={config.errorMessage}
+        variant={config.variant}
+        size={config.size}
+        checked={isGroup ? undefined : config.defaultChecked}
+        options={isGroup ? config.options : undefined}
+        orientation={config.orientation}
+      />
+    </div>
+  )
+}
+
+/**
  * The cell's live render, or null when the cell can't (or isn't wide enough to)
  * show one — the generic seam for adding more component types later. `textfield`,
- * `textarea`, `select`, `autocomplete`, and `multiAutocomplete` (with config) go
- * live; everything else falls through to its chip. `select`/`autocomplete` share
- * `SelectLivePreview` (both preview with the library's `Autocomplete2`);
- * `multiAutocomplete` previews with `MultiAutocompleteBase`.
+ * `textarea`, `select`, `autocomplete`, `multiAutocomplete`, and `checkbox` (with
+ * config) go live; everything else falls through to its chip. `select`/`autocomplete`
+ * share `SelectLivePreview` (both preview with the library's `Autocomplete2`);
+ * `multiAutocomplete` previews with `MultiAutocompleteBase`; `checkbox` with `CheckboxBase`.
  */
 function renderLive(item: GridItemData, isLive: boolean) {
   if (!isLive) return null
@@ -381,6 +420,9 @@ function renderLive(item: GridItemData, isLive: boolean) {
   }
   if (item.type === 'multiAutocomplete' && item.config) {
     return <MultiAutocompleteLivePreview config={item.config as MultiAutocompleteConfig} />
+  }
+  if (item.type === 'checkbox' && item.config) {
+    return <CheckboxLivePreview config={item.config as CheckboxConfig} />
   }
   return null
 }

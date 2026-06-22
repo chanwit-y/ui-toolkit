@@ -6,12 +6,14 @@ import { updateContainerBreakpoint, updateItemBreakpoint } from './gridSettings'
 import { readSeedCount } from './perf'
 import {
   createDefaultAutocompleteConfig,
+  createDefaultCheckboxConfig,
   createDefaultItemSettings,
   createDefaultMultiAutocompleteConfig,
   createDefaultSelectFieldConfig,
   createDefaultTextareaConfig,
   createDefaultTextFieldConfig,
   defaultContainerSettings,
+  type CheckboxConfig,
   type GridContainerSettings,
   type GridItemData,
   type MultiAutocompleteConfig,
@@ -73,7 +75,11 @@ type GridState = {
   updateItemConfig: (
     id: string,
     patch: Partial<
-      TextFieldConfig | TextareaConfig | SelectFieldConfig | MultiAutocompleteConfig
+      | TextFieldConfig
+      | TextareaConfig
+      | SelectFieldConfig
+      | MultiAutocompleteConfig
+      | CheckboxConfig
     >,
   ) => void
   moveItem: (activeId: string, overId: string) => void
@@ -165,6 +171,7 @@ export const useGridStore = create<GridState>((set, get) => {
           | TextareaConfig
           | SelectFieldConfig
           | MultiAutocompleteConfig
+          | CheckboxConfig
           | undefined
         let nextSeq = fieldSeq
         if (type === 'textfield') {
@@ -182,6 +189,9 @@ export const useGridStore = create<GridState>((set, get) => {
         } else if (type === 'multiAutocomplete') {
           nextSeq = fieldSeq + 1
           config = createDefaultMultiAutocompleteConfig(`multiAutocomplete_${nextSeq}`)
+        } else if (type === 'checkbox') {
+          nextSeq = fieldSeq + 1
+          config = createDefaultCheckboxConfig(`checkbox_${nextSeq}`)
         }
 
         const newItem: GridItemData = {
@@ -260,7 +270,13 @@ export const useGridStore = create<GridState>((set, get) => {
       set({
         items: get().items.map((item) =>
           item.id === id && item.config
-            ? { ...item, config: { ...item.config, ...patch } }
+            ? // Spreading the config *union* widens shared keys (e.g. `dataType`,
+              // absent on CheckboxConfig) to optional, so cast back to the union —
+              // the patch only ever carries keys valid for this item's config.
+              ({
+                ...item,
+                config: { ...item.config, ...patch } as GridItemData['config'],
+              } as GridItemData)
             : item,
         ),
       }),
