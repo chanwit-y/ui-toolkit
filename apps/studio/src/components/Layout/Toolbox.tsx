@@ -32,15 +32,15 @@ function ToolboxItem({ def }: ToolboxItemProps) {
       {...attributes}
       className={cn(
         'group flex touch-none flex-col items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-2 py-3 text-center',
-        'cursor-grab transition-colors hover:border-violet-400 hover:bg-violet-50 active:cursor-grabbing',
+        'cursor-grab transition-colors hover:border-teal-400 hover:bg-teal-50 active:cursor-grabbing',
         isDragging && 'opacity-40',
       )}
     >
       <Icon
-        className="h-5 w-5 text-zinc-500 transition-colors group-hover:text-violet-600"
+        className="h-5 w-5 text-zinc-500 transition-colors group-hover:text-teal-600"
         aria-hidden="true"
       />
-      <span className="text-[11px] font-medium leading-tight text-zinc-600 group-hover:text-violet-700">
+      <span className="text-[11px] font-medium leading-tight text-zinc-600 group-hover:text-teal-700">
         {def.label}
       </span>
     </button>
@@ -51,8 +51,8 @@ function ToolboxItem({ def }: ToolboxItemProps) {
 export function ToolboxDragOverlay({ def }: { def: ComponentDef }) {
   const Icon = def.icon
   return (
-    <div className="flex cursor-grabbing items-center gap-2 rounded-lg border-2 border-violet-500 bg-white px-3 py-2 shadow-2xl shadow-violet-500/30 ring-2 ring-violet-400/50">
-      <Icon className="h-4 w-4 text-violet-600" aria-hidden="true" />
+    <div className="flex cursor-grabbing items-center gap-2 rounded-lg border-2 border-teal-500 bg-white px-3 py-2 shadow-2xl shadow-teal-500/30 ring-2 ring-teal-400/50">
+      <Icon className="h-4 w-4 text-teal-600" aria-hidden="true" />
       <span className="text-xs font-medium text-zinc-700">{def.label}</span>
     </div>
   )
@@ -82,7 +82,7 @@ export function Toolbox() {
   return (
     <aside className="flex w-60 shrink-0 flex-col border-r border-zinc-200 bg-white">
       <div className="flex shrink-0 items-center gap-2 border-b border-zinc-200 px-4 py-3">
-        <LayoutGrid className="h-4 w-4 text-violet-600" aria-hidden="true" />
+        <LayoutGrid className="h-4 w-4 text-teal-600" aria-hidden="true" />
         <h2 className="text-sm font-semibold text-zinc-800">Components</h2>
       </div>
 
@@ -97,7 +97,7 @@ export function Toolbox() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search components"
-            className="w-full rounded-md border border-zinc-300 bg-white py-1.5 pl-8 pr-2.5 text-sm text-zinc-900 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
+            className="w-full rounded-md border border-zinc-300 bg-white py-1.5 pl-8 pr-2.5 text-sm text-zinc-900 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
           />
         </div>
       </div>

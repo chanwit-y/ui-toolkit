@@ -38,7 +38,7 @@ function Toggle({
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
-        className="h-4 w-4 rounded border-zinc-300 text-violet-600 focus:ring-violet-500/30"
+        className="h-4 w-4 rounded border-zinc-300 text-teal-600 focus:ring-teal-500/30"
       />
     </label>
   )
@@ -107,7 +107,7 @@ function OptionsEditor({
         <button
           type="button"
           onClick={add}
-          className="flex w-full items-center justify-center gap-1 rounded-md border border-dashed border-zinc-300 py-1.5 text-xs font-medium text-zinc-500 transition-colors hover:border-violet-400 hover:text-violet-600"
+          className="flex w-full items-center justify-center gap-1 rounded-md border border-dashed border-zinc-300 py-1.5 text-xs font-medium text-zinc-500 transition-colors hover:border-teal-400 hover:text-teal-600"
         >
           <Plus className="h-3.5 w-3.5" aria-hidden="true" />
           Add option

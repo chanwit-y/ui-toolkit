@@ -7,6 +7,7 @@ import { RadioConfigPanel } from './RadioConfigPanel'
 import { SelectFieldConfigPanel } from './SelectFieldConfigPanel'
 import { ContainerSettingsPanel, ItemSettingsPanel } from './SettingsPanel'
 import { TextareaConfigPanel } from './TextareaConfigPanel'
+import { UploadFileConfigPanel, UploadImageConfigPanel } from './UploadConfigPanel'
 import type {
   CheckboxConfig,
   DateConfig,
@@ -14,6 +15,8 @@ import type {
   SelectFieldConfig,
   TextareaConfig,
   TextFieldConfig,
+  UploadFileConfig,
+  UploadImageConfig,
 } from './types'
 
 const VIEW_OPTIONS = [
@@ -120,6 +123,16 @@ export function Sidebar({ gridConfigJson, fullGridCss }: SidebarProps) {
             <DateConfigPanel
               itemId={selectedItem.id}
               config={selectedItem.config as DateConfig}
+            />
+          ) : selectedItem.type === 'uploadimage' && selectedItem.config ? (
+            <UploadImageConfigPanel
+              itemId={selectedItem.id}
+              config={selectedItem.config as UploadImageConfig}
+            />
+          ) : selectedItem.type === 'uploadfile' && selectedItem.config ? (
+            <UploadFileConfigPanel
+              itemId={selectedItem.id}
+              config={selectedItem.config as UploadFileConfig}
             />
           ) : (
             <p className="px-1 py-6 text-center text-sm text-zinc-400">

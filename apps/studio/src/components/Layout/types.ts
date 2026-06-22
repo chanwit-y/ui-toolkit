@@ -407,6 +407,110 @@ export function createDefaultDateConfig(
   }
 }
 
+/** How an upload stores its value. Mirrors the library's `UploadValueFormat`. */
+export type UploadValueFormat = 'dataUrl' | 'base64' | 'bytes' | 'api'
+
+/**
+ * API-upload wiring, used only when `valueFormat` is `'api'`. Mirrors the
+ * library's `UploadApiConfig`: the file is POSTed to `uploadUrl`, optionally
+ * DELETEd from `deleteUrl` (carrying a `:filename` placeholder), sent under
+ * `fieldName`, and the stored URL is read from `responsePath` in the response.
+ * Always carried (so toggling `valueFormat` away from `'api'` and back is
+ * lossless) but only emitted in `'api'` mode.
+ */
+export type UploadApiSettings = {
+  uploadUrl: string
+  deleteUrl: string
+  fieldName: string
+  responsePath: string
+}
+
+/**
+ * Editable config for an image upload. Maps onto the library's `UploadImageBase`
+ * / engine `UploadImageElement`. `accept` defaults to `image/*`; `maxSizeMB` is
+ * `''` when unset (mirroring `width`/`maxLength`). `valueFormat` chooses how the
+ * value is stored, and when it is `'api'` the `api` wiring is emitted too. Unlike
+ * the input components, `UploadImageBase` has its own `isRequired` prop, so the
+ * marker isn't baked into the label. `dataType` is derived on export
+ * (bytes→`any`, else `string`) so isn't edited here.
+ */
+export type UploadImageConfig = {
+  name: string
+  label: string
+  helperText: string
+  isRequired: boolean
+  errorMessage: string
+  accept: string
+  maxSizeMB: number | ''
+  shape: 'square' | 'circle'
+  previewHeight: number
+  valueFormat: UploadValueFormat
+  api: UploadApiSettings
+}
+
+/**
+ * Editable config for a file upload. Maps onto the library's `UploadFileBase` /
+ * engine `UploadFileElement`. `accept` is a comma list (e.g. `.pdf,.docx`);
+ * `multiple` enables multi-file selection with an optional `maxFiles` cap (`''` =
+ * unset). `valueFormat`/`api` behave as in the image upload. `dataType` is fixed
+ * to the engine's `any` on export (a file upload stores an array of files), so
+ * isn't edited here.
+ */
+export type UploadFileConfig = {
+  name: string
+  label: string
+  helperText: string
+  isRequired: boolean
+  errorMessage: string
+  accept: string
+  multiple: boolean
+  maxFiles: number | ''
+  maxSizeMB: number | ''
+  valueFormat: UploadValueFormat
+  api: UploadApiSettings
+}
+
+/** Empty API wiring — surfaced only when `valueFormat` is `'api'`. */
+function createDefaultUploadApiSettings(): UploadApiSettings {
+  return { uploadUrl: '', deleteUrl: '', fieldName: '', responsePath: '' }
+}
+
+/** Defaults for a freshly dropped image upload. Mirrors UploadImageBase's own
+ * defaults (`accept: 'image/*'`, square, 160px, dataUrl). */
+export function createDefaultUploadImageConfig(name: string): UploadImageConfig {
+  return {
+    name,
+    label: 'Upload Image',
+    helperText: '',
+    isRequired: false,
+    errorMessage: '',
+    accept: 'image/*',
+    maxSizeMB: '',
+    shape: 'square',
+    previewHeight: 160,
+    valueFormat: 'dataUrl',
+    api: createDefaultUploadApiSettings(),
+  }
+}
+
+/** Defaults for a freshly dropped file upload. Single-file, no accept filter,
+ * dataUrl — matching UploadFileBase's own defaults. */
+export function createDefaultUploadFileConfig(name: string): UploadFileConfig {
+  return {
+    name,
+    label: 'Upload File',
+    helperText: '',
+    isRequired: false,
+    errorMessage: '',
+    accept: '',
+    multiple: false,
+    maxFiles: '',
+    maxSizeMB: '',
+    valueFormat: 'dataUrl',
+    api: createDefaultUploadApiSettings(),
+  }
+}
+
 export type GridContainerSettings = {
   columns: Responsive<number>
   gap: Responsive<string>
@@ -444,8 +548,9 @@ export type GridItemData = {
    * checkbox a `CheckboxConfig` (previews with `CheckboxBase`), a radio a
    * `RadioConfig` (previews with `RadioButtonBase`), and a datepicker/
    * daterangepicker/datetimepicker a `DateConfig` discriminated by `kind` (previews
-   * with `DatePickerBase`/`DateRangePickerBase`/`DateTimePickerBase`). Other types
-   * are config-less.
+   * with `DatePickerBase`/`DateRangePickerBase`/`DateTimePickerBase`), an uploadimage
+   * an `UploadImageConfig` (previews with `UploadImageBase`), and an uploadfile an
+   * `UploadFileConfig` (previews with `UploadFileBase`). Other types are config-less.
    */
   config?:
     | TextFieldConfig
@@ -455,6 +560,8 @@ export type GridItemData = {
     | CheckboxConfig
     | RadioConfig
     | DateConfig
+    | UploadImageConfig
+    | UploadFileConfig
 }
 
 function responsive<T>(value: T): Responsive<T> {

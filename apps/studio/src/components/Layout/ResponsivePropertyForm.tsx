@@ -91,7 +91,7 @@ export function ResponsivePropertyForm({
             <label key={`${field.key}-${activeBp}`} className="block space-y-1">
               <span className="font-mono text-xs text-zinc-600">
                 {field.label}
-                <span className="ml-1 text-violet-600">@{activeBp}</span>
+                <span className="ml-1 text-teal-600">@{activeBp}</span>
               </span>
               {field.type === 'span-buttons' ? (
                 <SpanButtons

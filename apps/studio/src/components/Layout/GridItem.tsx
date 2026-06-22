@@ -9,6 +9,8 @@ import {
   RadioButtonBase,
   TextareaBase,
   TextFieldBase,
+  UploadFileBase,
+  UploadImageBase,
 } from '@gummy-ui/ui'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -16,6 +18,7 @@ import {
   Calendar,
   GripVertical,
   Hash,
+  ImagePlus,
   Link,
   ListChecks,
   ListFilter,
@@ -26,6 +29,7 @@ import {
   SquareCheck,
   TextWrap,
   Type,
+  Upload,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { memo, useCallback, useLayoutEffect, useRef, useState } from 'react'
@@ -42,6 +46,8 @@ import type {
   SelectFieldConfig,
   TextareaConfig,
   TextFieldConfig,
+  UploadFileConfig,
+  UploadImageConfig,
 } from './types'
 import { escapeClassName } from './utils'
 
@@ -134,6 +140,12 @@ function CellContent({ item }: { item: GridItemData }) {
   if (item.type === 'checkbox' && item.config) {
     return <GlyphChip Icon={SquareCheck} />
   }
+  if (item.type === 'uploadimage' && item.config) {
+    return <GlyphChip Icon={ImagePlus} />
+  }
+  if (item.type === 'uploadfile' && item.config) {
+    return <GlyphChip Icon={Upload} />
+  }
   return (
     <div
       data-grid-item-content
@@ -165,14 +177,18 @@ function ActiveBody({ item }: { item: GridItemData }) {
               ? ListChecks
               : item.type === 'checkbox' && item.config
                 ? SquareCheck
-                : null
+                : item.type === 'uploadimage' && item.config
+                  ? ImagePlus
+                  : item.type === 'uploadfile' && item.config
+                    ? Upload
+                    : null
   if (!Icon) return null
   return (
     <div
       data-grid-item-content
       className="@container flex h-full w-full items-center justify-center gap-2 px-1 @min-[8rem]:justify-start @min-[8rem]:pl-6"
     >
-      <Icon className="h-4 w-4 shrink-0 text-violet-500" aria-hidden="true" />
+      <Icon className="h-4 w-4 shrink-0 text-teal-500" aria-hidden="true" />
     </div>
   )
 }
@@ -227,7 +243,7 @@ function GlyphChip({ Icon }: { Icon: LucideIcon }) {
       data-grid-item-content
       className="flex h-full w-full items-center justify-center"
     >
-      <Icon className="h-4 w-4 shrink-0 text-violet-500" aria-hidden="true" />
+      <Icon className="h-4 w-4 shrink-0 text-teal-500" aria-hidden="true" />
     </div>
   )
 }
@@ -507,6 +523,72 @@ function DateLivePreview({ config }: { config: DateConfig }) {
 }
 
 /**
+ * The live, real `<UploadImageBase>` from the library, rendered in-cell once the
+ * cell is wide enough. Inert (`pointer-events-none`) like the other previews — the
+ * dropzone shows its empty "click or drag" state (no value flows in on the canvas).
+ * Unlike the input components, UploadImage owns an `isRequired` prop that renders
+ * the asterisk, so it's passed straight through rather than baked into the label.
+ * `isFullWidth` is forced so the cell owns the width; `previewHeight` drives the
+ * dropzone height and the grid row (`minmax(56px, auto)`) grows to fit. Empty
+ * `accept`/`maxSizeMB` fall back to the component's defaults. Theme comes free from
+ * the canvas `ThemeProvider`.
+ */
+function UploadImageLivePreview({ config }: { config: UploadImageConfig }) {
+  return (
+    <div
+      data-grid-item-content
+      className="pointer-events-none flex h-full w-full items-center px-3 py-2"
+    >
+      <UploadImageBase
+        label={config.label}
+        helperText={config.helperText}
+        isRequired={config.isRequired}
+        error={!!config.errorMessage}
+        errorMessage={config.errorMessage}
+        accept={config.accept || undefined}
+        maxSizeMB={config.maxSizeMB === '' ? undefined : config.maxSizeMB}
+        shape={config.shape}
+        previewHeight={config.previewHeight}
+        valueFormat={config.valueFormat}
+        isFullWidth
+      />
+    </div>
+  )
+}
+
+/**
+ * The live, real `<UploadFileBase>` from the library, rendered in-cell once the
+ * cell is wide enough. Inert (`pointer-events-none`) like the other previews — the
+ * dropzone shows its empty state with no files listed. `multiple` flips the prompt
+ * copy ("a file" ↔ "files"); `maxFiles` only matters in multi mode. UploadFile owns
+ * its `isRequired` prop (asterisk), so it's passed through, not baked into the label.
+ * `isFullWidth` is forced so the cell owns sizing. Empty `accept`/`maxFiles`/`maxSizeMB`
+ * fall back to the component's defaults.
+ */
+function UploadFileLivePreview({ config }: { config: UploadFileConfig }) {
+  return (
+    <div
+      data-grid-item-content
+      className="pointer-events-none flex h-full w-full items-center px-3 py-2"
+    >
+      <UploadFileBase
+        label={config.label}
+        helperText={config.helperText}
+        isRequired={config.isRequired}
+        error={!!config.errorMessage}
+        errorMessage={config.errorMessage}
+        accept={config.accept || undefined}
+        multiple={config.multiple}
+        maxFiles={config.maxFiles === '' ? undefined : config.maxFiles}
+        maxSizeMB={config.maxSizeMB === '' ? undefined : config.maxSizeMB}
+        valueFormat={config.valueFormat}
+        isFullWidth
+      />
+    </div>
+  )
+}
+
+/**
  * The cell's live render, or null when the cell can't (or isn't wide enough to)
  * show one — the generic seam for adding more component types later. `textfield`,
  * `textarea`, `select`, `autocomplete`, `multiAutocomplete`, `checkbox`, `radio`, and
@@ -546,6 +628,12 @@ function renderLive(item: GridItemData, isLive: boolean) {
     item.config
   ) {
     return <DateLivePreview config={item.config as DateConfig} />
+  }
+  if (item.type === 'uploadimage' && item.config) {
+    return <UploadImageLivePreview config={item.config as UploadImageConfig} />
+  }
+  if (item.type === 'uploadfile' && item.config) {
+    return <UploadFileLivePreview config={item.config as UploadFileConfig} />
   }
   return null
 }
@@ -636,12 +724,12 @@ export function GridItem({ item, isSelected }: GridItemProps) {
         'grid-item-cell group relative flex min-h-14 touch-none items-center justify-center rounded-lg border-2 p-2',
         'transition-[border-color,background-color,box-shadow,opacity] duration-200 ease-out',
         isDragging
-          ? 'z-0 border-dashed border-violet-300 bg-violet-50/40 opacity-40'
+          ? 'z-0 border-dashed border-teal-300 bg-teal-50/40 opacity-40'
           : isOver
-            ? 'border-dashed border-violet-400 bg-violet-50 shadow-sm ring-2 ring-violet-300/60'
+            ? 'border-dashed border-teal-400 bg-teal-50 shadow-sm ring-2 ring-teal-300/60'
             : isSelected
-              ? 'border-dashed border-violet-500 bg-violet-50 ring-2 ring-violet-500/30'
-              : 'border-dashed border-zinc-300 bg-white hover:border-violet-400 hover:bg-violet-50/50 hover:shadow-sm',
+              ? 'border-dashed border-teal-500 bg-teal-50 ring-2 ring-teal-500/30'
+              : 'border-dashed border-zinc-300 bg-white hover:border-teal-400 hover:bg-teal-50/50 hover:shadow-sm',
       )}
     >
       <IconButton
@@ -681,8 +769,8 @@ export const GridItemMemo = memo(GridItem)
 
 export function GridItemOverlay({ item }: { item: GridItemData }) {
   return (
-    <div className="relative flex h-14 w-full cursor-grabbing items-center justify-center rounded-lg border-2 border-solid border-violet-500 bg-white p-2 shadow-2xl shadow-violet-500/30 ring-2 ring-violet-400/50">
-      <span className="absolute right-1 top-1 inline-flex h-6 w-6 items-center justify-center rounded-md border border-violet-500 bg-violet-50 text-violet-700 shadow-sm">
+    <div className="relative flex h-14 w-full cursor-grabbing items-center justify-center rounded-lg border-2 border-solid border-teal-500 bg-white p-2 shadow-2xl shadow-teal-500/30 ring-2 ring-teal-400/50">
+      <span className="absolute right-1 top-1 inline-flex h-6 w-6 items-center justify-center rounded-md border border-teal-500 bg-teal-50 text-teal-700 shadow-sm">
         <GripVertical className="h-3.5 w-3.5" aria-hidden="true" />
       </span>
       <span className="text-xs font-medium text-zinc-400">{item.label}</span>

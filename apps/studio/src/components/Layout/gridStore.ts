@@ -15,6 +15,8 @@ import {
   createDefaultSelectFieldConfig,
   createDefaultTextareaConfig,
   createDefaultTextFieldConfig,
+  createDefaultUploadFileConfig,
+  createDefaultUploadImageConfig,
   defaultContainerSettings,
   type CheckboxConfig,
   type DateConfig,
@@ -25,6 +27,8 @@ import {
   type SelectFieldConfig,
   type TextareaConfig,
   type TextFieldConfig,
+  type UploadFileConfig,
+  type UploadImageConfig,
 } from './types'
 
 /** A palette component being dropped onto the canvas. */
@@ -235,6 +239,8 @@ export const useGridStore = create<GridState>((set, get) => {
           | CheckboxConfig
           | RadioConfig
           | DateConfig
+          | UploadImageConfig
+          | UploadFileConfig
           | undefined
         let nextSeq = fieldSeq
         if (type === 'textfield') {
@@ -267,8 +273,17 @@ export const useGridStore = create<GridState>((set, get) => {
         } else if (type === 'datetimepicker') {
           nextSeq = fieldSeq + 1
           config = createDefaultDateConfig('datetime', `dateTime_${nextSeq}`)
+        } else if (type === 'uploadimage') {
+          nextSeq = fieldSeq + 1
+          config = createDefaultUploadImageConfig(`uploadImage_${nextSeq}`)
+        } else if (type === 'uploadfile') {
+          nextSeq = fieldSeq + 1
+          config = createDefaultUploadFileConfig(`uploadFile_${nextSeq}`)
         }
 
+        // Uploads need more room for their dropzone, so they default to a wider
+        // lg span (6 of 12) than the standard inputs (2).
+        const isUpload = type === 'uploadimage' || type === 'uploadfile'
         const newItem: GridItemData = {
           id: createId(),
           label: component?.label ?? `Item ${items.length + 1}`,
@@ -278,7 +293,7 @@ export const useGridStore = create<GridState>((set, get) => {
               xs: bpCols.xs,
               sm: Math.min(3, bpCols.sm),
               md: Math.min(2, bpCols.md),
-              lg: Math.min(2, bpCols.lg),
+              lg: Math.min(isUpload ? 6 : 2, bpCols.lg),
             },
           }),
           config,

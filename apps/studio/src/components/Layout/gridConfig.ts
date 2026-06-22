@@ -8,6 +8,9 @@ import type {
   SelectFieldConfig,
   TextareaConfig,
   TextFieldConfig,
+  UploadApiSettings,
+  UploadFileConfig,
+  UploadImageConfig,
 } from './types'
 
 /**
@@ -21,7 +24,8 @@ import type {
  * `autocomplete`), `autocomplete`, `multiAutocomplete` (both keep their type and
  * share the autocomplete element shape), `checkbox`, `radio`, and the three date
  * pickers (`datepicker`/`daterangepicker`/`datetimepicker`, which keep their type and
- * share one kind-discriminated `DateConfig`), and omitted for every other type. The multi
+ * share one kind-discriminated `DateConfig`), `uploadimage`, and `uploadfile`, and
+ * omitted for every other type. The multi
  * field's `maxSelections`/`showSelectedCount` are studio-preview-only and not emitted
  * (the engine's `AutocompleteElement` has no home for them). The studio `xs`
  * breakpoint is dropped (the engine starts at `sm`) and `xl` mirrors `lg`.
@@ -220,6 +224,70 @@ function dateElement(c: DateConfig): Record<string, unknown> {
   }
 }
 
+/** Shared `uploadApi` block (emitted only in `'api'` valueFormat). `uploadUrl` is
+ * always present; the optional bits drop when empty. */
+function uploadApiObject(api: UploadApiSettings): Record<string, unknown> {
+  return {
+    uploadUrl: api.uploadUrl,
+    ...omitEmpty({
+      deleteUrl: api.deleteUrl,
+      fieldName: api.fieldName,
+      responsePath: api.responsePath,
+    }),
+  }
+}
+
+/**
+ * `uploadimage` → engine `UploadImageElement`. `dataType` is valueFormat-derived:
+ * raw `bytes` is an array so it's the engine's `any`, everything else stores a URL
+ * /data-URL `string`. `accept`/`shape`/`previewHeight`/`valueFormat` always emit;
+ * empty `helperText`/`maxSizeMB` drop. The `uploadApi` block is emitted only in
+ * `'api'` mode.
+ */
+function uploadImageElement(c: UploadImageConfig): Record<string, unknown> {
+  return {
+    name: c.name,
+    dataType: c.valueFormat === 'bytes' ? 'any' : 'string',
+    label: c.label,
+    isRequired: c.isRequired,
+    errorMessage: c.errorMessage,
+    accept: c.accept,
+    shape: c.shape,
+    previewHeight: c.previewHeight,
+    valueFormat: c.valueFormat,
+    ...omitEmpty({
+      helperText: c.helperText,
+      maxSizeMB: c.maxSizeMB === '' ? undefined : c.maxSizeMB,
+    }),
+    ...(c.valueFormat === 'api' ? { uploadApi: uploadApiObject(c.api) } : {}),
+  }
+}
+
+/**
+ * `uploadfile` → engine `UploadFileElement`. `dataType` is fixed `any` (a file
+ * upload stores an array of files). `multiple`/`valueFormat` always emit; `maxFiles`
+ * only emits in multi mode, and empty `accept`/`maxSizeMB`/`helperText` drop. The
+ * `uploadApi` block is emitted only in `'api'` mode.
+ */
+function uploadFileElement(c: UploadFileConfig): Record<string, unknown> {
+  return {
+    name: c.name,
+    dataType: 'any',
+    label: c.label,
+    isRequired: c.isRequired,
+    errorMessage: c.errorMessage,
+    multiple: c.multiple,
+    valueFormat: c.valueFormat,
+    ...omitEmpty({
+      helperText: c.helperText,
+      accept: c.accept,
+      maxFiles: c.multiple && c.maxFiles !== '' ? c.maxFiles : undefined,
+      maxSizeMB: c.maxSizeMB === '' ? undefined : c.maxSizeMB,
+    }),
+    ...(c.valueFormat === 'api' ? { uploadApi: uploadApiObject(c.api) } : {}),
+  }
+}
+
 /** The element for a Bin, or undefined for types without a mapped element. */
 function buildElement(item: GridItemData): Record<string, unknown> | undefined {
   switch (item.type) {
@@ -239,6 +307,10 @@ function buildElement(item: GridItemData): Record<string, unknown> | undefined {
     case 'daterangepicker':
     case 'datetimepicker':
       return item.config ? dateElement(item.config as DateConfig) : undefined
+    case 'uploadimage':
+      return item.config ? uploadImageElement(item.config as UploadImageConfig) : undefined
+    case 'uploadfile':
+      return item.config ? uploadFileElement(item.config as UploadFileConfig) : undefined
     case 'text':
       return { text: item.label, isLabel: true }
     default:
