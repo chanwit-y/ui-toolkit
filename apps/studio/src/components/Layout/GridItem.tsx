@@ -1,5 +1,10 @@
 import type { DataType } from '@gummy-ui/ui'
-import { AutocompleteBase2, TextareaBase, TextFieldBase } from '@gummy-ui/ui'
+import {
+  AutocompleteBase2,
+  MultiAutocompleteBase,
+  TextareaBase,
+  TextFieldBase,
+} from '@gummy-ui/ui'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import {
@@ -7,6 +12,7 @@ import {
   GripVertical,
   Hash,
   Link,
+  ListChecks,
   ListFilter,
   Lock,
   Mail,
@@ -22,6 +28,7 @@ import { COMPONENT_BY_TYPE } from './componentCatalog'
 import { useGridStore } from './gridStore'
 import type {
   GridItemData,
+  MultiAutocompleteConfig,
   SelectFieldConfig,
   TextareaConfig,
   TextFieldConfig,
@@ -111,6 +118,9 @@ function CellContent({ item }: { item: GridItemData }) {
   if (item.type === 'autocomplete' && item.config) {
     return <GlyphChip Icon={Search} />
   }
+  if (item.type === 'multiAutocomplete' && item.config) {
+    return <GlyphChip Icon={ListChecks} />
+  }
   return (
     <div
       data-grid-item-content
@@ -138,7 +148,9 @@ function ActiveBody({ item }: { item: GridItemData }) {
           ? ListFilter
           : item.type === 'autocomplete' && item.config
             ? Search
-            : null
+            : item.type === 'multiAutocomplete' && item.config
+              ? ListChecks
+              : null
   if (!Icon) return null
   return (
     <div
@@ -306,11 +318,52 @@ function SelectLivePreview({ config }: { config: SelectFieldConfig }) {
 }
 
 /**
+ * The live, real `<MultiAutocompleteBase>` from the library, rendered in-cell once
+ * the cell is wide enough. Inert (`pointer-events-none`) like the other previews.
+ * Unlike `SelectLivePreview`, the options are fed in *both* modes (the config always
+ * carries the static starter records) and the first option is pre-selected via
+ * `values`, so a freshly-dropped source-mode cell still shows a removable chip —
+ * making the "multi" nature read on the canvas. `maxSelections`/`showSelectedCount`
+ * drive the preview only (the engine has no home for them). Options/keys are cast
+ * through `never`: the base's generic is fixed to `{ id, label }` for typing, but it
+ * reads the keys off each record at runtime, so arbitrary record shapes work. Needs
+ * the core providers from `App.tsx` (useCore).
+ */
+function MultiAutocompleteLivePreview({ config }: { config: MultiAutocompleteConfig }) {
+  const label = config.isRequired ? `${config.label} *` : config.label
+  const firstId = config.options[0]?.[config.idKey]
+  const values = firstId == null ? [] : [String(firstId)]
+  return (
+    <div
+      data-grid-item-content
+      className="pointer-events-none flex h-full w-full items-center px-3"
+    >
+      <MultiAutocompleteBase
+        name={config.name}
+        label={label}
+        placeholder={config.placeholder}
+        helperText={config.helperText}
+        error={!!config.errorMessage}
+        errorMessage={config.errorMessage}
+        options={config.options as never}
+        values={values}
+        idKey={config.idKey as never}
+        displayKey={config.displayKey as never}
+        searchKey={config.searchKey as never}
+        maxSelections={config.maxSelections === '' ? undefined : config.maxSelections}
+        showSelectedCount={config.showSelectedCount}
+      />
+    </div>
+  )
+}
+
+/**
  * The cell's live render, or null when the cell can't (or isn't wide enough to)
  * show one — the generic seam for adding more component types later. `textfield`,
- * `textarea`, `select`, and `autocomplete` (with config) go live; everything else
- * falls through to its chip. `select`/`autocomplete` share `SelectLivePreview`
- * (both preview with the library's `Autocomplete2`).
+ * `textarea`, `select`, `autocomplete`, and `multiAutocomplete` (with config) go
+ * live; everything else falls through to its chip. `select`/`autocomplete` share
+ * `SelectLivePreview` (both preview with the library's `Autocomplete2`);
+ * `multiAutocomplete` previews with `MultiAutocompleteBase`.
  */
 function renderLive(item: GridItemData, isLive: boolean) {
   if (!isLive) return null
@@ -325,6 +378,9 @@ function renderLive(item: GridItemData, isLive: boolean) {
   }
   if (item.type === 'autocomplete' && item.config) {
     return <SelectLivePreview config={item.config as SelectFieldConfig} />
+  }
+  if (item.type === 'multiAutocomplete' && item.config) {
+    return <MultiAutocompleteLivePreview config={item.config as MultiAutocompleteConfig} />
   }
   return null
 }

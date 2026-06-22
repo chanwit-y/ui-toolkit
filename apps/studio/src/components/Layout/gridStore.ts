@@ -7,12 +7,14 @@ import { readSeedCount } from './perf'
 import {
   createDefaultAutocompleteConfig,
   createDefaultItemSettings,
+  createDefaultMultiAutocompleteConfig,
   createDefaultSelectFieldConfig,
   createDefaultTextareaConfig,
   createDefaultTextFieldConfig,
   defaultContainerSettings,
   type GridContainerSettings,
   type GridItemData,
+  type MultiAutocompleteConfig,
   type SelectFieldConfig,
   type TextareaConfig,
   type TextFieldConfig,
@@ -70,7 +72,9 @@ type GridState = {
   updateItemLabel: (id: string, label: string) => void
   updateItemConfig: (
     id: string,
-    patch: Partial<TextFieldConfig | TextareaConfig | SelectFieldConfig>,
+    patch: Partial<
+      TextFieldConfig | TextareaConfig | SelectFieldConfig | MultiAutocompleteConfig
+    >,
   ) => void
   moveItem: (activeId: string, overId: string) => void
 
@@ -156,7 +160,12 @@ export const useGridStore = create<GridState>((set, get) => {
         // Textfields and textareas get a unique binding name + a default config
         // (sharing the one `fieldSeq` counter for global uniqueness); other types
         // are config-less.
-        let config: TextFieldConfig | TextareaConfig | SelectFieldConfig | undefined
+        let config:
+          | TextFieldConfig
+          | TextareaConfig
+          | SelectFieldConfig
+          | MultiAutocompleteConfig
+          | undefined
         let nextSeq = fieldSeq
         if (type === 'textfield') {
           nextSeq = fieldSeq + 1
@@ -170,6 +179,9 @@ export const useGridStore = create<GridState>((set, get) => {
         } else if (type === 'autocomplete') {
           nextSeq = fieldSeq + 1
           config = createDefaultAutocompleteConfig(`autocomplete_${nextSeq}`)
+        } else if (type === 'multiAutocomplete') {
+          nextSeq = fieldSeq + 1
+          config = createDefaultMultiAutocompleteConfig(`multiAutocomplete_${nextSeq}`)
         }
 
         const newItem: GridItemData = {

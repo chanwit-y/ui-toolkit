@@ -11,6 +11,10 @@ export type { TextFieldProps, TextFieldElement, DataType, TextareaProps, Textare
 export * from "./hooks";
 
 export * from "./components/Autocomplete2";
+// Un-form-wrapped multi-select autocomplete for display-only previews (e.g. the
+// studio canvas). Like Autocomplete2 it calls useCore, so it needs CoreProvider.
+export { MultiAutocompleteBase } from "./components/MultiAutocomplete";
+export type { MultiAutocompleteProps } from "./components/@types";
 // Core context provider (observe table + Data/Query/Loading/Snackbar) — required
 // by engine-aware components like Autocomplete2 when used outside the engine
 // (e.g. the studio canvas live preview).

@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Input, Select, SegmentedControl } from '../common'
 import { useGridStore } from './gridStore'
-import type { SelectFieldConfig, SelectOption } from './types'
+import type { MultiAutocompleteConfig, SelectFieldConfig, SelectOption } from './types'
 
 const DATA_TYPE_OPTIONS = [
   'text',
@@ -147,6 +147,12 @@ type SelectFieldConfigPanelProps = {
   config: SelectFieldConfig
   /** Section heading — defaults to "Select"; the autocomplete reuses this panel. */
   heading?: string
+  /**
+   * When true, render the multi-only controls (`maxSelections`, `showSelectedCount`).
+   * The `config` is then a `MultiAutocompleteConfig` superset; these knobs drive the
+   * studio preview only (not the exported Bin). Off for select/autocomplete.
+   */
+  multi?: boolean
 }
 
 /**
@@ -161,12 +167,20 @@ export function SelectFieldConfigPanel({
   itemId,
   config,
   heading = 'Select',
+  multi = false,
 }: SelectFieldConfigPanelProps) {
   const updateItemConfig = useGridStore((s) => s.updateItemConfig)
   const set = <K extends keyof SelectFieldConfig>(key: K, value: SelectFieldConfig[K]) =>
     updateItemConfig(itemId, { [key]: value } as Partial<SelectFieldConfig>)
   const setSource = (patch: Partial<SelectFieldConfig['dataSource']>) =>
     set('dataSource', { ...config.dataSource, ...patch })
+  // Multi-only writes go through the same store action; `config` is a
+  // MultiAutocompleteConfig superset when `multi` is set.
+  const multiConfig = config as MultiAutocompleteConfig
+  const setMulti = <K extends keyof MultiAutocompleteConfig>(
+    key: K,
+    value: MultiAutocompleteConfig[K],
+  ) => updateItemConfig(itemId, { [key]: value } as Partial<MultiAutocompleteConfig>)
 
   return (
     <div className="space-y-3">
@@ -287,6 +301,30 @@ export function SelectFieldConfigPanel({
               />
             </Field>
           </div>
+        </div>
+      )}
+
+      {multi && (
+        <div className="space-y-3 rounded-lg border border-zinc-200 bg-zinc-50/60 p-3">
+          <h4 className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400">
+            Multi options
+          </h4>
+          <Field label="Max selections">
+            <Input
+              type="number"
+              min={1}
+              value={multiConfig.maxSelections}
+              placeholder="unlimited"
+              onChange={(e) =>
+                setMulti('maxSelections', e.target.value === '' ? '' : Number(e.target.value))
+              }
+            />
+          </Field>
+          <Toggle
+            label="Show selected count"
+            checked={multiConfig.showSelectedCount}
+            onChange={(v) => setMulti('showSelectedCount', v)}
+          />
         </div>
       )}
 

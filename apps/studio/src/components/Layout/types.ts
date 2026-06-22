@@ -138,6 +138,39 @@ export type SelectFieldConfig = {
 }
 
 /**
+ * Editable config for a multi-select autocomplete. A superset of `SelectFieldConfig`
+ * (it previews with the library's `MultiAutocompleteBase`, which shares the
+ * record-array option model) plus the two multi-only knobs the base component adds:
+ * `maxSelections` caps how many items can be chosen (`''` = unlimited, mirroring
+ * `width`/`maxLength`), and `showSelectedCount` toggles the `(n/max)` label + chip
+ * overflow. These two are honored in the studio preview only — the engine's
+ * `AutocompleteElement` has no home for them, so they are not emitted to the Bin JSON.
+ */
+export type MultiAutocompleteConfig = SelectFieldConfig & {
+  /** Max selectable items; `''` means unlimited. */
+  maxSelections: number | ''
+  /** Show the `(n/max)` count label and chip-overflow summary. */
+  showSelectedCount: boolean
+}
+
+/**
+ * Defaults for a freshly dropped multi autocomplete. Like the single autocomplete it
+ * starts in `source` mode (type-ahead intent), but keeps the starter static records so
+ * the canvas preview can render a seeded chip in either mode. `maxSelections` starts
+ * unlimited and the count label is shown.
+ */
+export function createDefaultMultiAutocompleteConfig(name: string): MultiAutocompleteConfig {
+  return {
+    ...createDefaultSelectFieldConfig(name),
+    label: 'Multi Autocomplete',
+    placeholder: 'Select items…',
+    mode: 'source',
+    maxSelections: '',
+    showSelectedCount: true,
+  }
+}
+
+/**
  * Defaults for a freshly dropped autocomplete. Shares `SelectFieldConfig` with the
  * select (studio's select also previews with `Autocomplete2`), but the two palette
  * items differ by intent: a select picks from a hand-authored static list, an
@@ -216,11 +249,12 @@ export type GridItemData = {
   settings: GridItemSettings
   /**
    * Component-specific config, discriminated by `type`: a textfield carries a
-   * `TextFieldConfig`, a textarea a `TextareaConfig`, and a select or autocomplete
-   * a `SelectFieldConfig` (both preview with `Autocomplete2`). Other types are
-   * config-less.
+   * `TextFieldConfig`, a textarea a `TextareaConfig`, a select or autocomplete a
+   * `SelectFieldConfig` (both preview with `Autocomplete2`), and a multiAutocomplete
+   * a `MultiAutocompleteConfig` (previews with `MultiAutocompleteBase`). Other types
+   * are config-less.
    */
-  config?: TextFieldConfig | TextareaConfig | SelectFieldConfig
+  config?: TextFieldConfig | TextareaConfig | SelectFieldConfig | MultiAutocompleteConfig
 }
 
 function responsive<T>(value: T): Responsive<T> {

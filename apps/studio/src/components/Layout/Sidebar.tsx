@@ -86,6 +86,13 @@ export function Sidebar({ gridConfigJson, fullGridCss }: SidebarProps) {
               config={selectedItem.config as SelectFieldConfig}
               heading="Autocomplete"
             />
+          ) : selectedItem.type === 'multiAutocomplete' && selectedItem.config ? (
+            <SelectFieldConfigPanel
+              itemId={selectedItem.id}
+              config={selectedItem.config as SelectFieldConfig}
+              heading="Multi Autocomplete"
+              multi
+            />
           ) : (
             <p className="px-1 py-6 text-center text-sm text-zinc-400">
               No field settings for this component yet.

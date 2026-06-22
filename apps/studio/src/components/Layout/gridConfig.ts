@@ -15,8 +15,10 @@ import type {
  * Mapping rules (see the grilled design): every item becomes a Bin frame
  * (`sm/md/lg/xl` 12-col strings, `type`, `justifySelf/alignSelf`); `element` is
  * populated for `textfield`, `text`, `textarea`, `select` (emitted as engine type
- * `autocomplete`), and `autocomplete` (which keeps its type) and omitted for every
- * other type. The studio `xs`
+ * `autocomplete`), `autocomplete`, and `multiAutocomplete` (both keep their type and
+ * share the autocomplete element shape) and omitted for every other type. The multi
+ * field's `maxSelections`/`showSelectedCount` are studio-preview-only and not emitted
+ * (the engine's `AutocompleteElement` has no home for them). The studio `xs`
  * breakpoint is dropped (the engine starts at `sm`) and `xl` mirrors `lg`.
  */
 
@@ -121,6 +123,7 @@ function buildElement(item: GridItemData): Record<string, unknown> | undefined {
       return item.config ? textareaElement(item.config as TextareaConfig) : undefined
     case 'select':
     case 'autocomplete':
+    case 'multiAutocomplete':
       return item.config ? autocompleteElement(item.config as SelectFieldConfig) : undefined
     case 'text':
       return { text: item.label, isLabel: true }

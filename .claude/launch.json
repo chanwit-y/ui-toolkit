@@ -3,8 +3,12 @@
   "configurations": [
     {
       "name": "example",
-      "runtimeExecutable": "bun",
-      "runtimeArgs": ["run", "--cwd", "apps/example", "dev"],
+      "comment": "Run via bun --cwd apps/example (single React copy), but prepend homebrew Node so vite's shebang uses v23, not the default v12 on PATH.",
+      "runtimeExecutable": "/bin/bash",
+      "runtimeArgs": [
+        "-c",
+        "PATH=/opt/homebrew/bin:$PATH exec bun run --cwd apps/example dev"
+      ],
       "port": 3200
     },
     {
