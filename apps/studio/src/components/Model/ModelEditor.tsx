@@ -34,7 +34,13 @@ export function ModelEditor() {
               />
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto p-6">
-              <FieldTree modelId={selected.id} fields={selected.fields} />
+              {/* Keyed by model id so the single-edit UI state resets when you
+                  switch models. */}
+              <FieldTree
+                key={selected.id}
+                modelId={selected.id}
+                fields={selected.fields}
+              />
             </div>
           </>
         ) : (

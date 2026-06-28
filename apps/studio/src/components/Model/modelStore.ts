@@ -52,6 +52,22 @@ function removeField(fields: ModelField[], id: string): ModelField[] {
   return changed ? next : fields
 }
 
+/** Recursively swap the node at `id` for `replacement`, returning a new tree. */
+function replaceFieldNode(
+  fields: ModelField[],
+  id: string,
+  replacement: ModelField,
+): ModelField[] {
+  return fields.map((f) => {
+    if (f.id === id) return replacement
+    if (f.children.length) {
+      const children = replaceFieldNode(f.children, id, replacement)
+      if (children !== f.children) return { ...f, children }
+    }
+    return f
+  })
+}
+
 /** Recursively append a child under `parentId`. */
 function appendChild(
   fields: ModelField[],
@@ -92,6 +108,9 @@ type ModelStore = {
   setFieldKind: (modelId: string, fieldId: string, kind: FieldKind) => void
   setFieldArrayOf: (modelId: string, fieldId: string, arrayOf: ArrayOf) => void
   deleteField: (modelId: string, fieldId: string) => void
+  /** Swap the whole field node at `fieldId` for `field` — used to revert an
+   * in-progress edit on Escape (restores children a kind-change had dropped). */
+  replaceField: (modelId: string, fieldId: string, field: ModelField) => void
 }
 
 /** Unique "Field N" within a sibling list. */
@@ -195,6 +214,14 @@ export const useModelStore = create<ModelStore>((set) => ({
       models: patchModel(s.models, modelId, (m) => ({
         ...m,
         fields: removeField(m.fields, fieldId),
+      })),
+    })),
+
+  replaceField: (modelId, fieldId, field) =>
+    set((s) => ({
+      models: patchModel(s.models, modelId, (m) => ({
+        ...m,
+        fields: replaceFieldNode(m.fields, fieldId, field),
       })),
     })),
 }))
