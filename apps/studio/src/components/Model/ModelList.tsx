@@ -1,6 +1,61 @@
 import { Plus, Trash2 } from 'lucide-react'
+import { useEffect, useRef } from 'react'
 import { cn } from '../common'
+import { playEnter, playExitThenRemove } from './animation'
 import { useModelStore } from './modelStore'
+import type { ModelDef } from './types'
+
+type ModelListItemProps = {
+  model: ModelDef
+  selected: boolean
+  onSelect: (id: string) => void
+  onDelete: (id: string) => void
+}
+
+/** One model row — eases in on mount, collapses out before deletion. The
+ * selection highlight animates via `transition-colors`. */
+function ModelListItem({ model, selected, onSelect, onDelete }: ModelListItemProps) {
+  const rootRef = useRef<HTMLLIElement>(null)
+
+  useEffect(() => {
+    playEnter(rootRef.current)
+  }, [])
+
+  const handleDelete = () => {
+    playExitThenRemove(rootRef.current, () => onDelete(model.id))
+  }
+
+  return (
+    <li ref={rootRef}>
+      <div
+        className={cn(
+          'group flex items-center gap-1 rounded-md border px-2 py-1.5 transition-colors',
+          selected ? 'border-teal-500 bg-teal-50' : 'border-transparent hover:bg-zinc-50',
+        )}
+      >
+        <button
+          type="button"
+          onClick={() => onSelect(model.id)}
+          className={cn(
+            'min-w-0 flex-1 truncate text-left font-mono text-sm',
+            selected ? 'text-teal-800' : 'text-zinc-700',
+          )}
+        >
+          {model.name || <span className="italic text-zinc-400">unnamed</span>}
+        </button>
+        <button
+          type="button"
+          onClick={handleDelete}
+          title="Delete model"
+          aria-label={`Delete ${model.name}`}
+          className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded text-zinc-400 opacity-0 transition-opacity hover:text-red-600 group-hover:opacity-100"
+        >
+          <Trash2 size={14} aria-hidden="true" />
+        </button>
+      </div>
+    </li>
+  )
+}
 
 /** Left pane: the named models in the master — select / add / delete. */
 export function ModelList() {
@@ -33,38 +88,13 @@ export function ModelList() {
         ) : (
           <ul className="space-y-1">
             {models.map((m) => (
-              <li key={m.id}>
-                <div
-                  className={cn(
-                    'group flex items-center gap-1 rounded-md border px-2 py-1.5 transition-colors',
-                    m.id === selectedModelId
-                      ? 'border-teal-500 bg-teal-50'
-                      : 'border-transparent hover:bg-zinc-50',
-                  )}
-                >
-                  <button
-                    type="button"
-                    onClick={() => selectModel(m.id)}
-                    className={cn(
-                      'min-w-0 flex-1 truncate text-left font-mono text-sm',
-                      m.id === selectedModelId
-                        ? 'text-teal-800'
-                        : 'text-zinc-700',
-                    )}
-                  >
-                    {m.name || <span className="italic text-zinc-400">unnamed</span>}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => deleteModel(m.id)}
-                    title="Delete model"
-                    aria-label={`Delete ${m.name}`}
-                    className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded text-zinc-400 opacity-0 transition-opacity hover:text-red-600 group-hover:opacity-100"
-                  >
-                    <Trash2 size={14} aria-hidden="true" />
-                  </button>
-                </div>
-              </li>
+              <ModelListItem
+                key={m.id}
+                model={m}
+                selected={m.id === selectedModelId}
+                onSelect={selectModel}
+                onDelete={deleteModel}
+              />
             ))}
           </ul>
         )}

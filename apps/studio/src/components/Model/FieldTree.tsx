@@ -1,6 +1,23 @@
-import { Plus, Trash2 } from 'lucide-react'
-import { createContext, useContext, useEffect, useRef, useState } from 'react'
+import {
+  Asterisk,
+  Braces,
+  Brackets,
+  Hash,
+  Plus,
+  ToggleLeft,
+  Trash2,
+  Type,
+} from 'lucide-react'
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ComponentType,
+} from 'react'
 import { Input, Select, cn } from '../common'
+import { playEnter, playExitThenRemove, playFadeIn } from './animation'
 import type { SegmentedOption } from '../common'
 import { fieldHasChildren, findField, useModelStore } from './modelStore'
 import { PRIMITIVES, type ArrayOf, type FieldKind, type ModelField } from './types'
@@ -19,9 +36,28 @@ const ARRAY_OF_OPTIONS: SegmentedOption[] = [
   { value: 'object', label: 'object' },
 ]
 
-/** The type pill shown in display mode — array element folds into the badge. */
+/** The type pill text shown in display mode — array element folds into the badge. */
 function typeBadge(field: ModelField): string {
   return field.kind === 'array' ? `array<${field.arrayOf}>` : field.kind
+}
+
+/**
+ * Per-kind icon + tinted-pill classes for the display-mode badge. Keyed by
+ * `FieldKind`; arrays use the array color/icon regardless of element type. The
+ * pill classes are literal strings (not built at runtime) so Tailwind emits
+ * them — see the theming note in CLAUDE.md.
+ */
+const TYPE_STYLE: Record<
+  FieldKind,
+  { icon: ComponentType<{ size?: number; 'aria-hidden'?: boolean }>; pill: string }
+> = {
+  string: { icon: Type, pill: 'bg-blue-50 text-blue-600' },
+  number: { icon: Hash, pill: 'bg-amber-50 text-amber-600' },
+  integer: { icon: Hash, pill: 'bg-amber-50 text-amber-600' },
+  boolean: { icon: ToggleLeft, pill: 'bg-violet-50 text-violet-600' },
+  any: { icon: Asterisk, pill: 'bg-zinc-100 text-zinc-500' },
+  object: { icon: Braces, pill: 'bg-teal-50 text-teal-600' },
+  array: { icon: Brackets, pill: 'bg-indigo-50 text-indigo-600' },
 }
 
 /**
@@ -65,13 +101,33 @@ function FieldRow({ modelId, field, depth }: FieldRowProps) {
   const hasChildren = fieldHasChildren(field.kind, field.arrayOf)
   const isArray = field.kind === 'array'
 
-  const containerRef = useRef<HTMLDivElement>(null)
+  const rootRef = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  // Fade + slide the row in on mount (new field, or a model switch remounting
+  // the tree). Reduced motion is honored inside playEnter.
+  useEffect(() => {
+    playEnter(rootRef.current)
+  }, [])
 
   // Focus + select the name as soon as a row enters edit (incl. brand-new fields).
   useEffect(() => {
     if (isEditing) inputRef.current?.select()
   }, [isEditing])
+
+  // Crossfade the row's content when it swaps between display and edit — but not
+  // on the initial mount (the enter animation above already covers that).
+  const modeMounted = useRef(false)
+  useEffect(() => {
+    if (modeMounted.current) playFadeIn(contentRef.current)
+    else modeMounted.current = true
+  }, [isEditing])
+
+  // Animate the row out, then remove it from the store.
+  const handleDelete = () => {
+    playExitThenRemove(rootRef.current, () => deleteField(modelId, field.id))
+  }
 
   // Add a nested child, then open it in edit. The new id isn't returned by the
   // store action, so read it back as the last child of this parent.
@@ -97,14 +153,14 @@ function FieldRow({ modelId, field, depth }: FieldRowProps) {
 
   // Commit when focus leaves the row entirely (click-away / Tab out).
   const onBlur = (e: React.FocusEvent) => {
-    if (!containerRef.current?.contains(e.relatedTarget as Node | null)) commit()
+    if (!contentRef.current?.contains(e.relatedTarget as Node | null)) commit()
   }
 
   return (
-    <div>
+    <div ref={rootRef}>
       {isEditing ? (
         <div
-          ref={containerRef}
+          ref={contentRef}
           onKeyDown={onKeyDown}
           onBlur={onBlur}
           className="flex flex-wrap items-center gap-2 py-1"
@@ -159,7 +215,7 @@ function FieldRow({ modelId, field, depth }: FieldRowProps) {
           )}
           <button
             type="button"
-            onClick={() => deleteField(modelId, field.id)}
+            onClick={handleDelete}
             title="Delete field"
             aria-label="Delete field"
             className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-zinc-300 bg-white text-zinc-500 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-600"
@@ -168,7 +224,7 @@ function FieldRow({ modelId, field, depth }: FieldRowProps) {
           </button>
         </div>
       ) : (
-        <div className="group flex items-center gap-2 py-1">
+        <div ref={contentRef} className="group flex items-center gap-2 py-1">
           {/* The name occupies the same fixed w-44 column as the edit-mode input
               and the badge sits in the type column — so the type lands at the
               same x in every row and matches edit mode (no shift on toggle). The
@@ -189,7 +245,16 @@ function FieldRow({ modelId, field, depth }: FieldRowProps) {
             >
               {field.name.trim() || 'unnamed'}
             </span>
-            <span className="shrink-0 rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-[11px] font-medium text-zinc-500 group-hover:bg-white">
+            <span
+              className={cn(
+                'inline-flex shrink-0 items-center gap-1 rounded px-1.5 py-0.5 font-mono text-[11px] font-medium',
+                TYPE_STYLE[field.kind].pill,
+              )}
+            >
+              {(() => {
+                const Icon = TYPE_STYLE[field.kind].icon
+                return <Icon size={12} aria-hidden={true} />
+              })()}
               {typeBadge(field)}
             </span>
           </button>
@@ -206,7 +271,7 @@ function FieldRow({ modelId, field, depth }: FieldRowProps) {
           )}
           <button
             type="button"
-            onClick={() => deleteField(modelId, field.id)}
+            onClick={handleDelete}
             title="Delete field"
             aria-label="Delete field"
             className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-zinc-400 opacity-0 transition-opacity hover:text-red-600 group-hover:opacity-100"
@@ -251,6 +316,13 @@ export function FieldTree({ modelId, fields }: FieldTreeProps) {
   // Snapshot of the field as it was when edit began, for Esc-to-revert.
   const snapshotRef = useRef<{ modelId: string; field: ModelField } | null>(null)
 
+  // Fade the empty-state card in whenever the model becomes (or starts) empty.
+  const emptyRef = useRef<HTMLDivElement>(null)
+  const isEmpty = fields.length === 0
+  useEffect(() => {
+    if (isEmpty) playFadeIn(emptyRef.current)
+  }, [isEmpty])
+
   const editing: EditingCtx = {
     editingId,
     beginEdit: (mId, field) => {
@@ -279,17 +351,45 @@ export function FieldTree({ modelId, fields }: FieldTreeProps) {
     if (created) editing.beginEdit(modelId, created)
   }
 
+  // First-run empty state: a centered prompt with an explicit labeled CTA, so a
+  // freshly created model reads as "start here" rather than a bare line of text.
+  // (The persistent toolbar add button below is icon-only and only shows once
+  // there are fields, to avoid two competing add affordances.)
+  if (isEmpty) {
+    return (
+      <EditingContext.Provider value={editing}>
+        <div
+          ref={emptyRef}
+          className="flex flex-col items-center justify-center gap-3 py-16 text-center"
+        >
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100 text-zinc-400">
+            <Braces size={22} aria-hidden="true" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-sm font-semibold text-zinc-700">No fields yet</h3>
+            <p className="max-w-xs text-xs text-zinc-400">
+              Add fields to define this model&apos;s shape — each becomes a key in
+              the exported config.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={addRoot}
+            className="inline-flex items-center gap-1.5 rounded-md border border-teal-600 bg-teal-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-teal-700"
+          >
+            <Plus size={15} aria-hidden="true" />
+            Add field
+          </button>
+        </div>
+      </EditingContext.Provider>
+    )
+  }
+
   return (
     <EditingContext.Provider value={editing}>
-      {fields.length === 0 ? (
-        <p className="py-6 text-center text-sm text-zinc-400">
-          This model has no fields yet.
-        </p>
-      ) : (
-        fields.map((f) => (
-          <FieldRow key={f.id} modelId={modelId} field={f} depth={0} />
-        ))
-      )}
+      {fields.map((f) => (
+        <FieldRow key={f.id} modelId={modelId} field={f} depth={0} />
+      ))}
       <button
         type="button"
         onClick={addRoot}
