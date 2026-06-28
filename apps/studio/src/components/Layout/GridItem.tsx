@@ -2,6 +2,7 @@ import type { DataType } from '@gummy-ui/ui'
 import {
   AutocompleteBase2,
   CheckboxBase,
+  DataTable2,
   DatePickerBase,
   DateRangePickerBase,
   DateTimePickerBase,
@@ -27,6 +28,7 @@ import {
   Phone,
   Search,
   SquareCheck,
+  Table,
   TextWrap,
   Type,
   Upload,
@@ -77,12 +79,20 @@ function iconForDataType(dataType: DataType): LucideIcon {
 
 /**
  * Cell-width thresholds (content-box px) that gate the chip ↔ live preview
- * switch. A hysteresis band (flip to live at LIVE_MIN, back to chip only below
- * CHIP_MAX) keeps a cell resting near the boundary from strobing between the
- * two subtrees as it resizes.
+ * switch. A hysteresis band (flip to live at `liveMin`, back to chip only below
+ * `chipMax`) keeps a cell resting near the boundary from strobing between the
+ * two subtrees as it resizes. The numbers differ by component kind: a single
+ * field reads at ~14rem, but a data table (4 columns + search + action + footer)
+ * needs real width before it's worth rendering live.
  */
-const LIVE_MIN_PX = 224 // ~14rem: enough room for a real size-3 field
-const CHIP_MAX_PX = 208 // ~13rem
+type LiveThresholds = { liveMin: number; chipMax: number }
+const FIELD_THRESHOLDS: LiveThresholds = { liveMin: 224, chipMax: 208 } // ~14rem / ~13rem
+const TABLE_THRESHOLDS: LiveThresholds = { liveMin: 480, chipMax: 440 } // a table needs room
+
+/** The live/chip thresholds for a given component kind. */
+function thresholdsForType(type: GridItemData['type']): LiveThresholds {
+  return type === 'datatable' ? TABLE_THRESHOLDS : FIELD_THRESHOLDS
+}
 
 /** Content-box width of an element (excludes its padding and border). */
 function contentWidth(el: HTMLElement): number {
@@ -100,19 +110,19 @@ function contentWidth(el: HTMLElement): number {
  * async initial callback alone would flash a chip on mount and never fire at
  * all in throttled contexts (e.g. a hidden/background tab).
  */
-function useIsLiveWidth(el: HTMLElement | null): boolean {
+function useIsLiveWidth(el: HTMLElement | null, { liveMin, chipMax }: LiveThresholds): boolean {
   const [isLive, setIsLive] = useState(false)
   useLayoutEffect(() => {
     if (!el) return
     const apply = (w: number) =>
-      setIsLive((prev) => (w >= LIVE_MIN_PX ? true : w <= CHIP_MAX_PX ? false : prev))
+      setIsLive((prev) => (w >= liveMin ? true : w <= chipMax ? false : prev))
     apply(contentWidth(el)) // synchronous initial measurement
     const ro = new ResizeObserver((entries) => {
       apply(entries[entries.length - 1].contentRect.width)
     })
     ro.observe(el)
     return () => ro.disconnect()
-  }, [el])
+  }, [el, liveMin, chipMax])
   return isLive
 }
 
@@ -145,6 +155,9 @@ function CellContent({ item }: { item: GridItemData }) {
   }
   if (item.type === 'uploadfile' && item.config) {
     return <GlyphChip Icon={Upload} />
+  }
+  if (item.type === 'datatable') {
+    return <GlyphChip Icon={Table} />
   }
   return (
     <div
@@ -181,7 +194,9 @@ function ActiveBody({ item }: { item: GridItemData }) {
                   ? ImagePlus
                   : item.type === 'uploadfile' && item.config
                     ? Upload
-                    : null
+                    : item.type === 'datatable'
+                      ? Table
+                      : null
   if (!Icon) return null
   return (
     <div
@@ -589,6 +604,61 @@ function UploadFileLivePreview({ config }: { config: UploadFileConfig }) {
 }
 
 /**
+ * Canned columns + rows for the data-table preview. There's no column inspector
+ * this pass, so every `datatable` cell shows the same realistic demo set —
+ * enough to read unmistakably as a table. A later pass can replace these with an
+ * authored `DataTableConfig`. Rows fit on a single client-mode page (size 10),
+ * so the pagination footer renders "Page 1 of 1" without making the cell tall.
+ */
+const DATATABLE_PREVIEW_COLUMNS = [
+  { accessorKey: 'id', header: 'ID' },
+  { accessorKey: 'name', header: 'Name' },
+  { accessorKey: 'email', header: 'Email' },
+  { accessorKey: 'status', header: 'Status' },
+]
+const DATATABLE_PREVIEW_ROWS = [
+  { id: 1, name: 'Ada Lovelace', email: 'ada@example.com', status: 'Active' },
+  { id: 2, name: 'Alan Turing', email: 'alan@example.com', status: 'Active' },
+  { id: 3, name: 'Grace Hopper', email: 'grace@example.com', status: 'Pending' },
+  { id: 4, name: 'Katherine Johnson', email: 'katherine@example.com', status: 'Active' },
+  { id: 5, name: 'Linus Torvalds', email: 'linus@example.com', status: 'Inactive' },
+  { id: 6, name: 'Margaret Hamilton', email: 'margaret@example.com', status: 'Active' },
+]
+/** Static mock fetcher — client mode reads the array straight through (no apiInfo). */
+const dataTablePreviewApi = async () => DATATABLE_PREVIEW_ROWS
+
+/**
+ * The live, real `<DataTable2>` from the library, rendered in-cell once the cell
+ * is wide enough (`TABLE_THRESHOLDS`). Inert (`pointer-events-none`) like the
+ * other previews — search, sort, the edit/delete action column, and the
+ * pagination footer all render but can't be operated; you preview the table, you
+ * don't drive it. A static mock `api` feeds the canned rows so the body is
+ * populated (with no `api` the table renders empty). `title` mirrors the cell
+ * label; `name` is the stable item id. Unlike the field previews this wrapper
+ * doesn't force single-line centering — it lets the table grow so the grid row
+ * (`minmax(56px, auto)`) takes the table's real height. All providers DataTable2
+ * needs (Data/Loading/Snackbar/Query) come from `CoreProvider` in `App.tsx`.
+ */
+function DataTableLivePreview({ item }: { item: GridItemData }) {
+  return (
+    <div
+      data-grid-item-content
+      className="pointer-events-none w-full px-3 py-2"
+    >
+      <DataTable2
+        name={item.id}
+        title={item.label}
+        columns={DATATABLE_PREVIEW_COLUMNS}
+        api={dataTablePreviewApi}
+        canSearchAllColumns
+        canEdit
+        canDelete
+      />
+    </div>
+  )
+}
+
+/**
  * The cell's live render, or null when the cell can't (or isn't wide enough to)
  * show one — the generic seam for adding more component types later. `textfield`,
  * `textarea`, `select`, `autocomplete`, `multiAutocomplete`, `checkbox`, `radio`, and
@@ -635,6 +705,11 @@ function renderLive(item: GridItemData, isLive: boolean) {
   if (item.type === 'uploadfile' && item.config) {
     return <UploadFileLivePreview config={item.config as UploadFileConfig} />
   }
+  // A datatable carries no editable config this pass — the preview is fully
+  // canned, so it goes live on width alone.
+  if (item.type === 'datatable') {
+    return <DataTableLivePreview item={item} />
+  }
   return null
 }
 
@@ -669,7 +744,7 @@ export function GridItem({ item, isSelected }: GridItemProps) {
   // mid-pop to reflow. When `isEntering` clears (timer in the store), the cell
   // upgrades to live — making the drop animation identical across every type.
   const isEntering = useIsEntering(item.id)
-  const isLive = useIsLiveWidth(cellEl) && !isEntering
+  const isLive = useIsLiveWidth(cellEl, thresholdsForType(item.type)) && !isEntering
   const live = renderLive(item, isLive)
 
   // Fade the cell's content: the chip fades in over the enter "pop", and the
