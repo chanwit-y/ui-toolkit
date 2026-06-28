@@ -1,5 +1,5 @@
 import { Plus, Trash2 } from 'lucide-react'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { cn } from '../common'
 import { playEnter, playExitThenRemove } from './animation'
 import { useModelStore } from './modelStore'
@@ -12,14 +12,46 @@ type ModelListItemProps = {
   onDelete: (id: string) => void
 }
 
-/** One model row — eases in on mount, collapses out before deletion. The
- * selection highlight animates via `transition-colors`. */
+/** One model row — eases in on mount, collapses out before deletion. Single
+ * click selects; double click renames inline (Enter/blur commits, Esc reverts).
+ * The selection highlight animates via `transition-colors`. */
 function ModelListItem({ model, selected, onSelect, onDelete }: ModelListItemProps) {
   const rootRef = useRef<HTMLLIElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const renameModel = useModelStore((s) => s.renameModel)
 
+  const [editing, setEditing] = useState(false)
+  // Name as it was when edit began, so Esc can revert the live edits.
+  const snapshotName = useRef('')
+
+  // Fade + slide the row in on mount (new model added).
   useEffect(() => {
     playEnter(rootRef.current)
   }, [])
+
+  useEffect(() => {
+    if (editing) inputRef.current?.select()
+  }, [editing])
+
+  const beginEdit = () => {
+    snapshotName.current = model.name
+    setEditing(true)
+  }
+  const commit = () => setEditing(false)
+  const cancel = () => {
+    renameModel(model.id, snapshotName.current)
+    setEditing(false)
+  }
+
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      commit()
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      cancel()
+    }
+  }
 
   const handleDelete = () => {
     playExitThenRemove(rootRef.current, () => onDelete(model.id))
@@ -33,25 +65,42 @@ function ModelListItem({ model, selected, onSelect, onDelete }: ModelListItemPro
           selected ? 'border-teal-500 bg-teal-50' : 'border-transparent hover:bg-zinc-50',
         )}
       >
-        <button
-          type="button"
-          onClick={() => onSelect(model.id)}
-          className={cn(
-            'min-w-0 flex-1 truncate text-left font-mono text-sm',
-            selected ? 'text-teal-800' : 'text-zinc-700',
-          )}
-        >
-          {model.name || <span className="italic text-zinc-400">unnamed</span>}
-        </button>
-        <button
-          type="button"
-          onClick={handleDelete}
-          title="Delete model"
-          aria-label={`Delete ${model.name}`}
-          className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded text-zinc-400 opacity-0 transition-opacity hover:text-red-600 group-hover:opacity-100"
-        >
-          <Trash2 size={14} aria-hidden="true" />
-        </button>
+        {editing ? (
+          <input
+            ref={inputRef}
+            value={model.name}
+            onChange={(e) => renameModel(model.id, e.target.value)}
+            onKeyDown={onKeyDown}
+            onBlur={commit}
+            placeholder="modelName"
+            aria-label="Model name"
+            className="min-w-0 flex-1 rounded border border-zinc-300 bg-white px-1.5 py-0.5 font-mono text-sm text-zinc-900 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => onSelect(model.id)}
+            onDoubleClick={beginEdit}
+            title="Double-click to rename"
+            className={cn(
+              'min-w-0 flex-1 truncate text-left font-mono text-sm',
+              selected ? 'text-teal-800' : 'text-zinc-700',
+            )}
+          >
+            {model.name || <span className="italic text-zinc-400">unnamed</span>}
+          </button>
+        )}
+        {!editing && (
+          <button
+            type="button"
+            onClick={handleDelete}
+            title="Delete model"
+            aria-label={`Delete ${model.name}`}
+            className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded text-zinc-400 opacity-0 transition-opacity hover:text-red-600 group-hover:opacity-100"
+          >
+            <Trash2 size={14} aria-hidden="true" />
+          </button>
+        )}
       </div>
     </li>
   )
