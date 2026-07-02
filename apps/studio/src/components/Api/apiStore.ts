@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { countrySeedEndpoints } from '../seed/country'
 import type { EndpointDef } from './types'
 
 /** Mirror gridStore's id strategy. */
@@ -51,7 +52,9 @@ type ApiStore = {
   updateEndpoint: (id: string, patch: Partial<Omit<EndpointDef, 'id' | 'name'>>) => void
 }
 
-const firstEndpoint = createEndpoint('endpoint1')
+// Studio boots with the country mock (see seed/country.ts) — the same
+// endpoints the example app's config/country/api.ts defines.
+const initialEndpoints = countrySeedEndpoints()
 
 /** Apply `fn` to the endpoint with `id`, leaving the rest untouched. */
 function patchEndpoint(
@@ -63,8 +66,8 @@ function patchEndpoint(
 }
 
 export const useApiStore = create<ApiStore>((set) => ({
-  endpoints: [firstEndpoint],
-  selectedEndpointId: firstEndpoint.id,
+  endpoints: initialEndpoints,
+  selectedEndpointId: initialEndpoints[0]?.id ?? null,
 
   selectEndpoint: (id) => set({ selectedEndpointId: id }),
 

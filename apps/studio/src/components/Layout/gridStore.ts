@@ -5,6 +5,7 @@ import type { ComponentType } from './componentCatalog'
 import { ENTER_DURATION_MS, prefersReducedMotion } from './gridAnimation'
 import { updateContainerBreakpoint, updateItemBreakpoint } from './gridSettings'
 import { readSeedCount } from './perf'
+import { countrySeedGridItems } from '../seed/country'
 import {
   childCanvasCount,
   createChildCanvas,
@@ -245,22 +246,9 @@ function createInitialItems(): GridItemData[] {
     }))
   }
 
-  return [
-    {
-      id: createId(),
-      label: 'Item 1',
-      type: 'empty' as ComponentType,
-      settings: createDefaultItemSettings(),
-    },
-    {
-      id: createId(),
-      label: 'Item 2',
-      type: 'empty' as ComponentType,
-      settings: createDefaultItemSettings({
-        colSpan: { xs: 4, sm: 6, md: 4, lg: 4 },
-      }),
-    },
-  ]
+  // Studio boots with the country mock (see seed/country.ts): a small form +
+  // a data table wired to the seeded searchCountries endpoint.
+  return countrySeedGridItems()
 }
 
 export const useGridStore = create<GridState>((set, get) => {

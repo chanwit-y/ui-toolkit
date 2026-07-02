@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { countrySeedEnvVars } from '../seed/country'
 import { API_URL_NAME, type EnvVarDef } from './types'
 
 /** Mirror gridStore's id strategy. */
@@ -32,7 +33,9 @@ type EnvStore = {
  * editable like any other.
  */
 export const useEnvStore = create<EnvStore>((set) => ({
-  vars: [{ id: createId(), name: API_URL_NAME, value: '', locked: true }],
+  // Studio boots with the country mock (see seed/country.ts): API_URL preset
+  // to the mock API so the Live Preview fetches with zero setup.
+  vars: countrySeedEnvVars(),
 
   addVar: () =>
     set((s) => ({
