@@ -15,10 +15,13 @@ import type { GridContainerSettings, GridItemData } from './types'
  *   (skeleton `read: {name:''}` that the engine throws on by design), and
  *   autocomplete-family bins in `source` mode (their `api` name resolves to
  *   nothing in the preview's stub ApiMaster).
- * - Element-less bins (button, avatar, divider, …) — `buildBins` emits no
+ * - Element-less bins (types studio can't author yet) — `buildBins` emits no
  *   `element` for them and the engine's element classes throw on undefined
  *   props. `empty`/`container` pass through: the engine renders them as an
- *   empty cell, which is the truthful preview.
+ *   empty cell, which is the truthful preview. The display types (text,
+ *   typography, avatar, divider, button) and `hidden` all emit elements and
+ *   render for real (the button with its skeleton `actions: []` — clickable,
+ *   does nothing, exactly what the export says).
  */
 
 /** Bin as parsed back from the exported JSON — structurally a `Bin`, but we
@@ -49,6 +52,16 @@ function placeholderBin(bin: ParsedBin, text: string): ParsedBin {
   }
 }
 
+/** Recursively sanitize a nested engine Container's bins in place-of (returns
+ * a rewritten copy; the nested grid settings pass through untouched). */
+function toPreviewContainer(
+  container: Record<string, unknown>,
+): Record<string, unknown> {
+  const bins = container.bins
+  if (!Array.isArray(bins)) return container
+  return { ...container, bins: (bins as ParsedBin[]).map(toPreviewBin) }
+}
+
 function toPreviewBin(bin: ParsedBin): ParsedBin {
   const type = String(bin.type)
   const el = bin.element
@@ -67,6 +80,34 @@ function toPreviewBin(bin: ParsedBin): ParsedBin {
 
   if (el === undefined && !ELEMENT_OPTIONAL_TYPES.has(type)) {
     return placeholderBin(bin, `[ ${type} — not previewable ]`)
+  }
+
+  // Recurse into nested containers so an API-dependent bin inside a
+  // container/paper/tab/modal/popover is placeholder-rewritten too.
+  if (bin.container && typeof bin.container === 'object') {
+    bin = { ...bin, container: toPreviewContainer(bin.container as Record<string, unknown>) }
+  }
+  if (el?.container && typeof el.container === 'object') {
+    bin = {
+      ...bin,
+      element: {
+        ...el,
+        container: toPreviewContainer(el.container as Record<string, unknown>),
+      },
+    }
+  }
+  if (Array.isArray(el?.tabs)) {
+    bin = {
+      ...bin,
+      element: {
+        ...(bin.element as Record<string, unknown>),
+        tabs: (el.tabs as Record<string, unknown>[]).map((tab) =>
+          tab.container && typeof tab.container === 'object'
+            ? { ...tab, container: toPreviewContainer(tab.container as Record<string, unknown>) }
+            : tab,
+        ),
+      },
+    }
   }
 
   return bin

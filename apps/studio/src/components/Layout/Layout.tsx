@@ -26,7 +26,12 @@ import type { ComponentDef } from './componentCatalog'
 import { SMOOTH_EASING } from './gridAnimation'
 import { gridConfigToJson } from './gridConfig'
 import { GridItemMemo, GridItemOverlay } from './GridItem'
-import { useActiveItem, useGridStore } from './gridStore'
+import {
+  selectActiveItems,
+  selectActiveSettings,
+  useActiveItem,
+  useGridStore,
+} from './gridStore'
 import { generateGridStyles } from './gridStyles'
 import { PreviewToolbar } from './PreviewToolbar'
 import { Sidebar } from './Sidebar'
@@ -297,8 +302,12 @@ const EditorBody = memo(EditorBodyInner)
 export function Layout() {
   const layoutId = escapeClassName(useId())
 
-  const items = useGridStore((s) => s.items)
-  const containerSettings = useGridStore((s) => s.containerSettings)
+  // The canvas renders the ACTIVE canvas (drill-in aware); the code tab always
+  // serializes from the root so the export covers the whole tree.
+  const items = useGridStore(selectActiveItems)
+  const containerSettings = useGridStore(selectActiveSettings)
+  const rootItems = useGridStore((s) => s.items)
+  const rootSettings = useGridStore((s) => s.containerSettings)
   const previewBreakpoint = useGridStore((s) => s.previewBreakpoint)
   const sidebarView = useGridStore((s) => s.sidebarView)
   const selectedItemId = useGridStore((s) => s.selectedItemId)
@@ -355,13 +364,13 @@ export function Layout() {
   const computeCode = sidebarView === 'code'
 
   const gridConfigJson = useMemo(
-    () => (computeCode ? gridConfigToJson(containerSettings, items) : ''),
-    [computeCode, containerSettings, items],
+    () => (computeCode ? gridConfigToJson(rootSettings, rootItems) : ''),
+    [computeCode, rootSettings, rootItems],
   )
 
   const fullGridCss = useMemo(
-    () => (computeCode ? generateGridStyles(layoutId, containerSettings, items) : ''),
-    [computeCode, layoutId, containerSettings, items],
+    () => (computeCode ? generateGridStyles(layoutId, rootSettings, rootItems) : ''),
+    [computeCode, layoutId, rootSettings, rootItems],
   )
 
   const previewWidthPx = BREAKPOINTS.find((b) => b.key === previewBreakpoint)?.previewWidth

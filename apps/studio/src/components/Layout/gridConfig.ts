@@ -1,17 +1,29 @@
 import { MAX_GRID_COLUMNS } from './breakpoints'
 import { MISSING_OBSERVE_TARGET, observeContext, type ObserveContext } from './observe'
+import { createChildCanvas } from './types'
 import type {
+  AvatarConfig,
+  ButtonConfig,
   CheckboxConfig,
+  ChildCanvas,
   DataTableConfig,
   DataTableEditableColumnConfig,
   DataTableEditableConfig,
   DateConfig,
+  DividerConfig,
   GridContainerSettings,
   GridItemData,
+  HiddenConfig,
+  ModalConfig,
+  PaperConfig,
+  PopoverConfig,
   RadioConfig,
   SelectFieldConfig,
+  TabConfig,
   TextareaConfig,
+  TextConfig,
   TextFieldConfig,
+  TypographyConfig,
   UploadApiSettings,
   UploadFileConfig,
   UploadImageConfig,
@@ -29,7 +41,9 @@ import type {
  * share the autocomplete element shape), `checkbox`, `radio`, and the three date
  * pickers (`datepicker`/`daterangepicker`/`datetimepicker`, which keep their type and
  * share one kind-discriminated `DateConfig`), `uploadimage`, `uploadfile`,
- * `datatable`, and `datatableeditable`, and omitted for every other type. The multi
+ * `datatable`, `datatableeditable`, the display types (`typography`, `avatar`,
+ * `divider`, `button` — the button emits a skeleton `actions: []`), and `hidden`,
+ * and omitted for every other type. The multi
  * field's `maxSelections`/`showSelectedCount` are studio-preview-only and not emitted
  * (the engine's `AutocompleteElement` has no home for them), as is the datatable's
  * `canSearchAllColumns` (the engine hardcodes search on). The studio `xs`
@@ -403,6 +417,161 @@ function dataTableEditableElement(c: DataTableEditableConfig): Record<string, un
   }
 }
 
+/** `text` → engine `TextElement`. Content plus the label-styling flag. */
+function textElement(c: TextConfig): Record<string, unknown> {
+  return { text: c.text, isLabel: c.isLabel }
+}
+
+/**
+ * `typography` → engine `TypographyElement` — the curated authorable slice
+ * (see the grilled design). `variant` always emits; the `''` overrides
+ * (`weight`/`color`/`align`/`href`) drop so the variant's own styling rules, and
+ * `truncate` emits only when on. The unauthored props (component/transform/
+ * decoration/noWrap/tooltip trio) stay hand-editable in the exported JSON.
+ */
+function typographyElement(c: TypographyConfig): Record<string, unknown> {
+  return {
+    text: c.text,
+    variant: c.variant,
+    ...(c.truncate ? { truncate: true } : {}),
+    ...omitEmpty({ weight: c.weight, color: c.color, align: c.align, href: c.href }),
+  }
+}
+
+/** `avatar` → engine `AvatarElement`. `size` always emits (self-documenting like
+ * `align`); empty `src`/`alt`/`fallback` drop — an src-less avatar renders its
+ * fallback at runtime exactly as in the preview. */
+function avatarElement(c: AvatarConfig): Record<string, unknown> {
+  return {
+    name: c.name,
+    size: c.size,
+    ...omitEmpty({ src: c.src, alt: c.alt, fallback: c.fallback }),
+  }
+}
+
+/** `divider` → engine `DividerElement`. `variant` always emits; `spacing` drops
+ * when unset (component default 8px). */
+function dividerElement(c: DividerConfig): Record<string, unknown> {
+  return {
+    variant: c.variant,
+    ...(c.spacing === '' ? {} : { spacing: c.spacing }),
+  }
+}
+
+/**
+ * `button` → engine `ButtonElement`. Only the visual slice is authorable; the
+ * required `actions` emits as an empty skeleton the consumer fills in (mirroring
+ * the editable table's empty-name `apiCrud` stubs — a bare button does nothing,
+ * so the stub can't silently look wired). `api`/`confirmBox`/snackbars/`modalId`
+ * are likewise consumer-side.
+ */
+function buttonElement(c: ButtonConfig): Record<string, unknown> {
+  return {
+    label: c.label,
+    ...(c.icon ? { icon: c.icon } : {}),
+    actions: [],
+  }
+}
+
+/** `hidden` → engine `HiddenElement` — just the form binding. */
+function hiddenElement(c: HiddenConfig): Record<string, unknown> {
+  return { name: c.name, dataType: c.dataType }
+}
+
+/**
+ * A child canvas → engine `Container`. The nested bins recurse through
+ * `buildBins`; the canvas's own lg grid settings map onto the Container's
+ * single-value grid props (the engine Container isn't responsive for these,
+ * mirroring how the live-preview wrapper collapses onto lg). `name` doubles as
+ * `id` — derived from the host item so it's stable and unique.
+ */
+function toEngineContainer(canvas: ChildCanvas, name: string): Record<string, unknown> {
+  const s = canvas.settings
+  return {
+    id: name,
+    name,
+    isArray: false,
+    bins: buildBins(canvas.settings, canvas.items),
+    ...(s.gap.lg !== '' ? { gap: s.gap.lg } : {}),
+    ...(s.justifyItems.lg !== '' ? { justifyItems: s.justifyItems.lg } : {}),
+    ...(s.alignItems.lg !== '' ? { alignItems: s.alignItems.lg } : {}),
+    ...(s.justifyContent.lg !== '' ? { justifyContent: s.justifyContent.lg } : {}),
+    ...(s.alignContent.lg !== '' ? { alignContent: s.alignContent.lg } : {}),
+    ...(s.gridAutoFlow.lg !== '' ? { gridAutoFlow: s.gridAutoFlow.lg } : {}),
+  }
+}
+
+/** Stable, readable name for a nested container, derived from its host item. */
+function childContainerName(item: GridItemData, suffix = ''): string {
+  return `${item.type}-${item.id.slice(0, 8)}${suffix}`
+}
+
+/** A host item's child canvas at `index`, or an empty stand-in (a tab header
+ * without its canvas — shouldn't happen, but the export must stay total). */
+function childCanvasAt(item: GridItemData, index: number): ChildCanvas {
+  return item.childCanvases?.[index] ?? createChildCanvas()
+}
+
+/** `paper` → engine `PaperElement`: surface styling + the nested container. */
+function paperElement(c: PaperConfig, item: GridItemData): Record<string, unknown> {
+  return {
+    container: toEngineContainer(childCanvasAt(item, 0), childContainerName(item)),
+    elevation: c.elevation,
+    variant: c.variant,
+    ...(c.square ? { square: true } : {}),
+  }
+}
+
+/** `tab` → engine `TabElement`: one `{label, value, container}` per authored
+ * tab (child canvases are index-aligned by the store). */
+function tabElement(c: TabConfig, item: GridItemData): Record<string, unknown> {
+  return {
+    tabs: c.tabs.map((tab, i) => ({
+      label: tab.label,
+      value: tab.value,
+      container: toEngineContainer(childCanvasAt(item, i), childContainerName(item, `-${i}`)),
+    })),
+    ...(c.defaultValue ? { defaultValue: c.defaultValue } : {}),
+  }
+}
+
+/**
+ * `modal` → engine `ModalElement`. The trigger is a `ButtonElement` with the
+ * authored visuals and an empty `actions` skeleton — the engine's Modal wraps
+ * the trigger in its own open logic, so no action wiring is needed to open it.
+ */
+function modalElement(c: ModalConfig, item: GridItemData): Record<string, unknown> {
+  return {
+    id: c.id,
+    title: c.title,
+    container: toEngineContainer(childCanvasAt(item, 0), childContainerName(item)),
+    trigger: buttonElement(c.trigger),
+    ...omitEmpty({
+      description: c.description,
+      maxWidth: c.maxWidth,
+      minWidth: c.minWidth,
+      maxHeight: c.maxHeight,
+    }),
+  }
+}
+
+/**
+ * `popover` → engine `PopoverElement`. The trigger is the engine's mini-Bin
+ * (`{type, element}`) — studio authors the button | text subset.
+ */
+function popoverElement(c: PopoverConfig, item: GridItemData): Record<string, unknown> {
+  return {
+    container: toEngineContainer(childCanvasAt(item, 0), childContainerName(item)),
+    trigger:
+      c.triggerKind === 'button'
+        ? { type: 'button', element: buttonElement(c.triggerButton) }
+        : { type: 'text', element: textElement(c.triggerText) },
+    placement: c.placement,
+    triggerMode: c.triggerMode,
+    ...(c.offset === '' ? {} : { offset: c.offset }),
+  }
+}
+
 /** The element for a Bin, or undefined for types without a mapped element.
  * `items` supplies the cross-item context the observe wiring resolves against. */
 function buildElement(
@@ -439,7 +608,28 @@ function buildElement(
         ? dataTableEditableElement(item.config as DataTableEditableConfig)
         : undefined
     case 'text':
-      return { text: item.label, isLabel: true }
+      // Config-less fallback keeps the pre-config behavior (label as content).
+      return item.config
+        ? textElement(item.config as TextConfig)
+        : { text: item.label, isLabel: true }
+    case 'typography':
+      return item.config ? typographyElement(item.config as TypographyConfig) : undefined
+    case 'avatar':
+      return item.config ? avatarElement(item.config as AvatarConfig) : undefined
+    case 'divider':
+      return item.config ? dividerElement(item.config as DividerConfig) : undefined
+    case 'button':
+      return item.config ? buttonElement(item.config as ButtonConfig) : undefined
+    case 'hidden':
+      return item.config ? hiddenElement(item.config as HiddenConfig) : undefined
+    case 'paper':
+      return item.config ? paperElement(item.config as PaperConfig, item) : undefined
+    case 'tab':
+      return item.config ? tabElement(item.config as TabConfig, item) : undefined
+    case 'modal':
+      return item.config ? modalElement(item.config as ModalConfig, item) : undefined
+    case 'popover':
+      return item.config ? popoverElement(item.config as PopoverConfig, item) : undefined
     default:
       return undefined
   }
@@ -455,6 +645,12 @@ export function buildBins(
     const span = item.settings.colSpan
     const lg = toBoxRange(span.lg, cols.lg)
     const element = buildElement(item, items)
+    // A plain `container` Bin nests via the Bin-level `container` key (not an
+    // element) — the engine renders it as a nested grid.
+    const nested =
+      item.type === 'container'
+        ? toEngineContainer(childCanvasAt(item, 0), childContainerName(item))
+        : undefined
     return {
       sm: toBoxRange(span.sm, cols.sm),
       md: toBoxRange(span.md, cols.md),
@@ -466,6 +662,7 @@ export function buildBins(
       justifySelf: item.settings.justifySelf.lg,
       alignSelf: item.settings.alignSelf.lg,
       ...(element ? { element } : {}),
+      ...(nested ? { container: nested } : {}),
     }
   })
 }

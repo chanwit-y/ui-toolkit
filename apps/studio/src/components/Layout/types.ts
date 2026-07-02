@@ -700,6 +700,253 @@ export function createDefaultDataTableEditableConfig(name: string): DataTableEdi
   }
 }
 
+/**
+ * Editable config for a text component. Maps onto the library's `Text` / engine
+ * `TextElement`: `text` is the content and `isLabel` renders it as a form-label
+ * (block, small, medium-weight) instead of inline text. No binding `name` —
+ * TextElement carries none.
+ */
+export type TextConfig = {
+  text: string
+  isLabel: boolean
+}
+
+/** Defaults for a freshly dropped text: label styling on (the common use — a
+ * field caption), mirroring what the serializer emitted before text had a config. */
+export function createDefaultTextConfig(): TextConfig {
+  return { text: 'Text', isLabel: true }
+}
+
+/**
+ * Editable config for a typography component — the curated slice of the engine's
+ * `TypographyElement` (see the grilled design): the props that visibly change a
+ * static preview (`variant`/`weight`/`color`/`align`/`truncate`) plus `href`.
+ * The rest (component/transform/decoration/noWrap/tooltip trio/rel/target) stays
+ * hand-editable in the exported JSON. `''` means "component default" for
+ * `weight`/`color`/`align` (Typography derives them from `variant`), and no link
+ * for `href`.
+ */
+export type TypographyConfig = {
+  text: string
+  variant:
+    | 'display1'
+    | 'display2'
+    | 'h1'
+    | 'h2'
+    | 'h3'
+    | 'h4'
+    | 'h5'
+    | 'h6'
+    | 'subtitle1'
+    | 'subtitle2'
+    | 'body1'
+    | 'body2'
+    | 'caption'
+    | 'overline'
+    | 'button'
+  weight: '' | 'light' | 'regular' | 'medium' | 'bold'
+  color: string
+  align: '' | 'left' | 'center' | 'right' | 'justify'
+  truncate: boolean
+  href: string
+}
+
+/** Defaults for a freshly dropped typography: a body-copy paragraph with every
+ * override unset so the variant's own styling shows through. */
+export function createDefaultTypographyConfig(): TypographyConfig {
+  return {
+    text: 'Typography',
+    variant: 'body1',
+    weight: '',
+    color: '',
+    align: '',
+    truncate: false,
+    href: '',
+  }
+}
+
+/**
+ * Editable config for an avatar. Maps onto the library's `Avatar` / engine
+ * `AvatarElement` (`name` is the element's optional binding key). `src` empty
+ * shows the `fallback` text (or the first letter of `alt`); `size` sticks to the
+ * named steps — the numeric form stays hand-editable in the exported JSON.
+ */
+export type AvatarConfig = {
+  name: string
+  src: string
+  alt: string
+  size: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
+  fallback: string
+}
+
+/** Defaults for a freshly dropped avatar: no image, initials fallback, medium. */
+export function createDefaultAvatarConfig(name: string): AvatarConfig {
+  return { name, src: '', alt: '', size: 'md', fallback: 'AB' }
+}
+
+/**
+ * Editable config for a divider. Maps onto the library's `Divider` / engine
+ * `DividerElement`. `spacing` is the vertical margin in px (`''` = the
+ * component's 8px default).
+ */
+export type DividerConfig = {
+  variant: 'fullWidth' | 'inset' | 'middle'
+  spacing: number | ''
+}
+
+/** Defaults for a freshly dropped divider. Mirrors Divider's own defaults. */
+export function createDefaultDividerConfig(): DividerConfig {
+  return { variant: 'fullWidth', spacing: '' }
+}
+
+/**
+ * Editable config for a button — the visual slice of the engine's `ButtonElement`
+ * (see the grilled design): `label` + an optional `icon` key into the library's
+ * `IconData` glyph map (`''` = no icon). The behavioral fields (`actions`, `api`,
+ * `confirmBox`, snackbars, `modalId`) aren't authorable here; the serializer emits
+ * a skeleton `actions: []` the consumer fills in, mirroring the editable table's
+ * empty-name `apiCrud` stubs. Color comes from the theme.
+ */
+export type ButtonConfig = {
+  label: string
+  /** `IconData` key; `''` = no icon. */
+  icon: string
+}
+
+/** Defaults for a freshly dropped button. */
+export function createDefaultButtonConfig(): ButtonConfig {
+  return { label: 'Button', icon: '' }
+}
+
+/**
+ * Editable config for a hidden field. Maps 1:1 onto the engine's `HiddenElement`
+ * (`name` + `dataType`) — it renders nothing at runtime, so the canvas always
+ * shows its chip and the only authoring is the binding.
+ */
+export type HiddenConfig = {
+  name: string
+  dataType: 'string' | 'number' | 'boolean' | 'any'
+}
+
+/** Defaults for a freshly dropped hidden field. */
+export function createDefaultHiddenConfig(name: string): HiddenConfig {
+  return { name, dataType: 'string' }
+}
+
+/**
+ * Editable config for a paper. Maps onto the library's `Paper` / engine
+ * `PaperElement` minus the nested `container` (that lives in the item's child
+ * canvas — see `ChildCanvas`). `elevation` is ignored by the component when
+ * `variant` is `'outlined'`.
+ */
+export type PaperConfig = {
+  elevation: number
+  variant: 'elevation' | 'outlined'
+  square: boolean
+}
+
+/** Defaults for a freshly dropped paper. Mirrors Paper's own defaults. */
+export function createDefaultPaperConfig(): PaperConfig {
+  return { elevation: 1, variant: 'elevation', square: false }
+}
+
+/** One tab header. The tab's content is the child canvas at the same index in
+ * the item's `childCanvases` (kept aligned by the store's tab actions). */
+export type TabItemConfig = {
+  label: string
+  value: string
+}
+
+/**
+ * Editable config for a tab widget. The inspector manages the header list
+ * (add/remove — see the grilled design); each tab's content is authored by
+ * drilling into its child canvas. `defaultValue` picks the initially active tab
+ * (`''` = the first).
+ */
+export type TabConfig = {
+  tabs: TabItemConfig[]
+  defaultValue: string
+}
+
+/** Defaults for a freshly dropped tab: two starter tabs. The store seeds one
+ * child canvas per entry. */
+export function createDefaultTabConfig(): TabConfig {
+  return {
+    tabs: [
+      { label: 'Tab 1', value: 'tab_1' },
+      { label: 'Tab 2', value: 'tab_2' },
+    ],
+    defaultValue: '',
+  }
+}
+
+/**
+ * Editable config for a modal. Maps onto the engine's `ModalElement` minus the
+ * nested `container` (the item's child canvas). The trigger is a full
+ * `ButtonConfig` (a modal's trigger is a `ButtonElement`); on export it gets
+ * `actions: ["OpenModal"]` wired for it. Sizing strings are any CSS length
+ * (`''` = unset).
+ */
+export type ModalConfig = {
+  id: string
+  title: string
+  description: string
+  maxWidth: string
+  minWidth: string
+  maxHeight: string
+  trigger: ButtonConfig
+}
+
+/** Defaults for a freshly dropped modal. `id` doubles as the engine's modal
+ * registry key, so it gets the unique seq name. */
+export function createDefaultModalConfig(id: string): ModalConfig {
+  return {
+    id,
+    title: 'Modal',
+    description: '',
+    maxWidth: '',
+    minWidth: '',
+    maxHeight: '',
+    trigger: { label: 'Open', icon: '' },
+  }
+}
+
+/**
+ * Editable config for a popover. Maps onto the engine's `PopoverElement` minus
+ * the nested `container` (the item's child canvas). The trigger is a mini-Bin;
+ * studio restricts it to `button` | `text` (see the grilled design) and carries
+ * both configs so switching kinds is lossless. `offset` is the px gap (`''` =
+ * the component's 8px default).
+ */
+export type PopoverConfig = {
+  placement:
+    | 'top'
+    | 'bottom'
+    | 'left'
+    | 'right'
+    | 'top-start'
+    | 'top-end'
+    | 'bottom-start'
+    | 'bottom-end'
+  triggerMode: 'click' | 'hover'
+  offset: number | ''
+  triggerKind: 'button' | 'text'
+  triggerButton: ButtonConfig
+  triggerText: TextConfig
+}
+
+/** Defaults for a freshly dropped popover. */
+export function createDefaultPopoverConfig(): PopoverConfig {
+  return {
+    placement: 'bottom',
+    triggerMode: 'click',
+    offset: '',
+    triggerKind: 'button',
+    triggerButton: { label: 'Open popover', icon: '' },
+    triggerText: { text: 'Open popover', isLabel: false },
+  }
+}
+
 export type GridContainerSettings = {
   columns: Responsive<number>
   gap: Responsive<string>
@@ -741,8 +988,12 @@ export type GridItemData = {
    * an `UploadImageConfig` (previews with `UploadImageBase`), and an uploadfile an
    * `UploadFileConfig` (previews with `UploadFileBase`), a datatable a
    * `DataTableConfig` (previews with `DataTable2`), and a datatableeditable a
-   * `DataTableEditableConfig` (previews with `DataTableEditable`). Other types
-   * are config-less.
+   * `DataTableEditableConfig` (previews with `DataTableEditable`). The display
+   * types carry a `TextConfig` / `TypographyConfig` / `AvatarConfig` /
+   * `DividerConfig` / `ButtonConfig` (previewing with `Text` / `Typography` /
+   * `Avatar` / `Divider` / `ButtonBase`, always live — no width gate), and a
+   * hidden a `HiddenConfig` (chip-only; it renders nothing at runtime). Other
+   * types are config-less.
    */
   config?:
     | TextFieldConfig
@@ -756,6 +1007,44 @@ export type GridItemData = {
     | UploadFileConfig
     | DataTableConfig
     | DataTableEditableConfig
+    | TextConfig
+    | TypographyConfig
+    | AvatarConfig
+    | DividerConfig
+    | ButtonConfig
+    | HiddenConfig
+    | PaperConfig
+    | TabConfig
+    | ModalConfig
+    | PopoverConfig
+  /**
+   * Child canvases for the container-hosting types (see the grilled design:
+   * drill-in editing, arbitrary depth). `container`/`paper`/`modal`/`popover`
+   * carry exactly one; `tab` carries one per `TabConfig.tabs` entry
+   * (index-aligned — the store's tab actions keep them in sync). Absent on every
+   * other type.
+   */
+  childCanvases?: ChildCanvas[]
+}
+
+/** One nested canvas: its own items and its own grid settings, mirroring the
+ * engine where every `Container` owns its grid config. Recursive — child items
+ * can carry canvases of their own. */
+export type ChildCanvas = {
+  items: GridItemData[]
+  settings: GridContainerSettings
+}
+
+/** A fresh, empty child canvas with the default grid settings. */
+export function createChildCanvas(): ChildCanvas {
+  return { items: [], settings: defaultContainerSettings }
+}
+
+/** Which palette types host child canvases, and how many they start with. */
+export function childCanvasCount(type: ComponentType, config?: GridItemData['config']): number {
+  if (type === 'container' || type === 'paper' || type === 'modal' || type === 'popover') return 1
+  if (type === 'tab') return (config as TabConfig | undefined)?.tabs.length ?? 0
+  return 0
 }
 
 function responsive<T>(value: T): Responsive<T> {

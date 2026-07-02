@@ -1,8 +1,23 @@
 import { CodeViewer, SegmentedControl } from '../common'
+import { ButtonConfigPanel } from './ButtonConfigPanel'
 import { CheckboxConfigPanel } from './CheckboxConfigPanel'
+import {
+  ContainerConfigPanel,
+  ModalConfigPanel,
+  PaperConfigPanel,
+  PopoverConfigPanel,
+  TabConfigPanel,
+} from './ContainerHostConfigPanel'
 import { DataTableConfigPanel } from './DataTableConfigPanel'
 import { DataTableEditableConfigPanel } from './DataTableEditableConfigPanel'
 import { DateConfigPanel } from './DateConfigPanel'
+import {
+  AvatarConfigPanel,
+  DividerConfigPanel,
+  HiddenConfigPanel,
+  TextConfigPanel,
+  TypographyConfigPanel,
+} from './DisplayConfigPanel'
 import { FieldConfigPanel } from './FieldConfigPanel'
 import { useGridStore, useSelectedItem, type SidebarView } from './gridStore'
 import { RadioConfigPanel } from './RadioConfigPanel'
@@ -11,14 +26,24 @@ import { ContainerSettingsPanel, ItemSettingsPanel } from './SettingsPanel'
 import { TextareaConfigPanel } from './TextareaConfigPanel'
 import { UploadFileConfigPanel, UploadImageConfigPanel } from './UploadConfigPanel'
 import type {
+  AvatarConfig,
+  ButtonConfig,
   CheckboxConfig,
   DataTableConfig,
   DataTableEditableConfig,
   DateConfig,
+  DividerConfig,
+  HiddenConfig,
+  ModalConfig,
+  PaperConfig,
+  PopoverConfig,
   RadioConfig,
   SelectFieldConfig,
+  TabConfig,
   TextareaConfig,
+  TextConfig,
   TextFieldConfig,
+  TypographyConfig,
   UploadFileConfig,
   UploadImageConfig,
 } from './types'
@@ -147,6 +172,58 @@ export function Sidebar({ gridConfigJson, fullGridCss }: SidebarProps) {
             <DataTableEditableConfigPanel
               itemId={selectedItem.id}
               config={selectedItem.config as DataTableEditableConfig}
+            />
+          ) : selectedItem.type === 'text' && selectedItem.config ? (
+            <TextConfigPanel
+              itemId={selectedItem.id}
+              config={selectedItem.config as TextConfig}
+            />
+          ) : selectedItem.type === 'typography' && selectedItem.config ? (
+            <TypographyConfigPanel
+              itemId={selectedItem.id}
+              config={selectedItem.config as TypographyConfig}
+            />
+          ) : selectedItem.type === 'avatar' && selectedItem.config ? (
+            <AvatarConfigPanel
+              itemId={selectedItem.id}
+              config={selectedItem.config as AvatarConfig}
+            />
+          ) : selectedItem.type === 'divider' && selectedItem.config ? (
+            <DividerConfigPanel
+              itemId={selectedItem.id}
+              config={selectedItem.config as DividerConfig}
+            />
+          ) : selectedItem.type === 'button' && selectedItem.config ? (
+            <ButtonConfigPanel
+              itemId={selectedItem.id}
+              config={selectedItem.config as ButtonConfig}
+            />
+          ) : selectedItem.type === 'hidden' && selectedItem.config ? (
+            <HiddenConfigPanel
+              itemId={selectedItem.id}
+              config={selectedItem.config as HiddenConfig}
+            />
+          ) : selectedItem.type === 'container' ? (
+            <ContainerConfigPanel itemId={selectedItem.id} />
+          ) : selectedItem.type === 'paper' && selectedItem.config ? (
+            <PaperConfigPanel
+              itemId={selectedItem.id}
+              config={selectedItem.config as PaperConfig}
+            />
+          ) : selectedItem.type === 'tab' && selectedItem.config ? (
+            <TabConfigPanel
+              itemId={selectedItem.id}
+              config={selectedItem.config as TabConfig}
+            />
+          ) : selectedItem.type === 'modal' && selectedItem.config ? (
+            <ModalConfigPanel
+              itemId={selectedItem.id}
+              config={selectedItem.config as ModalConfig}
+            />
+          ) : selectedItem.type === 'popover' && selectedItem.config ? (
+            <PopoverConfigPanel
+              itemId={selectedItem.id}
+              config={selectedItem.config as PopoverConfig}
             />
           ) : (
             <p className="px-1 py-6 text-center text-sm text-zinc-400">

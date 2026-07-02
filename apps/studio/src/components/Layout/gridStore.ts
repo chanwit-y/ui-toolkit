@@ -6,37 +6,124 @@ import { ENTER_DURATION_MS, prefersReducedMotion } from './gridAnimation'
 import { updateContainerBreakpoint, updateItemBreakpoint } from './gridSettings'
 import { readSeedCount } from './perf'
 import {
+  childCanvasCount,
+  createChildCanvas,
   createDefaultAutocompleteConfig,
+  createDefaultAvatarConfig,
+  createDefaultButtonConfig,
   createDefaultCheckboxConfig,
   createDefaultDataTableConfig,
   createDefaultDataTableEditableConfig,
   createDefaultDateConfig,
+  createDefaultDividerConfig,
+  createDefaultHiddenConfig,
   createDefaultItemSettings,
+  createDefaultModalConfig,
   createDefaultMultiAutocompleteConfig,
+  createDefaultPaperConfig,
+  createDefaultPopoverConfig,
   createDefaultRadioConfig,
   createDefaultSelectFieldConfig,
+  createDefaultTabConfig,
   createDefaultTextareaConfig,
+  createDefaultTextConfig,
   createDefaultTextFieldConfig,
+  createDefaultTypographyConfig,
   createDefaultUploadFileConfig,
   createDefaultUploadImageConfig,
   defaultContainerSettings,
+  type AvatarConfig,
+  type ButtonConfig,
   type CheckboxConfig,
+  type ChildCanvas,
   type DataTableConfig,
   type DataTableEditableConfig,
   type DateConfig,
+  type DividerConfig,
   type GridContainerSettings,
   type GridItemData,
+  type HiddenConfig,
+  type ModalConfig,
   type MultiAutocompleteConfig,
+  type PaperConfig,
+  type PopoverConfig,
   type RadioConfig,
   type SelectFieldConfig,
+  type TabConfig,
   type TextareaConfig,
+  type TextConfig,
   type TextFieldConfig,
+  type TypographyConfig,
   type UploadFileConfig,
   type UploadImageConfig,
 } from './types'
 
 /** A palette component being dropped onto the canvas. */
 export type NewComponent = { type: ComponentType; label: string }
+
+/**
+ * One step of the drill-in path: which item's child canvas the editor is inside
+ * (`canvasIndex` distinguishes a tab's canvases; it is 0 for the single-canvas
+ * types). The root canvas is the empty path — see the grilled design: only one
+ * flat canvas is ever active, so dnd-kit/selection/inspector work unchanged.
+ */
+export type PathSeg = { itemId: string; canvasIndex: number }
+
+/**
+ * Walk `path` down from the root canvas, returning each step's canvas. Stops at
+ * the first dangling segment (item removed / canvas gone), so callers can heal
+ * by truncating to what resolved.
+ */
+function resolvePath(
+  root: ChildCanvas,
+  path: PathSeg[],
+): { canvases: ChildCanvas[]; items: GridItemData[] } {
+  const canvases: ChildCanvas[] = [root]
+  const pathItems: GridItemData[] = []
+  let current = root
+  for (const seg of path) {
+    const item = current.items.find((i) => i.id === seg.itemId)
+    const child = item?.childCanvases?.[seg.canvasIndex]
+    if (!item || !child) break
+    canvases.push(child)
+    pathItems.push(item)
+    current = child
+  }
+  return { canvases, items: pathItems }
+}
+
+/** The canvas at `path` (or the deepest resolvable ancestor). */
+function canvasAtPath(root: ChildCanvas, path: PathSeg[]): ChildCanvas {
+  const { canvases } = resolvePath(root, path)
+  return canvases[canvases.length - 1]
+}
+
+/**
+ * Immutably apply `fn` to the canvas at `path`, rebuilding only the spine of
+ * ancestors (untouched siblings keep their references, preserving the memoized
+ * GridItem no-rerender behavior).
+ */
+function updateCanvasAtPath(
+  canvas: ChildCanvas,
+  path: PathSeg[],
+  fn: (canvas: ChildCanvas) => ChildCanvas,
+): ChildCanvas {
+  if (path.length === 0) return fn(canvas)
+  const [head, ...rest] = path
+  let changed = false
+  const items = canvas.items.map((item) => {
+    if (item.id !== head.itemId || !item.childCanvases) return item
+    const child = item.childCanvases[head.canvasIndex]
+    if (!child) return item
+    const next = updateCanvasAtPath(child, rest, fn)
+    if (next === child) return item
+    changed = true
+    const childCanvases = item.childCanvases.slice()
+    childCanvases[head.canvasIndex] = next
+    return { ...item, childCanvases }
+  })
+  return changed ? { ...canvas, items } : canvas
+}
 
 /** Which panel the right sidebar shows. `inspector` resolves to the selected
  * item's config+layout, or the container settings when nothing is selected. */
@@ -54,11 +141,15 @@ export type AnimationBridge = {
 }
 
 type GridState = {
-  // Grid data
+  // Grid data — the ROOT canvas. Nested canvases live on items' `childCanvases`;
+  // every data action below targets the canvas at `activePath`.
   items: GridItemData[]
   containerSettings: GridContainerSettings
   // Monotonic counter for unique textfield binding names (textField_1, _2, …).
   fieldSeq: number
+
+  // Drill-in position: the child canvas the editor is inside ([] = root).
+  activePath: PathSeg[]
 
   // Ids of items still playing their entrance: a freshly appeared cell stays a
   // cheap chip (suppressing its live preview) until its enter "pop" lands, so no
@@ -102,9 +193,28 @@ type GridState = {
       | CheckboxConfig
       | RadioConfig
       | DateConfig
+      | TextConfig
+      | TypographyConfig
+      | AvatarConfig
+      | DividerConfig
+      | ButtonConfig
+      | HiddenConfig
+      | PaperConfig
+      | TabConfig
+      | ModalConfig
+      | PopoverConfig
     >,
   ) => void
   moveItem: (activeId: string, overId: string) => void
+
+  // Tab canvas sync: add/remove a tab header and its child canvas together, so
+  // `TabConfig.tabs` and `childCanvases` stay index-aligned.
+  addTab: (itemId: string) => void
+  removeTab: (itemId: string, index: number) => void
+
+  // Drill-in navigation (see the grilled design: breadcrumb, arbitrary depth)
+  enterCanvas: (itemId: string, canvasIndex: number) => void
+  exitToDepth: (depth: number) => void
 
   // Drag actions
   setActiveId: (id: string | null) => void
@@ -162,6 +272,21 @@ export const useGridStore = create<GridState>((set, get) => {
     animator?.schedule(changedItemId)
   }
 
+  /** The root canvas as a `ChildCanvas` (adapter over the two root fields). */
+  const rootCanvas = (): ChildCanvas => {
+    const { items, containerSettings } = get()
+    return { items, settings: containerSettings }
+  }
+
+  /** The canvas the editor is currently inside. */
+  const activeCanvas = (): ChildCanvas => canvasAtPath(rootCanvas(), get().activePath)
+
+  /** Apply `fn` to the active canvas and commit the rebuilt root. */
+  const setActiveCanvas = (fn: (canvas: ChildCanvas) => ChildCanvas) => {
+    const next = updateCanvasAtPath(rootCanvas(), get().activePath, fn)
+    set({ items: next.items, containerSettings: next.settings })
+  }
+
   // Per-id timers that clear an entering flag once the pop has landed. Tracked so
   // a removed item (or a re-drop of the same id) never leaks a pending clear.
   const enterTimers = new Map<string, ReturnType<typeof setTimeout>>()
@@ -212,6 +337,7 @@ export const useGridStore = create<GridState>((set, get) => {
     items: initialItems,
     containerSettings: defaultContainerSettings,
     fieldSeq: 0,
+    activePath: [],
     enteringIds: initialEntering,
 
     activeId: null,
@@ -228,8 +354,9 @@ export const useGridStore = create<GridState>((set, get) => {
     // snapshot, so it gets the enter "pop" animation while shifted neighbors FLIP.
     addItem: (component, index) =>
       animated(() => {
-        const { items, containerSettings, fieldSeq } = get()
-        const bpCols = containerSettings.columns
+        const { fieldSeq } = get()
+        const { items, settings } = activeCanvas()
+        const bpCols = settings.columns
         const type: ComponentType = component?.type ?? 'empty'
 
         // Textfields and textareas get a unique binding name + a default config
@@ -247,6 +374,16 @@ export const useGridStore = create<GridState>((set, get) => {
           | UploadFileConfig
           | DataTableConfig
           | DataTableEditableConfig
+          | TextConfig
+          | TypographyConfig
+          | AvatarConfig
+          | DividerConfig
+          | ButtonConfig
+          | HiddenConfig
+          | PaperConfig
+          | TabConfig
+          | ModalConfig
+          | PopoverConfig
           | undefined
         let nextSeq = fieldSeq
         if (type === 'textfield') {
@@ -291,13 +428,53 @@ export const useGridStore = create<GridState>((set, get) => {
         } else if (type === 'datatableeditable') {
           nextSeq = fieldSeq + 1
           config = createDefaultDataTableEditableConfig(`editableTable_${nextSeq}`)
+        } else if (type === 'text') {
+          config = createDefaultTextConfig()
+        } else if (type === 'typography') {
+          config = createDefaultTypographyConfig()
+        } else if (type === 'avatar') {
+          nextSeq = fieldSeq + 1
+          config = createDefaultAvatarConfig(`avatar_${nextSeq}`)
+        } else if (type === 'divider') {
+          config = createDefaultDividerConfig()
+        } else if (type === 'button') {
+          config = createDefaultButtonConfig()
+        } else if (type === 'hidden') {
+          nextSeq = fieldSeq + 1
+          config = createDefaultHiddenConfig(`hidden_${nextSeq}`)
+        } else if (type === 'paper') {
+          config = createDefaultPaperConfig()
+        } else if (type === 'tab') {
+          config = createDefaultTabConfig()
+        } else if (type === 'modal') {
+          nextSeq = fieldSeq + 1
+          config = createDefaultModalConfig(`modal_${nextSeq}`)
+        } else if (type === 'popover') {
+          config = createDefaultPopoverConfig()
         }
 
-        // Default span (of 12) by component kind: a data table is full-bleed, so
-        // it spans the full width at every breakpoint; uploads need room for their
-        // dropzone (lg 6); the common text-ish inputs read better a touch wider
-        // (lg 4); everything else falls back to the standard 2.
-        const isTable = type === 'datatable' || type === 'datatableeditable'
+        // Container-hosting types start with their (empty) child canvases —
+        // one for container/paper/modal/popover, one per starter tab for tab.
+        const canvasCount = childCanvasCount(type, config)
+        const childCanvases =
+          canvasCount > 0
+            ? Array.from({ length: canvasCount }, () => createChildCanvas())
+            : undefined
+
+        // Default span (of 12) by component kind: a data table (and a divider —
+        // a rule reads edge to edge) is full-bleed, so it spans the full width at
+        // every breakpoint, as are the content-hosting containers (container/
+        // paper/tab — a nested layout needs room); uploads need room for their
+        // dropzone (lg 6); the common text-ish inputs (and standalone text/
+        // typography) read better a touch wider (lg 4); everything else —
+        // including the trigger-only modal/popover — falls back to the standard 2.
+        const isFullBleed =
+          type === 'datatable' ||
+          type === 'datatableeditable' ||
+          type === 'divider' ||
+          type === 'container' ||
+          type === 'paper' ||
+          type === 'tab'
         const isUpload = type === 'uploadimage' || type === 'uploadfile'
         const isWideInput =
           type === 'textfield' ||
@@ -306,9 +483,11 @@ export const useGridStore = create<GridState>((set, get) => {
           type === 'autocomplete' ||
           type === 'multiAutocomplete' ||
           type === 'checkbox' ||
-          type === 'radio'
+          type === 'radio' ||
+          type === 'text' ||
+          type === 'typography'
         const defaultLg = isUpload ? 6 : isWideInput ? 4 : 2
-        const colSpan = isTable
+        const colSpan = isFullBleed
           ? { xs: bpCols.xs, sm: bpCols.sm, md: bpCols.md, lg: bpCols.lg }
           : {
               xs: bpCols.xs,
@@ -322,11 +501,10 @@ export const useGridStore = create<GridState>((set, get) => {
           type,
           settings: createDefaultItemSettings({ colSpan }),
           config,
+          ...(childCanvases ? { childCanvases } : {}),
         }
         const at =
           index == null ? items.length : Math.max(0, Math.min(index, items.length))
-        const next = items.slice()
-        next.splice(at, 0, newItem)
 
         // The new cell lands as a chip and upgrades to its live preview only once
         // the enter "pop" finishes — so the pop is byte-identical across types.
@@ -334,19 +512,34 @@ export const useGridStore = create<GridState>((set, get) => {
         const enteringIds = willEnter
           ? new Set(get().enteringIds).add(newItem.id)
           : get().enteringIds
-        set({ items: next, fieldSeq: nextSeq, enteringIds })
+        setActiveCanvas((canvas) => {
+          const next = canvas.items.slice()
+          next.splice(at, 0, newItem)
+          return { ...canvas, items: next }
+        })
+        set({ fieldSeq: nextSeq, enteringIds })
         if (willEnter) scheduleEnterClear(newItem.id)
       }),
 
     removeItem: (id) =>
       animated(() => {
         cancelEnter(id)
+        // Removing an item whose canvas the editor is inside would strand the
+        // path — exit to the removed item's parent canvas first.
+        const { activePath } = get()
+        const strandDepth = activePath.findIndex((seg) => seg.itemId === id)
+        if (strandDepth !== -1) {
+          set({ activePath: activePath.slice(0, strandDepth), selectedItemId: null })
+        }
+        setActiveCanvas((canvas) => ({
+          ...canvas,
+          items: canvas.items.filter((item) => item.id !== id),
+        }))
         set((s) => {
-          const items = s.items.filter((item) => item.id !== id)
-          if (!s.enteringIds.has(id)) return { items }
+          if (!s.enteringIds.has(id)) return {}
           const next = new Set(s.enteringIds)
           next.delete(id)
-          return { items, enteringIds: next }
+          return { enteringIds: next }
         })
       }),
 
@@ -362,43 +555,42 @@ export const useGridStore = create<GridState>((set, get) => {
     // keystroke. Discrete controls (selects, span buttons) pass `animate: true`.
     updateContainer: (bp, key, value, animate = true) => {
       const run = () =>
-        set({
-          containerSettings: updateContainerBreakpoint(
-            get().containerSettings,
-            bp,
-            key,
-            value,
-          ),
-        })
+        setActiveCanvas((canvas) => ({
+          ...canvas,
+          settings: updateContainerBreakpoint(canvas.settings, bp, key, value),
+        }))
       if (animate) animated(run, 'all')
       else run()
     },
 
     updateItem: (id, bp, key, value, animate = true) => {
       const run = () =>
-        set({
-          items: get().items.map((item) =>
+        setActiveCanvas((canvas) => ({
+          ...canvas,
+          items: canvas.items.map((item) =>
             item.id === id
               ? { ...item, settings: updateItemBreakpoint(item.settings, bp, key, value) }
               : item,
           ),
-        })
+        }))
       if (animate) animated(run, id)
       else run()
     },
 
     updateItemLabel: (id, label) =>
-      set({
-        items: get().items.map((item) =>
+      setActiveCanvas((canvas) => ({
+        ...canvas,
+        items: canvas.items.map((item) =>
           item.id === id ? { ...item, label } : item,
         ),
-      }),
+      })),
 
     // Config edits change the cell's preview but never the grid layout, so they
     // skip the FLIP animation. No-op for items without a config (non-textfield).
     updateItemConfig: (id, patch) =>
-      set({
-        items: get().items.map((item) =>
+      setActiveCanvas((canvas) => ({
+        ...canvas,
+        items: canvas.items.map((item) =>
           item.id === id && item.config
             ? // Spreading the config *union* widens shared keys (e.g. `dataType`,
               // absent on CheckboxConfig) to optional, so cast back to the union —
@@ -409,18 +601,79 @@ export const useGridStore = create<GridState>((set, get) => {
               } as GridItemData)
             : item,
         ),
-      }),
+      })),
 
     // dnd-kit already animates items to their preview slots during the drag and
     // lands the dragged item via the DragOverlay drop animation, so we only
     // commit the new order here (no custom FLIP animation).
     moveItem: (activeId, overId) => {
-      const { items } = get()
-      const oldIndex = items.findIndex((i) => i.id === activeId)
-      const newIndex = items.findIndex((i) => i.id === overId)
-      if (oldIndex === -1 || newIndex === -1) return
-      set({ items: arrayMove(items, oldIndex, newIndex) })
+      setActiveCanvas((canvas) => {
+        const oldIndex = canvas.items.findIndex((i) => i.id === activeId)
+        const newIndex = canvas.items.findIndex((i) => i.id === overId)
+        if (oldIndex === -1 || newIndex === -1) return canvas
+        return { ...canvas, items: arrayMove(canvas.items, oldIndex, newIndex) }
+      })
     },
+
+    // Append a tab header + its child canvas in one commit (index-aligned).
+    addTab: (itemId) =>
+      setActiveCanvas((canvas) => ({
+        ...canvas,
+        items: canvas.items.map((item) => {
+          if (item.id !== itemId || item.type !== 'tab' || !item.config) return item
+          const config = item.config as TabConfig
+          const n = config.tabs.length + 1
+          return {
+            ...item,
+            config: {
+              ...config,
+              tabs: [...config.tabs, { label: `Tab ${n}`, value: `tab_${n}` }],
+            },
+            childCanvases: [...(item.childCanvases ?? []), createChildCanvas()],
+          }
+        }),
+      })),
+
+    // Remove a tab header + its child canvas (and heal a path drilled into a
+    // canvas of this tab item — indexes shift, so exit to this canvas).
+    removeTab: (itemId, index) => {
+      const { activePath } = get()
+      const strandDepth = activePath.findIndex((seg) => seg.itemId === itemId)
+      if (strandDepth !== -1) {
+        set({ activePath: activePath.slice(0, strandDepth), selectedItemId: null })
+      }
+      setActiveCanvas((canvas) => ({
+        ...canvas,
+        items: canvas.items.map((item) => {
+          if (item.id !== itemId || item.type !== 'tab' || !item.config) return item
+          const config = item.config as TabConfig
+          return {
+            ...item,
+            config: { ...config, tabs: config.tabs.filter((_, i) => i !== index) },
+            childCanvases: (item.childCanvases ?? []).filter((_, i) => i !== index),
+          }
+        }),
+      }))
+    },
+
+    // Drill into an item's child canvas. Only valid for an item of the active
+    // canvas that actually carries that canvas — silently no-ops otherwise.
+    enterCanvas: (itemId, canvasIndex) => {
+      const item = activeCanvas().items.find((i) => i.id === itemId)
+      if (!item?.childCanvases?.[canvasIndex]) return
+      set((s) => ({
+        activePath: [...s.activePath, { itemId, canvasIndex }],
+        selectedItemId: null,
+        sidebarView: s.sidebarView === 'code' ? 'code' : 'inspector',
+      }))
+    },
+
+    // Jump back up the breadcrumb: keep the first `depth` segments (0 = root).
+    exitToDepth: (depth) =>
+      set((s) => ({
+        activePath: s.activePath.slice(0, Math.max(0, depth)),
+        selectedItemId: null,
+      })),
 
     setActiveId: (activeId) => set({ activeId }),
 
@@ -445,10 +698,92 @@ if (import.meta.env.DEV && typeof window !== 'undefined') {
     useGridStore
 }
 
-/** Selector helper for the currently selected item (or null). */
+/**
+ * The items of the canvas at `activePath`. Walks without allocating, returning
+ * the stored array reference — safe for zustand's referential-equality check.
+ * A dangling path (healed by the next action) falls back to the deepest
+ * resolvable ancestor.
+ */
+export function selectActiveItems(s: {
+  items: GridItemData[]
+  activePath: PathSeg[]
+}): GridItemData[] {
+  let items = s.items
+  for (const seg of s.activePath) {
+    const child = items
+      .find((i) => i.id === seg.itemId)
+      ?.childCanvases?.[seg.canvasIndex]
+    if (!child) break
+    items = child.items
+  }
+  return items
+}
+
+/** The grid settings of the canvas at `activePath` (same walk as items). */
+export function selectActiveSettings(s: {
+  items: GridItemData[]
+  containerSettings: GridContainerSettings
+  activePath: PathSeg[]
+}): GridContainerSettings {
+  let items = s.items
+  let settings = s.containerSettings
+  for (const seg of s.activePath) {
+    const child = items
+      .find((i) => i.id === seg.itemId)
+      ?.childCanvases?.[seg.canvasIndex]
+    if (!child) break
+    items = child.items
+    settings = child.settings
+  }
+  return settings
+}
+
+/** Items of the canvas the editor is inside (root when not drilled in). */
+export function useActiveItems(): GridItemData[] {
+  return useGridStore(selectActiveItems)
+}
+
+/** Grid settings of the canvas the editor is inside. */
+export function useActiveSettings(): GridContainerSettings {
+  return useGridStore(selectActiveSettings)
+}
+
+/** One breadcrumb entry: the host item of each path segment (plus its tab
+ * label when the segment is one of a tab's canvases). */
+export type BreadcrumbSeg = { itemId: string; canvasIndex: number; label: string }
+
+/** The drill-in trail as display labels. Encoded as a joined string inside the
+ * selector so the hook result is referentially stable across unrelated updates. */
+export function useBreadcrumb(): BreadcrumbSeg[] {
+  const encoded = useGridStore((s) => {
+    let items = s.items
+    const parts: string[] = []
+    for (const seg of s.activePath) {
+      const item = items.find((i) => i.id === seg.itemId)
+      const child = item?.childCanvases?.[seg.canvasIndex]
+      if (!item || !child) break
+      let label = item.label
+      if (item.type === 'tab' && item.config) {
+        const tab = (item.config as TabConfig).tabs[seg.canvasIndex]
+        if (tab) label = `${item.label}: ${tab.label || tab.value}`
+      }
+      parts.push(`${seg.itemId}\u001f${seg.canvasIndex}\u001f${label}`)
+      items = child.items
+    }
+    return parts.join('\u001e')
+  })
+  if (!encoded) return []
+  return encoded.split('\u001e').map((part) => {
+    const [itemId, canvasIndex, label] = part.split('\u001f')
+    return { itemId, canvasIndex: Number(canvasIndex), label }
+  })
+}
+
+/** Selector helper for the currently selected item (or null). Selection always
+ * lives in the active canvas (navigation clears it). */
 export function useSelectedItem(): GridItemData | null {
   return useGridStore(
-    (s) => s.items.find((item) => item.id === s.selectedItemId) ?? null,
+    (s) => selectActiveItems(s).find((item) => item.id === s.selectedItemId) ?? null,
   )
 }
 
@@ -461,6 +796,9 @@ export function useIsEntering(id: string): boolean {
 /** Selector helper for the item currently being dragged (or null). */
 export function useActiveItem(): GridItemData | null {
   return useGridStore(
-    (s) => (s.activeId ? s.items.find((item) => item.id === s.activeId) ?? null : null),
+    (s) =>
+      (s.activeId
+        ? selectActiveItems(s).find((item) => item.id === s.activeId) ?? null
+        : null),
   )
 }
