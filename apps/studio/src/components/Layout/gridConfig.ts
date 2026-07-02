@@ -50,6 +50,29 @@ import type {
  * breakpoint is dropped (the engine starts at `sm`) and `xl` mirrors `lg`.
  */
 
+/**
+ * Emitted for an endpoint ref whose endpoint was deleted on the API page (or
+ * renamed to empty). The name can't exist in the exported `api`, so the pasted
+ * config fails loudly instead of silently fetching nothing. Mirrors the API
+ * page's MISSING_MODEL.
+ */
+export const MISSING_ENDPOINT = 'MISSING_ENDPOINT'
+
+/** The slice of an API page endpoint the serializer needs (id → name). */
+export type EndpointRef = { id: string; name: string }
+
+/** id → current endpoint name; `undefined` for an unset (null) ref, loud
+ * `MISSING_ENDPOINT` for a dangling one. */
+export type ResolveEndpoint = (id: string | null) => string | undefined
+
+function makeEndpointResolver(endpoints: EndpointRef[]): ResolveEndpoint {
+  const byId = new Map(endpoints.map((e) => [e.id, e.name.trim()]))
+  return (id) => {
+    if (id == null) return undefined
+    return byId.get(id) || MISSING_ENDPOINT
+  }
+}
+
 /** Engine dataType convention: studio's `'text'` is the engine's `'string'`. */
 function normalizeDataType(dataType: string): string {
   return dataType === 'text' ? 'string' : dataType
@@ -134,6 +157,7 @@ function textareaElement(c: TextareaConfig): Record<string, unknown> {
 function autocompleteElement(
   c: SelectFieldConfig,
   observe: ObserveContext,
+  resolveEndpoint: ResolveEndpoint,
 ): Record<string, unknown> {
   return {
     name: c.name,
@@ -150,7 +174,15 @@ function autocompleteElement(
     ...(c.mode === 'source'
       ? {
           api: {
-            name: c.dataSource.source,
+            // Endpoint ref resolved id → current name ('' when never picked).
+            name: resolveEndpoint(c.dataSource.endpointId) ?? '',
+            ...(() => {
+              const paths = c.dataSource.paths
+                .split('.')
+                .map((s) => s.trim())
+                .filter(Boolean)
+              return paths.length ? { paths } : {}
+            })(),
             // Param key = observed element's name, matching the example config:
             // params: { regionId: { type: "observe", key: "regionId" } }
             ...(observe.observedName
@@ -333,13 +365,22 @@ function uploadFileElement(c: UploadFileConfig): Record<string, unknown> {
 
 /**
  * `datatable` → engine `DataTableElement`. Columns map 1:1 (`align` always emitted
- * so the JSON is self-documenting; empty `useDateFormat` drops). The required
- * `api` endpoint reference and the `modalContainer`/sizing block are **not**
- * emitted — studio can't author them, so the consumer wires them when pasting the
- * Bin into a real app. `canSearchAllColumns` is studio-preview-only (the engine
- * hardcodes search on) and isn't emitted either.
+ * so the JSON is self-documenting; empty `useDateFormat` drops). The `api` block
+ * emits when an endpoint is picked (resolved id → name, plus the optional
+ * response `paths`); unwired tables omit it for the consumer, as before. The
+ * `modalContainer`/sizing block is never emitted — studio can't author it.
+ * `canSearchAllColumns` is studio-preview-only (the engine hardcodes search on)
+ * and isn't emitted either.
  */
-function dataTableElement(c: DataTableConfig): Record<string, unknown> {
+function dataTableElement(
+  c: DataTableConfig,
+  resolveEndpoint: ResolveEndpoint,
+): Record<string, unknown> {
+  const apiName = resolveEndpoint(c.endpointId)
+  const paths = c.apiPaths
+    .split('.')
+    .map((s) => s.trim())
+    .filter(Boolean)
   return {
     name: c.name,
     title: c.title,
@@ -351,6 +392,7 @@ function dataTableElement(c: DataTableConfig): Record<string, unknown> {
       align: col.align,
       ...(col.useDateFormat ? { useDateFormat: col.useDateFormat } : {}),
     })),
+    ...(apiName ? { api: { name: apiName, ...(paths.length ? { paths } : {}) } } : {}),
     canEdit: c.canEdit,
     canDelete: c.canDelete,
   }
@@ -395,24 +437,29 @@ function editableTableColumn(col: DataTableEditableColumnConfig): Record<string,
 }
 
 /**
- * `datatableeditable` → engine `DataTableEditableElement`. `apiCrud` is emitted
- * as skeleton refs with empty `name`s — `read` always (it's required and the
- * engine throws until it resolves, so the stub fails loudly rather than looking
- * wired), and `create`/`update`/`delete` per their action toggles, since the
- * component shows an action only when its API is set. The consumer fills in the
- * API names (and any params/snackbar/confirmBox chrome) when wiring the Bin.
+ * `datatableeditable` → engine `DataTableEditableElement`. `apiCrud` refs emit
+ * the picked endpoint's resolved name; an unset ref keeps the empty-name
+ * skeleton — `read` always exists (it's required and the engine throws until it
+ * resolves, so the stub fails loudly rather than looking wired), and
+ * `create`/`update`/`delete` per their action toggles, since the component
+ * shows an action only when its API is set. The consumer fills in any unset
+ * names (and params/snackbar/confirmBox chrome) when wiring the Bin.
  */
-function dataTableEditableElement(c: DataTableEditableConfig): Record<string, unknown> {
+function dataTableEditableElement(
+  c: DataTableEditableConfig,
+  resolveEndpoint: ResolveEndpoint,
+): Record<string, unknown> {
+  const ref = (id: string | null) => ({ name: resolveEndpoint(id) ?? '' })
   return {
     name: c.name,
     title: c.title,
     idKey: c.idKey,
     columns: c.columns.map(editableTableColumn),
     apiCrud: {
-      read: { name: '' },
-      ...(c.canCreate ? { create: { name: '' } } : {}),
-      ...(c.canUpdate ? { update: { name: '' } } : {}),
-      ...(c.canDelete ? { delete: { name: '' } } : {}),
+      read: ref(c.readEndpointId),
+      ...(c.canCreate ? { create: ref(c.createEndpointId) } : {}),
+      ...(c.canUpdate ? { update: ref(c.updateEndpointId) } : {}),
+      ...(c.canDelete ? { delete: ref(c.deleteEndpointId) } : {}),
     },
   }
 }
@@ -485,13 +532,17 @@ function hiddenElement(c: HiddenConfig): Record<string, unknown> {
  * mirroring how the live-preview wrapper collapses onto lg). `name` doubles as
  * `id` — derived from the host item so it's stable and unique.
  */
-function toEngineContainer(canvas: ChildCanvas, name: string): Record<string, unknown> {
+function toEngineContainer(
+  canvas: ChildCanvas,
+  name: string,
+  endpoints: EndpointRef[],
+): Record<string, unknown> {
   const s = canvas.settings
   return {
     id: name,
     name,
     isArray: false,
-    bins: buildBins(canvas.settings, canvas.items),
+    bins: buildBins(canvas.settings, canvas.items, endpoints),
     ...(s.gap.lg !== '' ? { gap: s.gap.lg } : {}),
     ...(s.justifyItems.lg !== '' ? { justifyItems: s.justifyItems.lg } : {}),
     ...(s.alignItems.lg !== '' ? { alignItems: s.alignItems.lg } : {}),
@@ -513,9 +564,13 @@ function childCanvasAt(item: GridItemData, index: number): ChildCanvas {
 }
 
 /** `paper` → engine `PaperElement`: surface styling + the nested container. */
-function paperElement(c: PaperConfig, item: GridItemData): Record<string, unknown> {
+function paperElement(
+  c: PaperConfig,
+  item: GridItemData,
+  endpoints: EndpointRef[],
+): Record<string, unknown> {
   return {
-    container: toEngineContainer(childCanvasAt(item, 0), childContainerName(item)),
+    container: toEngineContainer(childCanvasAt(item, 0), childContainerName(item), endpoints),
     elevation: c.elevation,
     variant: c.variant,
     ...(c.square ? { square: true } : {}),
@@ -524,12 +579,20 @@ function paperElement(c: PaperConfig, item: GridItemData): Record<string, unknow
 
 /** `tab` → engine `TabElement`: one `{label, value, container}` per authored
  * tab (child canvases are index-aligned by the store). */
-function tabElement(c: TabConfig, item: GridItemData): Record<string, unknown> {
+function tabElement(
+  c: TabConfig,
+  item: GridItemData,
+  endpoints: EndpointRef[],
+): Record<string, unknown> {
   return {
     tabs: c.tabs.map((tab, i) => ({
       label: tab.label,
       value: tab.value,
-      container: toEngineContainer(childCanvasAt(item, i), childContainerName(item, `-${i}`)),
+      container: toEngineContainer(
+        childCanvasAt(item, i),
+        childContainerName(item, `-${i}`),
+        endpoints,
+      ),
     })),
     ...(c.defaultValue ? { defaultValue: c.defaultValue } : {}),
   }
@@ -540,11 +603,15 @@ function tabElement(c: TabConfig, item: GridItemData): Record<string, unknown> {
  * authored visuals and an empty `actions` skeleton — the engine's Modal wraps
  * the trigger in its own open logic, so no action wiring is needed to open it.
  */
-function modalElement(c: ModalConfig, item: GridItemData): Record<string, unknown> {
+function modalElement(
+  c: ModalConfig,
+  item: GridItemData,
+  endpoints: EndpointRef[],
+): Record<string, unknown> {
   return {
     id: c.id,
     title: c.title,
-    container: toEngineContainer(childCanvasAt(item, 0), childContainerName(item)),
+    container: toEngineContainer(childCanvasAt(item, 0), childContainerName(item), endpoints),
     trigger: buttonElement(c.trigger),
     ...omitEmpty({
       description: c.description,
@@ -559,9 +626,13 @@ function modalElement(c: ModalConfig, item: GridItemData): Record<string, unknow
  * `popover` → engine `PopoverElement`. The trigger is the engine's mini-Bin
  * (`{type, element}`) — studio authors the button | text subset.
  */
-function popoverElement(c: PopoverConfig, item: GridItemData): Record<string, unknown> {
+function popoverElement(
+  c: PopoverConfig,
+  item: GridItemData,
+  endpoints: EndpointRef[],
+): Record<string, unknown> {
   return {
-    container: toEngineContainer(childCanvasAt(item, 0), childContainerName(item)),
+    container: toEngineContainer(childCanvasAt(item, 0), childContainerName(item), endpoints),
     trigger:
       c.triggerKind === 'button'
         ? { type: 'button', element: buttonElement(c.triggerButton) }
@@ -573,10 +644,13 @@ function popoverElement(c: PopoverConfig, item: GridItemData): Record<string, un
 }
 
 /** The element for a Bin, or undefined for types without a mapped element.
- * `items` supplies the cross-item context the observe wiring resolves against. */
+ * `items` supplies the cross-item context the observe wiring resolves against;
+ * `endpoints`/`resolveEndpoint` resolve API page refs (id → current name). */
 function buildElement(
   item: GridItemData,
   items: GridItemData[],
+  endpoints: EndpointRef[],
+  resolveEndpoint: ResolveEndpoint,
 ): Record<string, unknown> | undefined {
   switch (item.type) {
     case 'textfield':
@@ -587,7 +661,11 @@ function buildElement(
     case 'autocomplete':
     case 'multiAutocomplete':
       return item.config
-        ? autocompleteElement(item.config as SelectFieldConfig, observeContext(item, items))
+        ? autocompleteElement(
+            item.config as SelectFieldConfig,
+            observeContext(item, items),
+            resolveEndpoint,
+          )
         : undefined
     case 'checkbox':
       return item.config ? checkboxElement(item.config as CheckboxConfig) : undefined
@@ -602,10 +680,12 @@ function buildElement(
     case 'uploadfile':
       return item.config ? uploadFileElement(item.config as UploadFileConfig) : undefined
     case 'datatable':
-      return item.config ? dataTableElement(item.config as DataTableConfig) : undefined
+      return item.config
+        ? dataTableElement(item.config as DataTableConfig, resolveEndpoint)
+        : undefined
     case 'datatableeditable':
       return item.config
-        ? dataTableEditableElement(item.config as DataTableEditableConfig)
+        ? dataTableEditableElement(item.config as DataTableEditableConfig, resolveEndpoint)
         : undefined
     case 'text':
       // Config-less fallback keeps the pre-config behavior (label as content).
@@ -623,33 +703,42 @@ function buildElement(
     case 'hidden':
       return item.config ? hiddenElement(item.config as HiddenConfig) : undefined
     case 'paper':
-      return item.config ? paperElement(item.config as PaperConfig, item) : undefined
+      return item.config
+        ? paperElement(item.config as PaperConfig, item, endpoints)
+        : undefined
     case 'tab':
-      return item.config ? tabElement(item.config as TabConfig, item) : undefined
+      return item.config ? tabElement(item.config as TabConfig, item, endpoints) : undefined
     case 'modal':
-      return item.config ? modalElement(item.config as ModalConfig, item) : undefined
+      return item.config
+        ? modalElement(item.config as ModalConfig, item, endpoints)
+        : undefined
     case 'popover':
-      return item.config ? popoverElement(item.config as PopoverConfig, item) : undefined
+      return item.config
+        ? popoverElement(item.config as PopoverConfig, item, endpoints)
+        : undefined
     default:
       return undefined
   }
 }
 
-/** Build the `Bin[]` (plain objects) for the whole canvas. */
+/** Build the `Bin[]` (plain objects) for the whole canvas. `endpoints` is the
+ * API page's list, threaded through so refs resolve id → current name. */
 export function buildBins(
   container: GridContainerSettings,
   items: GridItemData[],
+  endpoints: EndpointRef[],
 ): Record<string, unknown>[] {
   const cols = container.columns
+  const resolveEndpoint = makeEndpointResolver(endpoints)
   return items.map((item) => {
     const span = item.settings.colSpan
     const lg = toBoxRange(span.lg, cols.lg)
-    const element = buildElement(item, items)
+    const element = buildElement(item, items, endpoints, resolveEndpoint)
     // A plain `container` Bin nests via the Bin-level `container` key (not an
     // element) — the engine renders it as a nested grid.
     const nested =
       item.type === 'container'
-        ? toEngineContainer(childCanvasAt(item, 0), childContainerName(item))
+        ? toEngineContainer(childCanvasAt(item, 0), childContainerName(item), endpoints)
         : undefined
     return {
       sm: toBoxRange(span.sm, cols.sm),
@@ -670,6 +759,7 @@ export function buildBins(
 export function gridConfigToJson(
   container: GridContainerSettings,
   items: GridItemData[],
+  endpoints: EndpointRef[],
 ): string {
-  return JSON.stringify(buildBins(container, items), null, 2)
+  return JSON.stringify(buildBins(container, items, endpoints), null, 2)
 }

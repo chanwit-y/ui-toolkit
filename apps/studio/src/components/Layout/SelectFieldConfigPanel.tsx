@@ -1,9 +1,39 @@
 import { AlertTriangle } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
+import { useApiStore } from '../Api/apiStore'
 import { Input, Select, SegmentedControl } from '../common'
 import { useGridStore } from './gridStore'
 import { isSelectFamily, observeWarnings } from './observe'
 import type { MultiAutocompleteConfig, SelectFieldConfig, SelectOption } from './types'
+
+/**
+ * Endpoint picker over the API page's endpoints, stored by `EndpointDef.id`
+ * (rename-safe — see the grilled Env design). A dangling ref (endpoint deleted)
+ * surfaces as an explicit "missing" option so the stale pick stays visible
+ * instead of silently snapping to none.
+ */
+export function EndpointPicker({
+  value,
+  onChange,
+}: {
+  value: string | null
+  onChange: (id: string | null) => void
+}) {
+  const endpoints = useApiStore((s) => s.endpoints)
+  const isDangling = value != null && !endpoints.some((e) => e.id === value)
+  const options = [
+    { value: '', label: '— none —' },
+    ...(isDangling ? [{ value, label: '⚠ missing endpoint' }] : []),
+    ...endpoints.map((e) => ({ value: e.id, label: e.name.trim() || '(unnamed)' })),
+  ]
+  return (
+    <Select
+      options={options}
+      value={value ?? ''}
+      onChange={(v) => onChange(v === '' ? null : v)}
+    />
+  )
+}
 
 const DATA_TYPE_OPTIONS = [
   'text',
@@ -333,13 +363,22 @@ export function SelectFieldConfigPanel({
         </div>
       ) : (
         <div className="space-y-3">
-          <Field label="Source (endpoint / model)">
-            <Input
-              value={config.dataSource.source}
-              onChange={(e) => setSource({ source: e.target.value })}
-              className="font-mono"
+          <Field label="Source endpoint (API page)">
+            <EndpointPicker
+              value={config.dataSource.endpointId}
+              onChange={(endpointId) => setSource({ endpointId })}
             />
           </Field>
+          {config.dataSource.endpointId != null && (
+            <Field label="Response row path (dot path)">
+              <Input
+                value={config.dataSource.paths}
+                onChange={(e) => setSource({ paths: e.target.value })}
+                placeholder="data"
+                className="font-mono"
+              />
+            </Field>
+          )}
           <div className="grid grid-cols-2 gap-2">
             <Field label="Value key">
               <Input

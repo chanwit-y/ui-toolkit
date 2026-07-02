@@ -121,3 +121,8 @@ export function useSelectedEndpoint(): EndpointDef | null {
     (s) => s.endpoints.find((e) => e.id === s.selectedEndpointId) ?? null,
   )
 }
+
+// Dev-only: expose the store for scripted verification (mirrors __gridStore).
+if (import.meta.env.DEV && typeof window !== 'undefined') {
+  ;(window as unknown as { __apiStore?: typeof useApiStore }).__apiStore = useApiStore
+}

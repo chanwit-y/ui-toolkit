@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { ArrowDown, ArrowUp, ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react'
 import { IconButton, Input, Select } from '../common'
 import { useGridStore } from './gridStore'
+import { EndpointPicker } from './SelectFieldConfigPanel'
 import {
   createEditableTableColumn,
   type DataTableEditableColumnConfig,
@@ -424,6 +425,44 @@ export function DataTableEditableConfigPanel({
         checked={config.canDelete}
         onChange={(v) => set('canDelete', v)}
       />
+
+      {/* Optional CRUD endpoint refs (API page). A set ref exports its
+          endpoint's current name (and read fetches live in the preview);
+          unset refs keep the empty-name skeleton the consumer wires. The
+          mutation pickers only show while their action toggle is on. */}
+      <h4 className="pt-1 text-[11px] font-semibold uppercase tracking-wide text-zinc-400">
+        API endpoints (optional)
+      </h4>
+      <Field label="Read">
+        <EndpointPicker
+          value={config.readEndpointId}
+          onChange={(id) => set('readEndpointId', id)}
+        />
+      </Field>
+      {config.canCreate && (
+        <Field label="Create">
+          <EndpointPicker
+            value={config.createEndpointId}
+            onChange={(id) => set('createEndpointId', id)}
+          />
+        </Field>
+      )}
+      {config.canUpdate && (
+        <Field label="Update">
+          <EndpointPicker
+            value={config.updateEndpointId}
+            onChange={(id) => set('updateEndpointId', id)}
+          />
+        </Field>
+      )}
+      {config.canDelete && (
+        <Field label="Delete">
+          <EndpointPicker
+            value={config.deleteEndpointId}
+            onChange={(id) => set('deleteEndpointId', id)}
+          />
+        </Field>
+      )}
     </div>
   )
 }

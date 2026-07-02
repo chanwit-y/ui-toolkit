@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { ArrowDown, ArrowUp, ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react'
 import { IconButton, Input, Select } from '../common'
 import { useGridStore } from './gridStore'
+import { EndpointPicker } from './SelectFieldConfigPanel'
 import type { DataTableColumnConfig, DataTableConfig } from './types'
 
 const ALIGN_OPTIONS = [
@@ -235,6 +236,24 @@ export function DataTableConfigPanel({ itemId, config }: DataTableConfigPanelPro
       <Field label="Title">
         <Input value={config.title} onChange={(e) => set('title', e.target.value)} />
       </Field>
+
+      <Field label="Data endpoint (API page)">
+        <EndpointPicker
+          value={config.endpointId}
+          onChange={(endpointId) => set('endpointId', endpointId)}
+        />
+      </Field>
+
+      {config.endpointId != null && (
+        <Field label="Response row path (dot path)">
+          <Input
+            value={config.apiPaths}
+            onChange={(e) => set('apiPaths', e.target.value)}
+            placeholder="data"
+            className="font-mono"
+          />
+        </Field>
+      )}
 
       <ColumnsEditor
         columns={config.columns}

@@ -1,4 +1,4 @@
-import { LayoutGrid, Boxes, Plug } from 'lucide-react'
+import { LayoutGrid, Boxes, Plug, SlidersHorizontal } from 'lucide-react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { cn } from './common'
 
@@ -6,6 +6,7 @@ const TABS = [
   { to: '/', label: 'Layout', icon: LayoutGrid, end: true },
   { to: '/model', label: 'Model', icon: Boxes, end: false },
   { to: '/api', label: 'API', icon: Plug, end: false },
+  { to: '/env', label: 'Env', icon: SlidersHorizontal, end: false },
 ]
 
 /**

@@ -134,7 +134,19 @@ export type SelectFieldConfig = {
   displayKey: string
   /** Which option-record key the type-ahead filters on (`searchKey`). */
   searchKey: string
-  dataSource: { source: string; valueKey: string; labelKey: string }
+  /**
+   * Runtime data source (`source` mode): the API page endpoint, referenced by
+   * `EndpointDef.id` (rename-safe like model refs; `null` = none picked) and
+   * resolved to the endpoint's current name at export. `paths` is the dot-path
+   * into the response to the option array (engine `api.paths`; `''` = the
+   * response is the array itself).
+   */
+  dataSource: {
+    endpointId: string | null
+    paths: string
+    valueKey: string
+    labelKey: string
+  }
   /**
    * `GridItemData.id` of another select-family item this one observes for a
    * cascading refetch (engine `observeTo`); `''` = none. Stored by id so
@@ -222,7 +234,7 @@ export function createDefaultSelectFieldConfig(name: string): SelectFieldConfig 
     idKey: 'id',
     displayKey: 'name',
     searchKey: 'name',
-    dataSource: { source: '', valueKey: '', labelKey: '' },
+    dataSource: { endpointId: null, paths: '', valueKey: '', labelKey: '' },
     observeToItemId: '',
   }
 }
@@ -551,6 +563,15 @@ export type DataTableConfig = {
   /** Preview-only: toggles the search box in the canvas preview, never exported. */
   canSearchAllColumns: boolean
   columns: DataTableColumnConfig[]
+  /**
+   * The API page endpoint feeding the table, by `EndpointDef.id` (`null` =
+   * unwired — the export omits `api` and the consumer wires it). Resolved to
+   * the endpoint's current name at export; also what the Live Preview fetches.
+   */
+  endpointId: string | null
+  /** Dot-path into the response to the row array (engine `api.paths`, e.g.
+   * `data`); `''` = the response is the array itself. */
+  apiPaths: string
 }
 
 /**
@@ -580,6 +601,8 @@ export function createDefaultDataTableConfig(name: string): DataTableConfig {
       column('email', 'Email'),
       column('status', 'Status'),
     ],
+    endpointId: null,
+    apiPaths: '',
   }
 }
 
@@ -640,6 +663,17 @@ export type DataTableEditableConfig = {
   canUpdate: boolean
   canDelete: boolean
   columns: DataTableEditableColumnConfig[]
+  /**
+   * Optional API page endpoint refs for the CRUD calls, by `EndpointDef.id`
+   * (`null` = unwired). A set ref exports its endpoint's current name (and the
+   * Live Preview fetches `read` live); an unset one keeps the empty-name
+   * skeleton the consumer fills in. The action toggles above stay authoritative
+   * for which actions exist.
+   */
+  readEndpointId: string | null
+  createEndpointId: string | null
+  updateEndpointId: string | null
+  deleteEndpointId: string | null
 }
 
 /** A column with everything off/empty except the identity fields — the base for
@@ -697,6 +731,10 @@ export function createDefaultDataTableEditableConfig(name: string): DataTableEdi
       }),
       createEditableTableColumn('active', 'Active', { editor: 'checkbox' }),
     ],
+    readEndpointId: null,
+    createEndpointId: null,
+    updateEndpointId: null,
+    deleteEndpointId: null,
   }
 }
 

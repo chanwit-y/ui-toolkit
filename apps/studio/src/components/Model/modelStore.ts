@@ -244,3 +244,8 @@ export function useSelectedModel(): ModelDef | null {
     (s) => s.models.find((m) => m.id === s.selectedModelId) ?? null,
   )
 }
+
+// Dev-only: expose the store for scripted verification (mirrors __gridStore).
+if (import.meta.env.DEV && typeof window !== 'undefined') {
+  ;(window as unknown as { __modelStore?: typeof useModelStore }).__modelStore = useModelStore
+}

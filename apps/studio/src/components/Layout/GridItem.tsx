@@ -774,7 +774,10 @@ function DataTableLivePreview({ config }: { config: DataTableConfig }) {
       className="pointer-events-none w-full px-3 py-2"
     >
       <DataTable2
-        name={config.name}
+        // Namespaced so the canvas's mock-row cache never collides with the
+        // Live Preview modal's real fetch (react-query keys by name+title, and
+        // the query client is shared app-wide).
+        name={`__canvas__${config.name}`}
         title={config.title}
         columns={columns}
         align={align}
@@ -864,7 +867,8 @@ function EditableTableLivePreview({ config }: { config: DataTableEditableConfig 
       className="pointer-events-none w-full px-3 py-2"
     >
       <DataTableEditable
-        name={config.name}
+        // Same cache-namespacing as the plain table (its key is name-only).
+        name={`__canvas__${config.name}`}
         title={config.title}
         idKey={config.idKey}
         columns={columns}

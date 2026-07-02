@@ -21,6 +21,7 @@ import {
   useState,
   type ProfilerOnRenderCallback,
 } from 'react'
+import { useApiStore } from '../Api/apiStore'
 import { BREAKPOINTS } from './breakpoints'
 import type { ComponentDef } from './componentCatalog'
 import { SMOOTH_EASING } from './gridAnimation'
@@ -363,9 +364,12 @@ export function Layout() {
   // the whole config and regenerate the full stylesheet for nothing.
   const computeCode = sidebarView === 'code'
 
+  // Endpoint refs resolve against the API page's current names at export.
+  const endpoints = useApiStore((s) => s.endpoints)
+
   const gridConfigJson = useMemo(
-    () => (computeCode ? gridConfigToJson(rootSettings, rootItems) : ''),
-    [computeCode, rootSettings, rootItems],
+    () => (computeCode ? gridConfigToJson(rootSettings, rootItems, endpoints) : ''),
+    [computeCode, rootSettings, rootItems, endpoints],
   )
 
   const fullGridCss = useMemo(
