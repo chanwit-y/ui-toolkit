@@ -8,6 +8,7 @@ import { readSeedCount } from './perf'
 import {
   createDefaultAutocompleteConfig,
   createDefaultCheckboxConfig,
+  createDefaultDataTableConfig,
   createDefaultDateConfig,
   createDefaultItemSettings,
   createDefaultMultiAutocompleteConfig,
@@ -19,6 +20,7 @@ import {
   createDefaultUploadImageConfig,
   defaultContainerSettings,
   type CheckboxConfig,
+  type DataTableConfig,
   type DateConfig,
   type GridContainerSettings,
   type GridItemData,
@@ -241,6 +243,7 @@ export const useGridStore = create<GridState>((set, get) => {
           | DateConfig
           | UploadImageConfig
           | UploadFileConfig
+          | DataTableConfig
           | undefined
         let nextSeq = fieldSeq
         if (type === 'textfield') {
@@ -279,6 +282,9 @@ export const useGridStore = create<GridState>((set, get) => {
         } else if (type === 'uploadfile') {
           nextSeq = fieldSeq + 1
           config = createDefaultUploadFileConfig(`uploadFile_${nextSeq}`)
+        } else if (type === 'datatable') {
+          nextSeq = fieldSeq + 1
+          config = createDefaultDataTableConfig(`dataTable_${nextSeq}`)
         }
 
         // Default span (of 12) by component kind: a data table is full-bleed, so

@@ -313,10 +313,12 @@ export const DataTable2 = <T extends Record<string, any>>({
 
 	const { data: queryResult, refetch, isLoading, isFetching } = useQuery({
 		// Server mode refetches on page/size/search change; client mode keeps a
-		// single stable key (fetch once, page in memory) as before.
+		// single stable key (fetch once, page in memory) as before. `name` is in the
+		// key because titles aren't unique — two same-titled tables must not share a
+		// cache entry.
 		queryKey: isServer
-			? [`table-data-${title}`, pagination.pageIndex, pagination.pageSize, serverSearch]
-			: [`table-data-${title}`],
+			? [`table-data-${name}-${title}`, pagination.pageIndex, pagination.pageSize, serverSearch]
+			: [`table-data-${name}-${title}`],
 		queryFn: fetchData,
 		// Keep the current page visible while the next one loads (no empty flash).
 		placeholderData: keepPreviousData,

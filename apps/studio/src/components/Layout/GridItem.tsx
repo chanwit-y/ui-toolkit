@@ -34,13 +34,16 @@ import {
   Upload,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { memo, useCallback, useLayoutEffect, useRef, useState } from 'react'
+import dayjs from 'dayjs'
+import { memo, useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { cn, IconButton } from '../common'
 import { COMPONENT_BY_TYPE } from './componentCatalog'
 import { ENTER_DURATION_MS, prefersReducedMotion, UPGRADE_FADE_MS } from './gridAnimation'
 import { useGridStore, useIsEntering } from './gridStore'
 import type {
   CheckboxConfig,
+  DataTableColumnConfig,
+  DataTableConfig,
   DateConfig,
   GridItemData,
   MultiAutocompleteConfig,
@@ -604,58 +607,85 @@ function UploadFileLivePreview({ config }: { config: UploadFileConfig }) {
 }
 
 /**
- * Canned columns + rows for the data-table preview. There's no column inspector
- * this pass, so every `datatable` cell shows the same realistic demo set —
- * enough to read unmistakably as a table. A later pass can replace these with an
- * authored `DataTableConfig`. Rows fit on a single client-mode page (size 10),
- * so the pagination footer renders "Page 1 of 1" without making the cell tall.
+ * Synthesize mock preview rows from the authored columns, so the table body
+ * always matches the inspector. Type-aware per column: an id-ish accessor
+ * (`id`, `userId`, `user_id`) counts 1..N, a date-format column renders real
+ * consecutive dates through dayjs with that format, everything else is
+ * "<Header> N". The base date is fixed so re-renders are deterministic. Rows fit
+ * on a single client-mode page (size 10), so the pagination footer renders
+ * "Page 1 of 1" without making the cell tall.
  */
-const DATATABLE_PREVIEW_COLUMNS = [
-  { accessorKey: 'id', header: 'ID' },
-  { accessorKey: 'name', header: 'Name' },
-  { accessorKey: 'email', header: 'Email' },
-  { accessorKey: 'status', header: 'Status' },
-]
-const DATATABLE_PREVIEW_ROWS = [
-  { id: 1, name: 'Ada Lovelace', email: 'ada@example.com', status: 'Active' },
-  { id: 2, name: 'Alan Turing', email: 'alan@example.com', status: 'Active' },
-  { id: 3, name: 'Grace Hopper', email: 'grace@example.com', status: 'Pending' },
-  { id: 4, name: 'Katherine Johnson', email: 'katherine@example.com', status: 'Active' },
-  { id: 5, name: 'Linus Torvalds', email: 'linus@example.com', status: 'Inactive' },
-  { id: 6, name: 'Margaret Hamilton', email: 'margaret@example.com', status: 'Active' },
-]
-/** Static mock fetcher — client mode reads the array straight through (no apiInfo). */
-const dataTablePreviewApi = async () => DATATABLE_PREVIEW_ROWS
+const DATATABLE_PREVIEW_ROW_COUNT = 5
+function buildDataTablePreviewRows(
+  columns: DataTableColumnConfig[],
+): Record<string, unknown>[] {
+  return Array.from({ length: DATATABLE_PREVIEW_ROW_COUNT }, (_, i) => {
+    const row: Record<string, unknown> = {}
+    for (const column of columns) {
+      if (!column.accessor) continue
+      if (column.useDateFormat) {
+        row[column.accessor] = dayjs('2026-01-05').add(i, 'day').format(column.useDateFormat)
+      } else if (/^id$|Id$|_id$/.test(column.accessor)) {
+        row[column.accessor] = i + 1
+      } else {
+        row[column.accessor] = `${column.header || column.accessor} ${i + 1}`
+      }
+    }
+    return row
+  })
+}
 
 /**
  * The live, real `<DataTable2>` from the library, rendered in-cell once the cell
  * is wide enough (`TABLE_THRESHOLDS`). Inert (`pointer-events-none`) like the
  * other previews — search, sort, the edit/delete action column, and the
  * pagination footer all render but can't be operated; you preview the table, you
- * don't drive it. A static mock `api` feeds the canned rows so the body is
- * populated (with no `api` the table renders empty). `title` mirrors the cell
- * label; `name` is the stable item id. Unlike the field previews this wrapper
- * doesn't force single-line centering — it lets the table grow so the grid row
- * (`minmax(56px, auto)`) takes the table's real height. All providers DataTable2
- * needs (Data/Loading/Snackbar/Query) come from `CoreProvider` in `App.tsx`.
+ * don't drive it. A mock `api` feeds rows generated from the authored columns so
+ * the body is populated (with no `api` the table renders empty). DataTable2 caches
+ * rows under a `name`+`title` react-query key that ignores the api function, so
+ * `renderLive` remounts this component (React `key`) whenever a row-affecting
+ * column field changes — a fresh mount refetches. Unlike the field previews this
+ * wrapper doesn't force single-line centering — it lets the table grow so the grid
+ * row (`minmax(56px, auto)`) takes the table's real height. All providers
+ * DataTable2 needs (Data/Loading/Snackbar/Query) come from `CoreProvider` in
+ * `App.tsx`.
  */
-function DataTableLivePreview({ item }: { item: GridItemData }) {
+function DataTableLivePreview({ config }: { config: DataTableConfig }) {
+  const rows = useMemo(() => buildDataTablePreviewRows(config.columns), [config.columns])
+  const api = useMemo(() => async () => rows, [rows])
+  const columns = config.columns.map((c) => ({
+    accessorKey: c.accessor,
+    header: c.header,
+    enableSorting: c.enableSorting,
+    enableColumnFilter: c.enableColumnFilter,
+  }))
+  const align = config.columns.reduce<Record<string, 'start' | 'center' | 'end'>>(
+    (acc, c) => ({ ...acc, [c.accessor]: c.align }),
+    {},
+  )
   return (
     <div
       data-grid-item-content
       className="pointer-events-none w-full px-3 py-2"
     >
       <DataTable2
-        name={item.id}
-        title={item.label}
-        columns={DATATABLE_PREVIEW_COLUMNS}
-        api={dataTablePreviewApi}
-        canSearchAllColumns
-        canEdit
-        canDelete
+        name={config.name}
+        title={config.title}
+        columns={columns}
+        align={align}
+        api={api}
+        canSearchAllColumns={config.canSearchAllColumns}
+        canEdit={config.canEdit}
+        canDelete={config.canDelete}
       />
     </div>
   )
+}
+
+/** The part of a datatable config that changes the *fetched* rows (not just the
+ * column chrome) — used as the preview's remount key so edits refetch. */
+function dataTableRowsKey(config: DataTableConfig): string {
+  return JSON.stringify(config.columns.map((c) => [c.accessor, c.header, c.useDateFormat]))
 }
 
 /**
@@ -666,7 +696,8 @@ function DataTableLivePreview({ item }: { item: GridItemData }) {
  * go live; everything else falls through to its chip. `select`/`autocomplete` share
  * `SelectLivePreview` (both preview with the library's `Autocomplete2`);
  * `multiAutocomplete` previews with `MultiAutocompleteBase`; `checkbox` with `CheckboxBase`;
- * `radio` with `RadioButtonBase`; the date pickers with `Date*PickerBase`.
+ * `radio` with `RadioButtonBase`; the date pickers with `Date*PickerBase`; `datatable`
+ * with the real `DataTable2` fed by config-generated mock rows.
  */
 function renderLive(item: GridItemData, isLive: boolean) {
   if (!isLive) return null
@@ -705,10 +736,11 @@ function renderLive(item: GridItemData, isLive: boolean) {
   if (item.type === 'uploadfile' && item.config) {
     return <UploadFileLivePreview config={item.config as UploadFileConfig} />
   }
-  // A datatable carries no editable config this pass — the preview is fully
-  // canned, so it goes live on width alone.
-  if (item.type === 'datatable') {
-    return <DataTableLivePreview item={item} />
+  if (item.type === 'datatable' && item.config) {
+    const config = item.config as DataTableConfig
+    // Keyed on the row-affecting column fields: DataTable2's react-query cache
+    // ignores the api function, so a remount is what refetches the mock rows.
+    return <DataTableLivePreview key={dataTableRowsKey(config)} config={config} />
   }
   return null
 }

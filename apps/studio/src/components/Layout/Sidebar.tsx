@@ -1,5 +1,6 @@
 import { CodeViewer, SegmentedControl } from '../common'
 import { CheckboxConfigPanel } from './CheckboxConfigPanel'
+import { DataTableConfigPanel } from './DataTableConfigPanel'
 import { DateConfigPanel } from './DateConfigPanel'
 import { FieldConfigPanel } from './FieldConfigPanel'
 import { useGridStore, useSelectedItem, type SidebarView } from './gridStore'
@@ -10,6 +11,7 @@ import { TextareaConfigPanel } from './TextareaConfigPanel'
 import { UploadFileConfigPanel, UploadImageConfigPanel } from './UploadConfigPanel'
 import type {
   CheckboxConfig,
+  DataTableConfig,
   DateConfig,
   RadioConfig,
   SelectFieldConfig,
@@ -32,7 +34,7 @@ type SidebarProps = {
 
 /**
  * The right sidebar — the single home for all editing, split into three tabs:
- * `inspector` shows the selected item's field config (textfield only);
+ * `inspector` shows the selected item's component config;
  * `layout` shows the grid config — the selected item's per-breakpoint spans, or
  * the container settings when nothing is selected; `code` shows the exported
  * JSON / CSS.
@@ -133,6 +135,11 @@ export function Sidebar({ gridConfigJson, fullGridCss }: SidebarProps) {
             <UploadFileConfigPanel
               itemId={selectedItem.id}
               config={selectedItem.config as UploadFileConfig}
+            />
+          ) : selectedItem.type === 'datatable' && selectedItem.config ? (
+            <DataTableConfigPanel
+              itemId={selectedItem.id}
+              config={selectedItem.config as DataTableConfig}
             />
           ) : (
             <p className="px-1 py-6 text-center text-sm text-zinc-400">

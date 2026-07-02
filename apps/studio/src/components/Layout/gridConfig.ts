@@ -1,6 +1,7 @@
 import { MAX_GRID_COLUMNS } from './breakpoints'
 import type {
   CheckboxConfig,
+  DataTableConfig,
   DateConfig,
   GridContainerSettings,
   GridItemData,
@@ -24,10 +25,11 @@ import type {
  * `autocomplete`), `autocomplete`, `multiAutocomplete` (both keep their type and
  * share the autocomplete element shape), `checkbox`, `radio`, and the three date
  * pickers (`datepicker`/`daterangepicker`/`datetimepicker`, which keep their type and
- * share one kind-discriminated `DateConfig`), `uploadimage`, and `uploadfile`, and
- * omitted for every other type. The multi
+ * share one kind-discriminated `DateConfig`), `uploadimage`, `uploadfile`, and
+ * `datatable`, and omitted for every other type. The multi
  * field's `maxSelections`/`showSelectedCount` are studio-preview-only and not emitted
- * (the engine's `AutocompleteElement` has no home for them). The studio `xs`
+ * (the engine's `AutocompleteElement` has no home for them), as is the datatable's
+ * `canSearchAllColumns` (the engine hardcodes search on). The studio `xs`
  * breakpoint is dropped (the engine starts at `sm`) and `xl` mirrors `lg`.
  */
 
@@ -288,6 +290,31 @@ function uploadFileElement(c: UploadFileConfig): Record<string, unknown> {
   }
 }
 
+/**
+ * `datatable` → engine `DataTableElement`. Columns map 1:1 (`align` always emitted
+ * so the JSON is self-documenting; empty `useDateFormat` drops). The required
+ * `api` endpoint reference and the `modalContainer`/sizing block are **not**
+ * emitted — studio can't author them, so the consumer wires them when pasting the
+ * Bin into a real app. `canSearchAllColumns` is studio-preview-only (the engine
+ * hardcodes search on) and isn't emitted either.
+ */
+function dataTableElement(c: DataTableConfig): Record<string, unknown> {
+  return {
+    name: c.name,
+    title: c.title,
+    columns: c.columns.map((col) => ({
+      accessor: col.accessor,
+      header: col.header,
+      enableSorting: col.enableSorting,
+      enableColumnFilter: col.enableColumnFilter,
+      align: col.align,
+      ...(col.useDateFormat ? { useDateFormat: col.useDateFormat } : {}),
+    })),
+    canEdit: c.canEdit,
+    canDelete: c.canDelete,
+  }
+}
+
 /** The element for a Bin, or undefined for types without a mapped element. */
 function buildElement(item: GridItemData): Record<string, unknown> | undefined {
   switch (item.type) {
@@ -311,6 +338,8 @@ function buildElement(item: GridItemData): Record<string, unknown> | undefined {
       return item.config ? uploadImageElement(item.config as UploadImageConfig) : undefined
     case 'uploadfile':
       return item.config ? uploadFileElement(item.config as UploadFileConfig) : undefined
+    case 'datatable':
+      return item.config ? dataTableElement(item.config as DataTableConfig) : undefined
     case 'text':
       return { text: item.label, isLabel: true }
     default:

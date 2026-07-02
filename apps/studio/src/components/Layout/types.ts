@@ -511,6 +511,69 @@ export function createDefaultUploadFileConfig(name: string): UploadFileConfig {
   }
 }
 
+/**
+ * One column of a data table. Maps 1:1 onto the engine's `ColumnDef`
+ * (`accessor`/`header`/`enableSorting`/`enableColumnFilter`/`align`/`useDateFormat`)
+ * so the exported JSON is lossless. `useDateFormat` holds dayjs tokens and is `''`
+ * when the raw value should render untouched (dropped on export).
+ */
+export type DataTableColumnConfig = {
+  accessor: string
+  header: string
+  enableSorting: boolean
+  enableColumnFilter: boolean
+  align: 'start' | 'center' | 'end'
+  /** dayjs format tokens; `''` = no date formatting. */
+  useDateFormat: string
+}
+
+/**
+ * Editable config for a data table. Maps onto the engine's `DataTableElement`
+ * minus the pieces studio can't author yet: the required `api` endpoint reference
+ * and the `modalContainer`/sizing block are omitted on export (the consumer wires
+ * them), and `canSearchAllColumns` is studio-preview-only — the engine hardcodes
+ * search on (`core/dataTable.ts`), so it isn't emitted either.
+ */
+export type DataTableConfig = {
+  name: string
+  title: string
+  canEdit: boolean
+  canDelete: boolean
+  /** Preview-only: toggles the search box in the canvas preview, never exported. */
+  canSearchAllColumns: boolean
+  columns: DataTableColumnConfig[]
+}
+
+/**
+ * Defaults for a freshly dropped data table: the same realistic id/name/email/
+ * status set the canned preview used to show, so the drop moment looks identical
+ * and the preview is instantly populated. Sorting on / filter off / centered is
+ * the seeded per-column baseline (also what "Add column" seeds).
+ */
+export function createDefaultDataTableConfig(name: string): DataTableConfig {
+  const column = (accessor: string, header: string): DataTableColumnConfig => ({
+    accessor,
+    header,
+    enableSorting: true,
+    enableColumnFilter: false,
+    align: 'center',
+    useDateFormat: '',
+  })
+  return {
+    name,
+    title: 'Data Table',
+    canEdit: true,
+    canDelete: true,
+    canSearchAllColumns: true,
+    columns: [
+      column('id', 'ID'),
+      column('name', 'Name'),
+      column('email', 'Email'),
+      column('status', 'Status'),
+    ],
+  }
+}
+
 export type GridContainerSettings = {
   columns: Responsive<number>
   gap: Responsive<string>
@@ -550,7 +613,8 @@ export type GridItemData = {
    * daterangepicker/datetimepicker a `DateConfig` discriminated by `kind` (previews
    * with `DatePickerBase`/`DateRangePickerBase`/`DateTimePickerBase`), an uploadimage
    * an `UploadImageConfig` (previews with `UploadImageBase`), and an uploadfile an
-   * `UploadFileConfig` (previews with `UploadFileBase`). Other types are config-less.
+   * `UploadFileConfig` (previews with `UploadFileBase`), and a datatable a
+   * `DataTableConfig` (previews with `DataTable2`). Other types are config-less.
    */
   config?:
     | TextFieldConfig
@@ -562,6 +626,7 @@ export type GridItemData = {
     | DateConfig
     | UploadImageConfig
     | UploadFileConfig
+    | DataTableConfig
 }
 
 function responsive<T>(value: T): Responsive<T> {
