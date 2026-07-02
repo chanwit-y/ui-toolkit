@@ -1,7 +1,9 @@
 import type { EndpointDef } from '../Api/types'
 import {
+  createChildCanvas,
   createDefaultDataTableConfig,
   createDefaultItemSettings,
+  createDefaultModalConfig,
   createDefaultTextFieldConfig,
   type GridItemData,
 } from '../Layout/types'
@@ -238,40 +240,55 @@ export function countrySeedEnvVars(): EnvVarDef[] {
 /* ------------------------------------------------------------------ grid */
 
 /**
- * The starter canvas: a small country form (name + code) above a data table
- * wired to `searchCountries` — enough to demo the whole pipeline (drop more
- * components from the toolbox; drill-in etc. work as usual).
+ * The starter canvas: an "Add Country" modal whose child canvas carries the
+ * bound country form (name + code — the same binding keys `countryBody`
+ * expects), above a data table wired to `searchCountries` — enough to demo the
+ * whole pipeline, including drill-in (Edit contents on the modal cell) and the
+ * engine actually opening the modal in the Live Preview.
  */
 export function countrySeedGridItems(): GridItemData[] {
-  return [
-    // `errorMessage` stays empty in the seeds: the canvas preview renders a
-    // non-empty message as an active error (red field), which would make the
-    // boot canvas look broken. Authors fill it in the inspector when needed.
-    {
-      id: 'seed-item-name',
-      label: 'Text Field',
-      type: 'textfield',
-      settings: createDefaultItemSettings({ colSpan: { xs: 4, sm: 3, md: 4, lg: 4 } }),
-      config: {
-        ...createDefaultTextFieldConfig('name'),
-        label: 'Name',
-        placeholder: 'Country name',
-        isRequired: true,
-      },
+  // `errorMessage` stays empty in the seeds: the canvas preview renders a
+  // non-empty message as an active error (red field), which would make the
+  // form look broken before anyone typed. Authors fill it in the inspector.
+  const nameField: GridItemData = {
+    id: 'seed-item-name',
+    label: 'Text Field',
+    type: 'textfield',
+    settings: createDefaultItemSettings({ colSpan: { xs: 4, sm: 6, md: 8, lg: 12 } }),
+    config: {
+      ...createDefaultTextFieldConfig('name'),
+      label: 'Name',
+      placeholder: 'Country name',
+      isRequired: true,
     },
+  }
+  const codeField: GridItemData = {
+    id: 'seed-item-code',
+    label: 'Text Field',
+    type: 'textfield',
+    settings: createDefaultItemSettings({ colSpan: { xs: 4, sm: 6, md: 4, lg: 6 } }),
+    config: {
+      ...createDefaultTextFieldConfig('code'),
+      label: 'Code',
+      placeholder: 'TH',
+      isRequired: true,
+    },
+  }
+
+  return [
     {
-      id: 'seed-item-code',
-      label: 'Text Field',
-      type: 'textfield',
-      // lg 3 (not 2) so the cell clears the ~14rem live-preview threshold at
-      // typical canvas widths instead of collapsing to a chip.
-      settings: createDefaultItemSettings({ colSpan: { xs: 4, sm: 3, md: 3, lg: 3 } }),
+      id: 'seed-item-country-modal',
+      label: 'Modal',
+      type: 'modal',
+      settings: createDefaultItemSettings({ colSpan: { xs: 4, sm: 3, md: 2, lg: 2 } }),
       config: {
-        ...createDefaultTextFieldConfig('code'),
-        label: 'Code',
-        placeholder: 'TH',
-        isRequired: true,
+        ...createDefaultModalConfig('countryModal'),
+        title: 'Country',
+        description: 'Create or edit a country',
+        maxWidth: '520px',
+        trigger: { label: 'Add Country', icon: 'puls' },
       },
+      childCanvases: [{ ...createChildCanvas(), items: [nameField, codeField] }],
     },
     {
       id: 'seed-item-table',
