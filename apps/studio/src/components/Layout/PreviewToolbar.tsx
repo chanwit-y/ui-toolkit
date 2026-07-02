@@ -1,9 +1,15 @@
-import { Code, Plus, Settings } from 'lucide-react'
+import { Code, Play, Plus, Settings } from 'lucide-react'
+import { useState } from 'react'
 import { IconButton } from '../common'
 import { BreakpointSelector } from './BreakpointSelector'
 import { useGridStore } from './gridStore'
+import { LivePreviewModal } from './LivePreviewModal'
 
 export function PreviewToolbar() {
+  // Local to the toolbar (nothing in gridStore, same principle as the cell
+  // preview gating); conditional mount makes every open a fresh engine form.
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const canvasEmpty = useGridStore((s) => s.items.length === 0)
   const previewBreakpoint = useGridStore((s) => s.previewBreakpoint)
   const sidebarView = useGridStore((s) => s.sidebarView)
   const selectedItemId = useGridStore((s) => s.selectedItemId)
@@ -56,6 +62,17 @@ export function PreviewToolbar() {
           <Code size={18} aria-hidden="true" />
         </IconButton>
         <IconButton
+          label="Live preview"
+          disabled={canvasEmpty}
+          className="h-8! w-8! border-0 bg-transparent shadow-none disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-zinc-700"
+          onClick={(e) => {
+            e.stopPropagation()
+            setPreviewOpen(true)
+          }}
+        >
+          <Play size={18} aria-hidden="true" />
+        </IconButton>
+        <IconButton
           label="Add grid item"
           variant="primary"
           className="h-8! w-8! shadow-none"
@@ -67,6 +84,8 @@ export function PreviewToolbar() {
           <Plus size={18} aria-hidden="true" />
         </IconButton>
       </div>
+
+      {previewOpen && <LivePreviewModal onClose={() => setPreviewOpen(false)} />}
     </div>
   )
 }

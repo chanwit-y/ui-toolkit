@@ -21,6 +21,20 @@
         "3300"
       ],
       "port": 3300
+    },
+    {
+      "name": "studio-alt",
+      "comment": "Same as studio on a fallback port, for when another session holds 3300.",
+      "runtimeExecutable": "/opt/homebrew/bin/node",
+      "runtimeArgs": [
+        "apps/studio/node_modules/vite/bin/vite.js",
+        "apps/studio",
+        "--port",
+        "3311",
+        "--strictPort"
+      ],
+      "port": 3311,
+      "autoPort": false
     }
   ]
 }

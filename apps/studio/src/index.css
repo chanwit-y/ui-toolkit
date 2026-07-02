@@ -7,6 +7,11 @@
    full `styles.css` — its Tailwind-3-only directives break this pipeline. */
 @import "../../../packages/ui/src/styles/datatable.css";
 
+/* The live-preview modal renders the real engine grid (ContainerBuilder), whose
+   cells use runtime-composed `sm-col-span-N` classes — invisible to the `@source`
+   scan below, so pull in the library's portable col-span partial directly. */
+@import "../../../packages/ui/src/styles/colspan.css";
+
 /* Gate `dark:` on a `.dark` ancestor (the library's `darkMode: 'class'`
    convention) instead of Tailwind 4's default `prefers-color-scheme` media
    query. Studio never sets `.dark`, so library components (Autocomplete2, etc.)
