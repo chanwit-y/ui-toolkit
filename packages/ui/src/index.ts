@@ -11,6 +11,12 @@ export { SelectFieldBase } from "./components/SelectField";
 export { CheckboxBase } from "./components/Checkbox";
 // Un-form-wrapped (static-options) radio for display-only previews (studio canvas).
 export { RadioButtonBase } from "./components/RadioButton";
+// Un-form-wrapped button visuals for display-only previews (studio canvas) —
+// the engine Button renders through this, so the preview can't drift.
+export { ButtonBase } from "./components/Button";
+export type { ButtonBaseProps } from "./components/Button";
+// The curated lucide glyph map ButtonElement.icon keys into (studio icon picker).
+export { IconData } from "./components/core/const/iconData";
 export type { CheckboxProps, CheckboxElement } from "./components/@types";
 export type { TextFieldProps, TextFieldElement, DataType, TextareaProps, TextareaElement, SelectFieldProps } from "./components/@types";
 export * from "./hooks";
