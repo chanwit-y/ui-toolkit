@@ -3,6 +3,7 @@ import {
   AutocompleteBase2,
   CheckboxBase,
   DataTable2,
+  DataTableEditable,
   DatePickerBase,
   DateRangePickerBase,
   DateTimePickerBase,
@@ -44,6 +45,8 @@ import type {
   CheckboxConfig,
   DataTableColumnConfig,
   DataTableConfig,
+  DataTableEditableColumnConfig,
+  DataTableEditableConfig,
   DateConfig,
   GridItemData,
   MultiAutocompleteConfig,
@@ -94,7 +97,9 @@ const TABLE_THRESHOLDS: LiveThresholds = { liveMin: 480, chipMax: 440 } // a tab
 
 /** The live/chip thresholds for a given component kind. */
 function thresholdsForType(type: GridItemData['type']): LiveThresholds {
-  return type === 'datatable' ? TABLE_THRESHOLDS : FIELD_THRESHOLDS
+  return type === 'datatable' || type === 'datatableeditable'
+    ? TABLE_THRESHOLDS
+    : FIELD_THRESHOLDS
 }
 
 /** Content-box width of an element (excludes its padding and border). */
@@ -689,6 +694,95 @@ function dataTableRowsKey(config: DataTableConfig): string {
 }
 
 /**
+ * Editor-aware mock rows for the editable-table preview: an id-ish accessor
+ * counts 1..N, a `number` editor gets round numerics, a `date` editor gets
+ * consecutive ISO dates (what its date input expects), a `select` editor cycles
+ * through its own options, a `checkbox` editor alternates, and `text` falls back
+ * to "<Header> N". Fixed base date keeps re-renders deterministic.
+ */
+function buildEditableTablePreviewRows(
+  columns: DataTableEditableColumnConfig[],
+): Record<string, unknown>[] {
+  return Array.from({ length: DATATABLE_PREVIEW_ROW_COUNT }, (_, i) => {
+    const row: Record<string, unknown> = {}
+    for (const column of columns) {
+      const key = column.accessorKey
+      if (!key) continue
+      if (/^id$|Id$|_id$/.test(key)) {
+        row[key] = i + 1
+      } else if (column.editor === 'number') {
+        row[key] = (i + 1) * 10
+      } else if (column.editor === 'date') {
+        row[key] = dayjs('2026-01-05').add(i, 'day').format('YYYY-MM-DD')
+      } else if (column.editor === 'checkbox') {
+        row[key] = i % 2 === 0
+      } else if (column.editor === 'select' && column.options.length > 0) {
+        row[key] = column.options[i % column.options.length].value
+      } else {
+        row[key] = `${column.header || key} ${i + 1}`
+      }
+    }
+    return row
+  })
+}
+
+/**
+ * The live, real `<DataTableEditable>` from the library, rendered in-cell once
+ * the cell is table-wide (`TABLE_THRESHOLDS`). Inert like the other previews. A
+ * mock read API feeds editor-aware generated rows; the create/update/delete
+ * toggles pass no-op mock APIs so the real Add/Edit/Delete chrome renders (or
+ * disappears) per the config — the component shows an action only when its API
+ * is set. Column `validation` is omitted: it only fires on inline editing, which
+ * a pointer-events-none preview can't reach. Its query key is
+ * `table-data-editable-${name}` (name-only), so `renderLive` remounts on
+ * row-affecting column edits — same trick as the plain table.
+ */
+function EditableTableLivePreview({ config }: { config: DataTableEditableConfig }) {
+  const rows = useMemo(() => buildEditableTablePreviewRows(config.columns), [config.columns])
+  const readApi = useMemo(() => async () => rows, [rows])
+  const noop = async () => ({})
+  const apiCrud = {
+    read: { api: readApi },
+    ...(config.canCreate ? { create: { api: noop } } : {}),
+    ...(config.canUpdate ? { update: { api: noop } } : {}),
+    ...(config.canDelete ? { delete: { api: noop } } : {}),
+  }
+  const columns = config.columns.map((c) => ({
+    accessorKey: c.accessorKey,
+    header: c.header,
+    editable: c.editable,
+    editor: c.editor,
+    ...(c.editor === 'select' ? { options: c.options } : {}),
+    isRequired: c.isRequired,
+    enableSorting: c.enableSorting,
+    enableColumnFilter: c.enableColumnFilter,
+    align: c.align,
+  }))
+  return (
+    <div
+      data-grid-item-content
+      className="pointer-events-none w-full px-3 py-2"
+    >
+      <DataTableEditable
+        name={config.name}
+        title={config.title}
+        idKey={config.idKey}
+        columns={columns}
+        apiCrud={apiCrud}
+      />
+    </div>
+  )
+}
+
+/** Row-affecting slice of an editable-table config — the preview's remount key
+ * (its react-query key is name-only, so a remount is what refetches). */
+function editableTableRowsKey(config: DataTableEditableConfig): string {
+  return JSON.stringify(
+    config.columns.map((c) => [c.accessorKey, c.header, c.editor, c.options.map((o) => o.value)]),
+  )
+}
+
+/**
  * The cell's live render, or null when the cell can't (or isn't wide enough to)
  * show one — the generic seam for adding more component types later. `textfield`,
  * `textarea`, `select`, `autocomplete`, `multiAutocomplete`, `checkbox`, `radio`, and
@@ -697,7 +791,8 @@ function dataTableRowsKey(config: DataTableConfig): string {
  * `SelectLivePreview` (both preview with the library's `Autocomplete2`);
  * `multiAutocomplete` previews with `MultiAutocompleteBase`; `checkbox` with `CheckboxBase`;
  * `radio` with `RadioButtonBase`; the date pickers with `Date*PickerBase`; `datatable`
- * with the real `DataTable2` fed by config-generated mock rows.
+ * with the real `DataTable2` and `datatableeditable` with the real `DataTableEditable`,
+ * both fed by config-generated mock rows.
  */
 function renderLive(item: GridItemData, isLive: boolean) {
   if (!isLive) return null
@@ -741,6 +836,10 @@ function renderLive(item: GridItemData, isLive: boolean) {
     // Keyed on the row-affecting column fields: DataTable2's react-query cache
     // ignores the api function, so a remount is what refetches the mock rows.
     return <DataTableLivePreview key={dataTableRowsKey(config)} config={config} />
+  }
+  if (item.type === 'datatableeditable' && item.config) {
+    const config = item.config as DataTableEditableConfig
+    return <EditableTableLivePreview key={editableTableRowsKey(config)} config={config} />
   }
   return null
 }
