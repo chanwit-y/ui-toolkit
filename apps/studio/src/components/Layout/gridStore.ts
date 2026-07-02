@@ -8,6 +8,8 @@ import { readSeedCount } from './perf'
 import {
   createDefaultAutocompleteConfig,
   createDefaultCheckboxConfig,
+  createDefaultDataTableConfig,
+  createDefaultDataTableEditableConfig,
   createDefaultDateConfig,
   createDefaultItemSettings,
   createDefaultMultiAutocompleteConfig,
@@ -19,6 +21,8 @@ import {
   createDefaultUploadImageConfig,
   defaultContainerSettings,
   type CheckboxConfig,
+  type DataTableConfig,
+  type DataTableEditableConfig,
   type DateConfig,
   type GridContainerSettings,
   type GridItemData,
@@ -241,6 +245,8 @@ export const useGridStore = create<GridState>((set, get) => {
           | DateConfig
           | UploadImageConfig
           | UploadFileConfig
+          | DataTableConfig
+          | DataTableEditableConfig
           | undefined
         let nextSeq = fieldSeq
         if (type === 'textfield') {
@@ -279,13 +285,19 @@ export const useGridStore = create<GridState>((set, get) => {
         } else if (type === 'uploadfile') {
           nextSeq = fieldSeq + 1
           config = createDefaultUploadFileConfig(`uploadFile_${nextSeq}`)
+        } else if (type === 'datatable') {
+          nextSeq = fieldSeq + 1
+          config = createDefaultDataTableConfig(`dataTable_${nextSeq}`)
+        } else if (type === 'datatableeditable') {
+          nextSeq = fieldSeq + 1
+          config = createDefaultDataTableEditableConfig(`editableTable_${nextSeq}`)
         }
 
         // Default span (of 12) by component kind: a data table is full-bleed, so
         // it spans the full width at every breakpoint; uploads need room for their
         // dropzone (lg 6); the common text-ish inputs read better a touch wider
         // (lg 4); everything else falls back to the standard 2.
-        const isTable = type === 'datatable'
+        const isTable = type === 'datatable' || type === 'datatableeditable'
         const isUpload = type === 'uploadimage' || type === 'uploadfile'
         const isWideInput =
           type === 'textfield' ||

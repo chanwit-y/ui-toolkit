@@ -511,6 +511,186 @@ export function createDefaultUploadFileConfig(name: string): UploadFileConfig {
   }
 }
 
+/**
+ * One column of a data table. Maps 1:1 onto the engine's `ColumnDef`
+ * (`accessor`/`header`/`enableSorting`/`enableColumnFilter`/`align`/`useDateFormat`)
+ * so the exported JSON is lossless. `useDateFormat` holds dayjs tokens and is `''`
+ * when the raw value should render untouched (dropped on export).
+ */
+export type DataTableColumnConfig = {
+  accessor: string
+  header: string
+  enableSorting: boolean
+  enableColumnFilter: boolean
+  align: 'start' | 'center' | 'end'
+  /** dayjs format tokens; `''` = no date formatting. */
+  useDateFormat: string
+}
+
+/**
+ * Editable config for a data table. Maps onto the engine's `DataTableElement`
+ * minus the pieces studio can't author yet: the required `api` endpoint reference
+ * and the `modalContainer`/sizing block are omitted on export (the consumer wires
+ * them), and `canSearchAllColumns` is studio-preview-only — the engine hardcodes
+ * search on (`core/dataTable.ts`), so it isn't emitted either.
+ */
+export type DataTableConfig = {
+  name: string
+  title: string
+  canEdit: boolean
+  canDelete: boolean
+  /** Preview-only: toggles the search box in the canvas preview, never exported. */
+  canSearchAllColumns: boolean
+  columns: DataTableColumnConfig[]
+}
+
+/**
+ * Defaults for a freshly dropped data table: the same realistic id/name/email/
+ * status set the canned preview used to show, so the drop moment looks identical
+ * and the preview is instantly populated. Sorting on / filter off / centered is
+ * the seeded per-column baseline (also what "Add column" seeds).
+ */
+export function createDefaultDataTableConfig(name: string): DataTableConfig {
+  const column = (accessor: string, header: string): DataTableColumnConfig => ({
+    accessor,
+    header,
+    enableSorting: true,
+    enableColumnFilter: false,
+    align: 'center',
+    useDateFormat: '',
+  })
+  return {
+    name,
+    title: 'Data Table',
+    canEdit: true,
+    canDelete: true,
+    canSearchAllColumns: true,
+    columns: [
+      column('id', 'ID'),
+      column('name', 'Name'),
+      column('email', 'Email'),
+      column('status', 'Status'),
+    ],
+  }
+}
+
+/** Inline editor kinds for an editable-table column. Mirrors the library's
+ * `DataTableEditableEditor`. */
+export type EditableTableEditor = 'text' | 'number' | 'date' | 'select' | 'checkbox'
+
+/** One option for the `select` editor — fixed `{value, label}` shape (unlike the
+ * select field's open records), so it gets a structured row editor. */
+export type EditableTableOption = {
+  value: string
+  label: string
+}
+
+/**
+ * One column of an editable table. Maps onto the library's
+ * `DataTableEditableColumn` minus `size`, `defaultValue`, and the `validate` fn
+ * (not JSON-authorable) — see the grilled design. Every field is always carried
+ * so switching `editor` is lossless; the panel shows and the export emits only
+ * the fields relevant to the current editor: `options` for `select`, `min`/`max`
+ * for `number`, `minLength`/`maxLength`/`pattern`/`patternMessage` for `text`,
+ * and `requiredMessage` when `isRequired`. Numeric bounds are `''` when unset
+ * (mirroring `width`/`maxLength` elsewhere).
+ */
+export type DataTableEditableColumnConfig = {
+  accessorKey: string
+  header: string
+  editable: boolean
+  editor: EditableTableEditor
+  options: EditableTableOption[]
+  isRequired: boolean
+  requiredMessage: string
+  min: number | ''
+  max: number | ''
+  minLength: number | ''
+  maxLength: number | ''
+  pattern: string
+  patternMessage: string
+  enableSorting: boolean
+  enableColumnFilter: boolean
+  align: 'start' | 'center' | 'end'
+}
+
+/**
+ * Editable config for an editable table. Maps onto the engine's
+ * `DataTableEditableElement`. The three action toggles model `apiCrud`
+ * presence — in this component the Add/Edit/Delete actions exist only when
+ * their CRUD API is set — and export as skeleton refs with empty `name`s the
+ * consumer fills in (the engine throws loudly until the read API resolves, so
+ * a skeleton can't silently look wired). `idKey` is the row field used as the
+ * record id for update/delete calls.
+ */
+export type DataTableEditableConfig = {
+  name: string
+  title: string
+  idKey: string
+  canCreate: boolean
+  canUpdate: boolean
+  canDelete: boolean
+  columns: DataTableEditableColumnConfig[]
+}
+
+/** A column with everything off/empty except the identity fields — the base for
+ * seeds and the panel's "Add column". */
+export function createEditableTableColumn(
+  accessorKey: string,
+  header: string,
+  overrides?: Partial<DataTableEditableColumnConfig>,
+): DataTableEditableColumnConfig {
+  return {
+    accessorKey,
+    header,
+    editable: true,
+    editor: 'text',
+    options: [],
+    isRequired: false,
+    requiredMessage: '',
+    min: '',
+    max: '',
+    minLength: '',
+    maxLength: '',
+    pattern: '',
+    patternMessage: '',
+    enableSorting: true,
+    enableColumnFilter: false,
+    align: 'center',
+    ...overrides,
+  }
+}
+
+/**
+ * Defaults for a freshly dropped editable table: an editor showcase — a locked
+ * id, a text name, a select status (with working starter options), and a
+ * checkbox — demoing the editor variety the component exists for. All three
+ * row actions start on.
+ */
+export function createDefaultDataTableEditableConfig(name: string): DataTableEditableConfig {
+  return {
+    name,
+    title: 'Editable Table',
+    idKey: 'id',
+    canCreate: true,
+    canUpdate: true,
+    canDelete: true,
+    columns: [
+      createEditableTableColumn('id', 'ID', { editable: false }),
+      createEditableTableColumn('name', 'Name'),
+      createEditableTableColumn('status', 'Status', {
+        editor: 'select',
+        options: [
+          { value: 'Active', label: 'Active' },
+          { value: 'Pending', label: 'Pending' },
+          { value: 'Inactive', label: 'Inactive' },
+        ],
+      }),
+      createEditableTableColumn('active', 'Active', { editor: 'checkbox' }),
+    ],
+  }
+}
+
 export type GridContainerSettings = {
   columns: Responsive<number>
   gap: Responsive<string>
@@ -550,7 +730,10 @@ export type GridItemData = {
    * daterangepicker/datetimepicker a `DateConfig` discriminated by `kind` (previews
    * with `DatePickerBase`/`DateRangePickerBase`/`DateTimePickerBase`), an uploadimage
    * an `UploadImageConfig` (previews with `UploadImageBase`), and an uploadfile an
-   * `UploadFileConfig` (previews with `UploadFileBase`). Other types are config-less.
+   * `UploadFileConfig` (previews with `UploadFileBase`), a datatable a
+   * `DataTableConfig` (previews with `DataTable2`), and a datatableeditable a
+   * `DataTableEditableConfig` (previews with `DataTableEditable`). Other types
+   * are config-less.
    */
   config?:
     | TextFieldConfig
@@ -562,6 +745,8 @@ export type GridItemData = {
     | DateConfig
     | UploadImageConfig
     | UploadFileConfig
+    | DataTableConfig
+    | DataTableEditableConfig
 }
 
 function responsive<T>(value: T): Responsive<T> {

@@ -1,6 +1,9 @@
 import { MAX_GRID_COLUMNS } from './breakpoints'
 import type {
   CheckboxConfig,
+  DataTableConfig,
+  DataTableEditableColumnConfig,
+  DataTableEditableConfig,
   DateConfig,
   GridContainerSettings,
   GridItemData,
@@ -24,10 +27,11 @@ import type {
  * `autocomplete`), `autocomplete`, `multiAutocomplete` (both keep their type and
  * share the autocomplete element shape), `checkbox`, `radio`, and the three date
  * pickers (`datepicker`/`daterangepicker`/`datetimepicker`, which keep their type and
- * share one kind-discriminated `DateConfig`), `uploadimage`, and `uploadfile`, and
- * omitted for every other type. The multi
+ * share one kind-discriminated `DateConfig`), `uploadimage`, `uploadfile`,
+ * `datatable`, and `datatableeditable`, and omitted for every other type. The multi
  * field's `maxSelections`/`showSelectedCount` are studio-preview-only and not emitted
- * (the engine's `AutocompleteElement` has no home for them). The studio `xs`
+ * (the engine's `AutocompleteElement` has no home for them), as is the datatable's
+ * `canSearchAllColumns` (the engine hardcodes search on). The studio `xs`
  * breakpoint is dropped (the engine starts at `sm`) and `xl` mirrors `lg`.
  */
 
@@ -288,6 +292,92 @@ function uploadFileElement(c: UploadFileConfig): Record<string, unknown> {
   }
 }
 
+/**
+ * `datatable` → engine `DataTableElement`. Columns map 1:1 (`align` always emitted
+ * so the JSON is self-documenting; empty `useDateFormat` drops). The required
+ * `api` endpoint reference and the `modalContainer`/sizing block are **not**
+ * emitted — studio can't author them, so the consumer wires them when pasting the
+ * Bin into a real app. `canSearchAllColumns` is studio-preview-only (the engine
+ * hardcodes search on) and isn't emitted either.
+ */
+function dataTableElement(c: DataTableConfig): Record<string, unknown> {
+  return {
+    name: c.name,
+    title: c.title,
+    columns: c.columns.map((col) => ({
+      accessor: col.accessor,
+      header: col.header,
+      enableSorting: col.enableSorting,
+      enableColumnFilter: col.enableColumnFilter,
+      align: col.align,
+      ...(col.useDateFormat ? { useDateFormat: col.useDateFormat } : {}),
+    })),
+    canEdit: c.canEdit,
+    canDelete: c.canDelete,
+  }
+}
+
+/**
+ * One editable-table column → engine `DataTableEditableColumn`. `editor` and
+ * `editable` are always explicit (like `align` — the JSON self-documents without
+ * knowing the engine defaults). Only editor-relevant extras emit: `options` for
+ * `select`, a `validation` block built from `min`/`max` (number),
+ * `minLength`/`maxLength`/`pattern`/`patternMessage` (text), and
+ * `requiredMessage` (when required) — everything else is carried in studio but
+ * dropped here. The `validate` fn, `size`, and `defaultValue` aren't authorable.
+ */
+function editableTableColumn(col: DataTableEditableColumnConfig): Record<string, unknown> {
+  const validation: Record<string, unknown> = {}
+  if (col.isRequired && col.requiredMessage) validation.requiredMessage = col.requiredMessage
+  if (col.editor === 'number') {
+    if (col.min !== '') validation.min = col.min
+    if (col.max !== '') validation.max = col.max
+  }
+  if (col.editor === 'text') {
+    if (col.minLength !== '') validation.minLength = col.minLength
+    if (col.maxLength !== '') validation.maxLength = col.maxLength
+    if (col.pattern) {
+      validation.pattern = col.pattern
+      if (col.patternMessage) validation.patternMessage = col.patternMessage
+    }
+  }
+  return {
+    accessorKey: col.accessorKey,
+    header: col.header,
+    editable: col.editable,
+    editor: col.editor,
+    ...(col.editor === 'select' && col.options.length > 0 ? { options: col.options } : {}),
+    isRequired: col.isRequired,
+    enableSorting: col.enableSorting,
+    enableColumnFilter: col.enableColumnFilter,
+    align: col.align,
+    ...(Object.keys(validation).length > 0 ? { validation } : {}),
+  }
+}
+
+/**
+ * `datatableeditable` → engine `DataTableEditableElement`. `apiCrud` is emitted
+ * as skeleton refs with empty `name`s — `read` always (it's required and the
+ * engine throws until it resolves, so the stub fails loudly rather than looking
+ * wired), and `create`/`update`/`delete` per their action toggles, since the
+ * component shows an action only when its API is set. The consumer fills in the
+ * API names (and any params/snackbar/confirmBox chrome) when wiring the Bin.
+ */
+function dataTableEditableElement(c: DataTableEditableConfig): Record<string, unknown> {
+  return {
+    name: c.name,
+    title: c.title,
+    idKey: c.idKey,
+    columns: c.columns.map(editableTableColumn),
+    apiCrud: {
+      read: { name: '' },
+      ...(c.canCreate ? { create: { name: '' } } : {}),
+      ...(c.canUpdate ? { update: { name: '' } } : {}),
+      ...(c.canDelete ? { delete: { name: '' } } : {}),
+    },
+  }
+}
+
 /** The element for a Bin, or undefined for types without a mapped element. */
 function buildElement(item: GridItemData): Record<string, unknown> | undefined {
   switch (item.type) {
@@ -311,6 +401,12 @@ function buildElement(item: GridItemData): Record<string, unknown> | undefined {
       return item.config ? uploadImageElement(item.config as UploadImageConfig) : undefined
     case 'uploadfile':
       return item.config ? uploadFileElement(item.config as UploadFileConfig) : undefined
+    case 'datatable':
+      return item.config ? dataTableElement(item.config as DataTableConfig) : undefined
+    case 'datatableeditable':
+      return item.config
+        ? dataTableEditableElement(item.config as DataTableEditableConfig)
+        : undefined
     case 'text':
       return { text: item.label, isLabel: true }
     default:
