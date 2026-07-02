@@ -1,6 +1,6 @@
 import { CoreProvider, ThemeProvider } from '@gummy-ui/ui'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
-import { AppShell, Grid, ModelEditor } from './components'
+import { ApiEditor, AppShell, Grid, ModelEditor } from './components'
 
 function App() {
   // ThemeProvider wraps Radix's <Theme>, supplying the accent CSS vars the
@@ -24,6 +24,7 @@ function App() {
             <Route element={<AppShell />}>
               <Route index element={<Grid />} />
               <Route path="model" element={<ModelEditor />} />
+              <Route path="api" element={<ApiEditor />} />
             </Route>
           </Routes>
         </BrowserRouter>

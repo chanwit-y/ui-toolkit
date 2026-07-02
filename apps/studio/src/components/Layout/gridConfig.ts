@@ -1,4 +1,5 @@
 import { MAX_GRID_COLUMNS } from './breakpoints'
+import { MISSING_OBSERVE_TARGET, observeContext, type ObserveContext } from './observe'
 import type {
   CheckboxConfig,
   DataTableConfig,
@@ -109,21 +110,45 @@ function textareaElement(c: TextareaConfig): Record<string, unknown> {
  * `select` → engine `AutocompleteElement` (the studio select previews with
  * Autocomplete2). `idKey/searchKey/displayKey` map onto `keys.{id,search,display}`;
  * in `source` mode the data source becomes a minimal `api: { name }`.
+ *
+ * The observe trio is derived from `observeContext`, never authored piecemeal:
+ * an observer emits `observeTo` plus the `api.params` entry that injects the
+ * observed value into its refetch, and any item someone observes publishes via
+ * `canObserve: true` (without it the engine's Subject is never created and the
+ * cascade fails silently).
  */
-function autocompleteElement(c: SelectFieldConfig): Record<string, unknown> {
+function autocompleteElement(
+  c: SelectFieldConfig,
+  observe: ObserveContext,
+): Record<string, unknown> {
   return {
     name: c.name,
     dataType: normalizeDataType(c.dataType),
     label: c.label,
     isRequired: c.isRequired,
     errorMessage: c.errorMessage,
-    canObserve: false,
-    observeTo: '',
+    canObserve: observe.isObserved,
+    observeTo: observe.observedName ?? (observe.isDangling ? MISSING_OBSERVE_TARGET : ''),
     isSingleLoad: false,
     keys: { id: c.idKey, search: c.searchKey, display: c.displayKey },
     defaultData: {},
     options: c.options,
-    ...(c.mode === 'source' ? { api: { name: c.dataSource.source } } : {}),
+    ...(c.mode === 'source'
+      ? {
+          api: {
+            name: c.dataSource.source,
+            // Param key = observed element's name, matching the example config:
+            // params: { regionId: { type: "observe", key: "regionId" } }
+            ...(observe.observedName
+              ? {
+                  params: {
+                    [observe.observedName]: { type: 'observe', key: observe.observedName },
+                  },
+                }
+              : {}),
+          },
+        }
+      : {}),
   }
 }
 
@@ -378,8 +403,12 @@ function dataTableEditableElement(c: DataTableEditableConfig): Record<string, un
   }
 }
 
-/** The element for a Bin, or undefined for types without a mapped element. */
-function buildElement(item: GridItemData): Record<string, unknown> | undefined {
+/** The element for a Bin, or undefined for types without a mapped element.
+ * `items` supplies the cross-item context the observe wiring resolves against. */
+function buildElement(
+  item: GridItemData,
+  items: GridItemData[],
+): Record<string, unknown> | undefined {
   switch (item.type) {
     case 'textfield':
       return item.config ? textFieldElement(item.config as TextFieldConfig) : undefined
@@ -388,7 +417,9 @@ function buildElement(item: GridItemData): Record<string, unknown> | undefined {
     case 'select':
     case 'autocomplete':
     case 'multiAutocomplete':
-      return item.config ? autocompleteElement(item.config as SelectFieldConfig) : undefined
+      return item.config
+        ? autocompleteElement(item.config as SelectFieldConfig, observeContext(item, items))
+        : undefined
     case 'checkbox':
       return item.config ? checkboxElement(item.config as CheckboxConfig) : undefined
     case 'radio':
@@ -423,7 +454,7 @@ export function buildBins(
   return items.map((item) => {
     const span = item.settings.colSpan
     const lg = toBoxRange(span.lg, cols.lg)
-    const element = buildElement(item)
+    const element = buildElement(item, items)
     return {
       sm: toBoxRange(span.sm, cols.sm),
       md: toBoxRange(span.md, cols.md),

@@ -135,6 +135,14 @@ export type SelectFieldConfig = {
   /** Which option-record key the type-ahead filters on (`searchKey`). */
   searchKey: string
   dataSource: { source: string; valueKey: string; labelKey: string }
+  /**
+   * `GridItemData.id` of another select-family item this one observes for a
+   * cascading refetch (engine `observeTo`); `''` = none. Stored by id so
+   * renaming the target's binding key can't break the link — `gridConfig`
+   * resolves it to the target's current name at export (see `observe.ts`).
+   * Only meaningful in `source` mode.
+   */
+  observeToItemId: string
 }
 
 /**
@@ -215,6 +223,7 @@ export function createDefaultSelectFieldConfig(name: string): SelectFieldConfig 
     displayKey: 'name',
     searchKey: 'name',
     dataSource: { source: '', valueKey: '', labelKey: '' },
+    observeToItemId: '',
   }
 }
 

@@ -1,6 +1,8 @@
+import { AlertTriangle } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Input, Select, SegmentedControl } from '../common'
 import { useGridStore } from './gridStore'
+import { isSelectFamily, observeWarnings } from './observe'
 import type { MultiAutocompleteConfig, SelectFieldConfig, SelectOption } from './types'
 
 const DATA_TYPE_OPTIONS = [
@@ -139,6 +141,59 @@ function OptionsEditor({
       />
       {error && <span className="mt-1 block text-xs text-red-500">{error}</span>}
     </Field>
+  )
+}
+
+/**
+ * The `observeTo` dropdown — makes this field a cascading child of another
+ * select-family item (the engine clears + refetches it whenever the observed
+ * field's value changes). Targets are every other select/autocomplete/multi
+ * on the canvas, listed by binding name (the engine-level contract) with the
+ * canvas label for recognition. Stored by item id; the export derives the
+ * name-based trio (`observeTo`, `api.params`, target `canObserve`) from it.
+ * All checks surface as non-blocking amber warnings.
+ */
+function ObserveToField({
+  itemId,
+  value,
+  onChange,
+}: {
+  itemId: string
+  value: string
+  onChange: (value: string) => void
+}) {
+  const items = useGridStore((s) => s.items)
+  const item = items.find((i) => i.id === itemId)
+
+  const options = [
+    { value: '', label: '(none)' },
+    ...items
+      .filter((t) => t.id !== itemId && isSelectFamily(t))
+      .map((t) => {
+        const name = (t.config as SelectFieldConfig | undefined)?.name.trim() ?? ''
+        return { value: t.id, label: name ? `${name} (${t.label})` : `(unnamed) — ${t.label}` }
+      }),
+  ]
+  // A dangling ref (item deleted) still needs a visible <option> to keep the
+  // select controlled; the warning below explains it.
+  if (value && !options.some((o) => o.value === value)) {
+    options.push({ value, label: '(missing item)' })
+  }
+
+  const warnings = item ? observeWarnings(item, items) : []
+
+  return (
+    <div className="space-y-1">
+      <Field label="Observe (parent field)">
+        <Select options={options} value={value} onChange={onChange} />
+      </Field>
+      {warnings.map((message) => (
+        <p key={message} className="flex items-start gap-1 text-xs text-amber-600">
+          <AlertTriangle size={12} aria-hidden="true" className="mt-0.5 shrink-0" />
+          {message}
+        </p>
+      ))}
+    </div>
   )
 }
 
@@ -301,6 +356,11 @@ export function SelectFieldConfigPanel({
               />
             </Field>
           </div>
+          <ObserveToField
+            itemId={itemId}
+            value={config.observeToItemId ?? ''}
+            onChange={(v) => set('observeToItemId', v)}
+          />
         </div>
       )}
 

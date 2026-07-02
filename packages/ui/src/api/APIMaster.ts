@@ -14,14 +14,14 @@ import { convertTModelToTArray, convertTModelToTypeBox } from "../model";
 // );
 // const apiFactory = new ApiFactory(http, {});
 
-const methods = (method: "GET" | "POST" | "PUT" | "DELETE") =>
+const methods = (method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE") =>
   Literal(Method[method]);
 
 export type TApiMaster<T extends TModelMaster> = {
   [K: string]: {
     description: string;
     url: string;
-    methods: "GET" | "POST" | "PUT" | "DELETE";
+    methods: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
     response: keyof T | undefined;
     query?: keyof T;
     parameter?: keyof T;
