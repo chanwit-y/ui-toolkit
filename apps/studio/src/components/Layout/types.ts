@@ -134,7 +134,27 @@ export type SelectFieldConfig = {
   displayKey: string
   /** Which option-record key the type-ahead filters on (`searchKey`). */
   searchKey: string
-  dataSource: { source: string; valueKey: string; labelKey: string }
+  /**
+   * Runtime data source (`source` mode): the API page endpoint, referenced by
+   * `EndpointDef.id` (rename-safe like model refs; `null` = none picked) and
+   * resolved to the endpoint's current name at export. `paths` is the dot-path
+   * into the response to the option array (engine `api.paths`; `''` = the
+   * response is the array itself).
+   */
+  dataSource: {
+    endpointId: string | null
+    paths: string
+    valueKey: string
+    labelKey: string
+  }
+  /**
+   * `GridItemData.id` of another select-family item this one observes for a
+   * cascading refetch (engine `observeTo`); `''` = none. Stored by id so
+   * renaming the target's binding key can't break the link — `gridConfig`
+   * resolves it to the target's current name at export (see `observe.ts`).
+   * Only meaningful in `source` mode.
+   */
+  observeToItemId: string
 }
 
 /**
@@ -214,7 +234,8 @@ export function createDefaultSelectFieldConfig(name: string): SelectFieldConfig 
     idKey: 'id',
     displayKey: 'name',
     searchKey: 'name',
-    dataSource: { source: '', valueKey: '', labelKey: '' },
+    dataSource: { endpointId: null, paths: '', valueKey: '', labelKey: '' },
+    observeToItemId: '',
   }
 }
 
@@ -515,9 +536,13 @@ export function createDefaultUploadFileConfig(name: string): UploadFileConfig {
  * One column of a data table. Maps 1:1 onto the engine's `ColumnDef`
  * (`accessor`/`header`/`enableSorting`/`enableColumnFilter`/`align`/`useDateFormat`)
  * so the exported JSON is lossless. `useDateFormat` holds dayjs tokens and is `''`
- * when the raw value should render untouched (dropped on export).
+ * when the raw value should render untouched (dropped on export). `id` is a
+ * studio-only stable identity for the sortable column cards (dnd-kit keys) —
+ * every export path maps fields explicitly, so it never reaches engine JSON.
  */
 export type DataTableColumnConfig = {
+  /** Studio-only stable card identity; never exported. */
+  id: string
   accessor: string
   header: string
   enableSorting: boolean
@@ -529,10 +554,14 @@ export type DataTableColumnConfig = {
 
 /**
  * Editable config for a data table. Maps onto the engine's `DataTableElement`
- * minus the pieces studio can't author yet: the required `api` endpoint reference
- * and the `modalContainer`/sizing block are omitted on export (the consumer wires
- * them), and `canSearchAllColumns` is studio-preview-only — the engine hardcodes
- * search on (`core/dataTable.ts`), so it isn't emitted either.
+ * minus the pieces studio can't author yet: the `modalContainer`/sizing block is
+ * omitted on export (the consumer wires it), and `canSearchAllColumns` is
+ * studio-preview-only — the engine hardcodes search on (`core/dataTable.ts`),
+ * so it isn't emitted either. The `delete*` group authors the engine's
+ * `apiDeleteInfo` (`APIDelete`) and exports only when `canDelete` and an
+ * endpoint are set; the confirmBox True/False action arrays are baked export
+ * constants (see the grilled design), and the snackbar fields mirror
+ * `ButtonItemConfig`'s.
  */
 export type DataTableConfig = {
   name: string
@@ -542,6 +571,43 @@ export type DataTableConfig = {
   /** Preview-only: toggles the search box in the canvas preview, never exported. */
   canSearchAllColumns: boolean
   columns: DataTableColumnConfig[]
+  /**
+   * The API page endpoint feeding the table, by `EndpointDef.id` (`null` =
+   * unwired — the export omits `api` and the consumer wires it). Resolved to
+   * the endpoint's current name at export; also what the Live Preview fetches.
+   */
+  endpointId: string | null
+  /** Dot-path into the response to the row array (engine `api.paths`, e.g.
+   * `data`); `''` = the response is the array itself. */
+  apiPaths: string
+  /**
+   * Edit-modal sizing (engine `modalMaxWidth`/`modalMinWidth`/`modalMaxHeight`,
+   * CSS lengths; `''` = unset, dropped on export). The modal's *content* is the
+   * item's child canvas (drill-in), exported as `modalContainer` with
+   * `contextData` set to the table's binding name so the selected row prefills
+   * the form.
+   */
+  modalMaxWidth: string
+  modalMinWidth: string
+  modalMaxHeight: string
+  /** The row-delete endpoint, by `EndpointDef.id` (`null` = unwired — the
+   * export omits `apiDeleteInfo` and `canDelete` stays as authored). */
+  deleteEndpointId: string | null
+  /** URL `:param` → row-field accessor (engine `apiDeleteInfo.params`, e.g.
+   * `{ id: "_id" }`). Keys derive from the endpoint URL's placeholders — the
+   * panel prunes on endpoint change and the export drops empty values. */
+  deleteParams: Record<string, string>
+  deleteConfirmEnabled: boolean
+  deleteConfirmTitle: string
+  deleteConfirmDescription: string
+  /** Engine `apiDeleteInfo.isReload`: refetch the table after a delete. */
+  deleteIsReload: boolean
+  deleteSnackbarSuccessEnabled: boolean
+  deleteSnackbarSuccessType: ButtonSnackbarVariant
+  deleteSnackbarSuccessMessage: string
+  /** Exports `snackbarError: "$exception"` — the only form the engine reads
+   * (shows the API error message). */
+  deleteSnackbarErrorException: boolean
 }
 
 /**
@@ -552,6 +618,7 @@ export type DataTableConfig = {
  */
 export function createDefaultDataTableConfig(name: string): DataTableConfig {
   const column = (accessor: string, header: string): DataTableColumnConfig => ({
+    id: crypto.randomUUID(),
     accessor,
     header,
     enableSorting: true,
@@ -571,6 +638,21 @@ export function createDefaultDataTableConfig(name: string): DataTableConfig {
       column('email', 'Email'),
       column('status', 'Status'),
     ],
+    endpointId: null,
+    apiPaths: '',
+    modalMaxWidth: '',
+    modalMinWidth: '',
+    modalMaxHeight: '',
+    deleteEndpointId: null,
+    deleteParams: {},
+    deleteConfirmEnabled: true,
+    deleteConfirmTitle: 'Delete record',
+    deleteConfirmDescription: 'Are you sure you want to delete this record?',
+    deleteIsReload: true,
+    deleteSnackbarSuccessEnabled: false,
+    deleteSnackbarSuccessType: 'success',
+    deleteSnackbarSuccessMessage: '',
+    deleteSnackbarErrorException: false,
   }
 }
 
@@ -593,9 +675,12 @@ export type EditableTableOption = {
  * the fields relevant to the current editor: `options` for `select`, `min`/`max`
  * for `number`, `minLength`/`maxLength`/`pattern`/`patternMessage` for `text`,
  * and `requiredMessage` when `isRequired`. Numeric bounds are `''` when unset
- * (mirroring `width`/`maxLength` elsewhere).
+ * (mirroring `width`/`maxLength` elsewhere). `id` is a studio-only stable
+ * identity for the sortable column cards (dnd-kit keys); never exported.
  */
 export type DataTableEditableColumnConfig = {
+  /** Studio-only stable card identity; never exported. */
+  id: string
   accessorKey: string
   header: string
   editable: boolean
@@ -631,6 +716,17 @@ export type DataTableEditableConfig = {
   canUpdate: boolean
   canDelete: boolean
   columns: DataTableEditableColumnConfig[]
+  /**
+   * Optional API page endpoint refs for the CRUD calls, by `EndpointDef.id`
+   * (`null` = unwired). A set ref exports its endpoint's current name (and the
+   * Live Preview fetches `read` live); an unset one keeps the empty-name
+   * skeleton the consumer fills in. The action toggles above stay authoritative
+   * for which actions exist.
+   */
+  readEndpointId: string | null
+  createEndpointId: string | null
+  updateEndpointId: string | null
+  deleteEndpointId: string | null
 }
 
 /** A column with everything off/empty except the identity fields — the base for
@@ -641,6 +737,7 @@ export function createEditableTableColumn(
   overrides?: Partial<DataTableEditableColumnConfig>,
 ): DataTableEditableColumnConfig {
   return {
+    id: crypto.randomUUID(),
     accessorKey,
     header,
     editable: true,
@@ -688,6 +785,328 @@ export function createDefaultDataTableEditableConfig(name: string): DataTableEdi
       }),
       createEditableTableColumn('active', 'Active', { editor: 'checkbox' }),
     ],
+    readEndpointId: null,
+    createEndpointId: null,
+    updateEndpointId: null,
+    deleteEndpointId: null,
+  }
+}
+
+/**
+ * Editable config for a text component. Maps onto the library's `Text` / engine
+ * `TextElement`: `text` is the content and `isLabel` renders it as a form-label
+ * (block, small, medium-weight) instead of inline text. No binding `name` —
+ * TextElement carries none.
+ */
+export type TextConfig = {
+  text: string
+  isLabel: boolean
+}
+
+/** Defaults for a freshly dropped text: label styling on (the common use — a
+ * field caption), mirroring what the serializer emitted before text had a config. */
+export function createDefaultTextConfig(): TextConfig {
+  return { text: 'Text', isLabel: true }
+}
+
+/**
+ * Editable config for a typography component — the curated slice of the engine's
+ * `TypographyElement` (see the grilled design): the props that visibly change a
+ * static preview (`variant`/`weight`/`color`/`align`/`truncate`) plus `href`.
+ * The rest (component/transform/decoration/noWrap/tooltip trio/rel/target) stays
+ * hand-editable in the exported JSON. `''` means "component default" for
+ * `weight`/`color`/`align` (Typography derives them from `variant`), and no link
+ * for `href`.
+ */
+export type TypographyConfig = {
+  text: string
+  variant:
+    | 'display1'
+    | 'display2'
+    | 'h1'
+    | 'h2'
+    | 'h3'
+    | 'h4'
+    | 'h5'
+    | 'h6'
+    | 'subtitle1'
+    | 'subtitle2'
+    | 'body1'
+    | 'body2'
+    | 'caption'
+    | 'overline'
+    | 'button'
+  weight: '' | 'light' | 'regular' | 'medium' | 'bold'
+  color: string
+  align: '' | 'left' | 'center' | 'right' | 'justify'
+  truncate: boolean
+  href: string
+}
+
+/** Defaults for a freshly dropped typography: a body-copy paragraph with every
+ * override unset so the variant's own styling shows through. */
+export function createDefaultTypographyConfig(): TypographyConfig {
+  return {
+    text: 'Typography',
+    variant: 'body1',
+    weight: '',
+    color: '',
+    align: '',
+    truncate: false,
+    href: '',
+  }
+}
+
+/**
+ * Editable config for an avatar. Maps onto the library's `Avatar` / engine
+ * `AvatarElement` (`name` is the element's optional binding key). `src` empty
+ * shows the `fallback` text (or the first letter of `alt`); `size` sticks to the
+ * named steps — the numeric form stays hand-editable in the exported JSON.
+ */
+export type AvatarConfig = {
+  name: string
+  src: string
+  alt: string
+  size: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
+  fallback: string
+}
+
+/** Defaults for a freshly dropped avatar: no image, initials fallback, medium. */
+export function createDefaultAvatarConfig(name: string): AvatarConfig {
+  return { name, src: '', alt: '', size: 'md', fallback: 'AB' }
+}
+
+/**
+ * Editable config for a divider. Maps onto the library's `Divider` / engine
+ * `DividerElement`. `spacing` is the vertical margin in px (`''` = the
+ * component's 8px default).
+ */
+export type DividerConfig = {
+  variant: 'fullWidth' | 'inset' | 'middle'
+  spacing: number | ''
+}
+
+/** Defaults for a freshly dropped divider. Mirrors Divider's own defaults. */
+export function createDefaultDividerConfig(): DividerConfig {
+  return { variant: 'fullWidth', spacing: '' }
+}
+
+/**
+ * Editable config for a button's visual slice: `label` + an optional `icon` key
+ * into the library's `IconData` glyph map (`''` = no icon). Modal/popover
+ * trigger buttons carry exactly this (their behavior is owned by the host);
+ * standalone button items extend it with behavior via `ButtonItemConfig`.
+ * Color comes from the theme.
+ */
+export type ButtonConfig = {
+  label: string
+  /** `IconData` key; `''` = no icon. */
+  icon: string
+}
+
+/** Defaults for a freshly dropped button. */
+export function createDefaultButtonConfig(): ButtonConfig {
+  return { label: 'Button', icon: '' }
+}
+
+/**
+ * The engine `ButtonAction`s studio offers in ordered lists. `ConfirmBox` is
+ * modelled as the panel's mode (not a list entry — the engine only honors it
+ * as `actions[0]`, and everything after it is dead), and `OpenModal` /
+ * `SubmitFormToDeleteAPI` are silent no-ops in the engine's `Button` switch,
+ * so they aren't offered (see the grilled design).
+ */
+export type ButtonActionKey =
+  | 'StartLoading'
+  | 'StopLoading'
+  | 'SubmitFormToPostAPI'
+  | 'SubmitFormToPatchAPI'
+  | 'ClearCurrentFormSelected'
+  | 'CloseModal'
+
+/** Mirrors the library's `SnackbarVariant`. */
+export type ButtonSnackbarVariant = 'success' | 'error' | 'info' | 'warning' | 'neutral'
+
+/**
+ * Full editable config for a *standalone* button item — the visual slice plus
+ * the engine `ButtonElement` behavior (see the grilled design). References are
+ * stored by stable id (grid-item id / `EndpointDef.id`) and resolved to current
+ * names at export, so renames can't strand the button.
+ */
+export type ButtonItemConfig = ButtonConfig & {
+  /** `direct` runs `actions` on click; `confirm` opens a ConfirmBox and runs
+   * `confirmTrue`/`confirmFalse` (exports `actions: ["ConfirmBox"]`). */
+  mode: 'direct' | 'confirm'
+  /** Direct-mode ordered action list. */
+  actions: ButtonActionKey[]
+  confirmTitle: string
+  confirmDescription: string
+  /** Ordered actions run when the ConfirmBox is accepted / dismissed. */
+  confirmTrue: ButtonActionKey[]
+  confirmFalse: ButtonActionKey[]
+  /** Grid-item id of the modal `CloseModal` targets (`''` = none); exports as
+   * the modal's current `ModalConfig.id`. */
+  modalItemId: string
+  /** Grid-item id of the (editable) data table to reload after a submit
+   * (`''` = none); exports as the table's current `name`. */
+  reloadTableItemId: string
+  /** API page endpoint the submit actions call, by `EndpointDef.id`
+   * (`null` = unwired — the export omits `api`). */
+  endpointId: string | null
+  snackbarSuccessEnabled: boolean
+  snackbarSuccessType: ButtonSnackbarVariant
+  snackbarSuccessMessage: string
+  /** Exports `snackbarError: "$exception"` — the only form the engine reads
+   * (it shows the thrown API error's message). */
+  snackbarErrorException: boolean
+}
+
+/** Defaults for a freshly dropped standalone button: direct mode, nothing wired. */
+export function createDefaultButtonItemConfig(): ButtonItemConfig {
+  return {
+    ...createDefaultButtonConfig(),
+    mode: 'direct',
+    actions: [],
+    confirmTitle: '',
+    confirmDescription: '',
+    confirmTrue: [],
+    confirmFalse: [],
+    modalItemId: '',
+    reloadTableItemId: '',
+    endpointId: null,
+    snackbarSuccessEnabled: false,
+    snackbarSuccessType: 'success',
+    snackbarSuccessMessage: '',
+    snackbarErrorException: false,
+  }
+}
+
+/**
+ * Editable config for a hidden field. Maps 1:1 onto the engine's `HiddenElement`
+ * (`name` + `dataType`) — it renders nothing at runtime, so the canvas always
+ * shows its chip and the only authoring is the binding.
+ */
+export type HiddenConfig = {
+  name: string
+  dataType: 'string' | 'number' | 'boolean' | 'any'
+}
+
+/** Defaults for a freshly dropped hidden field. */
+export function createDefaultHiddenConfig(name: string): HiddenConfig {
+  return { name, dataType: 'string' }
+}
+
+/**
+ * Editable config for a paper. Maps onto the library's `Paper` / engine
+ * `PaperElement` minus the nested `container` (that lives in the item's child
+ * canvas — see `ChildCanvas`). `elevation` is ignored by the component when
+ * `variant` is `'outlined'`.
+ */
+export type PaperConfig = {
+  elevation: number
+  variant: 'elevation' | 'outlined'
+  square: boolean
+}
+
+/** Defaults for a freshly dropped paper. Mirrors Paper's own defaults. */
+export function createDefaultPaperConfig(): PaperConfig {
+  return { elevation: 1, variant: 'elevation', square: false }
+}
+
+/** One tab header. The tab's content is the child canvas at the same index in
+ * the item's `childCanvases` (kept aligned by the store's tab actions). */
+export type TabItemConfig = {
+  label: string
+  value: string
+}
+
+/**
+ * Editable config for a tab widget. The inspector manages the header list
+ * (add/remove — see the grilled design); each tab's content is authored by
+ * drilling into its child canvas. `defaultValue` picks the initially active tab
+ * (`''` = the first).
+ */
+export type TabConfig = {
+  tabs: TabItemConfig[]
+  defaultValue: string
+}
+
+/** Defaults for a freshly dropped tab: two starter tabs. The store seeds one
+ * child canvas per entry. */
+export function createDefaultTabConfig(): TabConfig {
+  return {
+    tabs: [
+      { label: 'Tab 1', value: 'tab_1' },
+      { label: 'Tab 2', value: 'tab_2' },
+    ],
+    defaultValue: '',
+  }
+}
+
+/**
+ * Editable config for a modal. Maps onto the engine's `ModalElement` minus the
+ * nested `container` (the item's child canvas). The trigger is a full
+ * `ButtonConfig` (a modal's trigger is a `ButtonElement`); on export it gets
+ * `actions: ["OpenModal"]` wired for it. Sizing strings are any CSS length
+ * (`''` = unset).
+ */
+export type ModalConfig = {
+  id: string
+  title: string
+  description: string
+  maxWidth: string
+  minWidth: string
+  maxHeight: string
+  trigger: ButtonConfig
+}
+
+/** Defaults for a freshly dropped modal. `id` doubles as the engine's modal
+ * registry key, so it gets the unique seq name. */
+export function createDefaultModalConfig(id: string): ModalConfig {
+  return {
+    id,
+    title: 'Modal',
+    description: '',
+    maxWidth: '',
+    minWidth: '',
+    maxHeight: '',
+    trigger: { label: 'Open', icon: '' },
+  }
+}
+
+/**
+ * Editable config for a popover. Maps onto the engine's `PopoverElement` minus
+ * the nested `container` (the item's child canvas). The trigger is a mini-Bin;
+ * studio restricts it to `button` | `text` (see the grilled design) and carries
+ * both configs so switching kinds is lossless. `offset` is the px gap (`''` =
+ * the component's 8px default).
+ */
+export type PopoverConfig = {
+  placement:
+    | 'top'
+    | 'bottom'
+    | 'left'
+    | 'right'
+    | 'top-start'
+    | 'top-end'
+    | 'bottom-start'
+    | 'bottom-end'
+  triggerMode: 'click' | 'hover'
+  offset: number | ''
+  triggerKind: 'button' | 'text'
+  triggerButton: ButtonConfig
+  triggerText: TextConfig
+}
+
+/** Defaults for a freshly dropped popover. */
+export function createDefaultPopoverConfig(): PopoverConfig {
+  return {
+    placement: 'bottom',
+    triggerMode: 'click',
+    offset: '',
+    triggerKind: 'button',
+    triggerButton: { label: 'Open popover', icon: '' },
+    triggerText: { text: 'Open popover', isLabel: false },
   }
 }
 
@@ -732,8 +1151,12 @@ export type GridItemData = {
    * an `UploadImageConfig` (previews with `UploadImageBase`), and an uploadfile an
    * `UploadFileConfig` (previews with `UploadFileBase`), a datatable a
    * `DataTableConfig` (previews with `DataTable2`), and a datatableeditable a
-   * `DataTableEditableConfig` (previews with `DataTableEditable`). Other types
-   * are config-less.
+   * `DataTableEditableConfig` (previews with `DataTableEditable`). The display
+   * types carry a `TextConfig` / `TypographyConfig` / `AvatarConfig` /
+   * `DividerConfig` / `ButtonConfig` (previewing with `Text` / `Typography` /
+   * `Avatar` / `Divider` / `ButtonBase`, always live — no width gate), and a
+   * hidden a `HiddenConfig` (chip-only; it renders nothing at runtime). Other
+   * types are config-less.
    */
   config?:
     | TextFieldConfig
@@ -747,6 +1170,81 @@ export type GridItemData = {
     | UploadFileConfig
     | DataTableConfig
     | DataTableEditableConfig
+    | TextConfig
+    | TypographyConfig
+    | AvatarConfig
+    | DividerConfig
+    | ButtonItemConfig
+    | HiddenConfig
+    | PaperConfig
+    | TabConfig
+    | ModalConfig
+    | PopoverConfig
+  /**
+   * Child canvases for the container-hosting types (see the grilled design:
+   * drill-in editing, arbitrary depth). `container`/`paper`/`modal`/`popover`
+   * carry exactly one; `tab` carries one per `TabConfig.tabs` entry
+   * (index-aligned — the store's tab actions keep them in sync). Absent on every
+   * other type.
+   */
+  childCanvases?: ChildCanvas[]
+}
+
+/** One nested canvas: its own items and its own grid settings, mirroring the
+ * engine where every `Container` owns its grid config. Recursive — child items
+ * can carry canvases of their own. */
+export type ChildCanvas = {
+  items: GridItemData[]
+  settings: GridContainerSettings
+}
+
+/** A fresh, empty child canvas with the default grid settings. */
+export function createChildCanvas(): ChildCanvas {
+  return { items: [], settings: defaultContainerSettings }
+}
+
+/** Which palette types host child canvases, and how many they start with. */
+export function childCanvasCount(type: ComponentType, config?: GridItemData['config']): number {
+  if (type === 'container' || type === 'paper' || type === 'modal' || type === 'popover') return 1
+  // A data table's canvas is its edit modal's content (engine `modalContainer`).
+  if (type === 'datatable') return 1
+  if (type === 'tab') return (config as TabConfig | undefined)?.tabs.length ?? 0
+  return 0
+}
+
+/** What a button's stable refs can point at, gathered across the whole tree. */
+export type ButtonRefTargets = {
+  /** Modal items: grid-item id → the authored engine registry key (`ModalConfig.id`). */
+  modals: { itemId: string; modalId: string }[]
+  /** (Editable) data tables: grid-item id → the authored binding `name` (the
+   * `fnCtxs` key both table components register their refetch under). */
+  tables: { itemId: string; name: string }[]
+}
+
+/**
+ * Walk the ROOT items (recursing through `childCanvases`) collecting the
+ * modal / table targets a button can reference — a Save button lives *inside*
+ * its modal's child canvas, so enumeration must be cross-canvas. Used by the
+ * button inspector's dropdowns and by the export's id → name resolution.
+ */
+export function collectButtonTargets(items: GridItemData[]): ButtonRefTargets {
+  const modals: ButtonRefTargets['modals'] = []
+  const tables: ButtonRefTargets['tables'] = []
+  const walk = (list: GridItemData[]) => {
+    for (const item of list) {
+      if (item.type === 'modal' && item.config) {
+        modals.push({ itemId: item.id, modalId: (item.config as ModalConfig).id })
+      } else if (
+        (item.type === 'datatable' || item.type === 'datatableeditable') &&
+        item.config
+      ) {
+        tables.push({ itemId: item.id, name: (item.config as { name: string }).name })
+      }
+      item.childCanvases?.forEach((canvas) => walk(canvas.items))
+    }
+  }
+  walk(items)
+  return { modals, tables }
 }
 
 function responsive<T>(value: T): Responsive<T> {

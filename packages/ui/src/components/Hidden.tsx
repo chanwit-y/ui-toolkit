@@ -5,9 +5,14 @@ import { forwardRef } from "react"
 
 const HiddenBase = forwardRef<
 	ElementRef<"input">,
-	HiddenProps
+	HiddenProps & { error?: boolean; errorMessage?: string }
 >(({
 	value,
+	// withForm injects these into every wrapped field; a hidden input has no
+	// error UI, and spreading them onto the raw <input> trips React's unknown-
+	// attribute warnings.
+	error: _error,
+	errorMessage: _errorMessage,
 	...props
 }, ref) => {
 	return (

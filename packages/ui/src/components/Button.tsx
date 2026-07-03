@@ -8,7 +8,43 @@ import { useLoading, useTheme } from "./context";
 import { useData } from "./context/DataProvider";
 import { useStord } from "./core/stord";
 import Icon from "./Icon";
+import type { IconData } from "./core/const/iconData";
 import { useSnackbar } from "./Snackbar";
+
+export type ButtonBaseProps = {
+	label: string;
+	icon?: keyof typeof IconData;
+	color?: ThemeProps["accentColor"];
+	onClick?: React.MouseEventHandler<HTMLButtonElement>;
+};
+
+/**
+ * Presentational button: the engine `Button`'s visuals (themed Radix button +
+ * optional IconData glyph + label) without its form/action plumbing. The engine
+ * `Button` renders through this, so the two can't drift.
+ */
+const ButtonBase = forwardRef<ElementRef<typeof RadixButton>, ButtonBaseProps>(
+	({ label, icon, color, onClick }, ref) => {
+		const theme = useTheme();
+		return (
+			<RadixButton
+				ref={ref}
+				className="cursor-pointer "
+				color={
+					(theme.components.button?.color as ThemeProps["accentColor"]) ||
+					color ||
+					"blue"
+				}
+				onClick={onClick}
+			>
+				{icon ? <Icon icon={icon} size={14} /> : ""}
+				{label}
+			</RadixButton>
+		);
+	},
+);
+
+ButtonBase.displayName = "ButtonBase";
 
 const Button = forwardRef<ElementRef<typeof RadixButton>, ButtonProps>(({
 	label,
@@ -157,17 +193,14 @@ const Button = forwardRef<ElementRef<typeof RadixButton>, ButtonProps>(({
 
 	}, [actions, executeActions, shouldValidateBeforeConfirm, trigger, showValidationAlert])
 
-	const theme = useTheme()
-
 	return <>
 
-		<RadixButton
-			className="cursor-pointer "
-			color={theme.components.button?.color as ThemeProps['accentColor'] || color || 'blue'}
+		<ButtonBase
+			label={label}
+			icon={icon}
+			color={color}
 			onClick={handleClick}
-		>{icon ? <Icon icon={icon} size={14} /> : ""}
-			{label}
-		</RadixButton>
+		/>
 		<ConfirmBox
 			id="confirmBox"
 			open={open}
@@ -181,4 +214,4 @@ const Button = forwardRef<ElementRef<typeof RadixButton>, ButtonProps>(({
 
 Button.displayName = 'Button';
 
-export { Button };
+export { Button, ButtonBase };

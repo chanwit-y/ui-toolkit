@@ -13,8 +13,10 @@ export interface ModalProps {
 	// trigger?: ButtonElement
 	trigger?: JSX.Element
 	title?: string
-	// description?: string
+	description?: string
 	children?: ReactNode
+	width?: string
+	height?: string
 	maxWidth?: string
 	minWidth?: string
 	maxHeight?: string
@@ -31,6 +33,9 @@ const Modal = forwardRef<HTMLDivElement, ModalProps>(
 			children,
 			trigger,
 			title,
+			description,
+			width,
+			height,
 			maxWidth,
 			minWidth,
 			maxHeight,
@@ -59,13 +64,16 @@ const Modal = forwardRef<HTMLDivElement, ModalProps>(
 		// }, [trigger])
 
 		const contentStyle = useMemo<CSSProperties | undefined>(() => {
-			if (!maxWidth && !minWidth) return undefined
+			if (!maxWidth && !minWidth && !width && !height) return undefined
 
 			return {
-				maxWidth,
+				width,
+				height,
+				// An explicit width must also override the max-w-lg class cap.
+				maxWidth: maxWidth ?? width,
 				minWidth,
 			}
-		}, [maxWidth, minWidth])
+		}, [width, height, maxWidth, minWidth])
 
 		const handleOpenChange = useCallback(
 			(nextOpen: boolean) => {
@@ -80,28 +88,43 @@ const Modal = forwardRef<HTMLDivElement, ModalProps>(
 			updateFnCtxs?.(id, (...args: any[]) => handleOpenChangeRef.current(...(args as [boolean])))
 		}, [id, updateFnCtxs])
 
+		// Interactions on an inspector surface (marked data-engine-devtools, e.g.
+		// the studio's floating dev-tools panel) must not dismiss the dialog —
+		// the whole point of the panel is to inspect state while it is open.
+		const guardDevtoolsInteraction = useCallback(
+			(event: { target: EventTarget | null; preventDefault: () => void }) => {
+				const target = event.target as Element | null
+				if (target?.closest?.("[data-engine-devtools]")) event.preventDefault()
+			}, [])
+
 		return (
 			<AlertDialog.Root open={isOpen} onOpenChange={handleOpenChange}>
 				{/* <AlertDialog.Root open={isOpen}>  */}
 
+				{/* Radix's asChild Trigger throws on a missing child, so render it
+				    only when a trigger exists (controlled trigger-less usage). */}
 				{
-					hiddenTrigger && trigger ? null : (
+					trigger && !hiddenTrigger ? (
 						<AlertDialog.Trigger asChild>
 							{trigger}
-							{/* {triggerElement} */}
-							{/* <button  className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors">
-								Open Dialog
-							</button> */}
 						</AlertDialog.Trigger>
-					)
+					) : null
 				}
 
 				<AlertDialog.Portal>
 					<AlertDialog.Overlay className="modal-overlay fixed inset-0 z-99999" />
+					{/* The dialog surface uses Radix theme vars, which only resolve
+					    inside a `.radix-themes` ancestor — at body level (portal)
+					    there is none, so the panel background lives on the inner
+					    ThemeProvider wrapper rather than on Content itself. */}
 					<AlertDialog.Content
 						ref={ref}
 						style={contentStyle}
-						className="modal-content fixed top-1/2 left-1/2 z-99999 mx-4 min-w-[400px] max-w-lg max-h-[90vh] transform -translate-x-1/2 -translate-y-1/2 rounded-lg bg-white dark:bg-gray-900 shadow-lg flex flex-col"
+						onPointerDownOutside={guardDevtoolsInteraction}
+						onInteractOutside={guardDevtoolsInteraction}
+						onFocusOutside={guardDevtoolsInteraction}
+						{...(description ? {} : { "aria-describedby": undefined })}
+						className="modal-content fixed top-1/2 left-1/2 z-99999 mx-4 min-w-[400px] max-w-lg max-h-[90vh] transform -translate-x-1/2 -translate-y-1/2 rounded-lg shadow-lg flex flex-col"
 					>
 
 						<ThemeProvider
@@ -112,13 +135,18 @@ const Modal = forwardRef<HTMLDivElement, ModalProps>(
 									size: "2",
 								}
 							}}
-							className="flex flex-col flex-1 min-h-0">
-							<div className={`flex items-start justify-between gap-4 flex-shrink-0 bg-white dark:bg-gray-900 py-4 px-6 ${isHideTitleLine ? "" : "border-b border-gray-200 dark:border-gray-700"}`}>
+							className="flex flex-col flex-1 min-h-0 rounded-lg overflow-hidden bg-[var(--color-panel-solid)]">
+							<div className={`flex items-start justify-between gap-4 flex-shrink-0 py-4 px-6 ${isHideTitleLine ? "" : "border-b border-[var(--gray-6)]"}`}>
 								<div className="flex-1">
 									{title && (
 										<AlertDialog.Title className="text-lg font-semibold">
 											{title}
 										</AlertDialog.Title>
+									)}
+									{description && (
+										<AlertDialog.Description className="mt-0.5 text-xs text-[var(--gray-11)]">
+											{description}
+										</AlertDialog.Description>
 									)}
 								</div>
 

@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -11,6 +12,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { Loader2 } from "lucide-react";
+import { engineDebug } from "../core/engineDebug";
 
 import "./LoadingProvider.css";
 
@@ -174,6 +176,14 @@ export function LoadingProvider({
     () => Array.from(activeLoaders.keys()),
     [activeLoaders],
   );
+
+  // Mirror into the engine debug store for inspectors outside this provider
+  // (the Live Preview dev-tools panel is a sibling of the engine tree).
+  const debugId = useId();
+  useEffect(() => {
+    engineDebug.setLoaders(debugId, activeLoaderIds);
+  }, [debugId, activeLoaderIds]);
+  useEffect(() => () => engineDebug.setLoaders(debugId, undefined), [debugId]);
 
   const contextValue = useMemo<LoadingContextValue>(
     () => ({

@@ -12,6 +12,17 @@
       "port": 3200
     },
     {
+      "name": "api",
+      "comment": "Hono mock CRUD backend on port 9000. Prepend homebrew Node so nodemon/tsx use v23, not the default v12 on PATH.",
+      "runtimeExecutable": "/bin/bash",
+      "runtimeArgs": [
+        "-c",
+        "PATH=/opt/homebrew/bin:$PATH exec bun run --cwd apps/api dev"
+      ],
+      "port": 9000,
+      "autoPort": false
+    },
+    {
       "name": "studio",
       "runtimeExecutable": "/opt/homebrew/bin/node",
       "runtimeArgs": [
@@ -21,6 +32,34 @@
         "3300"
       ],
       "port": 3300
+    },
+    {
+      "name": "studio-alt",
+      "comment": "Same as studio on a fallback port, for when another session holds 3300.",
+      "runtimeExecutable": "/opt/homebrew/bin/node",
+      "runtimeArgs": [
+        "apps/studio/node_modules/vite/bin/vite.js",
+        "apps/studio",
+        "--port",
+        "3311",
+        "--strictPort"
+      ],
+      "port": 3311,
+      "autoPort": false
+    },
+    {
+      "name": "studio-b",
+      "comment": "Second fallback, for when other sessions hold 3300 and 3311.",
+      "runtimeExecutable": "/opt/homebrew/bin/node",
+      "runtimeArgs": [
+        "apps/studio/node_modules/vite/bin/vite.js",
+        "apps/studio",
+        "--port",
+        "3312",
+        "--strictPort"
+      ],
+      "port": 3312,
+      "autoPort": false
     }
   ]
 }

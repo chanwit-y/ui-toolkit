@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { countrySeedModels } from '../seed/country'
 import type { ArrayOf, FieldKind, ModelDef, ModelField } from './types'
 
 /** Mirror gridStore's id strategy. */
@@ -129,7 +130,9 @@ function nextModelName(models: ModelDef[]): string {
   return `model${n}`
 }
 
-const firstModel = createModel('model1')
+// Studio boots with the country mock (see seed/country.ts) — the same models
+// the example app's config/country/model.ts defines.
+const initialModels = countrySeedModels()
 
 /** Apply `fn` to the model with `id`, leaving the rest untouched. */
 function patchModel(
@@ -141,8 +144,8 @@ function patchModel(
 }
 
 export const useModelStore = create<ModelStore>((set) => ({
-  models: [firstModel],
-  selectedModelId: firstModel.id,
+  models: initialModels,
+  selectedModelId: initialModels[0]?.id ?? null,
 
   selectModel: (id) => set({ selectedModelId: id }),
 
@@ -243,4 +246,9 @@ export function useSelectedModel(): ModelDef | null {
   return useModelStore(
     (s) => s.models.find((m) => m.id === s.selectedModelId) ?? null,
   )
+}
+
+// Dev-only: expose the store for scripted verification (mirrors __gridStore).
+if (import.meta.env.DEV && typeof window !== 'undefined') {
+  ;(window as unknown as { __modelStore?: typeof useModelStore }).__modelStore = useModelStore
 }

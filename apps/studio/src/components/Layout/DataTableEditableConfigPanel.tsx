@@ -1,7 +1,8 @@
 import { useState, type ReactNode } from 'react'
-import { ArrowDown, ArrowUp, ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react'
-import { IconButton, Input, Select } from '../common'
+import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react'
+import { IconButton, Input, Select, SortableCardList } from '../common'
 import { useGridStore } from './gridStore'
+import { EndpointPicker } from './SelectFieldConfigPanel'
 import {
   createEditableTableColumn,
   type DataTableEditableColumnConfig,
@@ -139,8 +140,11 @@ function NumberField({
  * editor-specific section (select options, number bounds, text constraints),
  * and the `editable`/`isRequired` toggles. Everything is carried across editor
  * switches (lossless); only the relevant section is *shown*, and only the
- * relevant fields are exported. No validation of accessors — like the other
- * option editors, the preview shows the consequence.
+ * relevant fields are exported. Cards reorder by dragging their grip
+ * (`SortableCardList`): every card renders collapsed while a drag is in flight,
+ * and the expanded card (tracked by column `id`) restores on drop. No
+ * validation of accessors — like the other option editors, the preview shows
+ * the consequence.
  */
 function ColumnsEditor({
   columns,
@@ -149,39 +153,34 @@ function ColumnsEditor({
   columns: DataTableEditableColumnConfig[]
   onChange: (columns: DataTableEditableColumnConfig[]) => void
 }) {
-  const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
 
   const patch = (index: number, p: Partial<DataTableEditableColumnConfig>) =>
     onChange(columns.map((c, i) => (i === index ? { ...c, ...p } : c)))
   const remove = (index: number) => {
+    const removedId = columns[index]?.id
     onChange(columns.filter((_, i) => i !== index))
-    setExpandedIndex((e) => (e === null ? null : e === index ? null : e > index ? e - 1 : e))
+    setExpandedId((e) => (e === removedId ? null : e))
   }
   const add = () =>
     onChange([
       ...columns,
       createEditableTableColumn(`column${columns.length + 1}`, `Column ${columns.length + 1}`),
     ])
-  const move = (index: number, dir: -1 | 1) => {
-    const to = index + dir
-    if (to < 0 || to >= columns.length) return
-    const next = columns.slice()
-    ;[next[index], next[to]] = [next[to], next[index]]
-    onChange(next)
-    // The expanded card follows its column when either side of the swap moves.
-    setExpandedIndex((e) => (e === index ? to : e === to ? index : e))
-  }
 
   return (
     <Field label="Columns">
       <div className="space-y-2">
-        {columns.map((column, index) => {
-          const expanded = expandedIndex === index
-          return (
-            <div
-              key={index}
-              className="space-y-2 rounded-lg border border-zinc-200 bg-zinc-50/60 p-2"
-            >
+        <SortableCardList
+          items={columns}
+          onReorder={onChange}
+          cardClassName="space-y-2 rounded-lg border border-zinc-200 bg-zinc-50/60 p-2"
+          gripLabel={(_, index) => `Reorder column ${index + 1}`}
+        >
+          {(column, index, { grip, dragging }) => {
+            const expanded = !dragging && expandedId === column.id
+            return (
+              <>
               <div className="grid grid-cols-2 gap-2">
                 <Input
                   value={column.accessorKey}
@@ -302,47 +301,33 @@ function ColumnsEditor({
               )}
 
               <div className="flex items-center justify-between gap-1">
-                <button
-                  type="button"
-                  onClick={() => setExpandedIndex(expanded ? null : index)}
-                  className="flex items-center gap-0.5 text-xs font-medium text-zinc-500 transition-colors hover:text-teal-600"
-                >
-                  {expanded ? (
-                    <ChevronUp className="h-3.5 w-3.5" aria-hidden="true" />
-                  ) : (
-                    <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
-                  )}
-                  {expanded ? 'Less' : 'More'}
-                </button>
                 <div className="flex items-center gap-1">
-                  <IconButton
-                    label={`Move column ${index + 1} up`}
-                    onClick={() => move(index, -1)}
-                    disabled={index === 0}
-                    className="h-6! w-6! text-zinc-400 hover:text-teal-600 disabled:opacity-30"
+                  {grip}
+                  <button
+                    type="button"
+                    onClick={() => setExpandedId(expanded ? null : column.id)}
+                    className="flex items-center gap-0.5 text-xs font-medium text-zinc-500 transition-colors hover:text-teal-600"
                   >
-                    <ArrowUp className="h-3.5 w-3.5" aria-hidden="true" />
-                  </IconButton>
-                  <IconButton
-                    label={`Move column ${index + 1} down`}
-                    onClick={() => move(index, 1)}
-                    disabled={index === columns.length - 1}
-                    className="h-6! w-6! text-zinc-400 hover:text-teal-600 disabled:opacity-30"
-                  >
-                    <ArrowDown className="h-3.5 w-3.5" aria-hidden="true" />
-                  </IconButton>
-                  <IconButton
-                    label={`Remove column ${index + 1}`}
-                    onClick={() => remove(index)}
-                    className="h-6! w-6! text-zinc-400 hover:text-red-500"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                  </IconButton>
+                    {expanded ? (
+                      <ChevronUp className="h-3.5 w-3.5" aria-hidden="true" />
+                    ) : (
+                      <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
+                    )}
+                    {expanded ? 'Less' : 'More'}
+                  </button>
                 </div>
+                <IconButton
+                  label={`Remove column ${index + 1}`}
+                  onClick={() => remove(index)}
+                  className="h-6! w-6! text-zinc-400 hover:text-red-500"
+                >
+                  <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                </IconButton>
               </div>
-            </div>
-          )
-        })}
+              </>
+            )
+          }}
+        </SortableCardList>
         <button
           type="button"
           onClick={add}
@@ -424,6 +409,44 @@ export function DataTableEditableConfigPanel({
         checked={config.canDelete}
         onChange={(v) => set('canDelete', v)}
       />
+
+      {/* Optional CRUD endpoint refs (API page). A set ref exports its
+          endpoint's current name (and read fetches live in the preview);
+          unset refs keep the empty-name skeleton the consumer wires. The
+          mutation pickers only show while their action toggle is on. */}
+      <h4 className="pt-1 text-[11px] font-semibold uppercase tracking-wide text-zinc-400">
+        API endpoints (optional)
+      </h4>
+      <Field label="Read">
+        <EndpointPicker
+          value={config.readEndpointId}
+          onChange={(id) => set('readEndpointId', id)}
+        />
+      </Field>
+      {config.canCreate && (
+        <Field label="Create">
+          <EndpointPicker
+            value={config.createEndpointId}
+            onChange={(id) => set('createEndpointId', id)}
+          />
+        </Field>
+      )}
+      {config.canUpdate && (
+        <Field label="Update">
+          <EndpointPicker
+            value={config.updateEndpointId}
+            onChange={(id) => set('updateEndpointId', id)}
+          />
+        </Field>
+      )}
+      {config.canDelete && (
+        <Field label="Delete">
+          <EndpointPicker
+            value={config.deleteEndpointId}
+            onChange={(id) => set('deleteEndpointId', id)}
+          />
+        </Field>
+      )}
     </div>
   )
 }

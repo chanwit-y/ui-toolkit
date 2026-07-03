@@ -93,7 +93,10 @@ export function toModelTs(models: ModelDef[]): string {
     .map((name) => `  ${emitKey(name)}: ${emitObject(master[name], 1)},`)
     .join('\n')
   const inner = names.length === 0 ? '{}' : `{\n${body}\n}`
-  return `import type { TModelMaster } from "@gummy-ui/ui";\n\nexport const model: TModelMaster = ${inner};\n`
+  // `satisfies` (not `: TModelMaster`) keeps `typeof model` carrying literal
+  // model names, so the API page's `TApiMaster<typeof model>` export can
+  // typecheck its model references against this file.
+  return `import type { TModelMaster } from "@gummy-ui/ui";\n\nexport const model = ${inner} satisfies TModelMaster;\n`
 }
 
 /** The same value as raw JSON. */

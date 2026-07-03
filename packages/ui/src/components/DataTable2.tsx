@@ -135,17 +135,22 @@ export const DataTable2 = <T extends Record<string, any>>({
 
 
 
+	// `row` overrides `selectedRow` for the confirm-less path, where the delete
+	// runs in the same tick as the click and the selection state hasn't committed.
 	const executeActions = useCallback(async (
 		actionsToExecute: ButtonAction[] = [],
-		_event?: React.MouseEvent<HTMLButtonElement>
+		row?: T
 	) => {
 		let loaderId: string | undefined;
+		let deleted = false;
+		const targetRow = row ?? selectedRow
 
 		for (const action of actionsToExecute) {
 			switch (action) {
 				case 'SubmitFormToDeleteAPI':
-					if (apiDeleteInfo && selectedRow && apiDeleteInfo.params?.["id"] && selectedRow[apiDeleteInfo.params["id"]] && apiDelete) {
-						await apiDelete({ id: selectedRow[apiDeleteInfo.params["id"]] || selectedRow[apiDeleteInfo.params["_id"]] })
+					if (apiDeleteInfo && targetRow && apiDeleteInfo.params?.["id"] && targetRow[apiDeleteInfo.params["id"]] && apiDelete) {
+						await apiDelete({ id: targetRow[apiDeleteInfo.params["id"]] || targetRow[apiDeleteInfo.params["_id"]] })
+						deleted = true;
 						apiDeleteInfo?.isReload && await refetch();
 					}
 					break;
@@ -163,7 +168,9 @@ export const DataTable2 = <T extends Record<string, any>>({
 			}
 		}
 
-		if (apiDeleteInfo?.snackbarSuccess) {
+		// Only after an actual delete — cancelling the confirm box runs an empty
+		// (or delete-less) action list and must not report success.
+		if (deleted && apiDeleteInfo?.snackbarSuccess) {
 			showSnackbar({
 				variant: apiDeleteInfo?.snackbarSuccess.type,
 				message: apiDeleteInfo?.snackbarSuccess.message,
@@ -220,7 +227,13 @@ export const DataTable2 = <T extends Record<string, any>>({
 							aria-label="Delete row"
 							onClick={() => {
 								setSelectedRow(row.original)
-								setOpenConfirmBox(true)
+								// No confirmBox authored → run the delete sequence directly;
+								// opening the dialog would confirm into an empty action list.
+								if (apiDeleteInfo && !apiDeleteInfo.confirmBox) {
+									executeActions(['StartLoading', 'SubmitFormToDeleteAPI', 'StopLoading'], row.original)
+								} else {
+									setOpenConfirmBox(true)
+								}
 							}}
 						>
 							<Icon icon="trash" size={14} />
@@ -237,7 +250,7 @@ export const DataTable2 = <T extends Record<string, any>>({
 		}
 
 		return canEdit || canDelete ? [actionIconColumn, ...columns] : [...columns]
-	}, [columns, canDelete, canEdit, dataCtx, editButtonColor, name])
+	}, [columns, canDelete, canEdit, dataCtx, editButtonColor, name, apiDeleteInfo, executeActions])
 
 	const table = useReactTable({
 		data,
@@ -697,8 +710,8 @@ export const DataTable2 = <T extends Record<string, any>>({
 			open={openConfirmBox}
 			onOpenChange={() => setOpenConfirmBox(!openConfirmBox)}
 			onConfirm={handleConfirm}
-			title="Delete item"
-			description="This action cannot be undone. Are you sure you want to continue?"
+			title={apiDeleteInfo?.confirmBox?.title ?? "Delete item"}
+			description={apiDeleteInfo?.confirmBox?.description ?? "This action cannot be undone. Are you sure you want to continue?"}
 		/>
 	</div>)
 }

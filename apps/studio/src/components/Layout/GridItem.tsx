@@ -1,23 +1,35 @@
 import type { DataType } from '@gummy-ui/ui'
 import {
   AutocompleteBase2,
+  Avatar,
+  ButtonBase,
   CheckboxBase,
   DataTable2,
   DataTableEditable,
   DatePickerBase,
   DateRangePickerBase,
   DateTimePickerBase,
+  Divider,
   MultiAutocompleteBase,
+  Paper,
   RadioButtonBase,
+  Tab,
+  Text,
   TextareaBase,
   TextFieldBase,
+  Typography,
   UploadFileBase,
   UploadImageBase,
 } from '@gummy-ui/ui'
+import type { IconData, TypographyProps } from '@gummy-ui/ui'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import {
+  AppWindow,
+  Box,
   Calendar,
+  EyeOff,
+  Expand,
   GripVertical,
   Hash,
   ImagePlus,
@@ -26,13 +38,20 @@ import {
   ListFilter,
   Lock,
   Mail,
+  MessageSquare,
+  MousePointerClick,
+  PanelTop,
   Phone,
+  Pilcrow,
   Search,
+  SeparatorHorizontal,
   SquareCheck,
+  StickyNote,
   Table,
   TextWrap,
   Type,
   Upload,
+  User,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import dayjs from 'dayjs'
@@ -42,18 +61,28 @@ import { COMPONENT_BY_TYPE } from './componentCatalog'
 import { ENTER_DURATION_MS, prefersReducedMotion, UPGRADE_FADE_MS } from './gridAnimation'
 import { useGridStore, useIsEntering } from './gridStore'
 import type {
+  AvatarConfig,
+  ButtonConfig,
   CheckboxConfig,
+  ChildCanvas,
   DataTableColumnConfig,
   DataTableConfig,
   DataTableEditableColumnConfig,
   DataTableEditableConfig,
   DateConfig,
+  DividerConfig,
   GridItemData,
+  ModalConfig,
   MultiAutocompleteConfig,
+  PaperConfig,
+  PopoverConfig,
   RadioConfig,
   SelectFieldConfig,
+  TabConfig,
   TextareaConfig,
+  TextConfig,
   TextFieldConfig,
+  TypographyConfig,
   UploadFileConfig,
   UploadImageConfig,
 } from './types'
@@ -94,12 +123,28 @@ function iconForDataType(dataType: DataType): LucideIcon {
 type LiveThresholds = { liveMin: number; chipMax: number }
 const FIELD_THRESHOLDS: LiveThresholds = { liveMin: 224, chipMax: 208 } // ~14rem / ~13rem
 const TABLE_THRESHOLDS: LiveThresholds = { liveMin: 480, chipMax: 440 } // a table needs room
+// The display types (divider, text, typography, avatar, button) are legible at
+// any width — a divider is just a line — so they render live unconditionally
+// (see the grilled design). liveMin 0 makes the first synchronous measurement
+// flip to live; chipMax -1 means no width can flip back.
+const ALWAYS_LIVE: LiveThresholds = { liveMin: 0, chipMax: -1 }
 
 /** The live/chip thresholds for a given component kind. */
 function thresholdsForType(type: GridItemData['type']): LiveThresholds {
-  return type === 'datatable' || type === 'datatableeditable'
-    ? TABLE_THRESHOLDS
-    : FIELD_THRESHOLDS
+  if (type === 'datatable' || type === 'datatableeditable') return TABLE_THRESHOLDS
+  if (
+    type === 'divider' ||
+    type === 'text' ||
+    type === 'typography' ||
+    type === 'avatar' ||
+    type === 'button' ||
+    // Overlays render only their trigger on the canvas — as cheap as a button.
+    type === 'modal' ||
+    type === 'popover'
+  ) {
+    return ALWAYS_LIVE
+  }
+  return FIELD_THRESHOLDS
 }
 
 /** Content-box width of an element (excludes its padding and border). */
@@ -167,6 +212,39 @@ function CellContent({ item }: { item: GridItemData }) {
   if (item.type === 'datatable') {
     return <GlyphChip Icon={Table} />
   }
+  if (item.type === 'text' && item.config) {
+    return <GlyphChip Icon={Type} />
+  }
+  if (item.type === 'typography' && item.config) {
+    return <GlyphChip Icon={Pilcrow} />
+  }
+  if (item.type === 'avatar' && item.config) {
+    return <GlyphChip Icon={User} />
+  }
+  if (item.type === 'divider' && item.config) {
+    return <GlyphChip Icon={SeparatorHorizontal} />
+  }
+  if (item.type === 'button' && item.config) {
+    return <GlyphChip Icon={MousePointerClick} />
+  }
+  if (item.type === 'hidden' && item.config) {
+    return <GlyphChip Icon={EyeOff} />
+  }
+  if (item.type === 'container') {
+    return <GlyphChip Icon={Box} />
+  }
+  if (item.type === 'paper' && item.config) {
+    return <GlyphChip Icon={StickyNote} />
+  }
+  if (item.type === 'tab' && item.config) {
+    return <GlyphChip Icon={PanelTop} />
+  }
+  if (item.type === 'modal' && item.config) {
+    return <GlyphChip Icon={AppWindow} />
+  }
+  if (item.type === 'popover' && item.config) {
+    return <GlyphChip Icon={MessageSquare} />
+  }
   return (
     <div
       data-grid-item-content
@@ -204,7 +282,29 @@ function ActiveBody({ item }: { item: GridItemData }) {
                     ? Upload
                     : item.type === 'datatable'
                       ? Table
-                      : null
+                      : item.type === 'text' && item.config
+                        ? Type
+                        : item.type === 'typography' && item.config
+                          ? Pilcrow
+                          : item.type === 'avatar' && item.config
+                            ? User
+                            : item.type === 'divider' && item.config
+                              ? SeparatorHorizontal
+                              : item.type === 'button' && item.config
+                                ? MousePointerClick
+                                : item.type === 'hidden' && item.config
+                                  ? EyeOff
+                                  : item.type === 'container'
+                                    ? Box
+                                    : item.type === 'paper'
+                                      ? StickyNote
+                                      : item.type === 'tab'
+                                        ? PanelTop
+                                        : item.type === 'modal'
+                                          ? AppWindow
+                                          : item.type === 'popover'
+                                            ? MessageSquare
+                                            : null
   if (!Icon) return null
   return (
     <div
@@ -674,7 +774,10 @@ function DataTableLivePreview({ config }: { config: DataTableConfig }) {
       className="pointer-events-none w-full px-3 py-2"
     >
       <DataTable2
-        name={config.name}
+        // Namespaced so the canvas's mock-row cache never collides with the
+        // Live Preview modal's real fetch (react-query keys by name+title, and
+        // the query client is shared app-wide).
+        name={`__canvas__${config.name}`}
         title={config.title}
         columns={columns}
         align={align}
@@ -764,7 +867,8 @@ function EditableTableLivePreview({ config }: { config: DataTableEditableConfig 
       className="pointer-events-none w-full px-3 py-2"
     >
       <DataTableEditable
-        name={config.name}
+        // Same cache-namespacing as the plain table (its key is name-only).
+        name={`__canvas__${config.name}`}
         title={config.title}
         idKey={config.idKey}
         columns={columns}
@@ -783,6 +887,282 @@ function editableTableRowsKey(config: DataTableEditableConfig): string {
 }
 
 /**
+ * The live, real `<Text>` from the library. Always live (no width gate — plain
+ * text is legible at any width) and inert like the other previews. `isLabel`
+ * renders the form-label styling (block, small, medium weight).
+ */
+function TextLivePreview({ config }: { config: TextConfig }) {
+  return (
+    <div
+      data-grid-item-content
+      className="pointer-events-none flex h-full w-full items-center px-3"
+    >
+      <Text text={config.text} isLabel={config.isLabel} />
+    </div>
+  )
+}
+
+/**
+ * The live, real `<Typography>` from the library. Always live and inert. The
+ * curated config maps 1:1 onto props; `''` overrides pass `undefined` so the
+ * variant's own weight/color/align show through. `href` renders the link styling
+ * (the anchor is inert on the canvas like everything else).
+ */
+function TypographyLivePreview({ config }: { config: TypographyConfig }) {
+  return (
+    <div
+      data-grid-item-content
+      className="pointer-events-none flex h-full w-full items-center px-3"
+    >
+      <Typography
+        className="w-full"
+        text={config.text}
+        variant={config.variant}
+        weight={config.weight || undefined}
+        color={(config.color || undefined) as TypographyProps['color']}
+        align={config.align || undefined}
+        truncate={config.truncate}
+        href={config.href || undefined}
+      />
+    </div>
+  )
+}
+
+/**
+ * The live, real `<Avatar>` from the library. Always live and inert. An empty
+ * `src` shows the fallback (or the first letter of `alt`) — exactly the runtime
+ * behavior, so no placeholder image is faked in.
+ */
+function AvatarLivePreview({ config }: { config: AvatarConfig }) {
+  return (
+    <div
+      data-grid-item-content
+      className="pointer-events-none flex h-full w-full items-center justify-center px-3"
+    >
+      <Avatar
+        src={config.src || undefined}
+        alt={config.alt || undefined}
+        size={config.size}
+        fallback={config.fallback || undefined}
+      />
+    </div>
+  )
+}
+
+/**
+ * The live, real `<Divider>` from the library. Always live — a rule is legible
+ * at any width. The wrapper stretches it full-cell; `spacing` (vertical margin)
+ * is honored, `''` falls back to the component's 8px default.
+ */
+function DividerLivePreview({ config }: { config: DividerConfig }) {
+  return (
+    <div
+      data-grid-item-content
+      className="pointer-events-none flex h-full w-full flex-col justify-center px-3"
+    >
+      <Divider
+        variant={config.variant}
+        spacing={config.spacing === '' ? undefined : config.spacing}
+      />
+    </div>
+  )
+}
+
+/**
+ * The live, real `<ButtonBase>` from the library — the engine `Button`'s visual
+ * layer without its form/action plumbing (which a canvas preview can't host: the
+ * full Button destructures `useFormContext()` and react-hook-form is bundled
+ * inside the library, so no studio-side FormProvider can reach it). Always live
+ * and inert. Color comes from the canvas ThemeProvider.
+ */
+function ButtonLivePreview({ config }: { config: ButtonConfig }) {
+  return (
+    <div
+      data-grid-item-content
+      className="pointer-events-none flex h-full w-full items-center justify-center px-3"
+    >
+      <ButtonBase
+        label={config.label}
+        icon={(config.icon || undefined) as keyof typeof IconData | undefined}
+      />
+    </div>
+  )
+}
+
+/**
+ * A nested canvas rendered read-only inside its host cell (see the grilled
+ * design: real nested render, one `pointer-events-none` at the host preview's
+ * top). Lays the children out with the canvas's own lg grid settings via inline
+ * styles (the cell previews at one breakpoint — no responsive CSS needed), and
+ * each child renders its real live preview (recursively for nested hosts) or
+ * falls back to its chip. Editing happens by drilling in, not here.
+ */
+function ChildCanvasPreview({ canvas }: { canvas: ChildCanvas }) {
+  if (canvas.items.length === 0) {
+    return (
+      <div className="flex min-h-12 w-full items-center justify-center rounded-md border border-dashed border-zinc-300 text-[11px] text-zinc-400">
+        Empty — Edit contents to add components
+      </div>
+    )
+  }
+  const s = canvas.settings
+  const cols = s.columns.lg
+  return (
+    <div
+      className="w-full"
+      style={{
+        display: 'grid',
+        gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+        ...(s.gap.lg ? { gap: s.gap.lg } : {}),
+        ...(s.rowGap.lg ? { rowGap: s.rowGap.lg } : {}),
+        ...(s.columnGap.lg ? { columnGap: s.columnGap.lg } : {}),
+        ...(s.gridAutoRows.lg ? { gridAutoRows: s.gridAutoRows.lg } : {}),
+      }}
+    >
+      {canvas.items.map((child) => (
+        <div
+          key={child.id}
+          className="min-w-0"
+          style={{ gridColumn: `span ${Math.min(child.settings.colSpan.lg, cols)}` }}
+        >
+          {renderLive(child, true) ?? <CellContent item={child} />}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/**
+ * The live render of a `container` cell: its child canvas, read-only. The plain
+ * container adds no chrome of its own — exactly like the engine, where a
+ * container Bin is just a nested grid.
+ */
+function ContainerLivePreview({ canvas }: { canvas: ChildCanvas }) {
+  return (
+    <div
+      data-grid-item-content
+      className="pointer-events-none flex h-full w-full items-center px-3 py-2"
+    >
+      <ChildCanvasPreview canvas={canvas} />
+    </div>
+  )
+}
+
+/**
+ * The live, real `<Paper>` from the library wrapping the child canvas.
+ * `elevation`/`variant`/`square` map straight through, so the shadow depth is
+ * previewed for real.
+ */
+function PaperLivePreview({ config, canvas }: { config: PaperConfig; canvas: ChildCanvas }) {
+  return (
+    <div
+      data-grid-item-content
+      className="pointer-events-none flex h-full w-full items-center px-3 py-2"
+    >
+      <Paper
+        elevation={config.elevation}
+        variant={config.variant}
+        square={config.square}
+        className="w-full p-3"
+      >
+        <ChildCanvasPreview canvas={canvas} />
+      </Paper>
+    </div>
+  )
+}
+
+/**
+ * The live, real `<Tab>` from the library. Headers come from the authored tab
+ * list; each panel is that tab's child canvas, read-only. Inert like the other
+ * previews, so the initially active tab (`defaultValue`, else the first) is the
+ * one shown — switch tabs by editing `defaultValue`, or drill into any tab from
+ * the inspector. Keyed by the header list + defaultValue so header edits remount
+ * the Tab (it derives its active state from `defaultValue` on mount).
+ */
+function TabLivePreview({
+  config,
+  canvases,
+}: {
+  config: TabConfig
+  canvases: ChildCanvas[]
+}) {
+  const items = config.tabs.map((tab, i) => ({
+    value: tab.value,
+    label: tab.label || tab.value,
+    content: canvases[i] ? <ChildCanvasPreview canvas={canvases[i]} /> : null,
+  }))
+  if (items.length === 0) {
+    return (
+      <div
+        data-grid-item-content
+        className="pointer-events-none flex h-full w-full items-center justify-center text-[11px] text-zinc-400"
+      >
+        No tabs — add one in the inspector
+      </div>
+    )
+  }
+  const key = `${config.tabs.map((t) => `${t.value}:${t.label}`).join('|')}@${config.defaultValue}`
+  return (
+    <div
+      data-grid-item-content
+      className="pointer-events-none flex h-full w-full items-center px-3 py-2"
+    >
+      <Tab
+        key={key}
+        items={items}
+        defaultValue={config.defaultValue || undefined}
+        className="w-full"
+      />
+    </div>
+  )
+}
+
+/**
+ * The live render of a `modal` cell: just its trigger button (see the grilled
+ * design — an overlay isn't part of the page flow, so the canvas shows what the
+ * page shows; the content is authored via drill-in and exercised in the Live
+ * Preview modal, where the real engine can actually open it).
+ */
+function ModalLivePreview({ config }: { config: ModalConfig }) {
+  return (
+    <div
+      data-grid-item-content
+      className="pointer-events-none flex h-full w-full items-center justify-center px-3"
+    >
+      <ButtonBase
+        label={config.trigger.label}
+        icon={(config.trigger.icon || undefined) as keyof typeof IconData | undefined}
+      />
+    </div>
+  )
+}
+
+/**
+ * The live render of a `popover` cell: its trigger (button or text — the studio
+ * subset of the engine's mini-Bin trigger). Content is authored via drill-in
+ * and exercised in the Live Preview modal, same rationale as the modal.
+ */
+function PopoverLivePreview({ config }: { config: PopoverConfig }) {
+  return (
+    <div
+      data-grid-item-content
+      className="pointer-events-none flex h-full w-full items-center justify-center px-3"
+    >
+      {config.triggerKind === 'button' ? (
+        <ButtonBase
+          label={config.triggerButton.label}
+          icon={
+            (config.triggerButton.icon || undefined) as keyof typeof IconData | undefined
+          }
+        />
+      ) : (
+        <Text text={config.triggerText.text} isLabel={config.triggerText.isLabel} />
+      )}
+    </div>
+  )
+}
+
+/**
  * The cell's live render, or null when the cell can't (or isn't wide enough to)
  * show one — the generic seam for adding more component types later. `textfield`,
  * `textarea`, `select`, `autocomplete`, `multiAutocomplete`, `checkbox`, `radio`, and
@@ -792,7 +1172,10 @@ function editableTableRowsKey(config: DataTableEditableConfig): string {
  * `multiAutocomplete` previews with `MultiAutocompleteBase`; `checkbox` with `CheckboxBase`;
  * `radio` with `RadioButtonBase`; the date pickers with `Date*PickerBase`; `datatable`
  * with the real `DataTable2` and `datatableeditable` with the real `DataTableEditable`,
- * both fed by config-generated mock rows.
+ * both fed by config-generated mock rows. The display types (`text`/`typography`/
+ * `avatar`/`divider`/`button`) preview with `Text`/`Typography`/`Avatar`/`Divider`/
+ * `ButtonBase` and are always live (`ALWAYS_LIVE` — no width gate); `hidden` never
+ * goes live.
  */
 function renderLive(item: GridItemData, isLive: boolean) {
   if (!isLive) return null
@@ -841,12 +1224,68 @@ function renderLive(item: GridItemData, isLive: boolean) {
     const config = item.config as DataTableEditableConfig
     return <EditableTableLivePreview key={editableTableRowsKey(config)} config={config} />
   }
+  if (item.type === 'text' && item.config) {
+    return <TextLivePreview config={item.config as TextConfig} />
+  }
+  if (item.type === 'typography' && item.config) {
+    return <TypographyLivePreview config={item.config as TypographyConfig} />
+  }
+  if (item.type === 'avatar' && item.config) {
+    return <AvatarLivePreview config={item.config as AvatarConfig} />
+  }
+  if (item.type === 'divider' && item.config) {
+    return <DividerLivePreview config={item.config as DividerConfig} />
+  }
+  if (item.type === 'button' && item.config) {
+    return <ButtonLivePreview config={item.config as ButtonConfig} />
+  }
+  if (item.type === 'container' && item.childCanvases?.[0]) {
+    return <ContainerLivePreview canvas={item.childCanvases[0]} />
+  }
+  if (item.type === 'paper' && item.config && item.childCanvases?.[0]) {
+    return (
+      <PaperLivePreview
+        config={item.config as PaperConfig}
+        canvas={item.childCanvases[0]}
+      />
+    )
+  }
+  if (item.type === 'tab' && item.config) {
+    return (
+      <TabLivePreview
+        config={item.config as TabConfig}
+        canvases={item.childCanvases ?? []}
+      />
+    )
+  }
+  if (item.type === 'modal' && item.config) {
+    return <ModalLivePreview config={item.config as ModalConfig} />
+  }
+  if (item.type === 'popover' && item.config) {
+    return <PopoverLivePreview config={item.config as PopoverConfig} />
+  }
+  // `hidden` intentionally has no live render — it renders nothing at runtime,
+  // so its chip is the honest representation at any width.
   return null
 }
 
 export function GridItem({ item, isSelected }: GridItemProps) {
   const selectItem = useGridStore((s) => s.selectItem)
+  const enterCanvas = useGridStore((s) => s.enterCanvas)
   const itemClassName = `gi-${escapeClassName(item.id)}`
+
+  // Which child canvas the cell's "Edit contents" opens: a tab drills into its
+  // initially-active tab (defaultValue, else the first); everything else has
+  // exactly one canvas. -1 = not a container-hosting cell.
+  const drillIndex = (() => {
+    if (!item.childCanvases || item.childCanvases.length === 0) return -1
+    if (item.type === 'tab' && item.config) {
+      const config = item.config as TabConfig
+      const i = config.tabs.findIndex((t) => t.value === config.defaultValue)
+      return i === -1 ? 0 : i
+    }
+    return 0
+  })()
 
   const {
     attributes,
@@ -951,6 +1390,22 @@ export function GridItem({ item, isSelected }: GridItemProps) {
       >
         <GripVertical className="h-3.5 w-3.5" aria-hidden="true" />
       </IconButton>
+      {drillIndex !== -1 && (
+        <IconButton
+          label={`Edit contents of ${item.label}`}
+          className={cn(
+            // Drill-in affordance, next to the grip; same reveal rules.
+            'absolute right-8 top-1 z-10 h-6! w-6! rounded-md shadow-sm transition-opacity group-hover:opacity-100',
+            isSelected ? 'opacity-100' : 'opacity-0',
+          )}
+          onClick={(e) => {
+            e.stopPropagation()
+            enterCanvas(item.id, drillIndex)
+          }}
+        >
+          <Expand className="h-3.5 w-3.5" aria-hidden="true" />
+        </IconButton>
+      )}
       <TypeLabel type={item.type} isSelected={isSelected} />
       {/*
         Wide enough (and landed) → the live component (regardless of selection;

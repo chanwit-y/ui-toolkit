@@ -1,7 +1,39 @@
+import { AlertTriangle } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
+import { useApiStore } from '../Api/apiStore'
 import { Input, Select, SegmentedControl } from '../common'
 import { useGridStore } from './gridStore'
+import { isSelectFamily, observeWarnings } from './observe'
 import type { MultiAutocompleteConfig, SelectFieldConfig, SelectOption } from './types'
+
+/**
+ * Endpoint picker over the API page's endpoints, stored by `EndpointDef.id`
+ * (rename-safe — see the grilled Env design). A dangling ref (endpoint deleted)
+ * surfaces as an explicit "missing" option so the stale pick stays visible
+ * instead of silently snapping to none.
+ */
+export function EndpointPicker({
+  value,
+  onChange,
+}: {
+  value: string | null
+  onChange: (id: string | null) => void
+}) {
+  const endpoints = useApiStore((s) => s.endpoints)
+  const isDangling = value != null && !endpoints.some((e) => e.id === value)
+  const options = [
+    { value: '', label: '— none —' },
+    ...(isDangling ? [{ value, label: '⚠ missing endpoint' }] : []),
+    ...endpoints.map((e) => ({ value: e.id, label: e.name.trim() || '(unnamed)' })),
+  ]
+  return (
+    <Select
+      options={options}
+      value={value ?? ''}
+      onChange={(v) => onChange(v === '' ? null : v)}
+    />
+  )
+}
 
 const DATA_TYPE_OPTIONS = [
   'text',
@@ -142,6 +174,59 @@ function OptionsEditor({
   )
 }
 
+/**
+ * The `observeTo` dropdown — makes this field a cascading child of another
+ * select-family item (the engine clears + refetches it whenever the observed
+ * field's value changes). Targets are every other select/autocomplete/multi
+ * on the canvas, listed by binding name (the engine-level contract) with the
+ * canvas label for recognition. Stored by item id; the export derives the
+ * name-based trio (`observeTo`, `api.params`, target `canObserve`) from it.
+ * All checks surface as non-blocking amber warnings.
+ */
+function ObserveToField({
+  itemId,
+  value,
+  onChange,
+}: {
+  itemId: string
+  value: string
+  onChange: (value: string) => void
+}) {
+  const items = useGridStore((s) => s.items)
+  const item = items.find((i) => i.id === itemId)
+
+  const options = [
+    { value: '', label: '(none)' },
+    ...items
+      .filter((t) => t.id !== itemId && isSelectFamily(t))
+      .map((t) => {
+        const name = (t.config as SelectFieldConfig | undefined)?.name.trim() ?? ''
+        return { value: t.id, label: name ? `${name} (${t.label})` : `(unnamed) — ${t.label}` }
+      }),
+  ]
+  // A dangling ref (item deleted) still needs a visible <option> to keep the
+  // select controlled; the warning below explains it.
+  if (value && !options.some((o) => o.value === value)) {
+    options.push({ value, label: '(missing item)' })
+  }
+
+  const warnings = item ? observeWarnings(item, items) : []
+
+  return (
+    <div className="space-y-1">
+      <Field label="Observe (parent field)">
+        <Select options={options} value={value} onChange={onChange} />
+      </Field>
+      {warnings.map((message) => (
+        <p key={message} className="flex items-start gap-1 text-xs text-amber-600">
+          <AlertTriangle size={12} aria-hidden="true" className="mt-0.5 shrink-0" />
+          {message}
+        </p>
+      ))}
+    </div>
+  )
+}
+
 type SelectFieldConfigPanelProps = {
   itemId: string
   config: SelectFieldConfig
@@ -278,13 +363,22 @@ export function SelectFieldConfigPanel({
         </div>
       ) : (
         <div className="space-y-3">
-          <Field label="Source (endpoint / model)">
-            <Input
-              value={config.dataSource.source}
-              onChange={(e) => setSource({ source: e.target.value })}
-              className="font-mono"
+          <Field label="Source endpoint (API page)">
+            <EndpointPicker
+              value={config.dataSource.endpointId}
+              onChange={(endpointId) => setSource({ endpointId })}
             />
           </Field>
+          {config.dataSource.endpointId != null && (
+            <Field label="Response row path (dot path)">
+              <Input
+                value={config.dataSource.paths}
+                onChange={(e) => setSource({ paths: e.target.value })}
+                placeholder="data"
+                className="font-mono"
+              />
+            </Field>
+          )}
           <div className="grid grid-cols-2 gap-2">
             <Field label="Value key">
               <Input
@@ -301,6 +395,11 @@ export function SelectFieldConfigPanel({
               />
             </Field>
           </div>
+          <ObserveToField
+            itemId={itemId}
+            value={config.observeToItemId ?? ''}
+            onChange={(v) => set('observeToItemId', v)}
+          />
         </div>
       )}
 

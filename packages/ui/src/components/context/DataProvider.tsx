@@ -1,4 +1,5 @@
-import { createContext, useCallback, useContext, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useId, useState } from "react";
+import { engineDebug } from "../core/engineDebug";
 
 export type DataContextType = {
 	fnCtxs: Record<string, Function>,
@@ -13,6 +14,14 @@ const DataContext = createContext<DataContextType | null>(null);
 export const DataProvider = ({ children }: { children: React.ReactNode }) => {
 	const [contextData, setContextData] = useState<Record<string, any>>({});
 	const [fnCtxs, setFnCtxs] = useState<Record<string, Function>>({});
+
+	// Mirror into the engine debug store so an inspector outside this provider
+	// (the tree `Provider isRoot` builds is closed to siblings) can subscribe.
+	const debugId = useId();
+	useEffect(() => {
+		engineDebug.setContextData(debugId, contextData);
+	}, [debugId, contextData]);
+	useEffect(() => () => engineDebug.setContextData(debugId, undefined), [debugId]);
 
 	const updateFnCtxs = useCallback((key: string, fn: Function) => {
 		setFnCtxs((prev) => ({ ...prev, [key]: fn }));
