@@ -1,9 +1,12 @@
+import { urlParams } from '../Api/warnings'
 import { MAX_GRID_COLUMNS } from './breakpoints'
 import { MISSING_OBSERVE_TARGET, observeContext, type ObserveContext } from './observe'
-import { createChildCanvas } from './types'
+import { collectButtonTargets, createChildCanvas } from './types'
 import type {
   AvatarConfig,
+  ButtonActionKey,
   ButtonConfig,
+  ButtonItemConfig,
   CheckboxConfig,
   ChildCanvas,
   DataTableConfig,
@@ -42,8 +45,10 @@ import type {
  * pickers (`datepicker`/`daterangepicker`/`datetimepicker`, which keep their type and
  * share one kind-discriminated `DateConfig`), `uploadimage`, `uploadfile`,
  * `datatable`, `datatableeditable`, the display types (`typography`, `avatar`,
- * `divider`, `button` — the button emits a skeleton `actions: []`), and `hidden`,
- * and omitted for every other type. The multi
+ * `divider`, `button` — standalone buttons emit their authored behavior
+ * (actions/confirmBox/api/reloadDataTable/modalId/snackbars) with stable refs
+ * resolved id → current name; trigger buttons stay a visual `actions: []`
+ * slice), and `hidden`, and omitted for every other type. The multi
  * field's `maxSelections`/`showSelectedCount` are studio-preview-only and not emitted
  * (the engine's `AutocompleteElement` has no home for them), as is the datatable's
  * `canSearchAllColumns` (the engine hardcodes search on). The studio `xs`
@@ -58,8 +63,10 @@ import type {
  */
 export const MISSING_ENDPOINT = 'MISSING_ENDPOINT'
 
-/** The slice of an API page endpoint the serializer needs (id → name). */
-export type EndpointRef = { id: string; name: string }
+/** The slice of an API page endpoint the serializer needs (id → name, plus the
+ * URL so the datatable delete export can prune `params` to the placeholders the
+ * endpoint actually has). Both callers pass the full `EndpointDef[]`. */
+export type EndpointRef = { id: string; name: string; url?: string }
 
 /** id → current endpoint name; `undefined` for an unset (null) ref, loud
  * `MISSING_ENDPOINT` for a dangling one. */
@@ -70,6 +77,29 @@ function makeEndpointResolver(endpoints: EndpointRef[]): ResolveEndpoint {
   return (id) => {
     if (id == null) return undefined
     return byId.get(id) || MISSING_ENDPOINT
+  }
+}
+
+/**
+ * Button stable refs (grid-item ids) → current engine names, built once from
+ * the ROOT items and threaded through the recursion — a Save button inside a
+ * modal's child canvas references the modal item on the root canvas, so
+ * canvas-local lookups can't resolve it. A dangling ref (target item deleted)
+ * resolves to `undefined` and the key is omitted (emit authored, omit empty —
+ * the button renders and the engine skips the missing wiring silently).
+ */
+type ButtonRefMaps = {
+  /** Modal grid-item id → current `ModalConfig.id` (the engine registry key). */
+  modalIdByItem: Map<string, string>
+  /** Table grid-item id → current binding `name` (the `fnCtxs` refetch key). */
+  tableNameByItem: Map<string, string>
+}
+
+function makeButtonRefMaps(rootItems: GridItemData[]): ButtonRefMaps {
+  const targets = collectButtonTargets(rootItems)
+  return {
+    modalIdByItem: new Map(targets.modals.map((m) => [m.itemId, m.modalId])),
+    tableNameByItem: new Map(targets.tables.map((t) => [t.itemId, t.name])),
   }
 }
 
@@ -363,24 +393,48 @@ function uploadFileElement(c: UploadFileConfig): Record<string, unknown> {
   }
 }
 
+/** The engine's canonical delete sequence — `apiDeleteInfo.confirmBox.True` is
+ * not authorable in studio (see the grilled design), so it's a baked constant. */
+const DELETE_CONFIRM_TRUE = ['StartLoading', 'SubmitFormToDeleteAPI', 'StopLoading']
+
 /**
  * `datatable` → engine `DataTableElement`. Columns map 1:1 (`align` always emitted
  * so the JSON is self-documenting; empty `useDateFormat` drops). The `api` block
  * emits when an endpoint is picked (resolved id → name, plus the optional
  * response `paths`); unwired tables omit it for the consumer, as before. The
- * `modalContainer`/sizing block is never emitted — studio can't author it.
+ * `apiDeleteInfo` block emits only when the Delete action is on AND a delete
+ * endpoint is picked (a dangling ref emits the loud `MISSING_ENDPOINT` name,
+ * like the read api); `canDelete` stays as authored either way. Its `params`
+ * prune to the endpoint URL's current `:param` placeholders (dropping stale
+ * keys from a URL edited on the API page) minus empty values, and the confirm
+ * box carries the baked True/False sequences. The edit modal's content is the
+ * item's child canvas: `modalContainer` (+ the `modal*` sizing) emits when the
+ * Edit action is on AND the canvas has items, with `contextData` set to the
+ * table's binding name so the engine prefills the form from the selected row.
  * `canSearchAllColumns` is studio-preview-only (the engine hardcodes search on)
- * and isn't emitted either.
+ * and isn't emitted.
  */
 function dataTableElement(
   c: DataTableConfig,
+  item: GridItemData,
   resolveEndpoint: ResolveEndpoint,
+  endpoints: EndpointRef[],
+  refs: ButtonRefMaps,
 ): Record<string, unknown> {
   const apiName = resolveEndpoint(c.endpointId)
   const paths = c.apiPaths
     .split('.')
     .map((s) => s.trim())
     .filter(Boolean)
+  const deleteApiName = c.canDelete ? resolveEndpoint(c.deleteEndpointId) : undefined
+  const deleteUrl = endpoints.find((e) => e.id === c.deleteEndpointId)?.url
+  const deleteParams = Object.fromEntries(
+    (deleteUrl != null ? urlParams(deleteUrl) : Object.keys(c.deleteParams))
+      .filter((p) => c.deleteParams[p])
+      .map((p) => [p, c.deleteParams[p]]),
+  )
+  const editCanvas = childCanvasAt(item, 0)
+  const emitEditModal = c.canEdit && editCanvas.items.length > 0
   return {
     name: c.name,
     title: c.title,
@@ -393,6 +447,49 @@ function dataTableElement(
       ...(col.useDateFormat ? { useDateFormat: col.useDateFormat } : {}),
     })),
     ...(apiName ? { api: { name: apiName, ...(paths.length ? { paths } : {}) } } : {}),
+    ...(emitEditModal
+      ? {
+          modalContainer: {
+            ...toEngineContainer(editCanvas, childContainerName(item), endpoints, refs),
+            // Row → form prefill: the engine reads defaults from
+            // contextData[<this name>], which DataTable2 writes on Edit click.
+            contextData: c.name,
+          },
+          ...omitEmpty({
+            modalMaxWidth: c.modalMaxWidth,
+            modalMinWidth: c.modalMinWidth,
+            modalMaxHeight: c.modalMaxHeight,
+          }),
+        }
+      : {}),
+    ...(deleteApiName
+      ? {
+          apiDeleteInfo: {
+            name: deleteApiName,
+            ...(Object.keys(deleteParams).length ? { params: deleteParams } : {}),
+            ...(c.deleteConfirmEnabled
+              ? {
+                  confirmBox: {
+                    title: c.deleteConfirmTitle,
+                    description: c.deleteConfirmDescription,
+                    True: [...DELETE_CONFIRM_TRUE],
+                    False: [],
+                  },
+                }
+              : {}),
+            isReload: c.deleteIsReload,
+            ...(c.deleteSnackbarSuccessEnabled && c.deleteSnackbarSuccessMessage
+              ? {
+                  snackbarSuccess: {
+                    type: c.deleteSnackbarSuccessType,
+                    message: c.deleteSnackbarSuccessMessage,
+                  },
+                }
+              : {}),
+            ...(c.deleteSnackbarErrorException ? { snackbarError: '$exception' } : {}),
+          },
+        }
+      : {}),
     canEdit: c.canEdit,
     canDelete: c.canDelete,
   }
@@ -506,17 +603,74 @@ function dividerElement(c: DividerConfig): Record<string, unknown> {
 }
 
 /**
- * `button` → engine `ButtonElement`. Only the visual slice is authorable; the
- * required `actions` emits as an empty skeleton the consumer fills in (mirroring
- * the editable table's empty-name `apiCrud` stubs — a bare button does nothing,
- * so the stub can't silently look wired). `api`/`confirmBox`/snackbars/`modalId`
- * are likewise consumer-side.
+ * Trigger button → engine `ButtonElement` visual slice. Modal/popover triggers
+ * stay behavior-less (`actions: []`): the host owns their click (the engine's
+ * Modal wraps its trigger in Radix's own open logic).
  */
 function buttonElement(c: ButtonConfig): Record<string, unknown> {
   return {
     label: c.label,
     ...(c.icon ? { icon: c.icon } : {}),
     actions: [],
+  }
+}
+
+const isSubmitAction = (a: ButtonActionKey) =>
+  a === 'SubmitFormToPostAPI' || a === 'SubmitFormToPatchAPI'
+
+/**
+ * Standalone `button` item → engine `ButtonElement` with behavior (see the
+ * grilled design). Confirm mode exports the engine's only working ConfirmBox
+ * shape — `actions: ["ConfirmBox"]` with the real sequences in `True`/`False`.
+ * The submit-only fields (`api`, `reloadDataTable`, snackbars) and the
+ * CloseModal-only `modalId` are gated on an action that consumes them, so
+ * stale panel values from a since-changed action list don't leak into the
+ * export. Stable refs resolve id → current name via `refs`.
+ */
+function buttonItemElement(
+  c: ButtonItemConfig,
+  refs: ButtonRefMaps,
+  resolveEndpoint: ResolveEndpoint,
+): Record<string, unknown> {
+  const confirm = c.mode === 'confirm'
+  const effective = confirm ? [...c.confirmTrue, ...c.confirmFalse] : c.actions
+  const usesSubmit = effective.some(isSubmitAction)
+  const usesCloseModal = effective.includes('CloseModal')
+
+  const apiName = usesSubmit ? resolveEndpoint(c.endpointId) : undefined
+  const modalId = usesCloseModal && c.modalItemId
+    ? refs.modalIdByItem.get(c.modalItemId)
+    : undefined
+  const reload = usesSubmit && c.reloadTableItemId
+    ? refs.tableNameByItem.get(c.reloadTableItemId)
+    : undefined
+
+  return {
+    label: c.label,
+    ...(c.icon ? { icon: c.icon } : {}),
+    actions: confirm ? ['ConfirmBox'] : [...c.actions],
+    ...(confirm
+      ? {
+          confirmBox: {
+            title: c.confirmTitle,
+            description: c.confirmDescription,
+            True: [...c.confirmTrue],
+            False: [...c.confirmFalse],
+          },
+        }
+      : {}),
+    ...(apiName ? { api: { name: apiName } } : {}),
+    ...(reload ? { reloadDataTable: reload } : {}),
+    ...(modalId ? { modalId } : {}),
+    ...(usesSubmit && c.snackbarSuccessEnabled && c.snackbarSuccessMessage
+      ? {
+          snackbarSuccess: {
+            type: c.snackbarSuccessType,
+            message: c.snackbarSuccessMessage,
+          },
+        }
+      : {}),
+    ...(usesSubmit && c.snackbarErrorException ? { snackbarError: '$exception' } : {}),
   }
 }
 
@@ -536,13 +690,14 @@ function toEngineContainer(
   canvas: ChildCanvas,
   name: string,
   endpoints: EndpointRef[],
+  refs: ButtonRefMaps,
 ): Record<string, unknown> {
   const s = canvas.settings
   return {
     id: name,
     name,
     isArray: false,
-    bins: buildBins(canvas.settings, canvas.items, endpoints),
+    bins: buildBins(canvas.settings, canvas.items, endpoints, refs),
     ...(s.gap.lg !== '' ? { gap: s.gap.lg } : {}),
     ...(s.justifyItems.lg !== '' ? { justifyItems: s.justifyItems.lg } : {}),
     ...(s.alignItems.lg !== '' ? { alignItems: s.alignItems.lg } : {}),
@@ -568,9 +723,15 @@ function paperElement(
   c: PaperConfig,
   item: GridItemData,
   endpoints: EndpointRef[],
+  refs: ButtonRefMaps,
 ): Record<string, unknown> {
   return {
-    container: toEngineContainer(childCanvasAt(item, 0), childContainerName(item), endpoints),
+    container: toEngineContainer(
+      childCanvasAt(item, 0),
+      childContainerName(item),
+      endpoints,
+      refs,
+    ),
     elevation: c.elevation,
     variant: c.variant,
     ...(c.square ? { square: true } : {}),
@@ -583,6 +744,7 @@ function tabElement(
   c: TabConfig,
   item: GridItemData,
   endpoints: EndpointRef[],
+  refs: ButtonRefMaps,
 ): Record<string, unknown> {
   return {
     tabs: c.tabs.map((tab, i) => ({
@@ -592,6 +754,7 @@ function tabElement(
         childCanvasAt(item, i),
         childContainerName(item, `-${i}`),
         endpoints,
+        refs,
       ),
     })),
     ...(c.defaultValue ? { defaultValue: c.defaultValue } : {}),
@@ -607,11 +770,17 @@ function modalElement(
   c: ModalConfig,
   item: GridItemData,
   endpoints: EndpointRef[],
+  refs: ButtonRefMaps,
 ): Record<string, unknown> {
   return {
     id: c.id,
     title: c.title,
-    container: toEngineContainer(childCanvasAt(item, 0), childContainerName(item), endpoints),
+    container: toEngineContainer(
+      childCanvasAt(item, 0),
+      childContainerName(item),
+      endpoints,
+      refs,
+    ),
     trigger: buttonElement(c.trigger),
     ...omitEmpty({
       description: c.description,
@@ -630,9 +799,15 @@ function popoverElement(
   c: PopoverConfig,
   item: GridItemData,
   endpoints: EndpointRef[],
+  refs: ButtonRefMaps,
 ): Record<string, unknown> {
   return {
-    container: toEngineContainer(childCanvasAt(item, 0), childContainerName(item), endpoints),
+    container: toEngineContainer(
+      childCanvasAt(item, 0),
+      childContainerName(item),
+      endpoints,
+      refs,
+    ),
     trigger:
       c.triggerKind === 'button'
         ? { type: 'button', element: buttonElement(c.triggerButton) }
@@ -651,6 +826,7 @@ function buildElement(
   items: GridItemData[],
   endpoints: EndpointRef[],
   resolveEndpoint: ResolveEndpoint,
+  refs: ButtonRefMaps,
 ): Record<string, unknown> | undefined {
   switch (item.type) {
     case 'textfield':
@@ -681,7 +857,7 @@ function buildElement(
       return item.config ? uploadFileElement(item.config as UploadFileConfig) : undefined
     case 'datatable':
       return item.config
-        ? dataTableElement(item.config as DataTableConfig, resolveEndpoint)
+        ? dataTableElement(item.config as DataTableConfig, item, resolveEndpoint, endpoints, refs)
         : undefined
     case 'datatableeditable':
       return item.config
@@ -699,22 +875,26 @@ function buildElement(
     case 'divider':
       return item.config ? dividerElement(item.config as DividerConfig) : undefined
     case 'button':
-      return item.config ? buttonElement(item.config as ButtonConfig) : undefined
+      return item.config
+        ? buttonItemElement(item.config as ButtonItemConfig, refs, resolveEndpoint)
+        : undefined
     case 'hidden':
       return item.config ? hiddenElement(item.config as HiddenConfig) : undefined
     case 'paper':
       return item.config
-        ? paperElement(item.config as PaperConfig, item, endpoints)
+        ? paperElement(item.config as PaperConfig, item, endpoints, refs)
         : undefined
     case 'tab':
-      return item.config ? tabElement(item.config as TabConfig, item, endpoints) : undefined
+      return item.config
+        ? tabElement(item.config as TabConfig, item, endpoints, refs)
+        : undefined
     case 'modal':
       return item.config
-        ? modalElement(item.config as ModalConfig, item, endpoints)
+        ? modalElement(item.config as ModalConfig, item, endpoints, refs)
         : undefined
     case 'popover':
       return item.config
-        ? popoverElement(item.config as PopoverConfig, item, endpoints)
+        ? popoverElement(item.config as PopoverConfig, item, endpoints, refs)
         : undefined
     default:
       return undefined
@@ -722,23 +902,32 @@ function buildElement(
 }
 
 /** Build the `Bin[]` (plain objects) for the whole canvas. `endpoints` is the
- * API page's list, threaded through so refs resolve id → current name. */
+ * API page's list, threaded through so refs resolve id → current name.
+ * `refs` carries the button targets collected from the ROOT items; omitted at
+ * the top-level call, where `items` IS the root and the maps are built here. */
 export function buildBins(
   container: GridContainerSettings,
   items: GridItemData[],
   endpoints: EndpointRef[],
+  refs?: ButtonRefMaps,
 ): Record<string, unknown>[] {
   const cols = container.columns
   const resolveEndpoint = makeEndpointResolver(endpoints)
+  const buttonRefs = refs ?? makeButtonRefMaps(items)
   return items.map((item) => {
     const span = item.settings.colSpan
     const lg = toBoxRange(span.lg, cols.lg)
-    const element = buildElement(item, items, endpoints, resolveEndpoint)
+    const element = buildElement(item, items, endpoints, resolveEndpoint, buttonRefs)
     // A plain `container` Bin nests via the Bin-level `container` key (not an
     // element) — the engine renders it as a nested grid.
     const nested =
       item.type === 'container'
-        ? toEngineContainer(childCanvasAt(item, 0), childContainerName(item), endpoints)
+        ? toEngineContainer(
+            childCanvasAt(item, 0),
+            childContainerName(item),
+            endpoints,
+            buttonRefs,
+          )
         : undefined
     return {
       sm: toBoxRange(span.sm, cols.sm),

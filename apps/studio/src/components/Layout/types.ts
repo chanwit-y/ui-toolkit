@@ -536,9 +536,13 @@ export function createDefaultUploadFileConfig(name: string): UploadFileConfig {
  * One column of a data table. Maps 1:1 onto the engine's `ColumnDef`
  * (`accessor`/`header`/`enableSorting`/`enableColumnFilter`/`align`/`useDateFormat`)
  * so the exported JSON is lossless. `useDateFormat` holds dayjs tokens and is `''`
- * when the raw value should render untouched (dropped on export).
+ * when the raw value should render untouched (dropped on export). `id` is a
+ * studio-only stable identity for the sortable column cards (dnd-kit keys) —
+ * every export path maps fields explicitly, so it never reaches engine JSON.
  */
 export type DataTableColumnConfig = {
+  /** Studio-only stable card identity; never exported. */
+  id: string
   accessor: string
   header: string
   enableSorting: boolean
@@ -550,10 +554,14 @@ export type DataTableColumnConfig = {
 
 /**
  * Editable config for a data table. Maps onto the engine's `DataTableElement`
- * minus the pieces studio can't author yet: the required `api` endpoint reference
- * and the `modalContainer`/sizing block are omitted on export (the consumer wires
- * them), and `canSearchAllColumns` is studio-preview-only — the engine hardcodes
- * search on (`core/dataTable.ts`), so it isn't emitted either.
+ * minus the pieces studio can't author yet: the `modalContainer`/sizing block is
+ * omitted on export (the consumer wires it), and `canSearchAllColumns` is
+ * studio-preview-only — the engine hardcodes search on (`core/dataTable.ts`),
+ * so it isn't emitted either. The `delete*` group authors the engine's
+ * `apiDeleteInfo` (`APIDelete`) and exports only when `canDelete` and an
+ * endpoint are set; the confirmBox True/False action arrays are baked export
+ * constants (see the grilled design), and the snackbar fields mirror
+ * `ButtonItemConfig`'s.
  */
 export type DataTableConfig = {
   name: string
@@ -572,6 +580,34 @@ export type DataTableConfig = {
   /** Dot-path into the response to the row array (engine `api.paths`, e.g.
    * `data`); `''` = the response is the array itself. */
   apiPaths: string
+  /**
+   * Edit-modal sizing (engine `modalMaxWidth`/`modalMinWidth`/`modalMaxHeight`,
+   * CSS lengths; `''` = unset, dropped on export). The modal's *content* is the
+   * item's child canvas (drill-in), exported as `modalContainer` with
+   * `contextData` set to the table's binding name so the selected row prefills
+   * the form.
+   */
+  modalMaxWidth: string
+  modalMinWidth: string
+  modalMaxHeight: string
+  /** The row-delete endpoint, by `EndpointDef.id` (`null` = unwired — the
+   * export omits `apiDeleteInfo` and `canDelete` stays as authored). */
+  deleteEndpointId: string | null
+  /** URL `:param` → row-field accessor (engine `apiDeleteInfo.params`, e.g.
+   * `{ id: "_id" }`). Keys derive from the endpoint URL's placeholders — the
+   * panel prunes on endpoint change and the export drops empty values. */
+  deleteParams: Record<string, string>
+  deleteConfirmEnabled: boolean
+  deleteConfirmTitle: string
+  deleteConfirmDescription: string
+  /** Engine `apiDeleteInfo.isReload`: refetch the table after a delete. */
+  deleteIsReload: boolean
+  deleteSnackbarSuccessEnabled: boolean
+  deleteSnackbarSuccessType: ButtonSnackbarVariant
+  deleteSnackbarSuccessMessage: string
+  /** Exports `snackbarError: "$exception"` — the only form the engine reads
+   * (shows the API error message). */
+  deleteSnackbarErrorException: boolean
 }
 
 /**
@@ -582,6 +618,7 @@ export type DataTableConfig = {
  */
 export function createDefaultDataTableConfig(name: string): DataTableConfig {
   const column = (accessor: string, header: string): DataTableColumnConfig => ({
+    id: crypto.randomUUID(),
     accessor,
     header,
     enableSorting: true,
@@ -603,6 +640,19 @@ export function createDefaultDataTableConfig(name: string): DataTableConfig {
     ],
     endpointId: null,
     apiPaths: '',
+    modalMaxWidth: '',
+    modalMinWidth: '',
+    modalMaxHeight: '',
+    deleteEndpointId: null,
+    deleteParams: {},
+    deleteConfirmEnabled: true,
+    deleteConfirmTitle: 'Delete record',
+    deleteConfirmDescription: 'Are you sure you want to delete this record?',
+    deleteIsReload: true,
+    deleteSnackbarSuccessEnabled: false,
+    deleteSnackbarSuccessType: 'success',
+    deleteSnackbarSuccessMessage: '',
+    deleteSnackbarErrorException: false,
   }
 }
 
@@ -625,9 +675,12 @@ export type EditableTableOption = {
  * the fields relevant to the current editor: `options` for `select`, `min`/`max`
  * for `number`, `minLength`/`maxLength`/`pattern`/`patternMessage` for `text`,
  * and `requiredMessage` when `isRequired`. Numeric bounds are `''` when unset
- * (mirroring `width`/`maxLength` elsewhere).
+ * (mirroring `width`/`maxLength` elsewhere). `id` is a studio-only stable
+ * identity for the sortable column cards (dnd-kit keys); never exported.
  */
 export type DataTableEditableColumnConfig = {
+  /** Studio-only stable card identity; never exported. */
+  id: string
   accessorKey: string
   header: string
   editable: boolean
@@ -684,6 +737,7 @@ export function createEditableTableColumn(
   overrides?: Partial<DataTableEditableColumnConfig>,
 ): DataTableEditableColumnConfig {
   return {
+    id: crypto.randomUUID(),
     accessorKey,
     header,
     editable: true,
@@ -838,12 +892,11 @@ export function createDefaultDividerConfig(): DividerConfig {
 }
 
 /**
- * Editable config for a button — the visual slice of the engine's `ButtonElement`
- * (see the grilled design): `label` + an optional `icon` key into the library's
- * `IconData` glyph map (`''` = no icon). The behavioral fields (`actions`, `api`,
- * `confirmBox`, snackbars, `modalId`) aren't authorable here; the serializer emits
- * a skeleton `actions: []` the consumer fills in, mirroring the editable table's
- * empty-name `apiCrud` stubs. Color comes from the theme.
+ * Editable config for a button's visual slice: `label` + an optional `icon` key
+ * into the library's `IconData` glyph map (`''` = no icon). Modal/popover
+ * trigger buttons carry exactly this (their behavior is owned by the host);
+ * standalone button items extend it with behavior via `ButtonItemConfig`.
+ * Color comes from the theme.
  */
 export type ButtonConfig = {
   label: string
@@ -854,6 +907,78 @@ export type ButtonConfig = {
 /** Defaults for a freshly dropped button. */
 export function createDefaultButtonConfig(): ButtonConfig {
   return { label: 'Button', icon: '' }
+}
+
+/**
+ * The engine `ButtonAction`s studio offers in ordered lists. `ConfirmBox` is
+ * modelled as the panel's mode (not a list entry — the engine only honors it
+ * as `actions[0]`, and everything after it is dead), and `OpenModal` /
+ * `SubmitFormToDeleteAPI` are silent no-ops in the engine's `Button` switch,
+ * so they aren't offered (see the grilled design).
+ */
+export type ButtonActionKey =
+  | 'StartLoading'
+  | 'StopLoading'
+  | 'SubmitFormToPostAPI'
+  | 'SubmitFormToPatchAPI'
+  | 'ClearCurrentFormSelected'
+  | 'CloseModal'
+
+/** Mirrors the library's `SnackbarVariant`. */
+export type ButtonSnackbarVariant = 'success' | 'error' | 'info' | 'warning' | 'neutral'
+
+/**
+ * Full editable config for a *standalone* button item — the visual slice plus
+ * the engine `ButtonElement` behavior (see the grilled design). References are
+ * stored by stable id (grid-item id / `EndpointDef.id`) and resolved to current
+ * names at export, so renames can't strand the button.
+ */
+export type ButtonItemConfig = ButtonConfig & {
+  /** `direct` runs `actions` on click; `confirm` opens a ConfirmBox and runs
+   * `confirmTrue`/`confirmFalse` (exports `actions: ["ConfirmBox"]`). */
+  mode: 'direct' | 'confirm'
+  /** Direct-mode ordered action list. */
+  actions: ButtonActionKey[]
+  confirmTitle: string
+  confirmDescription: string
+  /** Ordered actions run when the ConfirmBox is accepted / dismissed. */
+  confirmTrue: ButtonActionKey[]
+  confirmFalse: ButtonActionKey[]
+  /** Grid-item id of the modal `CloseModal` targets (`''` = none); exports as
+   * the modal's current `ModalConfig.id`. */
+  modalItemId: string
+  /** Grid-item id of the (editable) data table to reload after a submit
+   * (`''` = none); exports as the table's current `name`. */
+  reloadTableItemId: string
+  /** API page endpoint the submit actions call, by `EndpointDef.id`
+   * (`null` = unwired — the export omits `api`). */
+  endpointId: string | null
+  snackbarSuccessEnabled: boolean
+  snackbarSuccessType: ButtonSnackbarVariant
+  snackbarSuccessMessage: string
+  /** Exports `snackbarError: "$exception"` — the only form the engine reads
+   * (it shows the thrown API error's message). */
+  snackbarErrorException: boolean
+}
+
+/** Defaults for a freshly dropped standalone button: direct mode, nothing wired. */
+export function createDefaultButtonItemConfig(): ButtonItemConfig {
+  return {
+    ...createDefaultButtonConfig(),
+    mode: 'direct',
+    actions: [],
+    confirmTitle: '',
+    confirmDescription: '',
+    confirmTrue: [],
+    confirmFalse: [],
+    modalItemId: '',
+    reloadTableItemId: '',
+    endpointId: null,
+    snackbarSuccessEnabled: false,
+    snackbarSuccessType: 'success',
+    snackbarSuccessMessage: '',
+    snackbarErrorException: false,
+  }
 }
 
 /**
@@ -1049,7 +1174,7 @@ export type GridItemData = {
     | TypographyConfig
     | AvatarConfig
     | DividerConfig
-    | ButtonConfig
+    | ButtonItemConfig
     | HiddenConfig
     | PaperConfig
     | TabConfig
@@ -1081,8 +1206,45 @@ export function createChildCanvas(): ChildCanvas {
 /** Which palette types host child canvases, and how many they start with. */
 export function childCanvasCount(type: ComponentType, config?: GridItemData['config']): number {
   if (type === 'container' || type === 'paper' || type === 'modal' || type === 'popover') return 1
+  // A data table's canvas is its edit modal's content (engine `modalContainer`).
+  if (type === 'datatable') return 1
   if (type === 'tab') return (config as TabConfig | undefined)?.tabs.length ?? 0
   return 0
+}
+
+/** What a button's stable refs can point at, gathered across the whole tree. */
+export type ButtonRefTargets = {
+  /** Modal items: grid-item id → the authored engine registry key (`ModalConfig.id`). */
+  modals: { itemId: string; modalId: string }[]
+  /** (Editable) data tables: grid-item id → the authored binding `name` (the
+   * `fnCtxs` key both table components register their refetch under). */
+  tables: { itemId: string; name: string }[]
+}
+
+/**
+ * Walk the ROOT items (recursing through `childCanvases`) collecting the
+ * modal / table targets a button can reference — a Save button lives *inside*
+ * its modal's child canvas, so enumeration must be cross-canvas. Used by the
+ * button inspector's dropdowns and by the export's id → name resolution.
+ */
+export function collectButtonTargets(items: GridItemData[]): ButtonRefTargets {
+  const modals: ButtonRefTargets['modals'] = []
+  const tables: ButtonRefTargets['tables'] = []
+  const walk = (list: GridItemData[]) => {
+    for (const item of list) {
+      if (item.type === 'modal' && item.config) {
+        modals.push({ itemId: item.id, modalId: (item.config as ModalConfig).id })
+      } else if (
+        (item.type === 'datatable' || item.type === 'datatableeditable') &&
+        item.config
+      ) {
+        tables.push({ itemId: item.id, name: (item.config as { name: string }).name })
+      }
+      item.childCanvases?.forEach((canvas) => walk(canvas.items))
+    }
+  }
+  walk(items)
+  return { modals, tables }
 }
 
 function responsive<T>(value: T): Responsive<T> {

@@ -1,6 +1,7 @@
 import type { EndpointDef } from '../Api/types'
 import {
   createChildCanvas,
+  createDefaultButtonItemConfig,
   createDefaultDataTableConfig,
   createDefaultItemSettings,
   createDefaultModalConfig,
@@ -9,6 +10,7 @@ import {
 } from '../Layout/types'
 import type { ModelDef, ModelField } from '../Model/types'
 import type { EnvVarDef } from '../Env/types'
+import type { StudioThemeConfig } from '../Theme/types'
 
 /**
  * The mock "country" config studio boots with — the same feature the example
@@ -237,6 +239,36 @@ export function countrySeedEnvVars(): EnvVarDef[] {
   ]
 }
 
+/* ----------------------------------------------------------------- theme */
+
+/**
+ * The example app's theme (`config/theme.ts`): teal accent + button, dataTable
+ * header font tweaks, teal edit / red delete. The header/hover/pagination/
+ * row-hover roles stay unset so they follow the accent and dark-flip (pinning
+ * them routes into the legacy light-only map — the Theme page warns).
+ */
+export function countrySeedTheme(): StudioThemeConfig {
+  return {
+    appearance: 'light',
+    accentColor: 'teal',
+    radius: 'small',
+    panelBackground: 'translucent',
+    buttonColor: 'teal',
+    dataTable: {
+      headerColor: '',
+      headerTextColor: '',
+      headerFontSize: 'sm',
+      headerFontWeight: 'semibold',
+      headerHoverColor: '',
+      paginationButtonColor: '',
+      paginationButtonHoverColor: '',
+      rowHoverColor: '',
+      editButtonColor: 'teal',
+      deleteButtonColor: 'red',
+    },
+  }
+}
+
 /* ------------------------------------------------------------------ grid */
 
 /**
@@ -275,6 +307,68 @@ export function countrySeedGridItems(): GridItemData[] {
     },
   }
 
+  // The wired Save button (see the grilled button design): confirm-first, the
+  // canonical submit sequence, createCountry as the endpoint, reload the
+  // countries table, success + $exception snackbars — the same shape as the
+  // example app's Create button, so the Live Preview exercises the whole
+  // create → reload → snackbar path against the mock API.
+  const saveButton: GridItemData = {
+    id: 'seed-item-save-country',
+    label: 'Button',
+    type: 'button',
+    settings: createDefaultItemSettings({ colSpan: { xs: 4, sm: 3, md: 3, lg: 4 } }),
+    config: {
+      ...createDefaultButtonItemConfig(),
+      label: 'Save',
+      icon: 'save',
+      mode: 'confirm',
+      confirmTitle: 'Create Country',
+      confirmDescription: 'Are you sure you want to create this country?',
+      confirmTrue: ['StartLoading', 'SubmitFormToPostAPI', 'StopLoading', 'CloseModal'],
+      modalItemId: 'seed-item-country-modal',
+      reloadTableItemId: 'seed-item-table',
+      endpointId: CREATE_COUNTRY_ENDPOINT_ID,
+      snackbarSuccessEnabled: true,
+      snackbarSuccessMessage: 'Country created successfully',
+      snackbarErrorException: true,
+    },
+  }
+
+  // The edit modal's contents (the table's child canvas → engine
+  // `modalContainer`): the same bound country form plus a confirm-first Update
+  // button on `updateCountry` (PATCH), mirroring the example app's edit flow.
+  // Fresh ids — these cells coexist with the Add Country modal's copies.
+  const editNameField: GridItemData = {
+    ...nameField,
+    id: 'seed-item-edit-name',
+  }
+  const editCodeField: GridItemData = {
+    ...codeField,
+    id: 'seed-item-edit-code',
+  }
+  const updateButton: GridItemData = {
+    id: 'seed-item-update-country',
+    label: 'Button',
+    type: 'button',
+    settings: createDefaultItemSettings({ colSpan: { xs: 4, sm: 3, md: 3, lg: 4 } }),
+    config: {
+      ...createDefaultButtonItemConfig(),
+      label: 'Update',
+      icon: 'save',
+      mode: 'confirm',
+      confirmTitle: 'Update Country',
+      confirmDescription: 'Are you sure you want to update this country?',
+      confirmTrue: ['StartLoading', 'SubmitFormToPatchAPI', 'StopLoading', 'CloseModal'],
+      // No modal target: the engine's CloseModal always closes the table's own
+      // edit modal (the hardcoded "modalEdit" fn ctx).
+      reloadTableItemId: 'seed-item-table',
+      endpointId: UPDATE_COUNTRY_ENDPOINT_ID,
+      snackbarSuccessEnabled: true,
+      snackbarSuccessMessage: 'Country updated successfully',
+      snackbarErrorException: true,
+    },
+  }
+
   return [
     {
       id: 'seed-item-country-modal',
@@ -288,7 +382,9 @@ export function countrySeedGridItems(): GridItemData[] {
         maxWidth: '520px',
         trigger: { label: 'Add Country', icon: 'puls' },
       },
-      childCanvases: [{ ...createChildCanvas(), items: [nameField, codeField] }],
+      childCanvases: [
+        { ...createChildCanvas(), items: [nameField, codeField, saveButton] },
+      ],
     },
     {
       id: 'seed-item-table',
@@ -300,8 +396,20 @@ export function countrySeedGridItems(): GridItemData[] {
         title: 'Countries',
         endpointId: SEARCH_COUNTRIES_ENDPOINT_ID,
         apiPaths: 'data',
+        modalMaxWidth: '800px',
+        modalMinWidth: '700px',
+        // The example app's apiDeleteInfo (config/country/container.ts), authored
+        // through the panel's delete section instead of hand-wired.
+        deleteEndpointId: DELETE_COUNTRY_ENDPOINT_ID,
+        deleteParams: { id: '_id' },
+        deleteConfirmTitle: 'Delete Country',
+        deleteConfirmDescription: 'Are you sure you want to delete this country?',
+        deleteSnackbarSuccessEnabled: true,
+        deleteSnackbarSuccessMessage: 'Country deleted successfully',
+        deleteSnackbarErrorException: true,
         columns: [
           {
+            id: 'seed-col-code',
             accessor: 'code',
             header: 'Code',
             enableSorting: true,
@@ -310,6 +418,7 @@ export function countrySeedGridItems(): GridItemData[] {
             useDateFormat: '',
           },
           {
+            id: 'seed-col-name',
             accessor: 'name',
             header: 'Name',
             enableSorting: true,
@@ -318,6 +427,7 @@ export function countrySeedGridItems(): GridItemData[] {
             useDateFormat: '',
           },
           {
+            id: 'seed-col-updated-at',
             accessor: 'updated_at',
             header: 'Updated',
             enableSorting: true,
@@ -326,6 +436,7 @@ export function countrySeedGridItems(): GridItemData[] {
             useDateFormat: 'DD/MM/YYYY',
           },
           {
+            id: 'seed-col-updated-by',
             accessor: 'updated_by_name',
             header: 'Updated by',
             enableSorting: false,
@@ -335,6 +446,9 @@ export function countrySeedGridItems(): GridItemData[] {
           },
         ],
       },
+      childCanvases: [
+        { ...createChildCanvas(), items: [editNameField, editCodeField, updateButton] },
+      ],
     },
   ]
 }

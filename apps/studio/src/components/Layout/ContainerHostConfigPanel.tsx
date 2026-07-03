@@ -57,7 +57,7 @@ function Heading({ children }: { children: ReactNode }) {
  * The drill-in button every container-hosting panel carries: navigates the
  * whole canvas into the item's child canvas (breadcrumb comes from the store).
  */
-function EditContentsButton({
+export function EditContentsButton({
   itemId,
   canvasIndex = 0,
   children = 'Edit contents',
