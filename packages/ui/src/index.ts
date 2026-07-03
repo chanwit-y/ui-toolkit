@@ -104,8 +104,18 @@ export type { ThemeToggleProps } from "./components/ThemeToggle"
 export type { Bin, Container, ContainerSurface, ContainerLoad, DataValue, DataTableElement, RadioElement } from "./components/@types"
 export { getStateStore, stateStoreKeys } from "./components/core/stateStore"
 export type { StateSlice, StateStore } from "./components/core/stateStore"
+// Engine debug mirror — runtime state (container forms, contextData, loaders)
+// surfaced for external inspectors like the studio Live Preview dev tools.
+export { useEngineDebugStore } from "./components/core/engineDebug"
+export type { EngineDebugState } from "./components/core/engineDebug"
+// The engine's fn-context registry (modal open/close, table refetch) — read-only
+// use by inspectors; components register via the engine, not consumers.
+export { useStord } from "./components/core/stord"
 export { resolveDataValue, resolveDataValues, drillPaths } from "./components/core/dataValue"
 export type { Appearance, ThemeComponents, ThemeProviderProps } from "./components/@types"
 export type { ThemeProps } from "@radix-ui/themes"
 export type * from "./model/master"
 export * from "./model/master"
+// Model → runtime schema converters (the same lowering ApiMaster uses) — lets
+// tools validate payloads against a TModel (e.g. the studio API test runner).
+export { convertTModelToTypeBox, convertTModelToTArray } from "./model"

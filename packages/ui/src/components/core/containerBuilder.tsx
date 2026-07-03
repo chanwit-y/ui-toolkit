@@ -5,7 +5,7 @@ import { Form } from "../form";
 import { Schema } from "./schema";
 import { Provider } from "./context";
 import { ElementContext } from "./elementBuilder";
-import { useMemo, useEffect, useReducer } from "react";
+import { useMemo, useEffect, useId, useReducer } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { get } from "lodash";
@@ -13,6 +13,7 @@ import { ConditionExpression } from "./expression";
 import { useTheme } from "../context";
 import { useData } from "../context/DataProvider";
 import { getStateStore } from "./stateStore";
+import { engineDebug } from "./engineDebug";
 import { resolveDataValues, drillPaths } from "./dataValue";
 import { getBinGridItemStyle, getContainerGridStyle } from "./containerGrid";
 import { getContainerSurface } from "./containerSurface";
@@ -152,6 +153,12 @@ const ContainerRenderer = ({ builder, isRoot, withAuth }: ContainerRendererProps
 	// eslint-disable-next-line react-hooks/exhaustive-deps
 	const F = useMemo(() => new Form(builder.getSchema(), defaultValues).setup().create(), [builder]);
 
+	// Debug-mirror key: container name for readability, mount id for uniqueness
+	// (the same config can render in several places, e.g. app + preview). The
+	// `#` separator is the display contract — inspectors strip from it.
+	const debugId = useId();
+	const debugKey = `${containers[0]?.name ?? "container"}#${debugId}`;
+
 	return <F.Fn>
 		{(f) => {
 			useEffect(() => {
@@ -159,6 +166,13 @@ const ContainerRenderer = ({ builder, isRoot, withAuth }: ContainerRendererProps
 					f._form.reset(defaultValues);
 				}
 			}, [defaultValues, f]);
+
+			// The form lives behind this FormProvider — register it so external
+			// inspectors (studio dev-tools) can watch values/errors.
+			useEffect(() => {
+				if (f._form) engineDebug.registerForm(debugKey, f._form);
+				return () => engineDebug.unregisterForm(debugKey);
+			}, [f, debugKey]);
 
 			return (
 				<Provider isRoot={isRoot} withAuth={withAuth}>
