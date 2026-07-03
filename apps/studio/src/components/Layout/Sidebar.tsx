@@ -27,7 +27,7 @@ import { TextareaConfigPanel } from './TextareaConfigPanel'
 import { UploadFileConfigPanel, UploadImageConfigPanel } from './UploadConfigPanel'
 import type {
   AvatarConfig,
-  ButtonConfig,
+  ButtonItemConfig,
   CheckboxConfig,
   DataTableConfig,
   DataTableEditableConfig,
@@ -196,7 +196,7 @@ export function Sidebar({ gridConfigJson, fullGridCss }: SidebarProps) {
           ) : selectedItem.type === 'button' && selectedItem.config ? (
             <ButtonConfigPanel
               itemId={selectedItem.id}
-              config={selectedItem.config as ButtonConfig}
+              config={selectedItem.config as ButtonItemConfig}
             />
           ) : selectedItem.type === 'hidden' && selectedItem.config ? (
             <HiddenConfigPanel

@@ -11,7 +11,7 @@ import {
   createChildCanvas,
   createDefaultAutocompleteConfig,
   createDefaultAvatarConfig,
-  createDefaultButtonConfig,
+  createDefaultButtonItemConfig,
   createDefaultCheckboxConfig,
   createDefaultDataTableConfig,
   createDefaultDataTableEditableConfig,
@@ -34,7 +34,7 @@ import {
   createDefaultUploadImageConfig,
   defaultContainerSettings,
   type AvatarConfig,
-  type ButtonConfig,
+  type ButtonItemConfig,
   type CheckboxConfig,
   type ChildCanvas,
   type DataTableConfig,
@@ -198,7 +198,7 @@ type GridState = {
       | TypographyConfig
       | AvatarConfig
       | DividerConfig
-      | ButtonConfig
+      | ButtonItemConfig
       | HiddenConfig
       | PaperConfig
       | TabConfig
@@ -366,7 +366,7 @@ export const useGridStore = create<GridState>((set, get) => {
           | TypographyConfig
           | AvatarConfig
           | DividerConfig
-          | ButtonConfig
+          | ButtonItemConfig
           | HiddenConfig
           | PaperConfig
           | TabConfig
@@ -426,7 +426,7 @@ export const useGridStore = create<GridState>((set, get) => {
         } else if (type === 'divider') {
           config = createDefaultDividerConfig()
         } else if (type === 'button') {
-          config = createDefaultButtonConfig()
+          config = createDefaultButtonItemConfig()
         } else if (type === 'hidden') {
           nextSeq = fieldSeq + 1
           config = createDefaultHiddenConfig(`hidden_${nextSeq}`)

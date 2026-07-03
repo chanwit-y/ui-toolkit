@@ -97,6 +97,9 @@ export class HttpClientBase {
               loaderId: (response.config as AxiosConfig).loaderId,
             }),
         });
+        // Log successes too — onLog is the only hook that sees the raw
+        // AxiosResponse (status, headers); callers unwrap to the body alone.
+        if (onLog) onLog(response);
         return response;
       },
       (error: AxiosError) => {

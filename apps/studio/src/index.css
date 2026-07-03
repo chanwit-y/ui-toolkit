@@ -12,6 +12,12 @@
    scan below, so pull in the library's portable col-span partial directly. */
 @import "../../../packages/ui/src/styles/colspan.css";
 
+/* The library `<Modal>` (Live Preview chrome + engine modal bins) styles its
+   backdrop, fade animations, and close button via semantic `.modal-*` classes
+   in a component CSS file that only ships inside dist/index.css — which studio
+   doesn't import. It's plain portable CSS, so pull it in directly. */
+@import "../../../packages/ui/src/components/Modal.css";
+
 /* Gate `dark:` on a `.dark` ancestor (the library's `darkMode: 'class'`
    convention) instead of Tailwind 4's default `prefers-color-scheme` media
    query. Studio never sets `.dark`, so library components (Autocomplete2, etc.)

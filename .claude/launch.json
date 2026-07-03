@@ -12,6 +12,17 @@
       "port": 3200
     },
     {
+      "name": "api",
+      "comment": "Hono mock CRUD backend on port 9000. Prepend homebrew Node so nodemon/tsx use v23, not the default v12 on PATH.",
+      "runtimeExecutable": "/bin/bash",
+      "runtimeArgs": [
+        "-c",
+        "PATH=/opt/homebrew/bin:$PATH exec bun run --cwd apps/api dev"
+      ],
+      "port": 9000,
+      "autoPort": false
+    },
+    {
       "name": "studio",
       "runtimeExecutable": "/opt/homebrew/bin/node",
       "runtimeArgs": [

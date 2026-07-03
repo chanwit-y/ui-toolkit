@@ -11,6 +11,7 @@ import {
   type ModelRefKey,
 } from './types'
 import { endpointWarnings, type EndpointWarning, type WarningField } from './warnings'
+import { TestRunSection } from './TestRunSection'
 
 const METHOD_OPTIONS = HTTP_METHODS.map((m) => ({ value: m, label: m }))
 
@@ -140,6 +141,8 @@ export function EndpointForm({ endpoint }: { endpoint: EndpointDef }) {
           />
         </label>
       )}
+
+      <TestRunSection endpoint={endpoint} />
     </div>
   )
 }
