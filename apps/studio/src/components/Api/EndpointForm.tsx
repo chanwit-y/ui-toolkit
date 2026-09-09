@@ -1,6 +1,7 @@
 import { AlertTriangle } from 'lucide-react'
 import { useMemo, type ReactNode } from 'react'
 import { Input, SegmentedControl, Select } from '../common'
+import { useGroupStore, useLibraryScope, useProjectsUsingEndpoint } from '../Library'
 import { useModelStore } from '../Model/modelStore'
 import { useApiStore } from './apiStore'
 import {
@@ -26,7 +27,7 @@ const REF_LABELS: Record<ModelRefKey, string> = {
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="block space-y-1">
-      <span className="text-xs font-medium text-zinc-600">{label}</span>
+      <span className="text-ui-sm font-medium text-ink-2">{label}</span>
       {children}
     </label>
   )
@@ -38,7 +39,7 @@ function Warnings({ warnings }: { warnings: EndpointWarning[] }) {
   return (
     <div className="space-y-0.5">
       {warnings.map((w) => (
-        <p key={w.message} className="flex items-start gap-1 text-xs text-amber-600">
+        <p key={w.message} className="flex items-start gap-1 text-ui-sm text-warn">
           <AlertTriangle size={12} aria-hidden="true" className="mt-0.5 shrink-0" />
           {w.message}
         </p>
@@ -56,6 +57,13 @@ export function EndpointForm({ endpoint }: { endpoint: EndpointDef }) {
   const endpoints = useApiStore((s) => s.endpoints)
   const updateEndpoint = useApiStore((s) => s.updateEndpoint)
   const models = useModelStore((s) => s.models)
+  const groups = useGroupStore((s) => s.groups)
+  const scope = useLibraryScope()
+  const usedBy = useProjectsUsingEndpoint(endpoint.id)
+  const groupOptions = [
+    { value: '', label: '(ungrouped)' },
+    ...groups.map((g) => ({ value: g.id, label: g.name })),
+  ]
 
   const warnings = useMemo(
     () => endpointWarnings(endpoint, endpoints, models),
@@ -81,6 +89,21 @@ export function EndpointForm({ endpoint }: { endpoint: EndpointDef }) {
     <div className="max-w-xl space-y-4">
       <Warnings warnings={warningsFor('name')} />
 
+      <p className="border-l-2 border-accent py-1 pl-2.5 text-ui-sm text-ink-2">
+        Shared library endpoint —{' '}
+        {usedBy.length === 0
+          ? 'not attached to any project yet.'
+          : `attached to ${usedBy.length} project${usedBy.length === 1 ? '' : 's'} (${usedBy.join(', ')}); edits apply everywhere.`}
+      </p>
+
+      <Field label="Group">
+        <Select
+          options={groupOptions}
+          value={endpoint.groupId ?? ''}
+          onChange={(value) => updateEndpoint(endpoint.id, { groupId: value || null })}
+        />
+      </Field>
+
       <Field label="Description">
         <Input
           value={endpoint.description}
@@ -100,7 +123,7 @@ export function EndpointForm({ endpoint }: { endpoint: EndpointDef }) {
       <Warnings warnings={warningsFor('url')} />
 
       <div className="space-y-1">
-        <span className="text-xs font-medium text-zinc-600">Method</span>
+        <span className="text-ui-sm font-medium text-ink-2">Method</span>
         <SegmentedControl
           variant="chips"
           aria-label="HTTP method"
@@ -110,8 +133,8 @@ export function EndpointForm({ endpoint }: { endpoint: EndpointDef }) {
         />
       </div>
 
-      <div className="space-y-3 rounded-md border border-zinc-200 p-3">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+      <div className="space-y-3 rounded-md border border-line p-3">
+        <h3 className="text-ui-sm font-semibold uppercase tracking-wide text-ink-3">
           Model references
         </h3>
         {MODEL_REF_KEYS.map((key) => (
@@ -130,19 +153,19 @@ export function EndpointForm({ endpoint }: { endpoint: EndpointDef }) {
 
       {endpoint.method === 'GET' && (
         <label className="flex items-center justify-between gap-2">
-          <span className="text-xs font-medium text-zinc-600">
+          <span className="text-ui-sm font-medium text-ink-2">
             withOptions (caller exposes React Query options via .use)
           </span>
           <input
             type="checkbox"
             checked={endpoint.withOptions}
             onChange={(e) => updateEndpoint(endpoint.id, { withOptions: e.target.checked })}
-            className="h-4 w-4 rounded border-zinc-300 text-teal-600 focus:ring-teal-500/30"
+            className="h-4 w-4 rounded border-line-strong text-ink focus:ring-focus/30"
           />
         </label>
       )}
 
-      <TestRunSection endpoint={endpoint} />
+      {scope === 'project' && <TestRunSection endpoint={endpoint} />}
     </div>
   )
 }

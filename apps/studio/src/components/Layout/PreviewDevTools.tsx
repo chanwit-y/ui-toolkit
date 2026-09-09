@@ -175,30 +175,30 @@ function ApiTab({ log }: { log: ApiLogEntry[] }) {
         const expanded = expandedId === entry.id
         const ok = entry.status != null && entry.status < 400
         return (
-          <div key={entry.id} className="rounded-md border border-zinc-200 bg-zinc-50/60">
+          <div key={entry.id} className="rounded-md border border-line bg-panel">
             <button
               type="button"
               onClick={() => setExpandedId(expanded ? null : entry.id)}
-              className="flex w-full items-center gap-1.5 px-2 py-1.5 text-left text-[11px]"
+              className="flex w-full items-center gap-1.5 px-2 py-1.5 text-left text-ui-sm"
             >
               {expanded ? (
-                <ChevronDown className="h-3 w-3 shrink-0 text-zinc-400" aria-hidden="true" />
+                <ChevronDown className="h-3 w-3 shrink-0 text-ink-3" aria-hidden="true" />
               ) : (
-                <ChevronRight className="h-3 w-3 shrink-0 text-zinc-400" aria-hidden="true" />
+                <ChevronRight className="h-3 w-3 shrink-0 text-ink-3" aria-hidden="true" />
               )}
-              <span className="font-semibold text-zinc-600">{entry.method}</span>
-              <span className="min-w-0 flex-1 truncate font-mono text-zinc-500">
+              <span className="font-semibold text-ink-2">{entry.method}</span>
+              <span className="min-w-0 flex-1 truncate font-mono text-ink-3">
                 {entry.url}
               </span>
               <span
-                className={`font-semibold ${ok ? 'text-emerald-600' : 'text-red-600'}`}
+                className={`font-semibold ${ok ? 'text-ok' : 'text-danger'}`}
               >
                 {entry.status ?? '—'}
               </span>
-              <span className="text-zinc-400">{entry.time}</span>
+              <span className="text-ink-3">{entry.time}</span>
             </button>
             {expanded && (
-              <div className="border-t border-zinc-200 p-1.5">
+              <div className="border-t border-line p-1.5">
                 <JsonBlock id={`log-${entry.id}`} label="response" value={entry.data} />
               </div>
             )}
@@ -211,7 +211,7 @@ function ApiTab({ log }: { log: ApiLogEntry[] }) {
 
 function EmptyHint({ children }: { children: React.ReactNode }) {
   return (
-    <p className="rounded-md border border-dashed border-zinc-300 px-2 py-3 text-center text-[11px] text-zinc-400">
+    <p className="rounded-md border border-dashed border-line-strong px-2 py-3 text-center text-ui-sm text-ink-3">
       {children}
     </p>
   )
@@ -240,17 +240,17 @@ export function PreviewDevTools({
   return createPortal(
     <aside
       data-engine-devtools=""
-      className="pointer-events-auto fixed inset-y-0 right-0 z-[100000] flex w-[360px] flex-col gap-2 border-l border-zinc-200 bg-white p-3 shadow-2xl"
+      className="pointer-events-auto fixed inset-y-0 right-0 z-[100000] flex w-[360px] flex-col gap-2 border-l border-line bg-surface p-3 shadow-2xl"
     >
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400">
+        <h2 className="text-ui-sm font-semibold uppercase tracking-wide text-ink-3">
           Preview dev tools
         </h2>
         <button
           type="button"
           aria-label="Close dev tools"
           onClick={onClose}
-          className="rounded p-1 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600"
+          className="rounded p-1 text-ink-3 transition-colors hover:bg-panel-2 hover:text-ink-2"
         >
           <X className="h-3.5 w-3.5" aria-hidden="true" />
         </button>
@@ -288,7 +288,7 @@ export function PreviewDevToolsToggle({ onOpen }: { onOpen: () => void }) {
       aria-label="Show dev tools"
       title="Show dev tools"
       onClick={onOpen}
-      className="pointer-events-auto fixed bottom-4 right-4 z-[100000] flex h-10 w-10 items-center justify-center rounded-full bg-zinc-900 text-white shadow-lg transition-colors hover:bg-zinc-700"
+      className="pointer-events-auto fixed bottom-4 right-4 z-[100000] flex h-10 w-10 items-center justify-center rounded-full bg-accent text-accent-ink shadow-lg transition-colors hover:bg-ink-2"
     >
       <Bug className="h-4 w-4" aria-hidden="true" />
     </button>,

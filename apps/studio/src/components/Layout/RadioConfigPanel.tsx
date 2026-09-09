@@ -15,7 +15,7 @@ const ORIENTATION_OPTIONS = [
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="block space-y-1">
-      <span className="text-xs font-medium text-zinc-600">{label}</span>
+      <span className="text-ui-sm font-medium text-ink-2">{label}</span>
       {children}
     </label>
   )
@@ -33,12 +33,12 @@ function Toggle({
 }) {
   return (
     <label className="flex items-center justify-between gap-2">
-      <span className="text-xs font-medium text-zinc-600">{label}</span>
+      <span className="text-ui-sm font-medium text-ink-2">{label}</span>
       <input
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
-        className="h-4 w-4 rounded border-zinc-300 text-teal-600 focus:ring-teal-500/30"
+        className="h-4 w-4 rounded border-line-strong text-ink focus:ring-focus/30"
       />
     </label>
   )
@@ -73,7 +73,7 @@ function OptionsEditor({
         {options.map((option, index) => (
           <div
             key={index}
-            className="space-y-2 rounded-lg border border-zinc-200 bg-zinc-50/60 p-2"
+            className="space-y-2 rounded-lg border border-line bg-panel p-2"
           >
             <div className="grid grid-cols-2 gap-2">
               <Input
@@ -97,7 +97,7 @@ function OptionsEditor({
               <IconButton
                 label={`Remove option ${index + 1}`}
                 onClick={() => remove(index)}
-                className="h-6! w-6! text-zinc-400 hover:text-red-500"
+                className="h-6! w-6! text-ink-3 hover:text-danger"
               >
                 <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
               </IconButton>
@@ -107,7 +107,7 @@ function OptionsEditor({
         <button
           type="button"
           onClick={add}
-          className="flex w-full items-center justify-center gap-1 rounded-md border border-dashed border-zinc-300 py-1.5 text-xs font-medium text-zinc-500 transition-colors hover:border-teal-400 hover:text-teal-600"
+          className="flex w-full items-center justify-center gap-1 rounded-md border border-dashed border-line-strong py-1.5 text-ui-sm font-medium text-ink-3 transition-colors hover:border-focus hover:text-ink"
         >
           <Plus className="h-3.5 w-3.5" aria-hidden="true" />
           Add option
@@ -142,7 +142,7 @@ export function RadioConfigPanel({ itemId, config }: RadioConfigPanelProps) {
 
   return (
     <div className="space-y-3">
-      <h3 className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400">
+      <h3 className="text-ui-sm font-semibold uppercase tracking-wide text-ink-3">
         Radio
       </h3>
 
@@ -196,7 +196,6 @@ export function RadioConfigPanel({ itemId, config }: RadioConfigPanelProps) {
           options={ORIENTATION_OPTIONS}
           value={config.orientation}
           onChange={(v) => set('orientation', v as RadioConfig['orientation'])}
-          className="rounded-lg border border-zinc-200 bg-zinc-50 p-1"
           aria-label="Radio orientation"
         />
       </Field>

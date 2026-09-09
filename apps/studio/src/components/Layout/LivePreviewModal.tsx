@@ -9,10 +9,9 @@ import {
 } from '@gummy-ui/ui'
 import { Component, useMemo, useRef, useState, type ReactNode } from 'react'
 import { serializeEndpoints } from '../Api/serialize'
-import { useApiStore } from '../Api/apiStore'
 import { useApiUrl } from '../Env'
 import { serializeModels } from '../Model/serialize'
-import { useModelStore } from '../Model/modelStore'
+import { useProjectEndpoints, useProjectModels } from '../Library/scope'
 import { gridConfigToJson } from './gridConfig'
 import { useGridStore } from './gridStore'
 import { buildLivePreviewContainer } from './livePreview'
@@ -57,9 +56,9 @@ class PreviewErrorBoundary extends Component<{ children: ReactNode }, BoundarySt
   render() {
     if (this.state.error) {
       return (
-        <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800">
+        <div className="rounded-lg border border-warn/40 bg-warn/8 p-4 text-ui text-warn">
           <p className="font-semibold">The engine could not render this config.</p>
-          <p className="mt-1 font-mono text-xs">{this.state.error.message}</p>
+          <p className="mt-1 font-mono text-ui-sm">{this.state.error.message}</p>
         </div>
       )
     }
@@ -70,8 +69,10 @@ class PreviewErrorBoundary extends Component<{ children: ReactNode }, BoundarySt
 export function LivePreviewModal({ onClose }: { onClose: () => void }) {
   const items = useGridStore((s) => s.items)
   const containerSettings = useGridStore((s) => s.containerSettings)
-  const models = useModelStore((s) => s.models)
-  const endpoints = useApiStore((s) => s.endpoints)
+  // The project's attached endpoints and the models they reference — exactly
+  // what its model.ts / api.ts exports contain.
+  const models = useProjectModels()
+  const endpoints = useProjectEndpoints()
   const apiUrl = useApiUrl()
 
   // Dev tools (see the grilled design): closed on every open — the modal
@@ -129,7 +130,14 @@ export function LivePreviewModal({ onClose }: { onClose: () => void }) {
         )
       },
     )
-    const apis = new ApiMaster(model, api, new ApiFactory(http, model))
+    // Only the fetchable entries reach the engine: an endpoint whose response
+    // model is missing (a freshly created one, say) would make its schema
+    // conversion throw and blank the whole preview, while the bins bound to it
+    // are already placeholders.
+    const fetchableApi = Object.fromEntries(
+      Object.entries(api).filter(([name]) => fetchableNames.has(name)),
+    ) as TApiMaster<TModelMaster>
+    const apis = new ApiMaster(model, fetchableApi, new ApiFactory(http, model))
     // draw(true, false) mirrors Core.run(): isRoot gives the preview its own
     // engine context (form, query client, observe table) isolated from the
     // canvas's cell previews; withAuth stays off.

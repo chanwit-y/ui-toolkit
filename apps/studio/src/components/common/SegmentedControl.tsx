@@ -9,37 +9,16 @@ type SegmentedControlProps = {
   options: SegmentedOption[]
   value: string
   onChange: (value: string) => void
+  /** `pills` is the single-row toolbar seg; `chips` wraps for long option
+   * lists (column spans 1..12). Both share the mockup's `seg` look. */
   variant?: 'pills' | 'chips'
-  /** Extra classes for the button row container (callers own the tray). */
   className?: string
   'aria-label'?: string
 }
 
-const containerBase: Record<NonNullable<SegmentedControlProps['variant']>, string> = {
-  pills: 'flex flex-wrap items-center gap-1',
-  chips: 'flex flex-wrap gap-1.5',
-}
-
-const buttonBase: Record<NonNullable<SegmentedControlProps['variant']>, string> = {
-  pills: 'rounded-md px-2.5 py-1 text-xs font-semibold transition-colors',
-  chips:
-    'min-w-[2.25rem] rounded-md border px-2 py-1.5 font-mono text-xs font-semibold transition-colors',
-}
-
-const buttonActive: Record<NonNullable<SegmentedControlProps['variant']>, string> = {
-  pills: 'bg-teal-600 text-white shadow-sm',
-  chips: 'border-teal-600 bg-teal-600 text-white shadow-sm',
-}
-
-const buttonInactive: Record<NonNullable<SegmentedControlProps['variant']>, string> = {
-  pills: 'text-zinc-600 hover:bg-white hover:text-zinc-900',
-  chips: 'border-zinc-300 bg-white text-zinc-700 hover:border-teal-400 hover:bg-teal-50',
-}
-
 /**
- * Controlled single-select button group. Presentational only — the surrounding
- * "tray" (background/border/padding) is the caller's responsibility, so the same
- * control works both inside a toolbar chip group and a settings tray.
+ * Controlled single-select button group in the mockup's `.seg` style — the
+ * control owns its tray (panel-2 well + line border), so callers place it bare.
  */
 export function SegmentedControl({
   options,
@@ -50,7 +29,11 @@ export function SegmentedControl({
   'aria-label': ariaLabel,
 }: SegmentedControlProps) {
   return (
-    <div className={cn(containerBase[variant], className)} role="group" aria-label={ariaLabel}>
+    <div
+      className={cn('seg', variant === 'chips' && 'flex-wrap', className)}
+      role="group"
+      aria-label={ariaLabel}
+    >
       {options.map((opt) => {
         const isActive = value === opt.value
         return (
@@ -59,10 +42,7 @@ export function SegmentedControl({
             type="button"
             aria-pressed={isActive}
             onClick={() => onChange(opt.value)}
-            className={cn(
-              buttonBase[variant],
-              isActive ? buttonActive[variant] : buttonInactive[variant],
-            )}
+            className={cn('seg-btn', variant === 'chips' && 'min-w-7 px-1.5 font-mono')}
           >
             {opt.label}
           </button>

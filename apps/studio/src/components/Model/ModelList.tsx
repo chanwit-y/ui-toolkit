@@ -1,6 +1,14 @@
 import { Plus, Trash2 } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
-import { cn } from '../common'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useApiStore } from '../Api/apiStore'
+import { MODEL_REF_KEYS } from '../Api/types'
+import { cn, ConfirmDialog } from '../common'
+import {
+  inGroupSelection,
+  useLibraryScope,
+  useLibraryUiStore,
+  useScopedModels,
+} from '../Library'
 import { playEnter, playExitThenRemove } from './animation'
 import { useModelStore } from './modelStore'
 import type { ModelDef } from './types'
@@ -8,14 +16,14 @@ import type { ModelDef } from './types'
 type ModelListItemProps = {
   model: ModelDef
   selected: boolean
+  canDelete: boolean
   onSelect: (id: string) => void
   onDelete: (id: string) => void
 }
 
 /** One model row — eases in on mount, collapses out before deletion. Single
- * click selects; double click renames inline (Enter/blur commits, Esc reverts).
- * The selection highlight animates via `transition-colors`. */
-function ModelListItem({ model, selected, onSelect, onDelete }: ModelListItemProps) {
+ * click selects; double click renames inline (Enter/blur commits, Esc reverts). */
+function ModelListItem({ model, selected, canDelete, onSelect, onDelete }: ModelListItemProps) {
   const rootRef = useRef<HTMLLIElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const renameModel = useModelStore((s) => s.renameModel)
@@ -60,10 +68,8 @@ function ModelListItem({ model, selected, onSelect, onDelete }: ModelListItemPro
   return (
     <li ref={rootRef}>
       <div
-        className={cn(
-          'group flex items-center gap-1 rounded-md border px-2 py-1.5 transition-colors',
-          selected ? 'border-teal-500 bg-teal-50' : 'border-transparent hover:bg-zinc-50',
-        )}
+        aria-current={selected || undefined}
+        className={cn('list-row group', editing && 'bg-transparent hover:bg-transparent')}
       >
         {editing ? (
           <input
@@ -74,7 +80,7 @@ function ModelListItem({ model, selected, onSelect, onDelete }: ModelListItemPro
             onBlur={commit}
             placeholder="modelName"
             aria-label="Model name"
-            className="min-w-0 flex-1 rounded border border-zinc-300 bg-white px-1.5 py-0.5 font-mono text-sm text-zinc-900 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
+            className="field h-6 min-w-0 flex-1 font-mono text-ui-sm"
           />
         ) : (
           <button
@@ -82,21 +88,23 @@ function ModelListItem({ model, selected, onSelect, onDelete }: ModelListItemPro
             onClick={() => onSelect(model.id)}
             onDoubleClick={beginEdit}
             title="Double-click to rename"
-            className={cn(
-              'min-w-0 flex-1 truncate text-left font-mono text-sm',
-              selected ? 'text-teal-800' : 'text-zinc-700',
-            )}
+            className="min-w-0 flex-1 truncate py-1 text-left font-mono text-ui-sm"
           >
-            {model.name || <span className="italic text-zinc-400">unnamed</span>}
+            {model.name || <span className="italic text-ink-3">unnamed</span>}
           </button>
         )}
         {!editing && (
+          <span className="font-mono text-ui-xs text-ink-3 group-hover:hidden">
+            {model.fields.length}
+          </span>
+        )}
+        {!editing && canDelete && (
           <button
             type="button"
             onClick={handleDelete}
             title="Delete model"
             aria-label={`Delete ${model.name}`}
-            className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded text-zinc-400 opacity-0 transition-opacity hover:text-red-600 group-hover:opacity-100"
+            className="hidden h-5 w-5 shrink-0 items-center justify-center rounded text-ink-3 transition-colors hover:text-danger group-hover:inline-flex"
           >
             <Trash2 size={14} aria-hidden="true" />
           </button>
@@ -106,48 +114,107 @@ function ModelListItem({ model, selected, onSelect, onDelete }: ModelListItemPro
   )
 }
 
-/** Left pane: the named models in the master — select / add / delete. */
+/**
+ * Left pane: the models in scope — inside a project, the ones its attached
+ * endpoints reference (nothing to add or delete here: models are created in
+ * the library or referenced from an endpoint); on the library page, every
+ * model in the selected group, with + (filed into that group) and delete
+ * (after a confirm listing the endpoints that reference it).
+ */
 export function ModelList() {
-  const models = useModelStore((s) => s.models)
+  const scope = useLibraryScope()
+  const scoped = useScopedModels()
   const selectedModelId = useModelStore((s) => s.selectedModelId)
   const selectModel = useModelStore((s) => s.selectModel)
   const addModel = useModelStore((s) => s.addModel)
   const deleteModel = useModelStore((s) => s.deleteModel)
+  const endpoints = useApiStore((s) => s.endpoints)
+  const groupSel = useLibraryUiStore((s) => s.groupSel)
+  const query = useLibraryUiStore((s) => s.query)
+  const [pendingDelete, setPendingDelete] = useState<ModelDef | null>(null)
+
+  const models = useMemo(() => {
+    if (scope !== 'library') return scoped
+    const q = query.trim().toLowerCase()
+    return scoped.filter(
+      (m) => inGroupSelection(groupSel, m.groupId) && (!q || m.name.toLowerCase().includes(q)),
+    )
+  }, [scope, scoped, groupSel, query])
+
+  const referencing = (id: string) =>
+    endpoints.filter((e) => MODEL_REF_KEYS.some((k) => e[k] === id)).map((e) => e.name || '(unnamed)')
 
   return (
-    <aside className="flex w-64 shrink-0 flex-col border-r border-zinc-200 bg-white">
-      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-zinc-200 px-4 py-3">
-        <h2 className="text-sm font-semibold text-zinc-800">Models</h2>
-        <button
-          type="button"
-          onClick={addModel}
-          title="Add model"
-          aria-label="Add model"
-          className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-teal-600 bg-teal-600 text-white transition-colors hover:bg-teal-700"
-        >
-          <Plus size={15} aria-hidden="true" />
-        </button>
+    <aside className="flex w-60 shrink-0 flex-col border-r border-line bg-panel">
+      <div className="flex h-[37px] shrink-0 items-center justify-between gap-2 border-b border-line px-3">
+        <h2 className="sec-label">
+          {scope === 'project' ? 'Models in use' : 'Models'}
+          <span className="ml-1.5 font-mono normal-case tracking-normal">{models.length}</span>
+        </h2>
+        {scope === 'library' && (
+          <button
+            type="button"
+            onClick={() => addModel(groupSel !== 'all' && groupSel !== 'none' ? groupSel : null)}
+            title="Add model"
+            aria-label="Add model"
+            className="btn btn-icon-sm btn-primary"
+          >
+            <Plus size={13} aria-hidden="true" />
+          </button>
+        )}
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-2">
+      <div className="min-h-0 flex-1 overflow-y-auto p-1.5">
         {models.length === 0 ? (
-          <p className="px-2 py-6 text-center text-sm text-zinc-400">
-            No models. Use + to add one.
+          <p className="px-2 py-6 text-center text-ui text-ink-3">
+            {scope === 'project'
+              ? 'Attach an endpoint first — its models land here.'
+              : query
+                ? 'No model matches that search.'
+                : 'No model in this group yet. Use + to add one.'}
           </p>
         ) : (
-          <ul className="space-y-1">
+          <ul className="space-y-0.5">
             {models.map((m) => (
               <ModelListItem
                 key={m.id}
                 model={m}
                 selected={m.id === selectedModelId}
+                canDelete={scope === 'library'}
                 onSelect={selectModel}
-                onDelete={deleteModel}
+                onDelete={(id) => setPendingDelete(models.find((x) => x.id === id) ?? null)}
               />
             ))}
           </ul>
         )}
+        {scope === 'project' && models.length > 0 && (
+          <p className="px-2 pt-3 text-ui-xs text-ink-3">
+            Derived from the attached endpoints. Create models on the library page.
+          </p>
+        )}
       </div>
+
+      {pendingDelete && (
+        <ConfirmDialog
+          title={`Delete “${pendingDelete.name || 'unnamed'}” from the library?`}
+          body={
+            referencing(pendingDelete.id).length ? (
+              <>
+                {referencing(pendingDelete.id).join(', ')} reference{referencing(pendingDelete.id).length === 1 ? 's' : ''}{' '}
+                this model — those references will show a warning until repointed.
+              </>
+            ) : (
+              'No endpoint references this model. There is no undo.'
+            )
+          }
+          confirmLabel="Delete model"
+          onConfirm={() => {
+            deleteModel(pendingDelete.id)
+            setPendingDelete(null)
+          }}
+          onClose={() => setPendingDelete(null)}
+        />
+      )}
     </aside>
   )
 }

@@ -20,7 +20,6 @@ export function useGridFlipAnimation(): {
   const contentFadeIdRef = useRef<string | 'all' | undefined>(undefined)
   const resetWidthTimer = useRef<number | undefined>(undefined)
   const [animTick, setAnimTick] = useState(0)
-  const isFirstRender = useRef(true)
 
   const captureSnapshot = useCallback(() => {
     if (gridRef.current) {
@@ -37,10 +36,11 @@ export function useGridFlipAnimation(): {
   }, [])
 
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false
-      return
-    }
+    // Only run for a scheduled animation (tick > 0). The previous
+    // `isFirstRender` ref guard was defeated by StrictMode's double effect
+    // invocation in dev, which played a frame resize from width 0 on every
+    // mount (visible as the canvas frame growing from a sliver).
+    if (animTick === 0) return
     const container = gridRef.current
     if (!container) return
 
@@ -56,7 +56,9 @@ export function useGridFlipAnimation(): {
         // FLIP measures a stable final layout while the canvas resizes.
         if (!frame) return
         const finalWidth = frame.getBoundingClientRect().width
-        if (Math.abs(finalWidth - fromFrameWidth) <= 0.5) return
+        // No captured width (nothing measured before the mutation) — nothing
+        // to animate from.
+        if (fromFrameWidth === 0 || Math.abs(finalWidth - fromFrameWidth) <= 0.5) return
 
         container.style.width = `${container.getBoundingClientRect().width}px`
         const animating = playFrameResizeAnimation(frame, fromFrameWidth)

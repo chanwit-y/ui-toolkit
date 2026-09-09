@@ -1,5 +1,7 @@
 export { cn, type ClassValue } from './cn'
 export { IconButton } from './IconButton'
+export { Button } from './Button'
+export { ConfirmDialog } from './ConfirmDialog'
 export { Popover } from './Popover'
 export { CodeViewer, type CodeTab } from './CodeViewer'
 export { SegmentedControl, type SegmentedOption } from './SegmentedControl'

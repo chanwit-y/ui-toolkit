@@ -50,7 +50,7 @@ function SortableCard({
       title={gripLabel}
       {...attributes}
       {...listeners}
-      className="flex h-6 w-6 shrink-0 cursor-grab touch-none items-center justify-center rounded text-zinc-400 transition-colors hover:text-teal-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/40 active:cursor-grabbing"
+      className="flex h-6 w-6 shrink-0 cursor-grab touch-none items-center justify-center rounded text-ink-3 transition-colors hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/40 active:cursor-grabbing"
     >
       <GripVertical className="h-3.5 w-3.5" aria-hidden="true" />
     </button>

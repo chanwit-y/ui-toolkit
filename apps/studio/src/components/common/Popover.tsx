@@ -60,7 +60,7 @@ function PopoverPanel({ anchor, title, onClose, children }: PopoverPanelProps) {
       role="dialog"
       aria-label={title}
       className={cn(
-        'fixed z-50 flex w-80 flex-col overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-xl',
+        'fixed z-50 flex w-80 flex-col overflow-hidden rounded-lg border border-line bg-surface shadow-xl',
         'transition duration-200 ease-out motion-reduce:transition-none',
         entered
           ? 'translate-y-0 scale-100 opacity-100'
@@ -68,12 +68,12 @@ function PopoverPanel({ anchor, title, onClose, children }: PopoverPanelProps) {
       )}
       style={{ top, left, maxHeight, transformOrigin: 'top left' }}
     >
-      <header className="flex shrink-0 items-center justify-between border-b border-zinc-100 px-3 py-2.5">
-        <h2 className="text-sm font-semibold text-zinc-900">{title}</h2>
+      <header className="flex shrink-0 items-center justify-between border-b border-line px-3 py-2.5">
+        <h2 className="text-ui font-semibold text-ink">{title}</h2>
         <button
           type="button"
           onClick={onClose}
-          className="rounded px-1.5 py-0.5 text-xs text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800"
+          className="rounded px-1.5 py-0.5 text-ui-sm text-ink-3 hover:bg-panel-2 hover:text-ink"
           aria-label="Close"
         >
           Esc

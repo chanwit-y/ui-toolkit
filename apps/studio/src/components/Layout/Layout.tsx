@@ -11,6 +11,7 @@ import {
 } from '@dnd-kit/core'
 import { rectSortingStrategy, SortableContext } from '@dnd-kit/sortable'
 import { LayoutGrid } from 'lucide-react'
+import { useStudioStore } from '../studioStore'
 import {
   memo,
   Profiler,
@@ -21,7 +22,7 @@ import {
   useState,
   type ProfilerOnRenderCallback,
 } from 'react'
-import { useApiStore } from '../Api/apiStore'
+import { useProjectEndpoints } from '../Library/scope'
 import { BREAKPOINTS } from './breakpoints'
 import type { ComponentDef } from './componentCatalog'
 import { SMOOTH_EASING } from './gridAnimation'
@@ -31,6 +32,7 @@ import {
   selectActiveItems,
   selectActiveSettings,
   useActiveItem,
+  useBreadcrumb,
   useGridStore,
 } from './gridStore'
 import { generateGridStyles } from './gridStyles'
@@ -118,13 +120,17 @@ function GridCanvasInner({
     <SortableContext items={sortableIds} strategy={rectSortingStrategy}>
       <div
         ref={setRefs}
-        className={`gl-${layoutId} w-full rounded-lg border border-zinc-200 bg-white p-4 shadow-sm`}
+        className={`gl-${layoutId} relative z-[1] min-h-[398px] w-full`}
         onClick={onCanvasClick}
       >
         {items.length === 0 ? (
-          <div className="col-span-full flex min-h-[140px] flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-zinc-300 text-sm text-zinc-500">
-            <LayoutGrid className="h-6 w-6 text-zinc-400" aria-hidden="true" />
-            Drag a component from the toolbox to add one.
+          <div className="col-span-full flex min-h-[200px] flex-col items-center justify-center gap-1.5 rounded-[10px] border border-dashed border-line-strong px-5 py-10 text-center text-ui text-ink-2">
+            <LayoutGrid className="mb-1 h-5 w-5 text-ink-3" aria-hidden="true" />
+            <b className="text-[13px] font-semibold text-ink">This canvas is empty</b>
+            Drag a component from the left, or click one to append it.
+            <span className="text-ink-3">
+              Containers accept nested components and keep their own column count.
+            </span>
           </div>
         ) : (
           items.map((item) => (
@@ -141,6 +147,60 @@ function GridCanvasInner({
 }
 
 const GridCanvas = memo(GridCanvasInner)
+
+/**
+ * The browser-chrome strip on top of the preview frame (mockup `.frame-chrome`):
+ * traffic dots, the canvas path, and `BP · width · columns`. Subscribes to the
+ * store itself so the memoized EditorBody never re-renders for it.
+ */
+function FrameChrome() {
+  const bp = useGridStore((s) => s.previewBreakpoint)
+  const columns = useGridStore((s) => selectActiveSettings(s).columns[s.previewBreakpoint])
+  const trail = useBreadcrumb()
+  const width = BREAKPOINTS.find((b) => b.key === bp)?.previewWidth
+  const path = ['root', ...trail.map((t) => t.label)]
+    .map((p) => p.toLowerCase().replace(/\s+/g, '-'))
+    .join('/')
+  return (
+    <div className="flex h-7 shrink-0 items-center gap-2 border-b border-line bg-panel px-2.5 font-mono text-ui-xs text-ink-3">
+      <span className="flex gap-1" aria-hidden="true">
+        <i className="block h-[7px] w-[7px] rounded-full bg-line-strong" />
+        <i className="block h-[7px] w-[7px] rounded-full bg-line-strong" />
+        <i className="block h-[7px] w-[7px] rounded-full bg-line-strong" />
+      </span>
+      <span className="min-w-0 truncate">{path}</span>
+      <span className="flex-1" />
+      <span>
+        {bp.toUpperCase()} · {width ? `${width}px` : 'fluid'} · {columns} col
+      </span>
+    </div>
+  )
+}
+
+/**
+ * Dashed column guides behind the cells (mockup `.stage-guides`), following the
+ * active canvas's column count at the preview breakpoint. Toggled from the
+ * canvas bar; purely decorative (`pointer-events-none`, below the grid).
+ */
+function CanvasGuides() {
+  const guides = useStudioStore((s) => s.guides)
+  const columns = useGridStore((s) => selectActiveSettings(s).columns[s.previewBreakpoint])
+  if (!guides) return null
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-4 z-0 grid"
+      style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}
+    >
+      {Array.from({ length: columns }, (_, i) => (
+        <i
+          key={i}
+          className="block h-full border-l border-dashed border-grid-line last:border-r"
+        />
+      ))}
+    </div>
+  )
+}
 
 type EditorBodyProps = {
   sortableIds: string[]
@@ -246,33 +306,26 @@ function EditorBodyInner({
     >
       <Toolbox />
 
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col p-4">
-        <div className="mx-auto flex min-h-0 w-full flex-1 flex-col">
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-zinc-200 bg-zinc-100/80">
-            <PreviewToolbar />
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-sunken">
+        <PreviewToolbar />
 
-            <div
-              className="flex min-h-0 flex-1 flex-col items-center overflow-y-auto p-4"
-              style={{
-                backgroundImage:
-                  'linear-gradient(to right, rgba(113,113,122,0.12) 1px, transparent 1px), linear-gradient(to bottom, rgba(113,113,122,0.12) 1px, transparent 1px)',
-                backgroundSize: '16px 16px',
-              }}
-            >
-              <div
-                ref={frameRef}
-                className="mx-auto w-full max-w-full rounded-lg"
-                style={{ width: 'var(--preview-frame-w, 100%)' }}
-              >
-                <GridCanvas
-                  sortableIds={sortableIds}
-                  items={items}
-                  selectedItemId={selectedItemId}
-                  layoutId={layoutId}
-                  gridRef={gridRef}
-                  onCanvasClick={clearSelection}
-                />
-              </div>
+        <div className="flex min-h-0 flex-1 justify-center overflow-auto px-5 pb-16 pt-[22px]">
+          <div
+            ref={frameRef}
+            className="flex w-full max-w-full flex-col self-start overflow-hidden rounded-[10px] border border-line bg-surface shadow-frame"
+            style={{ width: 'var(--preview-frame-w, 100%)' }}
+          >
+            <FrameChrome />
+            <div className="relative p-4">
+              <CanvasGuides />
+              <GridCanvas
+                sortableIds={sortableIds}
+                items={items}
+                selectedItemId={selectedItemId}
+                layoutId={layoutId}
+                gridRef={gridRef}
+                onCanvasClick={clearSelection}
+              />
             </div>
           </div>
         </div>
@@ -364,8 +417,9 @@ export function Layout() {
   // the whole config and regenerate the full stylesheet for nothing.
   const computeCode = sidebarView === 'code'
 
-  // Endpoint refs resolve against the API page's current names at export.
-  const endpoints = useApiStore((s) => s.endpoints)
+  // Endpoint refs resolve against the attached endpoints' current names at
+  // export — a ref to a detached endpoint is a dangling ref, like a deleted one.
+  const endpoints = useProjectEndpoints()
 
   const gridConfigJson = useMemo(
     () => (computeCode ? gridConfigToJson(rootSettings, rootItems, endpoints) : ''),
@@ -386,7 +440,7 @@ export function Layout() {
   return (
     <Profiler id="grid" onRender={onRenderCommit}>
       <div
-        className="flex min-h-0 flex-1 bg-zinc-50"
+        className="flex min-h-0 flex-1 bg-sunken"
         style={{ '--preview-frame-w': previewFrameWidth } as React.CSSProperties}
       >
         <style dangerouslySetInnerHTML={{ __html: gridCss }} />

@@ -20,8 +20,9 @@
 
 /* Gate `dark:` on a `.dark` ancestor (the library's `darkMode: 'class'`
    convention) instead of Tailwind 4's default `prefers-color-scheme` media
-   query. Studio never sets `.dark`, so library components (Autocomplete2, etc.)
-   stay light regardless of the OS theme — matching the light `ThemeProvider`. */
+   query. The library's ThemeProvider toggles `.dark` on <html> from the
+   authored appearance (themeStore), so the studio chrome and the canvas
+   previews flip together — one toggle (see the grilled redesign). */
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* The canvas renders the real `<TextFieldBase>` from @gummy-ui/ui, whose layout
@@ -31,10 +32,361 @@
    exclusion. */
 @source "../../../packages/ui/dist/index.js";
 
+/* ---------------------------------------------------------------------------
+   Studio chrome tokens (after the gummy-studio mockup). The raw values live on
+   :root / .dark so they flip at runtime; `@theme inline` below exposes them to
+   Tailwind as `bg-panel`, `text-ink-2`, `border-line`, … which compile to
+   `var(--…)` references — so one class works in both appearances.
+   The canvas's real library components keep tinting from the Radix accent vars
+   (the app accent authored on the Theme page); these tokens are chrome-only.
+   --------------------------------------------------------------------------- */
+:root {
+  --font-ui: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-code: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --bg: #ffffff;
+  --bg-sunken: #f4f5f6;
+  --panel: #fbfbfc;
+  --panel-2: #f1f2f3;
+  --line: #e2e4e7;
+  --line-strong: #c9ccd1;
+  --ink: #14161a;
+  --ink-2: #4b5158;
+  --ink-3: #8c9299;
+  --accent: #14161a;
+  --accent-ink: #ffffff;
+  --focus: #14161a;
+  --danger: #b0271f;
+  --warn: #b45309;
+  --ok: #0b6b3a;
+  --grid-line: rgba(20, 22, 26, 0.055);
+  --grid-edge: rgba(20, 22, 26, 0.13);
+  --shadow-frame: 0 1px 2px rgba(16, 18, 22, 0.06), 0 8px 24px -12px rgba(16, 18, 22, 0.18);
+}
+
+.dark {
+  --bg: #0c0d0f;
+  --bg-sunken: #08090a;
+  --panel: #111316;
+  --panel-2: #181b1f;
+  --line: #24272c;
+  --line-strong: #3a3e45;
+  --ink: #f0f1f2;
+  --ink-2: #a8aeb5;
+  --ink-3: #6e757d;
+  --accent: #f0f1f2;
+  --accent-ink: #0c0d0f;
+  --focus: #f0f1f2;
+  --danger: #f0736c;
+  --warn: #f0a44a;
+  --ok: #5fcf8f;
+  --grid-line: rgba(240, 241, 242, 0.05);
+  --grid-edge: rgba(240, 241, 242, 0.14);
+  --shadow-frame: 0 1px 2px rgba(0, 0, 0, 0.5), 0 12px 28px -14px rgba(0, 0, 0, 0.8);
+}
+
+@theme inline {
+  --color-surface: var(--bg);
+  --color-sunken: var(--bg-sunken);
+  --color-panel: var(--panel);
+  --color-panel-2: var(--panel-2);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-focus: var(--focus);
+  --color-danger: var(--danger);
+  --color-warn: var(--warn);
+  --color-ok: var(--ok);
+  --color-grid-line: var(--grid-line);
+  --color-grid-edge: var(--grid-edge);
+
+  --font-sans: var(--font-ui);
+  --font-mono: var(--font-code);
+
+  --shadow-frame: var(--shadow-frame);
+}
+
+/* Compact UI type scale (the mockup runs at 13px with 12.5 / 11.5 / 10.5px
+   steps). Kept as separate tokens rather than overriding `text-sm`/`text-xs`
+   so the library components previewed on the canvas keep their real sizes. */
+@theme {
+  --text-ui: 12.5px;
+  --text-ui--line-height: 1.5;
+  --text-ui-sm: 11.5px;
+  --text-ui-sm--line-height: 1.45;
+  --text-ui-xs: 10.5px;
+  --text-ui-xs--line-height: 1.4;
+}
+
+/* --- Shared chrome primitives (mockup .btn / .field / .seg / .tag / …). Kept
+   as utilities so they compose with variants and only ship when used. --- */
+@utility sec-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--ink-3);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+@utility btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 12.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: background-color 0.12s, border-color 0.12s, opacity 0.12s;
+  &:hover {
+    background: var(--panel-2);
+    border-color: var(--line-strong);
+  }
+  &:disabled {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+}
+
+@utility btn-primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+  &:hover {
+    opacity: 0.88;
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+}
+
+@utility btn-sm {
+  height: 24px;
+  padding: 0 8px;
+  font-size: 12px;
+}
+
+@utility btn-icon {
+  width: 28px;
+  padding: 0;
+  justify-content: center;
+}
+
+@utility btn-icon-sm {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  justify-content: center;
+}
+
+@utility field {
+  width: 100%;
+  height: 28px;
+  padding: 0 8px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--ink);
+  font-size: 12.5px;
+  outline: none;
+  &::placeholder {
+    color: var(--ink-3);
+  }
+  &:focus {
+    border-color: var(--focus);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus) 15%, transparent);
+  }
+  &:disabled {
+    color: var(--ink-3);
+    background: var(--panel);
+  }
+}
+
+@utility field-area {
+  height: auto;
+  padding: 6px 8px;
+  resize: vertical;
+}
+
+@utility field-select {
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--ink-3) 50%),
+    linear-gradient(135deg, var(--ink-3) 50%, transparent 50%);
+  background-position:
+    calc(100% - 13px) 12px,
+    calc(100% - 8px) 12px;
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 24px;
+}
+
+@utility seg {
+  display: inline-flex;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
+}
+
+@utility seg-btn {
+  height: 22px;
+  padding: 0 9px;
+  border-radius: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ink-2);
+  white-space: nowrap;
+  transition: color 0.12s, background-color 0.12s;
+  &:hover {
+    color: var(--ink);
+  }
+  &[aria-pressed="true"],
+  &[aria-selected="true"] {
+    background: var(--bg);
+    color: var(--ink);
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.06);
+  }
+}
+.dark .seg-btn[aria-pressed="true"],
+.dark .seg-btn[aria-selected="true"] {
+  background: #2a2e34;
+}
+
+@utility tag {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 4px;
+  font-family: var(--font-code);
+  font-size: 10.5px;
+  font-weight: 500;
+  background: var(--panel-2);
+  color: var(--ink-2);
+  border: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+@utility tag-solid {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+}
+
+@utility type-pill {
+  font-family: var(--font-code);
+  font-size: 10.5px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+/* Side-panel mini tabs (Components / Layers, Layout / Props / Code). */
+@utility mini-tab {
+  flex: 1;
+  height: 24px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-2);
+  transition: color 0.12s, background-color 0.12s;
+  &:hover {
+    color: var(--ink);
+  }
+  &[aria-selected="true"] {
+    background: var(--panel-2);
+    color: var(--ink);
+    font-weight: 600;
+  }
+}
+
+/* Left-rail list rows (layers, model/endpoint lists). */
+@utility list-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 26px;
+  padding: 0 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12.5px;
+  color: var(--ink-2);
+  transition: background-color 0.12s, color 0.12s;
+  &:hover {
+    background: var(--panel-2);
+    color: var(--ink);
+  }
+  &[aria-current="true"] {
+    background: var(--panel-2);
+    color: var(--ink);
+    font-weight: 600;
+    box-shadow: inset 2px 0 0 var(--accent);
+  }
+}
+
+/* Boxed section in centered detail pages (mockup .box). */
+@utility box {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px;
+  background: var(--panel);
+}
+
+html,
+body {
+  height: 100%;
+}
+
 body {
   margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
 
 #root {
   min-height: 100svh;
+}
+
+/* Radix Themes' root sets its own font stack + gray-12 text on `.radix-themes`;
+   the whole studio (chrome and canvas) sits inside it, so re-point those to the
+   studio font tokens here. Studio-only — the published library is untouched. */
+.radix-themes {
+  --default-font-family: var(--font-ui);
+  --code-font-family: var(--font-code);
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border: 3px solid transparent;
+  background-clip: content-box;
+  border-radius: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
 }

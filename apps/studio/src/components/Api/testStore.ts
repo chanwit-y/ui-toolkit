@@ -11,6 +11,8 @@ type ApiTestStore = {
   setInput: (endpointId: string, key: TestInputKey, value: string) => void
   /** Drop the stored texts so the inputs re-seed from the current models. */
   resetInputs: (endpointId: string) => void
+  /** Drop every stored text (project switch). */
+  clear: () => void
 }
 
 /**
@@ -28,6 +30,8 @@ export const useApiTestStore = create<ApiTestStore>((set) => ({
         [endpointId]: { ...s.inputs[endpointId], [key]: value },
       },
     })),
+
+  clear: () => set({ inputs: {} }),
 
   resetInputs: (endpointId) =>
     set((s) => {

@@ -18,18 +18,19 @@ import {
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="space-y-1">
-      <span className="block text-xs font-medium text-zinc-600">{label}</span>
+      <span className="block text-ui-sm font-medium text-ink-2">{label}</span>
       {children}
     </div>
   )
 }
 
-/** The standard tray the shared SegmentedControl expects callers to own. */
-function Tray({ children }: { children: ReactNode }) {
+/** A boxed section with the mockup's uppercase section label. */
+function Section({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="inline-flex rounded-lg border border-zinc-200 bg-zinc-50 p-1">
+    <section className="box mb-4 space-y-3">
+      <span className="sec-label block">{label}</span>
       {children}
-    </div>
+    </section>
   )
 }
 
@@ -57,10 +58,10 @@ function SwatchGrid({
           title="No override"
           onClick={() => onChange('')}
           className={cn(
-            'flex h-7 items-center justify-center rounded-md border text-[10px] font-medium transition-shadow',
+            'flex h-7 items-center justify-center rounded-md border text-ui-xs font-medium transition-shadow',
             value === ''
-              ? 'border-teal-500 text-teal-700 ring-2 ring-teal-400/50'
-              : 'border-zinc-200 text-zinc-400 hover:border-zinc-300',
+              ? 'border-focus text-ink ring-1 ring-focus'
+              : 'border-line text-ink-3 hover:border-line-strong',
           )}
         >
           off
@@ -76,8 +77,8 @@ function SwatchGrid({
           className={cn(
             'h-7 rounded-md transition-shadow',
             value === color
-              ? 'ring-2 ring-zinc-900 ring-offset-1'
-              : 'hover:ring-1 hover:ring-zinc-400',
+              ? 'ring-2 ring-focus ring-offset-1 ring-offset-panel'
+              : 'hover:ring-1 hover:ring-line-strong',
           )}
         >
           <span className="sr-only">{color}</span>
@@ -88,8 +89,8 @@ function SwatchGrid({
 }
 
 const APPEARANCE_OPTIONS = [
-  { value: 'light', label: 'Light' },
-  { value: 'dark', label: 'Dark' },
+  { value: 'light', label: 'Light mode' },
+  { value: 'dark', label: 'Dark mode' },
 ]
 const PANEL_OPTIONS = [
   { value: 'solid', label: 'Solid' },
@@ -136,10 +137,11 @@ const LEGACY_ROLE_LABELS = new Map(
 
 /**
  * The Theme page — the app-wide ThemeProvider config (see the grilled design).
- * Two panes: the token/override form (left) and the live paste-ready
- * `theme.ts` (right). Edits apply immediately: App.tsx derives the live
- * ThemeProvider props from this store, so the canvas previews and the Live
- * Preview re-tint as you pick.
+ * One centered column (the mockup's detail page): the token/override form in
+ * boxed sections, then the live paste-ready `theme.ts` below. Edits apply
+ * immediately: App.tsx derives the live ThemeProvider props from this store,
+ * so the canvas previews and the Live Preview re-tint as you pick — and the
+ * appearance flips the studio chrome too (one toggle, see the redesign).
  */
 export function ThemeEditor() {
   const config = useThemeStore((s) => s.config)
@@ -158,149 +160,127 @@ export function ThemeEditor() {
   ) => update({ [key]: value } as Partial<Omit<StudioThemeConfig, 'dataTable'>>)
 
   return (
-    <div className="flex min-h-0 flex-1 bg-zinc-50">
-      <div className="flex min-h-0 flex-1 flex-col bg-white">
-        <div className="min-h-0 flex-1 overflow-y-auto p-6">
-          <div className="mx-auto max-w-2xl space-y-5">
-            <div>
-              <h2 className="text-sm font-semibold text-zinc-800">Theme</h2>
-              <p className="mt-1 text-xs text-zinc-500">
-                The app-wide <span className="font-mono">ThemeProvider</span> config.
-                Applies live to the canvas and Live Preview; exported as{' '}
-                <span className="font-mono">theme.ts</span>.
-              </p>
-            </div>
+    <div className="min-h-0 flex-1 overflow-y-auto bg-surface">
+      <div className="mx-auto max-w-[760px] px-6 pb-16 pt-6">
+        <h2 className="text-base font-[650] tracking-[-0.01em] text-ink">Theme</h2>
+        <p className="mb-4 mt-1 text-ui text-ink-2">
+          The app-wide <span className="font-mono">ThemeProvider</span> config. Applies
+          live to the canvas and Live Preview; exported as{' '}
+          <span className="font-mono">theme.ts</span>.
+        </p>
 
-            <Field label="Appearance">
-              <Tray>
-                <SegmentedControl
-                  aria-label="Appearance"
-                  options={APPEARANCE_OPTIONS}
-                  value={config.appearance}
-                  onChange={(v) => set('appearance', v as ThemeAppearance)}
-                />
-              </Tray>
-              {config.appearance === 'dark' && (
-                <p className="text-[11px] text-zinc-400">
-                  Library components render dark; the studio chrome itself stays light.
-                </p>
-              )}
-            </Field>
-
-            <Field label="Accent color">
-              <SwatchGrid
-                value={config.accentColor}
-                onChange={(v) => set('accentColor', v as AccentColor)}
-              />
-              <p className="text-[11px] text-zinc-400">
-                Selected: <span className="font-mono text-zinc-500">{config.accentColor}</span>
-              </p>
-            </Field>
-
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="Radius">
-                <Tray>
-                  <SegmentedControl
-                    aria-label="Radius"
-                    options={RADIUS_OPTIONS}
-                    value={config.radius}
-                    onChange={(v) => set('radius', v as ThemeRadius)}
-                  />
-                </Tray>
-              </Field>
-              <Field label="Panel background">
-                <Tray>
-                  <SegmentedControl
-                    aria-label="Panel background"
-                    options={PANEL_OPTIONS}
-                    value={config.panelBackground}
-                    onChange={(v) => set('panelBackground', v as ThemePanelBackground)}
-                  />
-                </Tray>
-              </Field>
-            </div>
-
-            <Field label="Button color (component override)">
-              <SwatchGrid
-                allowNone
-                value={config.buttonColor}
-                onChange={(v) => set('buttonColor', v)}
-              />
-              <p className="text-[11px] text-zinc-400">
-                {config.buttonColor ? (
-                  <>
-                    Selected:{' '}
-                    <span className="font-mono text-zinc-500">{config.buttonColor}</span>
-                  </>
-                ) : (
-                  'No override — buttons use the component default.'
-                )}
-              </p>
-            </Field>
-
-            <div className="space-y-3">
-              <h3 className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400">
-                Data table
-              </h3>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-                <Field label="Header font size">
-                  <Select
-                    options={FONT_SIZE_OPTIONS}
-                    value={config.dataTable.headerFontSize}
-                    onChange={(v) =>
-                      updateDataTable({
-                        headerFontSize: v as DataTableThemeConfig['headerFontSize'],
-                      })
-                    }
-                  />
-                </Field>
-                <Field label="Header font weight">
-                  <Select
-                    options={FONT_WEIGHT_OPTIONS}
-                    value={config.dataTable.headerFontWeight}
-                    onChange={(v) =>
-                      updateDataTable({
-                        headerFontWeight: v as DataTableThemeConfig['headerFontWeight'],
-                      })
-                    }
-                  />
-                </Field>
-                {DATA_TABLE_COLOR_ROLES.map(([key, label, legacy]) => (
-                  <Field key={key} label={label}>
-                    <Select
-                      options={legacy ? COLOR_ROLE_OPTIONS : DEFAULT_ROLE_OPTIONS}
-                      value={config.dataTable[key]}
-                      onChange={(v) => updateDataTable({ [key]: v })}
-                    />
-                  </Field>
-                ))}
-              </div>
-              {pinnedLegacyRoles.length > 0 && (
-                <p className="rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5 text-[11px] leading-relaxed text-amber-700">
-                  {pinnedLegacyRoles
-                    .map((role) => LEGACY_ROLE_LABELS.get(role) ?? role)
-                    .join(', ')}{' '}
-                  pin a named color, which uses the legacy light-only style map and
-                  won’t flip in dark mode. Leave “— follows accent —” for dark-safe
-                  theming.
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <aside className="flex w-96 shrink-0 flex-col border-l border-zinc-200 bg-white">
-        <div className="shrink-0 border-b border-zinc-200 px-4 py-3">
-          <h2 className="text-sm font-semibold text-zinc-800">Theme config</h2>
-        </div>
-        <div className="min-h-0 flex-1 overflow-y-auto p-4">
-          <CodeViewer
-            maxHeightClassName="max-h-[calc(100vh-12rem)]"
-            tabs={[{ id: 'theme', label: 'theme.ts', language: 'text', code: themeTs }]}
+        <div className="mb-4 flex items-center gap-2.5">
+          <SegmentedControl
+            aria-label="Appearance"
+            options={APPEARANCE_OPTIONS}
+            value={config.appearance}
+            onChange={(v) => set('appearance', v as ThemeAppearance)}
           />
+          <span className="text-ui-sm text-ink-3">
+            The studio and the canvas both show the {config.appearance} set.
+          </span>
         </div>
-      </aside>
+
+        <Section label="Accent — shared by both modes">
+          <SwatchGrid
+            value={config.accentColor}
+            onChange={(v) => set('accentColor', v as AccentColor)}
+          />
+          <p className="text-ui-sm text-ink-3">
+            Selected: <span className="font-mono text-ink-2">{config.accentColor}</span>.
+            One accent runs through buttons, badges and tables in light and dark alike.
+          </p>
+        </Section>
+
+        <Section label="Shape and surfaces">
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Radius">
+              <SegmentedControl
+                aria-label="Radius"
+                options={RADIUS_OPTIONS}
+                value={config.radius}
+                onChange={(v) => set('radius', v as ThemeRadius)}
+              />
+            </Field>
+            <Field label="Panel background">
+              <SegmentedControl
+                aria-label="Panel background"
+                options={PANEL_OPTIONS}
+                value={config.panelBackground}
+                onChange={(v) => set('panelBackground', v as ThemePanelBackground)}
+              />
+            </Field>
+          </div>
+          <Field label="Button color (component override)">
+            <SwatchGrid
+              allowNone
+              value={config.buttonColor}
+              onChange={(v) => set('buttonColor', v)}
+            />
+            <p className="text-ui-sm text-ink-3">
+              {config.buttonColor ? (
+                <>
+                  Selected:{' '}
+                  <span className="font-mono text-ink-2">{config.buttonColor}</span>
+                </>
+              ) : (
+                'No override — buttons use the component default.'
+              )}
+            </p>
+          </Field>
+        </Section>
+
+        <Section label="Data table">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+            <Field label="Header font size">
+              <Select
+                options={FONT_SIZE_OPTIONS}
+                value={config.dataTable.headerFontSize}
+                onChange={(v) =>
+                  updateDataTable({
+                    headerFontSize: v as DataTableThemeConfig['headerFontSize'],
+                  })
+                }
+              />
+            </Field>
+            <Field label="Header font weight">
+              <Select
+                options={FONT_WEIGHT_OPTIONS}
+                value={config.dataTable.headerFontWeight}
+                onChange={(v) =>
+                  updateDataTable({
+                    headerFontWeight: v as DataTableThemeConfig['headerFontWeight'],
+                  })
+                }
+              />
+            </Field>
+            {DATA_TABLE_COLOR_ROLES.map(([key, label, legacy]) => (
+              <Field key={key} label={label}>
+                <Select
+                  options={legacy ? COLOR_ROLE_OPTIONS : DEFAULT_ROLE_OPTIONS}
+                  value={config.dataTable[key]}
+                  onChange={(v) => updateDataTable({ [key]: v })}
+                />
+              </Field>
+            ))}
+          </div>
+          {pinnedLegacyRoles.length > 0 && (
+            <p className="border-l-2 border-warn py-1 pl-2.5 text-ui-sm leading-relaxed text-ink-2">
+              {pinnedLegacyRoles
+                .map((role) => LEGACY_ROLE_LABELS.get(role) ?? role)
+                .join(', ')}{' '}
+              pin a named color, which uses the legacy light-only style map and won’t
+              flip in dark mode. Leave “— follows accent —” for dark-safe theming.
+            </p>
+          )}
+        </Section>
+
+        <span className="sec-label mb-2 block">theme.ts</span>
+        <CodeViewer
+          maxHeightClassName="max-h-[60vh]"
+          tabs={[{ id: 'theme', label: 'theme.ts', language: 'text', code: themeTs }]}
+        />
+      </div>
     </div>
   )
 }

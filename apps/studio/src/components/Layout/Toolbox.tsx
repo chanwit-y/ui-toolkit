@@ -1,8 +1,11 @@
 import { useDraggable } from '@dnd-kit/core'
-import { LayoutGrid, Search } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { cn } from '../common'
+import { childCanvasCount } from './types'
 import { COMPONENT_GROUPS, type ComponentDef } from './componentCatalog'
+import { useGridStore } from './gridStore'
+import { LayersPanel } from './LayersPanel'
 
 /** dnd-kit id prefix for toolbox draggables — distinguishes them from grid item ids. */
 export const TOOLBOX_DRAG_PREFIX = 'toolbox:'
@@ -13,36 +16,39 @@ type ToolboxItemProps = {
   def: ComponentDef
 }
 
-// A draggable palette tile. There is no onClick — the interaction is dragging
-// the tile onto the canvas, which appends a grid item (handled in Layout's
-// DndContext). The original tile dims while dragging; a floating preview
-// (`ToolboxDragOverlay`) follows the cursor.
+// A palette tile: drag it onto the canvas to insert at the drop point (handled
+// in Layout's DndContext), or click it to append (dnd-kit's 4px activation
+// distance keeps a plain click from starting a drag). Container-hosting types
+// draw dashed, like the mockup. The original tile dims while dragging; a
+// floating preview (`ToolboxDragOverlay`) follows the cursor.
 function ToolboxItem({ def }: ToolboxItemProps) {
   const Icon = def.icon
+  const addItem = useGridStore((s) => s.addItem)
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `${TOOLBOX_DRAG_PREFIX}${def.type}`,
     data: { from: 'toolbox', def } satisfies ToolboxDragData,
   })
+  const isContainer = childCanvasCount(def.type, undefined) > 0 || def.type === 'tab'
   return (
     <button
       ref={setNodeRef}
       type="button"
-      title={`Drag ${def.label} onto the canvas`}
+      title={`Drag ${def.label} onto the canvas, or click to append it`}
+      onClick={() => addItem({ type: def.type, label: def.label })}
       {...listeners}
       {...attributes}
       className={cn(
-        'group flex touch-none flex-col items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-2 py-3 text-center',
-        'cursor-grab transition-colors hover:border-teal-400 hover:bg-teal-50 active:cursor-grabbing',
+        'group flex h-[58px] touch-none flex-col items-center justify-center gap-1.5 rounded-md border border-line bg-surface p-1 text-center text-ui-xs font-medium leading-tight text-ink-2',
+        'cursor-grab transition-[border-color,color,transform] duration-100 hover:border-line-strong hover:text-ink active:scale-[0.97] active:cursor-grabbing',
+        isContainer && 'border-dashed',
         isDragging && 'opacity-40',
       )}
     >
       <Icon
-        className="h-5 w-5 text-zinc-500 transition-colors group-hover:text-teal-600"
+        className="h-[15px] w-[15px] text-ink-3 transition-colors group-hover:text-ink"
         aria-hidden="true"
       />
-      <span className="text-[11px] font-medium leading-tight text-zinc-600 group-hover:text-teal-700">
-        {def.label}
-      </span>
+      <span>{def.label}</span>
     </button>
   )
 }
@@ -51,19 +57,51 @@ function ToolboxItem({ def }: ToolboxItemProps) {
 export function ToolboxDragOverlay({ def }: { def: ComponentDef }) {
   const Icon = def.icon
   return (
-    <div className="flex cursor-grabbing items-center gap-2 rounded-lg border-2 border-teal-500 bg-white px-3 py-2 shadow-2xl shadow-teal-500/30 ring-2 ring-teal-400/50">
-      <Icon className="h-4 w-4 text-teal-600" aria-hidden="true" />
-      <span className="text-xs font-medium text-zinc-700">{def.label}</span>
+    <div className="flex cursor-grabbing items-center gap-2 rounded-md border border-focus bg-surface px-3 py-2 shadow-frame ring-1 ring-focus">
+      <Icon className="h-4 w-4 text-ink" aria-hidden="true" />
+      <span className="text-ui-sm font-medium text-ink">{def.label}</span>
     </div>
   )
 }
 
+type LeftTab = 'components' | 'layers'
+
 /**
- * Left sidebar palette of available components. Each tile is draggable onto the
- * canvas to append a grid item (see Layout's drag handling). The search box
- * filters by label or type across all categories.
+ * The left pane: mini-tabs over the component palette (draggable / clickable
+ * tiles, searchable) and the Layers tree of the whole canvas.
  */
 export function Toolbox() {
+  const [tab, setTab] = useState<LeftTab>('components')
+
+  return (
+    <aside className="flex w-60 shrink-0 flex-col border-r border-line bg-panel">
+      <div className="flex shrink-0 gap-0.5 border-b border-line p-1.5" role="tablist">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'components'}
+          onClick={() => setTab('components')}
+          className="mini-tab"
+        >
+          Components
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'layers'}
+          onClick={() => setTab('layers')}
+          className="mini-tab"
+        >
+          Layers
+        </button>
+      </div>
+
+      {tab === 'components' ? <Palette /> : <LayersPanel />}
+    </aside>
+  )
+}
+
+function Palette() {
   const [query, setQuery] = useState('')
 
   const groups = useMemo(() => {
@@ -80,40 +118,34 @@ export function Toolbox() {
   }, [query])
 
   return (
-    <aside className="flex w-60 shrink-0 flex-col border-r border-zinc-200 bg-white">
-      <div className="flex shrink-0 items-center gap-2 border-b border-zinc-200 px-4 py-3">
-        <LayoutGrid className="h-4 w-4 text-teal-600" aria-hidden="true" />
-        <h2 className="text-sm font-semibold text-zinc-800">Components</h2>
-      </div>
-
-      <div className="shrink-0 border-b border-zinc-200 p-3">
+    <>
+      <div className="shrink-0 border-b border-line p-2">
         <div className="relative">
           <Search
-            className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400"
+            className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-3"
             aria-hidden="true"
           />
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search components"
-            className="w-full rounded-md border border-zinc-300 bg-white py-1.5 pl-8 pr-2.5 text-sm text-zinc-900 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
+            placeholder="Search components…"
+            aria-label="Search components"
+            className="field pl-7"
           />
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-3">
+      <div className="min-h-0 flex-1 overflow-y-auto p-2">
         {groups.length === 0 ? (
-          <p className="px-1 py-6 text-center text-sm text-zinc-400">
+          <p className="px-1 py-6 text-center text-ui text-ink-3">
             No components match “{query}”.
           </p>
         ) : (
           groups.map((group) => (
-            <div key={group.category} className="mb-4 last:mb-0">
-              <h3 className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wide text-zinc-400">
-                {group.category}
-              </h3>
-              <div className="grid grid-cols-2 gap-2">
+            <div key={group.category} className="mb-3 last:mb-0">
+              <h3 className="sec-label block px-1 pb-1.5 pt-1">{group.category}</h3>
+              <div className="grid grid-cols-2 gap-1.5">
                 {group.items.map((def) => (
                   <ToolboxItem key={def.type} def={def} />
                 ))}
@@ -122,6 +154,6 @@ export function Toolbox() {
           ))
         )}
       </div>
-    </aside>
+    </>
   )
 }

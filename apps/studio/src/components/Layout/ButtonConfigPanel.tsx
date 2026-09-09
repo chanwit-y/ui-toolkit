@@ -15,7 +15,7 @@ import {
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="block space-y-1">
-      <span className="text-xs font-medium text-zinc-600">{label}</span>
+      <span className="text-ui-sm font-medium text-ink-2">{label}</span>
       {children}
     </label>
   )
@@ -50,7 +50,7 @@ export function IconPicker({
         onChange={(e) => setFilter(e.target.value)}
         placeholder="Filter icons…"
       />
-      <div className="grid max-h-40 grid-cols-6 gap-1 overflow-y-auto rounded-lg border border-zinc-200 bg-zinc-50/60 p-1.5">
+      <div className="grid max-h-40 grid-cols-6 gap-1 overflow-y-auto rounded-lg border border-line bg-panel p-1.5">
         <button
           type="button"
           title="No icon"
@@ -58,8 +58,8 @@ export function IconPicker({
           className={cn(
             'flex h-8 items-center justify-center rounded-md transition-colors',
             value === ''
-              ? 'bg-teal-100 text-teal-700 ring-1 ring-teal-400'
-              : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600',
+              ? 'bg-panel-2 text-ink ring-1 ring-focus/30'
+              : 'text-ink-3 hover:bg-panel-2 hover:text-ink-2',
           )}
         >
           <Ban className="h-4 w-4" aria-hidden="true" />
@@ -75,8 +75,8 @@ export function IconPicker({
               className={cn(
                 'flex h-8 items-center justify-center rounded-md transition-colors',
                 value === key
-                  ? 'bg-teal-100 text-teal-700 ring-1 ring-teal-400'
-                  : 'text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700',
+                  ? 'bg-panel-2 text-ink ring-1 ring-focus/30'
+                  : 'text-ink-3 hover:bg-panel-2 hover:text-ink-2',
               )}
             >
               <Glyph size={16} aria-hidden="true" />
@@ -84,15 +84,15 @@ export function IconPicker({
           )
         })}
         {keys.length === 0 && (
-          <p className="col-span-6 py-2 text-center text-xs text-zinc-400">
+          <p className="col-span-6 py-2 text-center text-ui-sm text-ink-3">
             No icons match “{filter}”
           </p>
         )}
       </div>
-      <p className="text-[11px] text-zinc-400">
+      <p className="text-ui-sm text-ink-3">
         {value ? (
           <>
-            Selected: <span className="font-mono text-zinc-500">{value}</span>
+            Selected: <span className="font-mono text-ink-3">{value}</span>
           </>
         ) : (
           'No icon'
@@ -154,14 +154,14 @@ function ActionChipList({
           {value.map((action) => (
             <span
               key={action}
-              className="inline-flex items-center gap-1 rounded-full border border-teal-200 bg-teal-50 py-0.5 pl-2 pr-1 text-[11px] font-medium text-teal-800"
+              className="inline-flex items-center gap-1 rounded-full border border-line-strong bg-panel-2 py-0.5 pl-2 pr-1 text-ui-sm font-medium text-ink"
             >
               {ACTION_LABELS[action]}
               <button
                 type="button"
                 aria-label={`Remove ${ACTION_LABELS[action]}`}
                 onClick={() => onChange(value.filter((a) => a !== action))}
-                className="rounded-full p-0.5 text-teal-500 transition-colors hover:bg-teal-100 hover:text-teal-800"
+                className="rounded-full p-0.5 text-ink transition-colors hover:bg-panel-2 hover:text-ink"
               >
                 <X size={11} aria-hidden="true" />
               </button>
@@ -197,12 +197,12 @@ function CheckboxRow({
   onChange: (checked: boolean) => void
 }) {
   return (
-    <label className="flex items-center gap-2 text-xs font-medium text-zinc-600">
+    <label className="flex items-center gap-2 text-ui-sm font-medium text-ink-2">
       <input
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
-        className="h-3.5 w-3.5 rounded border-zinc-300 accent-teal-600"
+        className="h-3.5 w-3.5 rounded border-line-strong accent-accent"
       />
       {label}
     </label>
@@ -213,7 +213,7 @@ function CheckboxRow({
  * grilled design: emit authored, omit empty; never block). */
 export function WiringHint({ children }: { children: ReactNode }) {
   return (
-    <p className="rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5 text-[11px] leading-relaxed text-amber-700">
+    <p className="rounded-md border border-warn/40 bg-warn/8 px-2 py-1.5 text-ui-sm leading-relaxed text-warn">
       {children}
     </p>
   )
@@ -256,7 +256,7 @@ export function ButtonConfigPanel({
 
   return (
     <div className="space-y-3">
-      <h3 className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400">
+      <h3 className="text-ui-sm font-semibold uppercase tracking-wide text-ink-3">
         Button
       </h3>
       <Field label="Label">
@@ -266,10 +266,10 @@ export function ButtonConfigPanel({
         <IconPicker value={config.icon} onChange={(v) => set('icon', v)} />
       </Field>
 
-      <h3 className="pt-1 text-[11px] font-semibold uppercase tracking-wide text-zinc-400">
+      <h3 className="pt-1 text-ui-sm font-semibold uppercase tracking-wide text-ink-3">
         On click
       </h3>
-      <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-1">
+      <div>
         <SegmentedControl
           aria-label="Click behavior"
           options={MODE_OPTIONS}
@@ -302,7 +302,7 @@ export function ButtonConfigPanel({
             <button
               type="button"
               onClick={() => set('confirmTrue', SUBMIT_SEQUENCE)}
-              className="text-[11px] font-medium text-teal-700 underline-offset-2 hover:underline"
+              className="text-ui-sm font-medium text-ink underline-offset-2 hover:underline"
             >
               Use submit sequence (loading → POST → close)
             </button>

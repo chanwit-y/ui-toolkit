@@ -250,7 +250,7 @@ function CellContent({ item }: { item: GridItemData }) {
       data-grid-item-content
       className="flex h-full w-full items-center justify-center"
     >
-      <span className="text-xs font-medium text-zinc-400">{item.label}</span>
+      <span className="text-ui-sm font-medium text-ink-3">{item.label}</span>
     </div>
   )
 }
@@ -311,7 +311,7 @@ function ActiveBody({ item }: { item: GridItemData }) {
       data-grid-item-content
       className="@container flex h-full w-full items-center justify-center gap-2 px-1 @min-[8rem]:justify-start @min-[8rem]:pl-6"
     >
-      <Icon className="h-4 w-4 shrink-0 text-teal-500" aria-hidden="true" />
+      <Icon className="h-4 w-4 shrink-0 text-ink" aria-hidden="true" />
     </div>
   )
 }
@@ -335,7 +335,7 @@ function TypeLabel({
     <span
       data-grid-item-type
       className={cn(
-        'pointer-events-none absolute left-1/2 top-0 z-20 inline-flex -translate-x-1/2 -translate-y-1/2 items-center gap-0.5 whitespace-nowrap rounded-full border border-zinc-200 bg-white px-2 py-0.5 text-[10px] font-medium text-zinc-600 shadow-sm transition-opacity duration-150',
+        'pointer-events-none absolute left-1.5 top-0 z-20 inline-flex h-[17px] -translate-y-1/2 items-center gap-1 whitespace-nowrap rounded-[4px] bg-accent px-1.5 font-mono text-ui-xs text-accent-ink transition-opacity duration-150',
         isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
       )}
     >
@@ -366,7 +366,7 @@ function GlyphChip({ Icon }: { Icon: LucideIcon }) {
       data-grid-item-content
       className="flex h-full w-full items-center justify-center"
     >
-      <Icon className="h-4 w-4 shrink-0 text-teal-500" aria-hidden="true" />
+      <Icon className="h-4 w-4 shrink-0 text-ink" aria-hidden="true" />
     </div>
   )
 }
@@ -1000,7 +1000,7 @@ function ButtonLivePreview({ config }: { config: ButtonConfig }) {
 function ChildCanvasPreview({ canvas }: { canvas: ChildCanvas }) {
   if (canvas.items.length === 0) {
     return (
-      <div className="flex min-h-12 w-full items-center justify-center rounded-md border border-dashed border-zinc-300 text-[11px] text-zinc-400">
+      <div className="flex min-h-12 w-full items-center justify-center rounded-md border border-dashed border-line-strong text-ui-sm text-ink-3">
         Empty — Edit contents to add components
       </div>
     )
@@ -1095,7 +1095,7 @@ function TabLivePreview({
     return (
       <div
         data-grid-item-content
-        className="pointer-events-none flex h-full w-full items-center justify-center text-[11px] text-zinc-400"
+        className="pointer-events-none flex h-full w-full items-center justify-center text-ui-sm text-ink-3"
       >
         No tabs — add one in the inspector
       </div>
@@ -1366,15 +1366,15 @@ export function GridItem({ item, isSelected }: GridItemProps) {
         itemClassName,
         // Let the CSS grid (and `grid-row: span N`) control height. Keep a
         // sensible single-row minimum to match the default `grid-auto-rows`.
-        'grid-item-cell group relative flex min-h-14 touch-none items-center justify-center rounded-lg border-2 p-2',
+        'grid-item-cell group relative flex min-h-14 touch-none items-center justify-center rounded-md border p-2',
         'transition-[border-color,background-color,box-shadow,opacity] duration-200 ease-out',
         isDragging
-          ? 'z-0 border-dashed border-teal-300 bg-teal-50/40 opacity-40'
+          ? 'z-0 border-dashed border-line-strong bg-panel opacity-40'
           : isOver
-            ? 'border-dashed border-teal-400 bg-teal-50 shadow-sm ring-2 ring-teal-300/60'
+            ? 'border-dashed border-focus bg-panel-2 ring-1 ring-focus/40'
             : isSelected
-              ? 'border-dashed border-teal-500 bg-teal-50 ring-2 ring-teal-500/30'
-              : 'border-dashed border-zinc-300 bg-white hover:border-teal-400 hover:bg-teal-50/50 hover:shadow-sm',
+              ? 'border-focus bg-surface ring-1 ring-focus'
+              : 'border-dashed border-line bg-surface hover:border-grid-edge hover:bg-panel',
       )}
     >
       <IconButton
@@ -1430,11 +1430,11 @@ export const GridItemMemo = memo(GridItem)
 
 export function GridItemOverlay({ item }: { item: GridItemData }) {
   return (
-    <div className="relative flex h-14 w-full cursor-grabbing items-center justify-center rounded-lg border-2 border-solid border-teal-500 bg-white p-2 shadow-2xl shadow-teal-500/30 ring-2 ring-teal-400/50">
-      <span className="absolute right-1 top-1 inline-flex h-6 w-6 items-center justify-center rounded-md border border-teal-500 bg-teal-50 text-teal-700 shadow-sm">
+    <div className="relative flex h-14 w-full cursor-grabbing items-center justify-center rounded-lg border-2 border-solid border-focus bg-surface p-2 shadow-2xl shadow-black/10 ring-2 ring-focus/50">
+      <span className="absolute right-1 top-1 inline-flex h-6 w-6 items-center justify-center rounded-md border border-focus bg-panel-2 text-ink shadow-sm">
         <GripVertical className="h-3.5 w-3.5" aria-hidden="true" />
       </span>
-      <span className="text-xs font-medium text-zinc-400">{item.label}</span>
+      <span className="text-ui-sm font-medium text-ink-3">{item.label}</span>
     </div>
   )
 }

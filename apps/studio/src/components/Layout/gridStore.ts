@@ -194,6 +194,10 @@ type GridState = {
       | CheckboxConfig
       | RadioConfig
       | DateConfig
+      | UploadImageConfig
+      | UploadFileConfig
+      | DataTableConfig
+      | DataTableEditableConfig
       | TextConfig
       | TypographyConfig
       | AvatarConfig
@@ -213,9 +217,20 @@ type GridState = {
   addTab: (itemId: string) => void
   removeTab: (itemId: string, index: number) => void
 
+  /** Replace the whole canvas tree from a project snapshot (workspace open /
+   * switch). Resets drill-in, selection, drag and entrance state. */
+  hydrate: (snapshot: {
+    items: GridItemData[]
+    containerSettings: GridContainerSettings
+    fieldSeq: number
+  }) => void
+
   // Drill-in navigation (see the grilled design: breadcrumb, arbitrary depth)
   enterCanvas: (itemId: string, canvasIndex: number) => void
   exitToDepth: (depth: number) => void
+  /** Jump to an arbitrary canvas (the Layers tree crosses canvases), optionally
+   * selecting an item there. A dangling path heals to its deepest ancestor. */
+  goToCanvas: (path: PathSeg[], selectId?: string | null) => void
 
   // Drag actions
   setActiveId: (id: string | null) => void
@@ -652,6 +667,34 @@ export const useGridStore = create<GridState>((set, get) => {
       set((s) => ({
         activePath: [...s.activePath, { itemId, canvasIndex }],
         selectedItemId: null,
+        sidebarView: s.sidebarView === 'code' ? 'code' : 'inspector',
+      }))
+    },
+
+    hydrate: ({ items, containerSettings, fieldSeq }) => {
+      enterTimers.forEach((t) => clearTimeout(t))
+      enterTimers.clear()
+      set({
+        items,
+        containerSettings,
+        fieldSeq,
+        activePath: [],
+        enteringIds: new Set(),
+        activeId: null,
+        selectedItemId: null,
+        sidebarView: 'inspector',
+      })
+    },
+
+    goToCanvas: (path, selectId = null) => {
+      const resolvable = resolvePath(rootCanvas(), path).items.length
+      const activePath = path.slice(0, resolvable)
+      const canvas = canvasAtPath(rootCanvas(), activePath)
+      const selectedItemId =
+        selectId && canvas.items.some((i) => i.id === selectId) ? selectId : null
+      set((s) => ({
+        activePath,
+        selectedItemId,
         sidebarView: s.sidebarView === 'code' ? 'code' : 'inspector',
       }))
     },

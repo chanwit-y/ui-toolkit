@@ -5,6 +5,8 @@ import type { DataTableThemeConfig, StudioThemeConfig } from './types'
 type ThemeStore = {
   config: StudioThemeConfig
 
+  /** Replace the whole config (workspace open / switch). */
+  hydrate: (config: StudioThemeConfig) => void
   /** Patch the top-level tokens (appearance, accent, radius, panel, button). */
   update: (patch: Partial<Omit<StudioThemeConfig, 'dataTable'>>) => void
   /** Patch the dataTable role overrides. */
@@ -20,6 +22,8 @@ type ThemeStore = {
  */
 export const useThemeStore = create<ThemeStore>((set) => ({
   config: countrySeedTheme(),
+
+  hydrate: (config) => set({ config }),
 
   update: (patch) => set((s) => ({ config: { ...s.config, ...patch } })),
 

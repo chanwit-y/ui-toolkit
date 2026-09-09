@@ -23,7 +23,7 @@ const SHAPE_OPTIONS = [
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="block space-y-1">
-      <span className="text-xs font-medium text-zinc-600">{label}</span>
+      <span className="text-ui-sm font-medium text-ink-2">{label}</span>
       {children}
     </label>
   )
@@ -41,12 +41,12 @@ function Toggle({
 }) {
   return (
     <label className="flex items-center justify-between gap-2">
-      <span className="text-xs font-medium text-zinc-600">{label}</span>
+      <span className="text-ui-sm font-medium text-ink-2">{label}</span>
       <input
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
-        className="h-4 w-4 rounded border-zinc-300 text-teal-600 focus:ring-teal-500/30"
+        className="h-4 w-4 rounded border-line-strong text-ink focus:ring-focus/30"
       />
     </label>
   )
@@ -106,8 +106,8 @@ function UploadValueFormatSection({
       </Field>
 
       {valueFormat === 'api' && (
-        <div className="space-y-3 rounded-lg border border-zinc-200 bg-zinc-50/60 p-3">
-          <h4 className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400">
+        <div className="space-y-3 rounded-lg border border-line bg-panel p-3">
+          <h4 className="text-ui-sm font-semibold uppercase tracking-wide text-ink-3">
             Upload API
           </h4>
           <Field label="Upload URL">
@@ -166,7 +166,7 @@ export function UploadImageConfigPanel({ itemId, config }: UploadImageConfigPane
 
   return (
     <div className="space-y-3">
-      <h3 className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400">
+      <h3 className="text-ui-sm font-semibold uppercase tracking-wide text-ink-3">
         Upload Image
       </h3>
 
@@ -233,7 +233,6 @@ export function UploadImageConfigPanel({ itemId, config }: UploadImageConfigPane
           options={SHAPE_OPTIONS}
           value={config.shape}
           onChange={(v) => set('shape', v as UploadImageConfig['shape'])}
-          className="rounded-lg border border-zinc-200 bg-zinc-50 p-1"
           aria-label="Shape"
         />
       </Field>
@@ -267,7 +266,7 @@ export function UploadFileConfigPanel({ itemId, config }: UploadFileConfigPanelP
 
   return (
     <div className="space-y-3">
-      <h3 className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400">
+      <h3 className="text-ui-sm font-semibold uppercase tracking-wide text-ink-3">
         Upload File
       </h3>
 
