@@ -3,7 +3,7 @@ import { useMemo } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { ApiEditor, EnvEditor, Grid, ModelEditor, ThemeEditor } from './components'
 import { toThemeObjects, useThemeStore } from './components/Theme'
-import { LibraryPage, LibrarySync } from './components/Library'
+import { LibraryPage, LibrarySync, TemplateShell, TemplatesPage } from './components/Library'
 import { PortalLayout, ProjectIndexRedirect, ProjectsPage, ProjectShell } from './components/Workspace'
 
 function App() {
@@ -39,7 +39,9 @@ function App() {
               <Route index element={<ProjectsPage />} />
               <Route path="library/apis" element={<LibraryPage kind="api" />} />
               <Route path="library/models" element={<LibraryPage kind="model" />} />
+              <Route path="library/templates" element={<TemplatesPage />} />
             </Route>
+            <Route path="library/templates/:templateId/layout" element={<TemplateShell />} />
             <Route path="p/:projectId" element={<ProjectShell />}>
               <Route index element={<ProjectIndexRedirect />} />
               <Route path="pages/:pageId" element={<Grid />} />

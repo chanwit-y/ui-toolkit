@@ -48,11 +48,32 @@ export type ProjectDef = {
   snapshot: ProjectSnapshot
 }
 
-/** The shared library: one copy of every model and endpoint, filed in groups. */
+/**
+ * A starting layout the team can drop into any page (see the grilled design:
+ * templates live in the shared library). `grid` is a page grid; `active`
+ * hides it from the studio's Templates tab without deleting it; `builtin`
+ * marks the seeded ones.
+ */
+export type TemplateDef = {
+  id: string
+  name: string
+  description: string
+  category: string
+  active: boolean
+  builtin: boolean
+  createdBy: string
+  /** Epoch ms. */
+  updatedAt: number
+  grid: PageGrid
+}
+
+/** The shared library: one copy of every model and endpoint, filed in groups,
+ * plus the team's page templates. */
 export type LibraryData = {
   groups: GroupDef[]
   models: ModelDef[]
   endpoints: EndpointDef[]
+  templates: TemplateDef[]
 }
 
 /** The persisted shape (one localStorage key, versioned). */
@@ -60,6 +81,8 @@ export type WorkspaceData = {
   version: 3
   /** The portal's own appearance; inside a project the project theme wins. */
   appearance: ThemeAppearance
+  /** The mock identity stamped on activity and templates (see `MOCK_USERS`). */
+  user: string
   projects: ProjectDef[]
   library: LibraryData
 }

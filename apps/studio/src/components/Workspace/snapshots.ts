@@ -15,6 +15,7 @@ import {
   countrySeedModels,
   countrySeedTheme,
 } from '../seed/country'
+import { builtinTemplates } from '../seed/templates'
 import { useThemeStore } from '../Theme/themeStore'
 import type { StudioThemeConfig } from '../Theme/types'
 import type { LibraryData, PageDef, PageGrid, ProjectSnapshot } from './types'
@@ -33,6 +34,7 @@ export function countryLibrary(): LibraryData {
     ],
     models: countrySeedModels().map((m) => ({ ...m, groupId: COUNTRIES_GROUP_ID })),
     endpoints: countrySeedEndpoints().map((e) => ({ ...e, groupId: COUNTRIES_GROUP_ID })),
+    templates: builtinTemplates(),
   }
 }
 
@@ -158,8 +160,11 @@ export function collectProjectState(): ProjectStateSnapshot {
   }
 }
 
-/** The library part of the live stores (groups / models / endpoints). */
-export function collectLibrary(): LibraryData {
+/** The library part of the live stores (groups / models / endpoints).
+ * Templates have no live store — they are edited in the workspace directly. */
+export type LiveLibrary = Omit<LibraryData, 'templates'>
+
+export function collectLibrary(): LiveLibrary {
   return {
     groups: useGroupStore.getState().groups,
     models: useModelStore.getState().models,
@@ -197,7 +202,7 @@ export function applyPageGrid(grid: PageGrid): void {
 }
 
 /** Load the shared library into the group / model / api stores. */
-export function applyLibrary(library: LibraryData): void {
+export function applyLibrary(library: LiveLibrary): void {
   hydrating = true
   try {
     useGroupStore.getState().hydrate(library.groups)

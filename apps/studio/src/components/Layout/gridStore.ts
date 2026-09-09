@@ -228,6 +228,9 @@ type GridState = {
   ) => void
   /** Merge Style-tab colours into an item (design-only annotation). */
   updateItemStyle: (id: string, patch: Partial<ElementStyle>) => void
+  /** Append ready-made items (a template's blocks, already re-id'd) to the
+   * active canvas. */
+  appendItems: (items: GridItemData[]) => void
   moveItem: (activeId: string, overId: string) => void
 
   // Tab canvas sync: add/remove a tab header and its child canvas together, so
@@ -742,6 +745,17 @@ export const useGridStore = create<GridState>((set, get) => {
             : item,
         ),
       })),
+
+    appendItems: (newItems) =>
+      animated(() => {
+        if (newItems.length === 0) return
+        const willEnter = canEnter()
+        const enteringIds = new Set(get().enteringIds)
+        if (willEnter) newItems.forEach((it) => enteringIds.add(it.id))
+        setActiveCanvas((canvas) => ({ ...canvas, items: [...canvas.items, ...newItems] }))
+        set({ enteringIds })
+        if (willEnter) newItems.forEach((it) => scheduleEnterClear(it.id))
+      }),
 
     updateItemStyle: (id, patch) =>
       setActiveCanvas((canvas) => ({

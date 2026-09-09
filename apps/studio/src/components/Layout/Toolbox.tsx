@@ -7,6 +7,7 @@ import { COMPONENT_GROUPS, type ComponentDef } from './componentCatalog'
 import { useGridStore } from './gridStore'
 import { LayersPanel } from './LayersPanel'
 import { PagesPanel } from './PagesPanel'
+import { TemplatesPanel } from './TemplatesPanel'
 
 /** dnd-kit id prefix for toolbox draggables — distinguishes them from grid item ids. */
 export const TOOLBOX_DRAG_PREFIX = 'toolbox:'
@@ -76,31 +77,35 @@ export function ToolboxDragOverlay({ def }: { def: ComponentDef }) {
   )
 }
 
-type LeftTab = 'components' | 'layers' | 'pages'
+type LeftTab = 'components' | 'layers' | 'pages' | 'templates'
 
-const LEFT_TABS: { value: LeftTab; label: string }[] = [
+const LEFT_TABS: { value: LeftTab; label: string; projectOnly?: boolean }[] = [
   { value: 'components', label: 'Components' },
   { value: 'layers', label: 'Layers' },
-  { value: 'pages', label: 'Pages' },
+  { value: 'pages', label: 'Pages', projectOnly: true },
+  { value: 'templates', label: 'Templates', projectOnly: true },
 ]
 
 /**
  * The left pane: mini-tabs over the component palette (draggable / clickable
- * tiles, searchable), the Layers tree of the whole canvas, and the project's
- * Pages.
+ * tiles, searchable), the Layers tree of the whole canvas, and — inside a
+ * project — its Pages and the library's Templates. The master-layout editor
+ * (`templateMode`) hides the two project tabs.
  */
-export function Toolbox() {
+export function Toolbox({ templateMode = false }: { templateMode?: boolean }) {
   const [tab, setTab] = useState<LeftTab>('components')
+  const tabs = LEFT_TABS.filter((t) => !(templateMode && t.projectOnly))
+  const current = tabs.some((t) => t.value === tab) ? tab : 'components'
 
   return (
     <aside className="flex w-60 shrink-0 flex-col border-r border-line bg-panel">
       <div className="flex shrink-0 gap-0.5 border-b border-line p-1.5" role="tablist">
-        {LEFT_TABS.map((t) => (
+        {tabs.map((t) => (
           <button
             key={t.value}
             type="button"
             role="tab"
-            aria-selected={tab === t.value}
+            aria-selected={current === t.value}
             onClick={() => setTab(t.value)}
             className="mini-tab"
           >
@@ -109,7 +114,15 @@ export function Toolbox() {
         ))}
       </div>
 
-      {tab === 'components' ? <Palette /> : tab === 'layers' ? <LayersPanel /> : <PagesPanel />}
+      {current === 'components' ? (
+        <Palette />
+      ) : current === 'layers' ? (
+        <LayersPanel />
+      ) : current === 'pages' ? (
+        <PagesPanel />
+      ) : (
+        <TemplatesPanel />
+      )}
     </aside>
   )
 }

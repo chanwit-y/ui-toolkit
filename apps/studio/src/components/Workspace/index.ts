@@ -8,7 +8,16 @@ export {
   useActivePages,
   useActivePage,
   useActiveEndpointIds,
+  useTemplates,
   WORKSPACE_STORAGE_KEY,
 } from './workspaceStore'
 export { pathParams, slugPath, normalizePath, createPage } from './snapshots'
-export type { ProjectDef, ProjectSnapshot, PageDef, PageGrid, WorkspaceData, LibraryData } from './types'
+export type {
+  ProjectDef,
+  ProjectSnapshot,
+  PageDef,
+  PageGrid,
+  TemplateDef,
+  WorkspaceData,
+  LibraryData,
+} from './types'

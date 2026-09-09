@@ -3,14 +3,17 @@ import { persist } from 'zustand/middleware'
 import type { EndpointDef } from '../Api/types'
 import type { ModelDef } from '../Model/types'
 import type { ThemeAppearance } from '../Theme/types'
+import { builtinTemplates } from '../seed/templates'
 import {
   COUNTRIES_GROUP_ID,
   countryEndpointIds,
   countryLibrary,
   countryProjectSnapshot,
   createPage,
+  emptyPageGrid,
   emptyProjectSnapshot,
   normalizePath,
+  type LiveLibrary,
   type ProjectStateSnapshot,
 } from './snapshots'
 import type {
@@ -19,12 +22,21 @@ import type {
   PageGrid,
   ProjectDef,
   ProjectSnapshot,
+  TemplateDef,
   WorkspaceData,
 } from './types'
 
 export const WORKSPACE_STORAGE_KEY = 'gummy.studio.workspace.v1'
 
 export type SaveState = 'saved' | 'pending' | 'error'
+
+/** The mockup's four people — a mock identity with no auth behind it. */
+export const MOCK_USERS: { name: string; role: string }[] = [
+  { name: 'Sarawut K.', role: 'Product design' },
+  { name: 'Pimchanok S.', role: 'Backend' },
+  { name: 'Thanapat R.', role: 'QA' },
+  { name: 'Nattapong V.', role: 'Head of Digital' },
+]
 
 type WorkspaceStore = WorkspaceData & {
   /** Autosave status shown by the topbar dot. */
@@ -44,8 +56,25 @@ type WorkspaceStore = WorkspaceData & {
   deleteProject: (id: string) => void
   /** Write the live env/theme and the active page's grid back (autosave). */
   saveProjectState: (id: string, pageId: string, state: ProjectStateSnapshot) => void
-  /** Write the live library stores back (autosave). */
-  saveLibrary: (library: LibraryData) => void
+  /** Write the live library stores back (autosave); templates are untouched. */
+  saveLibrary: (library: LiveLibrary) => void
+
+  // Templates (see the grilled design): shared-library starting layouts.
+  addTemplate: (input: {
+    name: string
+    description: string
+    category: string
+    grid?: PageGrid
+    createdBy: string
+  }) => TemplateDef
+  updateTemplate: (
+    id: string,
+    patch: Partial<Pick<TemplateDef, 'name' | 'description' | 'category' | 'active'>>,
+  ) => void
+  /** Autosave from the master-layout editor. */
+  saveTemplateGrid: (id: string, grid: PageGrid) => void
+  duplicateTemplate: (id: string, createdBy: string) => TemplateDef | undefined
+  deleteTemplate: (id: string) => void
   attachEndpoints: (projectId: string, endpointIds: string[]) => void
   detachEndpoint: (projectId: string, endpointId: string) => void
   /** Drop an endpoint id from every project (library delete). */
@@ -62,6 +91,8 @@ type WorkspaceStore = WorkspaceData & {
   setActivePageId: (id: string | null) => void
   setSaveState: (state: SaveState) => void
   setAppearance: (appearance: ThemeAppearance) => void
+  /** Switch the mock identity (the topbar user button). */
+  setUser: (name: string) => void
   /** Back to first-run: the seeded library + project, light appearance. */
   resetDemo: () => void
 }
@@ -142,6 +173,7 @@ function migrateV1(projects: V1Project[]): { projects: V2Project[]; library: Lib
       groups: hasSeed ? countryLibrary().groups : [],
       models: [...models.values()],
       endpoints: [...endpoints.values()],
+      templates: builtinTemplates(),
     },
   }
 }
@@ -167,6 +199,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
     (set) => ({
       version: 3,
       appearance: 'light',
+      user: MOCK_USERS[0].name,
       projects: seedProjects(initialLibrary),
       library: initialLibrary,
       saveState: 'saved',
@@ -219,7 +252,74 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
           })),
         })),
 
-      saveLibrary: (library) => set({ library, saveState: 'saved' }),
+      saveLibrary: (library) =>
+        set((s) => ({ library: { ...s.library, ...library }, saveState: 'saved' })),
+
+      addTemplate: ({ name, description, category, grid, createdBy }) => {
+        const template: TemplateDef = {
+          id: createId(),
+          name: name.trim() || 'Untitled template',
+          description: description.trim(),
+          category: category.trim() || 'General',
+          active: true,
+          builtin: false,
+          createdBy,
+          updatedAt: Date.now(),
+          grid: grid ?? emptyPageGrid(),
+        }
+        set((s) => ({
+          library: { ...s.library, templates: [...s.library.templates, template] },
+        }))
+        return template
+      },
+
+      updateTemplate: (id, patch) =>
+        set((s) => ({
+          library: {
+            ...s.library,
+            templates: s.library.templates.map((t) =>
+              t.id === id ? { ...t, ...patch, updatedAt: Date.now() } : t,
+            ),
+          },
+        })),
+
+      saveTemplateGrid: (id, grid) =>
+        set((s) => ({
+          saveState: 'saved',
+          library: {
+            ...s.library,
+            templates: s.library.templates.map((t) =>
+              t.id === id ? { ...t, grid, updatedAt: Date.now() } : t,
+            ),
+          },
+        })),
+
+      duplicateTemplate: (id, createdBy) => {
+        let copy: TemplateDef | undefined
+        set((s) => {
+          const source = s.library.templates.find((t) => t.id === id)
+          if (!source) return {}
+          copy = {
+            ...source,
+            id: createId(),
+            name: `${source.name} copy`,
+            builtin: false,
+            createdBy,
+            updatedAt: Date.now(),
+            grid: JSON.parse(JSON.stringify(source.grid)) as PageGrid,
+          }
+          const at = s.library.templates.indexOf(source)
+          const templates = s.library.templates.slice()
+          templates.splice(at + 1, 0, copy)
+          return { library: { ...s.library, templates } }
+        })
+        return copy
+      },
+
+      deleteTemplate: (id) =>
+        set((s) => ({
+          library: { ...s.library, templates: s.library.templates.filter((t) => t.id !== id) },
+        })),
 
       attachEndpoints: (projectId, endpointIds) =>
         set((s) => ({
@@ -315,6 +415,8 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
 
       setAppearance: (appearance) => set({ appearance }),
 
+      setUser: (user) => set({ user }),
+
       resetDemo: () => {
         const library = countryLibrary()
         set((s) => ({
@@ -332,6 +434,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
       partialize: (s) => ({
         version: s.version,
         appearance: s.appearance,
+        user: s.user,
         projects: s.projects,
         library: s.library,
       }),
@@ -341,21 +444,31 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
           | undefined
         if (!data || !Array.isArray(data.projects)) return current
         const appearance = data.appearance === 'dark' ? 'dark' : 'light'
+        const user =
+          typeof data.user === 'string' && data.user ? data.user : MOCK_USERS[0].name
         if (data.version === 1) {
           const { projects, library } = migrateV1(data.projects as unknown as V1Project[])
-          return { ...current, appearance, projects: migrateV2(projects), library }
+          return { ...current, appearance, user, projects: migrateV2(projects), library }
         }
         if (!data.library) return current
+        // Libraries saved before templates existed get the builtin set.
+        const library: LibraryData = {
+          ...data.library,
+          templates: Array.isArray(data.library.templates)
+            ? data.library.templates
+            : builtinTemplates(),
+        }
         if (data.version === 2) {
           return {
             ...current,
             appearance,
+            user,
             projects: migrateV2(data.projects as unknown as V2Project[]),
-            library: data.library,
+            library,
           }
         }
         if (data.version !== 3) return current
-        return { ...current, appearance, projects: data.projects, library: data.library }
+        return { ...current, appearance, user, projects: data.projects, library }
       },
       // The version bumps are handled in `merge` (it sees the raw payload);
       // keep the middleware's own migrate a pass-through.
@@ -390,6 +503,11 @@ export function useActivePage(): PageDef | undefined {
       .find((p) => p.id === s.activeProjectId)
       ?.snapshot.pages.find((pg) => pg.id === s.activePageId),
   )
+}
+
+/** Selector: the library's templates. */
+export function useTemplates(): TemplateDef[] {
+  return useWorkspaceStore((s) => s.library.templates)
 }
 
 /** Selector: the attached endpoint ids of the active project ([] outside one). */

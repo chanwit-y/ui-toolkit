@@ -217,6 +217,8 @@ type EditorBodyProps = {
   layoutId: string
   gridRef: React.RefObject<HTMLDivElement | null>
   frameRef: React.RefObject<HTMLDivElement | null>
+  /** Master-layout editor: no Pages / Templates tabs in the palette. */
+  templateMode: boolean
 }
 
 /**
@@ -240,6 +242,7 @@ function EditorBodyInner({
   layoutId,
   gridRef,
   frameRef,
+  templateMode,
 }: EditorBodyProps) {
   const addItem = useGridStore((s) => s.addItem)
   const moveItem = useGridStore((s) => s.moveItem)
@@ -311,7 +314,7 @@ function EditorBodyInner({
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <Toolbox />
+      <Toolbox templateMode={templateMode} />
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-sunken">
         <PreviewToolbar />
@@ -360,7 +363,7 @@ function EditorBodyInner({
 
 const EditorBody = memo(EditorBodyInner)
 
-export function Layout() {
+export function Layout({ templateMode = false }: { templateMode?: boolean } = {}) {
   const layoutId = escapeClassName(useId())
 
   // The canvas renders the ACTIVE canvas (drill-in aware); the code tab always
@@ -462,6 +465,7 @@ export function Layout() {
           layoutId={layoutId}
           gridRef={gridRef}
           frameRef={frameRef}
+          templateMode={templateMode}
         />
 
         <Sidebar gridConfigJson={gridConfigJson} fullGridCss={fullGridCss} />

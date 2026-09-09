@@ -1,5 +1,5 @@
 import { Modal } from '@gummy-ui/ui'
-import { Boxes, LayoutGrid, Moon, Pencil, Plug, Plus, Search, Sun, Trash2 } from 'lucide-react'
+import { Boxes, LayoutGrid, LayoutTemplate, Moon, Pencil, Plug, Plus, Search, Sun, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { AppearanceSync } from '../AppearanceSync'
@@ -30,6 +30,7 @@ export function PortalLayout() {
   const projectCount = useWorkspaceStore((s) => s.projects.length)
   const endpointCount = useWorkspaceStore((s) => s.library.endpoints.length)
   const modelCount = useWorkspaceStore((s) => s.library.models.length)
+  const templateCount = useWorkspaceStore((s) => s.library.templates.length)
   const appearance = useWorkspaceStore((s) => s.appearance)
   const setAppearance = useWorkspaceStore((s) => s.setAppearance)
   const query = useLibraryUiStore((s) => s.query)
@@ -91,6 +92,11 @@ export function PortalLayout() {
             <Boxes size={15} aria-hidden="true" className="text-ink-3" />
             <span className="flex-1">Models</span>
             <span className="font-mono text-ui-xs text-ink-3">{modelCount}</span>
+          </NavLink>
+          <NavLink to="/library/templates" className={RAIL_ITEM}>
+            <LayoutTemplate size={15} aria-hidden="true" className="text-ink-3" />
+            <span className="flex-1">Templates</span>
+            <span className="font-mono text-ui-xs text-ink-3">{templateCount}</span>
           </NavLink>
           <hr className="mx-1 my-2.5 border-0 border-t border-line" />
           <button type="button" onClick={() => setConfirmReset(true)} className={RAIL_ITEM}>
