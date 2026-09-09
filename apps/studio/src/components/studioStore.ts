@@ -8,6 +8,12 @@ type StudioState = {
   /** Column guides drawn behind the canvas cells (canvas-bar toggle). */
   guides: boolean
   toggleGuides: () => void
+  /** The project Overview (sitemap) and Export (hand-off) dialogs — opened
+   * from the topbar and the Pages tab alike. */
+  overviewOpen: boolean
+  setOverviewOpen: (open: boolean) => void
+  exportOpen: boolean
+  setExportOpen: (open: boolean) => void
 }
 
 /**
@@ -19,4 +25,8 @@ export const useStudioStore = create<StudioState>((set) => ({
   setPreviewOpen: (previewOpen) => set({ previewOpen }),
   guides: true,
   toggleGuides: () => set((s) => ({ guides: !s.guides })),
+  overviewOpen: false,
+  setOverviewOpen: (overviewOpen) => set({ overviewOpen }),
+  exportOpen: false,
+  setExportOpen: (exportOpen) => set({ exportOpen }),
 }))

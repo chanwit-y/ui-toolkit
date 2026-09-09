@@ -1,9 +1,11 @@
 import {
   ArrowLeft,
   Boxes,
+  Download,
   Eye,
   LayoutGrid,
   Moon,
+  Network,
   Palette,
   Plug,
   Redo2,
@@ -18,6 +20,8 @@ import { useGridStore } from './Layout/gridStore'
 import { LivePreviewModal } from './Layout/LivePreviewModal'
 import { useStudioStore } from './studioStore'
 import { useThemeStore } from './Theme/themeStore'
+import { ExportDialog } from './Workspace/ExportDialog'
+import { OverviewDialog } from './Workspace/OverviewDialog'
 import type { ProjectDef } from './Workspace/types'
 import { UserButton } from './Workspace/UserButton'
 import { useWorkspaceStore } from './Workspace/workspaceStore'
@@ -59,6 +63,10 @@ export function AppShell({ project }: { project: ProjectDef }) {
   const updateTheme = useThemeStore((s) => s.update)
   const previewOpen = useStudioStore((s) => s.previewOpen)
   const setPreviewOpen = useStudioStore((s) => s.setPreviewOpen)
+  const overviewOpen = useStudioStore((s) => s.overviewOpen)
+  const setOverviewOpen = useStudioStore((s) => s.setOverviewOpen)
+  const exportOpen = useStudioStore((s) => s.exportOpen)
+  const setExportOpen = useStudioStore((s) => s.setExportOpen)
   const canvasEmpty = useGridStore((s) => s.items.length === 0)
   const undoDepth = useGridStore((s) => s.undoDepth)
   const redoDepth = useGridStore((s) => s.redoDepth)
@@ -133,6 +141,14 @@ export function AppShell({ project }: { project: ProjectDef }) {
         >
           {isDark ? <Sun size={15} aria-hidden="true" /> : <Moon size={15} aria-hidden="true" />}
         </IconButton>
+        <Button title="See the whole project" onClick={() => setOverviewOpen(true)}>
+          <Network size={15} aria-hidden="true" />
+          Overview
+        </Button>
+        <Button title="Hand this project to a developer" onClick={() => setExportOpen(true)}>
+          <Download size={15} aria-hidden="true" />
+          Export
+        </Button>
         <Button
           disabled={canvasEmpty}
           title={canvasEmpty ? 'Add a component to the canvas first' : 'Open the live preview'}
@@ -145,6 +161,8 @@ export function AppShell({ project }: { project: ProjectDef }) {
 
       {/* Mount fresh on every open so the engine form state resets. */}
       {previewOpen && <LivePreviewModal onClose={() => setPreviewOpen(false)} />}
+      {overviewOpen && <OverviewDialog project={project} onClose={() => setOverviewOpen(false)} />}
+      {exportOpen && <ExportDialog project={project} onClose={() => setExportOpen(false)} />}
     </>
   )
 }

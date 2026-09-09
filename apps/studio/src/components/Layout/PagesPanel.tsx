@@ -1,4 +1,4 @@
-import { FileText, Plus } from 'lucide-react'
+import { FileText, Network, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button, cn } from '../common'
@@ -7,6 +7,7 @@ import { countComponents } from '../Workspace/snapshots'
 import type { PageDef } from '../Workspace/types'
 import { useActivePages, useWorkspaceStore } from '../Workspace/workspaceStore'
 import { pageLinks } from './pageLinks'
+import { useStudioStore } from '../studioStore'
 
 /**
  * The Pages tab of the left pane (the mockup's page tree): pages nest under
@@ -21,6 +22,7 @@ export function PagesPanel() {
   const activePageId = useWorkspaceStore((s) => s.activePageId)
   const pages = useActivePages()
   const navigate = useNavigate()
+  const setOverviewOpen = useStudioStore((s) => s.setOverviewOpen)
   const [creating, setCreating] = useState(false)
 
   if (!projectId) return null
@@ -116,6 +118,10 @@ export function PagesPanel() {
       <Button size="sm" className="mt-2.5 w-full" onClick={() => setCreating(true)}>
         <Plus size={13} aria-hidden="true" />
         New page
+      </Button>
+      <Button size="sm" className="mt-1.5 w-full" onClick={() => setOverviewOpen(true)}>
+        <Network size={13} aria-hidden="true" />
+        See the whole project
       </Button>
 
       {creating && (

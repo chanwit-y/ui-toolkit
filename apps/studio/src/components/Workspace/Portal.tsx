@@ -164,6 +164,8 @@ type DialogState = { kind: 'create' } | { kind: 'edit'; project: ProjectDef } | 
  * Opening a row navigates into the studio at `/p/:id`. */
 export function ProjectsPage() {
   const projects = useWorkspaceStore((s) => s.projects)
+  const modelCount = useWorkspaceStore((s) => s.library.models.length)
+  const endpointCount = useWorkspaceStore((s) => s.library.endpoints.length)
   const query = useLibraryUiStore((s) => s.query)
   const navigate = useNavigate()
   const [dialog, setDialog] = useState<DialogState>(null)
@@ -191,6 +193,27 @@ export function ProjectsPage() {
           <Button variant="primary" onClick={() => setDialog({ kind: 'create' })}>
             <Plus size={14} aria-hidden="true" />
             New project
+          </Button>
+        </div>
+
+        {/* The mockup's library strip: how the three layers relate. */}
+        <div className="mb-4 flex flex-wrap items-center gap-2.5 rounded-[10px] border border-line bg-panel px-3.5 py-2 text-ui text-ink-2">
+          <span className="flex flex-wrap items-center gap-2">
+            Shared library
+            <span className="text-ink-3" aria-hidden="true">→</span>
+            <NavLink to="/library/models" className="font-semibold text-ink hover:underline">
+              {modelCount} model{modelCount === 1 ? '' : 's'}
+            </NavLink>
+            <span className="text-ink-3" aria-hidden="true">→</span>
+            <NavLink to="/library/apis" className="font-semibold text-ink hover:underline">
+              {endpointCount} endpoint{endpointCount === 1 ? '' : 's'}
+            </NavLink>
+            <span className="text-ink-3" aria-hidden="true">→</span>
+            <span>bound inside each project</span>
+          </span>
+          <span className="flex-1" />
+          <Button size="sm" onClick={() => navigate('/library/apis')}>
+            Manage library
           </Button>
         </div>
 
