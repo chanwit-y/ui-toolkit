@@ -7,6 +7,13 @@ import { updateContainerBreakpoint, updateItemBreakpoint } from './gridSettings'
 import { readSeedCount } from './perf'
 import { countrySeedGridItems } from '../seed/country'
 import {
+  createDefaultDesignConfig,
+  designDefaultSpan,
+  isDesignOnly,
+  type DesignConfig,
+  type ElementStyle,
+} from './designTypes'
+import {
   childCanvasCount,
   createChildCanvas,
   createDefaultAutocompleteConfig,
@@ -128,7 +135,7 @@ function updateCanvasAtPath(
 
 /** Which panel the right sidebar shows. `inspector` resolves to the selected
  * item's config+layout, or the container settings when nothing is selected. */
-export type SidebarView = 'inspector' | 'layout' | 'code'
+export type SidebarView = 'inspector' | 'layout' | 'style' | 'code'
 
 /**
  * Bridge to the FLIP animation layer. The animation relies on DOM refs and
@@ -216,8 +223,11 @@ type GridState = {
       | TabConfig
       | ModalConfig
       | PopoverConfig
+      | DesignConfig
     >,
   ) => void
+  /** Merge Style-tab colours into an item (design-only annotation). */
+  updateItemStyle: (id: string, patch: Partial<ElementStyle>) => void
   moveItem: (activeId: string, overId: string) => void
 
   // Tab canvas sync: add/remove a tab header and its child canvas together, so
@@ -500,6 +510,7 @@ export const useGridStore = create<GridState>((set, get) => {
           | TabConfig
           | ModalConfig
           | PopoverConfig
+          | DesignConfig
           | undefined
         let nextSeq = fieldSeq
         if (type === 'textfield') {
@@ -567,6 +578,8 @@ export const useGridStore = create<GridState>((set, get) => {
           config = createDefaultModalConfig(`modal_${nextSeq}`)
         } else if (type === 'popover') {
           config = createDefaultPopoverConfig()
+        } else if (isDesignOnly(type)) {
+          config = createDefaultDesignConfig(type)
         }
 
         // Container-hosting types start with their (empty) child canvases —
@@ -603,14 +616,25 @@ export const useGridStore = create<GridState>((set, get) => {
           type === 'text' ||
           type === 'typography'
         const defaultLg = isUpload ? 6 : isWideInput ? 4 : 2
-        const colSpan = isFullBleed
-          ? { xs: bpCols.xs, sm: bpCols.sm, md: bpCols.md, lg: bpCols.lg }
-          : {
-              xs: bpCols.xs,
-              sm: Math.min(3, bpCols.sm),
-              md: Math.min(2, bpCols.md),
-              lg: Math.min(defaultLg, bpCols.lg),
-            }
+        // Design-only kinds carry the mockup's own default width (of 12),
+        // scaled to the canvas: a hero/banner is full-bleed, a stat is narrow.
+        const designLg = isDesignOnly(type) ? designDefaultSpan(type) : null
+        const colSpan =
+          isFullBleed || designLg === 12
+            ? { xs: bpCols.xs, sm: bpCols.sm, md: bpCols.md, lg: bpCols.lg }
+            : designLg != null
+              ? {
+                  xs: bpCols.xs,
+                  sm: Math.min(Math.max(1, Math.round((designLg / 12) * bpCols.sm) * 2), bpCols.sm),
+                  md: Math.min(Math.max(1, Math.round((designLg / 12) * bpCols.md) * 2), bpCols.md),
+                  lg: Math.min(Math.max(1, Math.round((designLg / 12) * bpCols.lg)), bpCols.lg),
+                }
+              : {
+                  xs: bpCols.xs,
+                  sm: Math.min(3, bpCols.sm),
+                  md: Math.min(2, bpCols.md),
+                  lg: Math.min(defaultLg, bpCols.lg),
+                }
         const newItem: GridItemData = {
           id: createId(),
           label: component?.label ?? `Item ${items.length + 1}`,
@@ -715,6 +739,30 @@ export const useGridStore = create<GridState>((set, get) => {
                 ...item,
                 config: { ...item.config, ...patch } as GridItemData['config'],
               } as GridItemData)
+            : item,
+        ),
+      })),
+
+    updateItemStyle: (id, patch) =>
+      setActiveCanvas((canvas) => ({
+        ...canvas,
+        items: canvas.items.map((item) =>
+          item.id === id
+            ? {
+                ...item,
+                style: {
+                  bg: '',
+                  fg: '',
+                  line: '',
+                  accent: '',
+                  radius: '',
+                  thBg: '',
+                  thFg: '',
+                  zebra: false,
+                  ...item.style,
+                  ...patch,
+                },
+              }
             : item,
         ),
       })),

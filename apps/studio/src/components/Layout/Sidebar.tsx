@@ -11,6 +11,8 @@ import {
 import { DataTableConfigPanel } from './DataTableConfigPanel'
 import { DataTableEditableConfigPanel } from './DataTableEditableConfigPanel'
 import { DateConfigPanel } from './DateConfigPanel'
+import { DesignConfigPanel } from './DesignConfigPanel'
+import { isDesignOnly } from './designTypes'
 import {
   AvatarConfigPanel,
   DividerConfigPanel,
@@ -23,6 +25,7 @@ import { useBreadcrumb, useGridStore, useSelectedItem, type SidebarView } from '
 import { RadioConfigPanel } from './RadioConfigPanel'
 import { SelectFieldConfigPanel } from './SelectFieldConfigPanel'
 import { ContainerSettingsPanel, ItemSettingsPanel } from './SettingsPanel'
+import { StylePanel } from './StylePanel'
 import { TextareaConfigPanel } from './TextareaConfigPanel'
 import { UploadFileConfigPanel, UploadImageConfigPanel } from './UploadConfigPanel'
 import type {
@@ -51,6 +54,7 @@ import type {
 const VIEW_OPTIONS: { value: SidebarView; label: string }[] = [
   { value: 'layout', label: 'Layout' },
   { value: 'inspector', label: 'Props' },
+  { value: 'style', label: 'Style' },
   { value: 'code', label: 'Code' },
 ]
 
@@ -96,11 +100,11 @@ type SidebarProps = {
 }
 
 /**
- * The right sidebar — the single home for all editing, split into three tabs:
- * `inspector` shows the selected item's component config;
- * `layout` shows the grid config — the selected item's per-breakpoint spans, or
- * the container settings when nothing is selected; `code` shows the exported
- * JSON / CSS.
+ * The right sidebar — the single home for all editing, split into four tabs:
+ * `inspector` shows the selected item's component config; `layout` shows the
+ * grid config — the selected item's per-breakpoint spans, or the container
+ * settings when nothing is selected; `style` the selected item's design-only
+ * colours; `code` shows the exported JSON / CSS.
  */
 export function Sidebar({ gridConfigJson, fullGridCss }: SidebarProps) {
   const sidebarView = useGridStore((s) => s.sidebarView)
@@ -136,8 +140,21 @@ export function Sidebar({ gridConfigJson, fullGridCss }: SidebarProps) {
           />
         ) : sidebarView === 'layout' ? (
           selectedItem ? <ItemSettingsPanel /> : <ContainerSettingsPanel />
+        ) : sidebarView === 'style' ? (
+          selectedItem ? (
+            <StylePanel item={selectedItem} />
+          ) : (
+            <Empty>
+              Select an element to give it its own colours.
+              <br />
+              <br />
+              <span className="text-ink-3">Project-wide colours live in the Theme tab.</span>
+            </Empty>
+          )
         ) : selectedItem ? (
-          selectedItem.type === 'textfield' && selectedItem.config ? (
+          isDesignOnly(selectedItem.type) ? (
+            <DesignConfigPanel item={selectedItem} />
+          ) : selectedItem.type === 'textfield' && selectedItem.config ? (
             <FieldConfigPanel
               itemId={selectedItem.id}
               config={selectedItem.config as TextFieldConfig}

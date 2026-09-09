@@ -34,17 +34,28 @@ function ToolboxItem({ def }: ToolboxItemProps) {
     <button
       ref={setNodeRef}
       type="button"
-      title={`Drag ${def.label} onto the canvas, or click to append it`}
+      title={
+        def.designOnly
+          ? `${def.label} — design only (no library component yet). Drag onto the canvas, or click to append it`
+          : `Drag ${def.label} onto the canvas, or click to append it`
+      }
       onClick={() => addItem({ type: def.type, label: def.label })}
       {...listeners}
       {...attributes}
       className={cn(
-        'group flex h-[58px] touch-none flex-col items-center justify-center gap-1.5 rounded-md border border-line bg-surface p-1 text-center text-ui-xs font-medium leading-tight text-ink-2',
+        'group relative flex h-[58px] touch-none flex-col items-center justify-center gap-1.5 rounded-md border border-line bg-surface p-1 text-center text-ui-xs font-medium leading-tight text-ink-2',
         'cursor-grab transition-[border-color,color,transform] duration-100 hover:border-line-strong hover:text-ink active:scale-[0.97] active:cursor-grabbing',
         isContainer && 'border-dashed',
         isDragging && 'opacity-40',
       )}
     >
+      {def.designOnly && (
+        <span
+          aria-hidden="true"
+          title="Design only"
+          className="absolute right-1 top-1 block h-1.5 w-1.5 rounded-full bg-warn"
+        />
+      )}
       <Icon
         className="h-[15px] w-[15px] text-ink-3 transition-colors group-hover:text-ink"
         aria-hidden="true"

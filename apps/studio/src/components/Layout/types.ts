@@ -1,6 +1,7 @@
 import type { DataType } from '@gummy-ui/ui'
 import type { Breakpoint } from './breakpoints'
 import type { ComponentType } from './componentCatalog'
+import type { DesignConfig, ElementStyle } from './designTypes'
 
 export type { Breakpoint } from './breakpoints'
 export { MAX_GRID_COLUMNS } from './breakpoints'
@@ -1139,6 +1140,8 @@ export type GridItemData = {
   /** Which palette component this cell represents (set on drop). */
   type: ComponentType
   settings: GridItemSettings
+  /** Per-element colours from the Style tab — design-only (see `designTypes.ts`). */
+  style?: ElementStyle
   /**
    * Component-specific config, discriminated by `type`: a textfield carries a
    * `TextFieldConfig`, a textarea a `TextareaConfig`, a select or autocomplete a
@@ -1180,6 +1183,7 @@ export type GridItemData = {
     | TabConfig
     | ModalConfig
     | PopoverConfig
+    | DesignConfig
   /**
    * Child canvases for the container-hosting types (see the grilled design:
    * drill-in editing, arbitrary depth). `container`/`paper`/`modal`/`popover`

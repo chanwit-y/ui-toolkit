@@ -31,6 +31,7 @@ import type {
   UploadFileConfig,
   UploadImageConfig,
 } from './types'
+import { hasElementStyle, isDesignOnly } from './designTypes'
 
 /**
  * Serializes the studio canvas into the declarative engine's `Bin[]` shape — the
@@ -919,16 +920,27 @@ export function buildBins(
     const lg = toBoxRange(span.lg, cols.lg)
     const element = buildElement(item, items, endpoints, resolveEndpoint, buttonRefs)
     // A plain `container` Bin nests via the Bin-level `container` key (not an
-    // element) — the engine renders it as a nested grid.
+    // element) — the engine renders it as a nested grid. Style-tab background /
+    // border (design-only otherwise) turn on the engine's themed surface.
     const nested =
       item.type === 'container'
-        ? toEngineContainer(
-            childCanvasAt(item, 0),
-            childContainerName(item),
-            endpoints,
-            buttonRefs,
-          )
+        ? {
+            ...toEngineContainer(
+              childCanvasAt(item, 0),
+              childContainerName(item),
+              endpoints,
+              buttonRefs,
+            ),
+            ...(hasElementStyle(item.style) && (item.style.bg || item.style.line)
+              ? { surface: { background: !!item.style.bg, border: !!item.style.line } }
+              : {}),
+          }
         : undefined
+    // Design-only kinds (see `designTypes.ts`) have no engine element: they
+    // export as an `empty` bin carrying their design config under `designOnly`,
+    // which the Live Preview turns into a labelled placeholder and a developer
+    // can read from project.json.
+    const designOnly = isDesignOnly(item.type)
     return {
       sm: toBoxRange(span.sm, cols.sm),
       md: toBoxRange(span.md, cols.md),
@@ -936,11 +948,15 @@ export function buildBins(
       // The engine has no `xs`; `xl` mirrors `lg` (studio's widest breakpoint).
       xl: lg,
       // Studio's `select` is the engine's `autocomplete`; everything else passes through.
-      type: item.type === 'select' ? 'autocomplete' : item.type,
+      type: designOnly ? 'empty' : item.type === 'select' ? 'autocomplete' : item.type,
       justifySelf: item.settings.justifySelf.lg,
       alignSelf: item.settings.alignSelf.lg,
       ...(element ? { element } : {}),
       ...(nested ? { container: nested } : {}),
+      ...(designOnly
+        ? { designOnly: { type: item.type, label: item.label, config: item.config ?? {} } }
+        : {}),
+      ...(hasElementStyle(item.style) ? { style: item.style } : {}),
     }
   })
 }

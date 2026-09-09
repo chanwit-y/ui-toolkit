@@ -90,6 +90,20 @@ function toPreviewContainer(
 function toPreviewBin(bin: ParsedBin, wiring: LivePreviewWiring): ParsedBin {
   const type = String(bin.type)
   const el = bin.element
+
+  // Design-only kinds (see `designTypes.ts`): the library has no component
+  // yet, so the preview shows where it goes and says so.
+  const design = bin.designOnly as
+    | { type?: string; label?: string; config?: Record<string, unknown> }
+    | undefined
+  if (design) {
+    const cfg = design.config ?? {}
+    const name = String(cfg.title ?? cfg.label ?? cfg.text ?? design.label ?? '')
+    return placeholderBin(
+      bin,
+      `[ ${design.label ?? design.type}${name && name !== design.label ? ` "${name}"` : ''} — design only, not in @gummy-ui/ui yet ]`,
+    )
+  }
   const displayName = el ? String(el.title ?? el.name ?? '') : ''
   const label = API_PLACEHOLDER_LABEL[type] ?? type
 
