@@ -8,6 +8,7 @@ import { Layout } from '../Layout'
 import { LivePreviewModal } from '../Layout/LivePreviewModal'
 import { useStudioStore } from '../studioStore'
 import { applyPageGrid, isHydrating } from '../Workspace/snapshots'
+import { UserButton } from '../Workspace/UserButton'
 import { useWorkspaceStore } from '../Workspace/workspaceStore'
 import { LibraryScopeContext } from './scope'
 
@@ -116,6 +117,7 @@ export function TemplateShell() {
         <IconButton label="Redo (⇧⌘Z)" disabled={redoDepth === 0} onClick={redo}>
           <Redo2 size={15} aria-hidden="true" />
         </IconButton>
+        <UserButton />
         <IconButton
           label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
           onClick={() => setAppearance(isDark ? 'light' : 'dark')}

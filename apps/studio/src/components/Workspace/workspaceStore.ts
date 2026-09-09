@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware'
 import type { EndpointDef } from '../Api/types'
 import type { ModelDef } from '../Model/types'
 import type { ThemeAppearance } from '../Theme/types'
+import { seedActivity } from '../seed/activity'
 import { builtinTemplates } from '../seed/templates'
 import {
   COUNTRIES_GROUP_ID,
@@ -17,6 +18,8 @@ import {
   type ProjectStateSnapshot,
 } from './snapshots'
 import type {
+  ActivityEntry,
+  ActivityKind,
   LibraryData,
   PageDef,
   PageGrid,
@@ -25,6 +28,11 @@ import type {
   TemplateDef,
   WorkspaceData,
 } from './types'
+
+const ACTIVITY_CAP = 500
+/** Autosaves are continuous; a "saved" line is worth recording this often. */
+const SAVE_LOG_INTERVAL_MS = 10 * 60 * 1000
+const lastSaveLog = new Map<string, number>()
 
 export const WORKSPACE_STORAGE_KEY = 'gummy.studio.workspace.v1'
 
@@ -93,6 +101,14 @@ type WorkspaceStore = WorkspaceData & {
   setAppearance: (appearance: ThemeAppearance) => void
   /** Switch the mock identity (the topbar user button). */
   setUser: (name: string) => void
+  /** Record one activity line against the current user (see the grilled design). */
+  logActivity: (
+    verb: string,
+    kind: ActivityKind,
+    name: string,
+    detail?: string,
+    projectId?: string | null,
+  ) => void
   /** Back to first-run: the seeded library + project, light appearance. */
   resetDemo: () => void
 }
@@ -196,16 +212,44 @@ const initialLibrary = countryLibrary()
  */
 export const useWorkspaceStore = create<WorkspaceStore>()(
   persist(
-    (set) => ({
+    (set, get) => {
+      const log = (
+        verb: string,
+        kind: ActivityKind,
+        name: string,
+        detail = '',
+        projectId: string | null = get().activeProjectId,
+      ) => {
+        const entry: ActivityEntry = {
+          id: createId(),
+          ts: Date.now(),
+          user: get().user,
+          verb,
+          kind,
+          name,
+          detail,
+          projectId,
+        }
+        set((s) => ({ activity: [entry, ...s.activity].slice(0, ACTIVITY_CAP) }))
+      }
+      const projectName = (id: string) => get().projects.find((p) => p.id === id)?.name ?? ''
+      const pageOf = (projectId: string, pageId: string) =>
+        get().projects.find((p) => p.id === projectId)?.snapshot.pages.find((pg) => pg.id === pageId)
+      const templateOf = (id: string) => get().library.templates.find((t) => t.id === id)
+
+      return {
       version: 3,
       appearance: 'light',
       user: MOCK_USERS[0].name,
       projects: seedProjects(initialLibrary),
       library: initialLibrary,
+      activity: seedActivity(),
       saveState: 'saved',
       activeProjectId: null,
       activePageId: null,
       libraryEpoch: 0,
+
+      logActivity: (verb, kind, name, detail, projectId) => log(verb, kind, name, detail, projectId),
 
       createProject: ({ name, description, fromSeed }) => {
         const now = Date.now()
@@ -223,6 +267,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
           }
           return { projects: [created, ...s.projects] }
         })
+        log('created', 'project', created.name, fromSeed ? 'from the countries example' : 'empty project', created.id)
         return created
       },
 
@@ -234,10 +279,13 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
           })),
         })),
 
-      deleteProject: (id) =>
-        set((s) => ({ projects: s.projects.filter((p) => p.id !== id) })),
+      deleteProject: (id) => {
+        const name = projectName(id)
+        set((s) => ({ projects: s.projects.filter((p) => p.id !== id) }))
+        if (name) log('deleted', 'project', name, '', null)
+      },
 
-      saveProjectState: (id, pageId, state) =>
+      saveProjectState: (id, pageId, state) => {
         set((s) => ({
           saveState: 'saved',
           projects: patchProject(s.projects, id, (p) => ({
@@ -250,7 +298,14 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
               ),
             },
           })),
-        })),
+        }))
+        const now = Date.now()
+        if (now - (lastSaveLog.get(id) ?? 0) > SAVE_LOG_INTERVAL_MS) {
+          lastSaveLog.set(id, now)
+          const page = pageOf(id, pageId)
+          log('saved', 'project', projectName(id), page ? `${page.name} · ${state.grid.items.length} element(s)` : '', id)
+        }
+      },
 
       saveLibrary: (library) =>
         set((s) => ({ library: { ...s.library, ...library }, saveState: 'saved' })),
@@ -270,10 +325,12 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
         set((s) => ({
           library: { ...s.library, templates: [...s.library.templates, template] },
         }))
+        log('created', 'template', template.name, grid ? `from a page · ${grid.items.length} block(s)` : `in ${template.category}`, null)
         return template
       },
 
-      updateTemplate: (id, patch) =>
+      updateTemplate: (id, patch) => {
+        const before = templateOf(id)
         set((s) => ({
           library: {
             ...s.library,
@@ -281,9 +338,15 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
               t.id === id ? { ...t, ...patch, updatedAt: Date.now() } : t,
             ),
           },
-        })),
+        }))
+        if (before) {
+          if (patch.active != null && patch.active !== before.active)
+            log(patch.active ? 'activated' : 'deactivated', 'template', before.name, '', null)
+          else log('updated', 'template', patch.name ?? before.name, patch.name && patch.name !== before.name ? `was ${before.name}` : 'details', null)
+        }
+      },
 
-      saveTemplateGrid: (id, grid) =>
+      saveTemplateGrid: (id, grid) => {
         set((s) => ({
           saveState: 'saved',
           library: {
@@ -292,7 +355,15 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
               t.id === id ? { ...t, grid, updatedAt: Date.now() } : t,
             ),
           },
-        })),
+        }))
+        const now = Date.now()
+        const key = `tpl:${id}`
+        if (now - (lastSaveLog.get(key) ?? 0) > SAVE_LOG_INTERVAL_MS) {
+          lastSaveLog.set(key, now)
+          const t = templateOf(id)
+          if (t) log('updated', 'template', t.name, `layout · ${grid.items.length} block(s)`, null)
+        }
+      },
 
       duplicateTemplate: (id, createdBy) => {
         let copy: TemplateDef | undefined
@@ -313,24 +384,33 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
           templates.splice(at + 1, 0, copy)
           return { library: { ...s.library, templates } }
         })
+        if (copy) log('duplicated', 'template', copy.name, '', null)
         return copy
       },
 
-      deleteTemplate: (id) =>
+      deleteTemplate: (id) => {
+        const t = templateOf(id)
         set((s) => ({
           library: { ...s.library, templates: s.library.templates.filter((t) => t.id !== id) },
-        })),
+        }))
+        if (t) log('deleted', 'template', t.name, '', null)
+      },
 
-      attachEndpoints: (projectId, endpointIds) =>
+      attachEndpoints: (projectId, endpointIds) => {
         set((s) => ({
           projects: patchProject(s.projects, projectId, (p) => {
             const have = new Set(p.snapshot.endpointIds)
             const next = [...p.snapshot.endpointIds, ...endpointIds.filter((id) => !have.has(id))]
             return { snapshot: { ...p.snapshot, endpointIds: next } }
           }),
-        })),
+        }))
+        const names = endpointIds
+          .map((id) => get().library.endpoints.find((e) => e.id === id)?.name)
+          .filter((n): n is string => !!n)
+        if (names.length) log('attached', 'api', names.join(', '), `to ${projectName(projectId)}`, projectId)
+      },
 
-      detachEndpoint: (projectId, endpointId) =>
+      detachEndpoint: (projectId, endpointId) => {
         set((s) => ({
           projects: patchProject(s.projects, projectId, (p) => ({
             snapshot: {
@@ -338,7 +418,10 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
               endpointIds: p.snapshot.endpointIds.filter((id) => id !== endpointId),
             },
           })),
-        })),
+        }))
+        const name = get().library.endpoints.find((e) => e.id === endpointId)?.name
+        if (name) log('detached', 'api', name, `from ${projectName(projectId)}`, projectId)
+      },
 
       detachEverywhere: (endpointId) =>
         set((s) => ({
@@ -362,10 +445,12 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
             snapshot: { ...p.snapshot, pages: [...p.snapshot.pages, page] },
           })),
         }))
+        log('created', 'page', page.name, grid ? 'from a template' : 'blank page', projectId)
         return page
       },
 
-      updatePage: (projectId, pageId, patch) =>
+      updatePage: (projectId, pageId, patch) => {
+        const before = pageOf(projectId, pageId)
         set((s) => ({
           projects: patchProject(s.projects, projectId, (p) => ({
             snapshot: {
@@ -378,7 +463,18 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
               }),
             },
           })),
-        })),
+        }))
+        const after = pageOf(projectId, pageId)
+        if (before && after && (before.name !== after.name || before.path !== after.path)) {
+          log(
+            before.name !== after.name ? 'renamed' : 'updated',
+            'page',
+            after.name,
+            before.name !== after.name ? `was ${before.name}` : `route ${after.path}`,
+            projectId,
+          )
+        }
+      },
 
       movePage: (projectId, pageId, delta) =>
         set((s) => ({
@@ -394,7 +490,8 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
           }),
         })),
 
-      deletePage: (projectId, pageId) =>
+      deletePage: (projectId, pageId) => {
+        const page = pageOf(projectId, pageId)
         set((s) => ({
           projects: patchProject(s.projects, projectId, (p) => {
             if (p.snapshot.pages.length < 2) return {}
@@ -405,7 +502,9 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
               },
             }
           }),
-        })),
+        }))
+        if (page) log('deleted', 'page', page.name, '', projectId)
+      },
 
       setActiveProjectId: (activeProjectId) => set({ activeProjectId }),
 
@@ -419,15 +518,19 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
 
       resetDemo: () => {
         const library = countryLibrary()
+        lastSaveLog.clear()
         set((s) => ({
           projects: seedProjects(library),
           library,
+          activity: seedActivity(),
+          user: MOCK_USERS[0].name,
           appearance: 'light',
           saveState: 'saved',
           libraryEpoch: s.libraryEpoch + 1,
         }))
       },
-    }),
+      }
+    },
     {
       name: WORKSPACE_STORAGE_KEY,
       version: 3,
@@ -437,6 +540,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
         user: s.user,
         projects: s.projects,
         library: s.library,
+        activity: s.activity,
       }),
       merge: (persisted, current) => {
         const data = persisted as
@@ -446,9 +550,10 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
         const appearance = data.appearance === 'dark' ? 'dark' : 'light'
         const user =
           typeof data.user === 'string' && data.user ? data.user : MOCK_USERS[0].name
+        const activity = Array.isArray(data.activity) ? data.activity : seedActivity()
         if (data.version === 1) {
           const { projects, library } = migrateV1(data.projects as unknown as V1Project[])
-          return { ...current, appearance, user, projects: migrateV2(projects), library }
+          return { ...current, appearance, user, activity, projects: migrateV2(projects), library }
         }
         if (!data.library) return current
         // Libraries saved before templates existed get the builtin set.
@@ -463,12 +568,13 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
             ...current,
             appearance,
             user,
+            activity,
             projects: migrateV2(data.projects as unknown as V2Project[]),
             library,
           }
         }
         if (data.version !== 3) return current
-        return { ...current, appearance, user, projects: data.projects, library }
+        return { ...current, appearance, user, activity, projects: data.projects, library }
       },
       // The version bumps are handled in `merge` (it sees the raw payload);
       // keep the middleware's own migrate a pass-through.
@@ -503,6 +609,11 @@ export function useActivePage(): PageDef | undefined {
       .find((p) => p.id === s.activeProjectId)
       ?.snapshot.pages.find((pg) => pg.id === s.activePageId),
   )
+}
+
+/** Selector: the activity log, newest first. */
+export function useActivity(): ActivityEntry[] {
+  return useWorkspaceStore((s) => s.activity)
 }
 
 /** Selector: the library's templates. */

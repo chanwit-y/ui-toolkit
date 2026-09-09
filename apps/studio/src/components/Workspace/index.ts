@@ -1,6 +1,8 @@
 export { PortalLayout, ProjectsPage } from './Portal'
 export { ProjectShell, ProjectIndexRedirect } from './ProjectShell'
 export { PageDialog } from './PageDialog'
+export { ActivityPage } from './ActivityPage'
+export { UserButton, Avatar } from './UserButton'
 export {
   useWorkspaceStore,
   useProject,
@@ -9,6 +11,8 @@ export {
   useActivePage,
   useActiveEndpointIds,
   useTemplates,
+  useActivity,
+  MOCK_USERS,
   WORKSPACE_STORAGE_KEY,
 } from './workspaceStore'
 export { pathParams, slugPath, normalizePath, createPage } from './snapshots'
@@ -18,6 +22,8 @@ export type {
   PageDef,
   PageGrid,
   TemplateDef,
+  ActivityEntry,
+  ActivityKind,
   WorkspaceData,
   LibraryData,
 } from './types'

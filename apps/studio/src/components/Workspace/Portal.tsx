@@ -1,5 +1,19 @@
 import { Modal } from '@gummy-ui/ui'
-import { Boxes, LayoutGrid, LayoutTemplate, Moon, Pencil, Plug, Plus, Search, Sun, Trash2 } from 'lucide-react'
+import {
+  BookOpen,
+  Boxes,
+  History,
+  LayoutGrid,
+  LayoutTemplate,
+  Moon,
+  Pencil,
+  Plug,
+  Plus,
+  Search,
+  Settings,
+  Sun,
+  Trash2,
+} from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { AppearanceSync } from '../AppearanceSync'
@@ -7,6 +21,7 @@ import { Button, cn, ConfirmDialog, IconButton, Input } from '../common'
 import { useLibraryUiStore } from '../Library/libraryUiStore'
 import { attachedEndpoints, countProjectComponents, referencedModels } from './snapshots'
 import type { ProjectDef } from './types'
+import { UserButton } from './UserButton'
 import { useWorkspaceStore } from './workspaceStore'
 
 /** "just now" / "5m ago" / "3h ago" / "2d ago". */
@@ -31,6 +46,7 @@ export function PortalLayout() {
   const endpointCount = useWorkspaceStore((s) => s.library.endpoints.length)
   const modelCount = useWorkspaceStore((s) => s.library.models.length)
   const templateCount = useWorkspaceStore((s) => s.library.templates.length)
+  const activityCount = useWorkspaceStore((s) => s.activity.length)
   const appearance = useWorkspaceStore((s) => s.appearance)
   const setAppearance = useWorkspaceStore((s) => s.setAppearance)
   const query = useLibraryUiStore((s) => s.query)
@@ -72,6 +88,7 @@ export function PortalLayout() {
         >
           {isDark ? <Sun size={15} aria-hidden="true" /> : <Moon size={15} aria-hidden="true" />}
         </IconButton>
+        <UserButton />
       </header>
 
       <div className="flex min-h-0 flex-1">
@@ -98,6 +115,21 @@ export function PortalLayout() {
             <span className="flex-1">Templates</span>
             <span className="font-mono text-ui-xs text-ink-3">{templateCount}</span>
           </NavLink>
+          <hr className="mx-1 my-2.5 border-0 border-t border-line" />
+          <NavLink to="/activity" className={RAIL_ITEM}>
+            <History size={15} aria-hidden="true" className="text-ink-3" />
+            <span className="flex-1">Activity</span>
+            <span className="font-mono text-ui-xs text-ink-3">{activityCount}</span>
+          </NavLink>
+          {/* Present in the mockup, not built yet — kept as inert entries. */}
+          <button type="button" disabled title="Not available yet" className={cn(RAIL_ITEM, 'opacity-50')}>
+            <Settings size={15} aria-hidden="true" className="text-ink-3" />
+            <span className="flex-1">Settings</span>
+          </button>
+          <button type="button" disabled title="Not available yet" className={cn(RAIL_ITEM, 'opacity-50')}>
+            <BookOpen size={15} aria-hidden="true" className="text-ink-3" />
+            <span className="flex-1">Documentation</span>
+          </button>
           <hr className="mx-1 my-2.5 border-0 border-t border-line" />
           <button type="button" onClick={() => setConfirmReset(true)} className={RAIL_ITEM}>
             <Trash2 size={13} aria-hidden="true" className="text-ink-3" />

@@ -2,10 +2,34 @@ import { useEffect } from 'react'
 import { useApiStore } from '../Api/apiStore'
 import { useModelStore } from '../Model/modelStore'
 import { applyLibrary, collectLibrary, isHydrating } from '../Workspace/snapshots'
+import type { ActivityKind } from '../Workspace/types'
 import { useWorkspaceStore } from '../Workspace/workspaceStore'
 import { useGroupStore } from './groupStore'
 
 const AUTOSAVE_DEBOUNCE_MS = 400
+
+type Named = { id: string; name: string }
+
+/**
+ * Record the coarse library changes as activity (see the grilled design):
+ * an item appearing, disappearing or changing name between two store states.
+ * Field-level edits are too chatty to log and are covered by the autosave.
+ */
+function logNamedDiff(kind: ActivityKind, prev: Named[], next: Named[]) {
+  if (prev === next || isHydrating()) return
+  const log = useWorkspaceStore.getState().logActivity
+  const before = new Map(prev.map((x) => [x.id, x]))
+  const after = new Map(next.map((x) => [x.id, x]))
+  for (const x of next) {
+    const was = before.get(x.id)
+    if (!was) {
+      if (x.name.trim()) log('created', kind, x.name, '', null)
+    } else if (was.name !== x.name && was.name.trim() && x.name.trim()) {
+      log('renamed', kind, x.name, `was ${was.name}`, null)
+    }
+  }
+  for (const x of prev) if (!after.has(x.id) && x.name.trim()) log('deleted', kind, x.name, '', null)
+}
 
 /**
  * Keeps the live library stores (groups / models / endpoints) and the
@@ -38,13 +62,22 @@ export function LibrarySync() {
     }
     const unsubs = [
       useGroupStore.subscribe((s, prev) => {
-        if (s.groups !== prev.groups) schedule()
+        if (s.groups !== prev.groups) {
+          logNamedDiff('group', prev.groups, s.groups)
+          schedule()
+        }
       }),
       useModelStore.subscribe((s, prev) => {
-        if (s.models !== prev.models) schedule()
+        if (s.models !== prev.models) {
+          logNamedDiff('model', prev.models, s.models)
+          schedule()
+        }
       }),
       useApiStore.subscribe((s, prev) => {
-        if (s.endpoints !== prev.endpoints) schedule()
+        if (s.endpoints !== prev.endpoints) {
+          logNamedDiff('api', prev.endpoints, s.endpoints)
+          schedule()
+        }
       }),
     ]
     return () => {

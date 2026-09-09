@@ -4,7 +4,13 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { ApiEditor, EnvEditor, Grid, ModelEditor, ThemeEditor } from './components'
 import { toThemeObjects, useThemeStore } from './components/Theme'
 import { LibraryPage, LibrarySync, TemplateShell, TemplatesPage } from './components/Library'
-import { PortalLayout, ProjectIndexRedirect, ProjectsPage, ProjectShell } from './components/Workspace'
+import {
+  ActivityPage,
+  PortalLayout,
+  ProjectIndexRedirect,
+  ProjectsPage,
+  ProjectShell,
+} from './components/Workspace'
 
 function App() {
   // ThemeProvider wraps Radix's <Theme>, supplying the accent CSS vars the
@@ -40,6 +46,7 @@ function App() {
               <Route path="library/apis" element={<LibraryPage kind="api" />} />
               <Route path="library/models" element={<LibraryPage kind="model" />} />
               <Route path="library/templates" element={<TemplatesPage />} />
+              <Route path="activity" element={<ActivityPage />} />
             </Route>
             <Route path="library/templates/:templateId/layout" element={<TemplateShell />} />
             <Route path="p/:projectId" element={<ProjectShell />}>

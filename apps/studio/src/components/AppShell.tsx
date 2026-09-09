@@ -19,6 +19,7 @@ import { LivePreviewModal } from './Layout/LivePreviewModal'
 import { useStudioStore } from './studioStore'
 import { useThemeStore } from './Theme/themeStore'
 import type { ProjectDef } from './Workspace/types'
+import { UserButton } from './Workspace/UserButton'
 import { useWorkspaceStore } from './Workspace/workspaceStore'
 
 // Relative to the `/p/:projectId` route the shell is rendered under. Layout's
@@ -124,6 +125,7 @@ export function AppShell({ project }: { project: ProjectDef }) {
         <IconButton label="Redo (⇧⌘Z)" disabled={redoDepth === 0} onClick={redo}>
           <Redo2 size={15} aria-hidden="true" />
         </IconButton>
+        <UserButton />
 
         <IconButton
           label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}

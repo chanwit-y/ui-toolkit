@@ -76,6 +76,26 @@ export type LibraryData = {
   templates: TemplateDef[]
 }
 
+export type ActivityKind = 'project' | 'page' | 'group' | 'api' | 'model' | 'template' | 'theme'
+
+/**
+ * One line of the Activity page (see the grilled design): who did what, to
+ * which named thing, optionally inside a project. Written by the coarse
+ * workspace actions, capped, persisted with the workspace.
+ */
+export type ActivityEntry = {
+  id: string
+  /** Epoch ms. */
+  ts: number
+  user: string
+  /** "created" / "renamed" / "attached" / … */
+  verb: string
+  kind: ActivityKind
+  name: string
+  detail: string
+  projectId: string | null
+}
+
 /** The persisted shape (one localStorage key, versioned). */
 export type WorkspaceData = {
   version: 3
@@ -85,4 +105,6 @@ export type WorkspaceData = {
   user: string
   projects: ProjectDef[]
   library: LibraryData
+  /** Newest first. */
+  activity: ActivityEntry[]
 }
