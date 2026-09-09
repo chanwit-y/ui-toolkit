@@ -1,14 +1,20 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import { IconData } from '@gummy-ui/ui'
 import { Ban, X } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { cn, Input, SegmentedControl, Select } from '../common'
+import { pathParams } from '../Workspace/snapshots'
+import { useActivePages, useWorkspaceStore } from '../Workspace/workspaceStore'
 import { useGridStore } from './gridStore'
 import { EndpointPicker } from './SelectFieldConfigPanel'
 import {
   collectButtonTargets,
+  collectOverlayTargets,
+  NO_NAVIGATION,
   type ButtonActionKey,
   type ButtonItemConfig,
   type ButtonSnackbarVariant,
+  type DesignNavigation,
 } from './types'
 
 /** One labelled row in the config form. */
@@ -400,6 +406,160 @@ export function ButtonConfigPanel({
             label="Show API error as snackbar"
             checked={config.snackbarErrorException}
             onChange={(v) => set('snackbarErrorException', v)}
+          />
+        </>
+      )}
+
+      <NavigationSection
+        navigation={config.navigation ?? NO_NAVIGATION}
+        onChange={(navigation) => set('navigation', navigation)}
+        rootItems={rootItems}
+      />
+    </div>
+  )
+}
+
+const NAV_OPTIONS: { value: DesignNavigation['kind']; label: string }[] = [
+  { value: 'none', label: 'Nothing (engine actions only)' },
+  { value: 'page', label: 'Go to another page' },
+  { value: 'toast', label: 'Show a toast' },
+  { value: 'dialog', label: 'Show a dialog' },
+  { value: 'link', label: 'Open a link' },
+]
+
+/**
+ * The button's design-only navigation (see the grilled design): a page (with
+ * its `:params` filled in), a link, or a toast / dialog on this page. It rides
+ * beside the engine actions above — both run in the Live Preview, only the
+ * engine actions reach the exported ButtonElement.
+ */
+function NavigationSection({
+  navigation,
+  onChange,
+  rootItems,
+}: {
+  navigation: DesignNavigation
+  onChange: (next: DesignNavigation) => void
+  rootItems: ReturnType<typeof useGridStore.getState>['items']
+}) {
+  const pages = useActivePages()
+  const projectId = useWorkspaceStore((s) => s.activeProjectId)
+  const activePageId = useWorkspaceStore((s) => s.activePageId)
+  const navigate = useNavigate()
+  const overlays = useMemo(() => collectOverlayTargets(rootItems), [rootItems])
+
+  const setKind = (kind: DesignNavigation['kind']) => {
+    if (kind === navigation.kind) return
+    if (kind === 'none') onChange(NO_NAVIGATION)
+    else if (kind === 'page') onChange({ kind, pageId: '', params: {} })
+    else if (kind === 'link') onChange({ kind, href: '', newTab: true })
+    else onChange({ kind, targetItemId: '' })
+  }
+
+  const targetPage = navigation.kind === 'page' ? pages.find((p) => p.id === navigation.pageId) : undefined
+  const params = targetPage ? pathParams(targetPage.path) : []
+
+  return (
+    <div className="space-y-3 border-t border-line pt-3">
+      <h3 className="text-ui-sm font-semibold uppercase tracking-wide text-ink-3">
+        Navigation <span className="font-normal normal-case tracking-normal">· design only</span>
+      </h3>
+      <Field label="When this button is clicked, also">
+        <Select
+          options={NAV_OPTIONS}
+          value={navigation.kind}
+          onChange={(v) => setKind(v as DesignNavigation['kind'])}
+        />
+      </Field>
+
+      {navigation.kind === 'page' && (
+        <>
+          <Field label="Which page">
+            <Select
+              options={[
+                { value: '', label: '— pick one —' },
+                ...pages
+                  .filter((p) => p.id !== activePageId)
+                  .map((p) => ({ value: p.id, label: `${p.name}  ${p.path}` })),
+              ]}
+              value={navigation.pageId}
+              onChange={(pageId) => {
+                const target = pages.find((p) => p.id === pageId)
+                const keys = target ? pathParams(target.path) : []
+                onChange({
+                  kind: 'page',
+                  pageId,
+                  params: Object.fromEntries(keys.map((k) => [k, navigation.params[k] ?? ''])),
+                })
+              }}
+            />
+          </Field>
+          {params.map((key) => (
+            <Field key={key} label={`Parameter :${key}`}>
+              <Input
+                value={navigation.params[key] ?? ''}
+                onChange={(e) =>
+                  onChange({
+                    ...navigation,
+                    params: { ...navigation.params, [key]: e.target.value },
+                  })
+                }
+                placeholder="fixed value shown in the preview"
+                className="font-mono"
+              />
+            </Field>
+          ))}
+          {targetPage && projectId && (
+            <button
+              type="button"
+              onClick={() => navigate(`/p/${projectId}/pages/${targetPage.id}`)}
+              className="text-ui-sm font-medium text-ink underline-offset-2 hover:underline"
+            >
+              Lay out “{targetPage.name}” →
+            </button>
+          )}
+          {navigation.pageId === '' && (
+            <WiringHint>No page picked yet — the button does nothing in the preview.</WiringHint>
+          )}
+        </>
+      )}
+
+      {(navigation.kind === 'toast' || navigation.kind === 'dialog') && (
+        <>
+          <Field label={navigation.kind === 'toast' ? 'Which toast' : 'Which dialog'}>
+            <Select
+              options={[
+                { value: '', label: '— pick one —' },
+                ...overlays
+                  .filter((o) => o.type === navigation.kind)
+                  .map((o) => ({ value: o.itemId, label: o.title })),
+              ]}
+              value={navigation.targetItemId}
+              onChange={(targetItemId) => onChange({ ...navigation, targetItemId })}
+            />
+          </Field>
+          {overlays.filter((o) => o.type === navigation.kind).length === 0 && (
+            <WiringHint>
+              Drop a {navigation.kind} from the Feedback palette onto this page first, then pick it here.
+            </WiringHint>
+          )}
+        </>
+      )}
+
+      {navigation.kind === 'link' && (
+        <>
+          <Field label="URL">
+            <Input
+              value={navigation.href}
+              onChange={(e) => onChange({ ...navigation, href: e.target.value })}
+              placeholder="https://…"
+              className="font-mono"
+            />
+          </Field>
+          <CheckboxRow
+            label="Open in a new tab"
+            checked={navigation.newTab}
+            onChange={(newTab) => onChange({ ...navigation, newTab })}
           />
         </>
       )}

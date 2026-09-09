@@ -1,6 +1,7 @@
 import type { Bin, Container } from '@gummy-ui/ui'
 import { gridConfigToJson, MISSING_ENDPOINT, type EndpointRef } from './gridConfig'
-import type { GridContainerSettings, GridItemData } from './types'
+import { isClickOnlyOverlay } from './designTypes'
+import type { DesignNavigation, GridContainerSettings, GridItemData } from './types'
 
 /**
  * Builds the `Container` the live-preview modal feeds to the real engine
@@ -84,7 +85,49 @@ function toPreviewContainer(
 ): Record<string, unknown> {
   const bins = container.bins
   if (!Array.isArray(bins)) return container
-  return { ...container, bins: (bins as ParsedBin[]).map((b) => toPreviewBin(b, wiring)) }
+  return { ...container, bins: previewBins(bins as ParsedBin[], wiring) }
+}
+
+/** A toast/dialog that only appears on a button click is not on the page. */
+function isClickOnlyBin(bin: ParsedBin): boolean {
+  const design = bin.designOnly as { type?: string; config?: unknown } | undefined
+  return !!design && isClickOnlyOverlay(String(design.type), design.config)
+}
+
+function previewBins(bins: ParsedBin[], wiring: LivePreviewWiring): ParsedBin[] {
+  return bins.filter((b) => !isClickOnlyBin(b)).map((b) => toPreviewBin(b, wiring))
+}
+
+/** A button's design-only navigation as exported on its bin, keyed by label. */
+export type PreviewNavigation = DesignNavigation & { label: string }
+
+/**
+ * Collect every button's design-only navigation across the exported bins
+ * (nested containers, papers, tabs and modals included). The Live Preview
+ * matches a clicked engine button back to its navigation by label — the engine
+ * `ButtonElement` carries no id, so the label is the only handle; two buttons
+ * sharing a label share the first one's navigation.
+ */
+export function collectPreviewNavigation(bins: ParsedBin[]): Map<string, PreviewNavigation> {
+  const out = new Map<string, PreviewNavigation>()
+  const visit = (list: unknown) => {
+    if (!Array.isArray(list)) return
+    for (const bin of list as ParsedBin[]) {
+      const nav = bin.designNavigation as PreviewNavigation | undefined
+      if (nav && nav.kind !== 'none' && !out.has(nav.label)) out.set(nav.label, nav)
+      const el = bin.element
+      if (bin.container && typeof bin.container === 'object')
+        visit((bin.container as Record<string, unknown>).bins)
+      if (el?.container && typeof el.container === 'object')
+        visit((el.container as Record<string, unknown>).bins)
+      if (Array.isArray(el?.tabs))
+        for (const tab of el.tabs as Record<string, unknown>[])
+          if (tab.container && typeof tab.container === 'object')
+            visit((tab.container as Record<string, unknown>).bins)
+    }
+  }
+  visit(bins)
+  return out
 }
 
 function toPreviewBin(bin: ParsedBin, wiring: LivePreviewWiring): ParsedBin {
@@ -181,8 +224,9 @@ export function buildLivePreviewContainer(
   endpoints: EndpointRef[],
   wiring: LivePreviewWiring,
 ): Container {
-  const bins = (JSON.parse(gridConfigToJson(settings, items, endpoints)) as ParsedBin[]).map(
-    (b) => toPreviewBin(b, wiring),
+  const bins = previewBins(
+    JSON.parse(gridConfigToJson(settings, items, endpoints)) as ParsedBin[],
+    wiring,
   )
   return {
     id: 'studio-live-preview',

@@ -956,6 +956,19 @@ export function buildBins(
       ...(designOnly
         ? { designOnly: { type: item.type, label: item.label, config: item.config ?? {} } }
         : {}),
+      // A button's design-only navigation (page / link / toast / dialog) rides
+      // beside the engine element: read by the Live Preview and project.json.
+      ...(item.type === 'button' &&
+      item.config &&
+      (item.config as ButtonItemConfig).navigation &&
+      (item.config as ButtonItemConfig).navigation!.kind !== 'none'
+        ? {
+            designNavigation: {
+              label: (item.config as ButtonItemConfig).label,
+              ...(item.config as ButtonItemConfig).navigation!,
+            },
+          }
+        : {}),
       ...(hasElementStyle(item.style) ? { style: item.style } : {}),
     }
   })

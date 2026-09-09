@@ -929,6 +929,21 @@ export type ButtonActionKey =
 export type ButtonSnackbarVariant = 'success' | 'error' | 'info' | 'warning' | 'neutral'
 
 /**
+ * A button's design-only navigation (see the grilled design): the engine has
+ * no router, toast or dialog concept, so this rides beside the engine
+ * `actions` untouched, exports into project.json / routes.ts, and is played
+ * by the studio itself in the Live Preview (page switch, link, mock overlay).
+ */
+export type DesignNavigation =
+  | { kind: 'none' }
+  | { kind: 'page'; pageId: string; /** `:param` → fixed value. */ params: Record<string, string> }
+  | { kind: 'link'; href: string; newTab: boolean }
+  | { kind: 'toast'; targetItemId: string }
+  | { kind: 'dialog'; targetItemId: string }
+
+export const NO_NAVIGATION: DesignNavigation = { kind: 'none' }
+
+/**
  * Full editable config for a *standalone* button item — the visual slice plus
  * the engine `ButtonElement` behavior (see the grilled design). References are
  * stored by stable id (grid-item id / `EndpointDef.id`) and resolved to current
@@ -960,6 +975,8 @@ export type ButtonItemConfig = ButtonConfig & {
   /** Exports `snackbarError: "$exception"` — the only form the engine reads
    * (it shows the thrown API error's message). */
   snackbarErrorException: boolean
+  /** Design-only navigation; absent on configs saved before it existed. */
+  navigation?: DesignNavigation
 }
 
 /** Defaults for a freshly dropped standalone button: direct mode, nothing wired. */
@@ -1231,6 +1248,28 @@ export type ButtonRefTargets = {
  * its modal's child canvas, so enumeration must be cross-canvas. Used by the
  * button inspector's dropdowns and by the export's id → name resolution.
  */
+/** The toasts / dialogs a button can show, across every canvas of a page. */
+export function collectOverlayTargets(
+  items: GridItemData[],
+): { itemId: string; type: 'toast' | 'dialog'; title: string }[] {
+  const out: { itemId: string; type: 'toast' | 'dialog'; title: string }[] = []
+  const walk = (list: GridItemData[]) => {
+    for (const item of list) {
+      if ((item.type === 'toast' || item.type === 'dialog') && item.config) {
+        const c = item.config as { title?: string; person?: string; variant?: string }
+        out.push({
+          itemId: item.id,
+          type: item.type,
+          title: (c.variant === 'Person' ? c.person : c.title) || item.label,
+        })
+      }
+      item.childCanvases?.forEach((canvas) => walk(canvas.items))
+    }
+  }
+  walk(items)
+  return out
+}
+
 export function collectButtonTargets(items: GridItemData[]): ButtonRefTargets {
   const modals: ButtonRefTargets['modals'] = []
   const tables: ButtonRefTargets['tables'] = []

@@ -16,6 +16,7 @@ import {
   type AlertConfig,
   type BannerConfig,
   type ChartConfig,
+  type DialogConfig,
   type GalleryConfig,
   type HeroConfig,
   type ImageConfig,
@@ -26,6 +27,7 @@ import {
   type QuickLinksConfig,
   type SpacerConfig,
   type StatConfig,
+  type ToastConfig,
   type VideoConfig,
 } from './designTypes'
 import type { GridItemData } from './types'
@@ -577,7 +579,244 @@ export function renderDesignPreview(item: GridItemData): ReactNode {
       return <BannerPreview config={c as BannerConfig} />
     case 'progress':
       return <ProgressPreview config={c as ProgressConfig} />
+    case 'toast':
+      return (
+        <OverlayOnCanvas trigger={(c as ToastConfig).trigger}>
+          <ToastPreview config={c as ToastConfig} />
+        </OverlayOnCanvas>
+      )
+    case 'dialog':
+      return (
+        <OverlayOnCanvas trigger={(c as DialogConfig).trigger}>
+          <DialogPreview config={c as DialogConfig} />
+        </OverlayOnCanvas>
+      )
     default:
       return null
   }
+}
+
+/* ------------------------------------------------------- toast / dialog */
+
+const VARIANT_COLOR: Record<string, string> = {
+  Success: '#16a34a',
+  Warning: '#f59e0b',
+  Error: '#dc2626',
+}
+
+function VariantGlyph({ variant, size = 13 }: { variant: string; size?: number }) {
+  const d =
+    variant === 'Success'
+      ? 'M5 12l4.2 4.2L19 7'
+      : variant === 'Warning' || variant === 'Error'
+        ? 'M12 7.5v5.5M12 16.6h.01'
+        : variant === 'Progress'
+          ? 'M7 4h7l4 4v12H7zM12 10v5M9.5 12.5L12 10l2.5 2.5'
+          : 'M12 11v5.5M12 7.6h.01'
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2.6}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d={d} />
+    </svg>
+  )
+}
+
+/** The mockup's ring-in-ring variant badge. */
+function VariantRing({ variant, onDark }: { variant: string; onDark: boolean }) {
+  const col = VARIANT_COLOR[variant] ?? (onDark ? '#ffffff' : 'var(--ink)')
+  return (
+    <span
+      className="grid h-[34px] w-[34px] shrink-0 place-items-center rounded-full"
+      style={{ background: `color-mix(in srgb, ${col} ${onDark ? 16 : 13}%, transparent)` }}
+    >
+      <i
+        className="grid h-[22px] w-[22px] place-items-center rounded-full"
+        style={{ background: col, color: VARIANT_COLOR[variant] ? '#fff' : onDark ? '#1b1e21' : 'var(--bg)' }}
+      >
+        <VariantGlyph variant={variant} />
+      </i>
+    </span>
+  )
+}
+
+function CloseX({ className }: { className: string }) {
+  return (
+    <span className={className} aria-hidden="true">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+        <path d="M6 6l12 12M18 6L6 18" />
+      </svg>
+    </span>
+  )
+}
+
+/**
+ * A toast (the mockup's `toastHTML`): a dark solid bar, or a light card with
+ * up to two actions. `onAction` is only wired in the Live Preview overlay; on
+ * the canvas the cell is inert.
+ */
+export function ToastPreview({
+  config,
+  onDismiss,
+}: {
+  config: ToastConfig
+  onDismiss?: () => void
+}) {
+  const act = (fn?: () => void) =>
+    fn ? { role: 'button' as const, tabIndex: 0, onClick: fn } : {}
+  if (config.style !== 'Card with actions') {
+    return (
+      <div className="relative flex w-full items-center gap-3.5 rounded-xl bg-[#1b1e21] px-4 py-3 text-white shadow-[0_14px_34px_-16px_rgba(0,0,0,.55)]">
+        <VariantRing variant={config.variant} onDark />
+        <span className="min-w-0 flex-1 text-[14px] font-semibold leading-snug tracking-[-0.01em]">
+          {config.title}
+        </span>
+        {config.closable && (
+          <button
+            type="button"
+            aria-label="Dismiss"
+            className="flex shrink-0 rounded-md p-1 text-white/60 hover:bg-white/10 hover:text-white"
+            {...act(onDismiss)}
+          >
+            <CloseX className="flex" />
+          </button>
+        )}
+      </div>
+    )
+  }
+  return (
+    <div className="relative flex w-full gap-3 rounded-[14px] border border-line bg-surface px-[18px] py-4 text-ink shadow-[0_14px_34px_-18px_rgba(16,18,22,.42)]">
+      <VariantRing variant={config.variant} onDark={false} />
+      <span className="min-w-0 flex-1 pr-4">
+        <b className="block text-[14.5px] font-[650] leading-snug tracking-[-0.012em]">{config.title}</b>
+        {config.body && <p className="mb-0 mt-1 text-[13px] leading-relaxed text-ink-2">{config.body}</p>}
+        {(config.secondary || config.primary) && (
+          <span className="mt-3 flex gap-4 text-[13.5px] font-[650]">
+            {config.secondary && (
+              <span className="cursor-pointer text-ink-2" {...act(onDismiss)}>
+                {config.secondary}
+              </span>
+            )}
+            {config.primary && (
+              <span className="cursor-pointer text-accent" {...act(onDismiss)}>
+                {config.primary}
+              </span>
+            )}
+          </span>
+        )}
+      </span>
+      {config.closable && (
+        <button
+          type="button"
+          aria-label="Dismiss"
+          className="absolute right-[15px] top-3.5 flex rounded-[5px] p-0.5 text-ink-3 hover:bg-panel-2 hover:text-ink"
+          {...act(onDismiss)}
+        >
+          <CloseX className="flex" />
+        </button>
+      )}
+    </div>
+  )
+}
+
+/** A dialog card (the mockup's `dialogHTML`): variant icon beside or above,
+ * a person header, an optional progress bar, and two actions. */
+export function DialogPreview({
+  config,
+  onDismiss,
+}: {
+  config: DialogConfig
+  onDismiss?: () => void
+}) {
+  const person = config.variant === 'Person'
+  const above = !person && config.layout === 'Icon above'
+  const col = VARIANT_COLOR[config.variant]
+  const indent = person ? 'ml-11' : above ? '' : 'ml-[31px]'
+  const act = (fn?: () => void) =>
+    fn ? { role: 'button' as const, tabIndex: 0, onClick: fn } : {}
+  const progress = Math.max(0, Math.min(100, Number(config.progress) || 0))
+  return (
+    <div className="relative w-full rounded-[10px] border border-line bg-surface px-4 py-3.5 text-ui text-ink shadow-[0_1px_2px_rgba(16,18,22,.05),0_10px_24px_-14px_rgba(16,18,22,.3)]">
+      {config.closable && (
+        <button
+          type="button"
+          aria-label="Dismiss"
+          className="absolute right-3 top-[11px] flex rounded p-0.5 text-ink-3 hover:bg-panel-2 hover:text-ink"
+          {...act(onDismiss)}
+        >
+          <CloseX className="flex" />
+        </button>
+      )}
+      {person ? (
+        <div className="flex items-center gap-2.5 pr-6">
+          <span className="relative grid h-[34px] w-[34px] shrink-0 place-items-center rounded-full bg-accent text-[12px] font-bold text-accent-ink">
+            {initials(config.person)}
+            <i className="absolute bottom-0 right-0 h-[9px] w-[9px] rounded-full border-2 border-surface bg-[#22c55e]" />
+          </span>
+          <span className="text-[14px] font-[650] leading-tight tracking-[-0.01em]">{config.person}</span>
+          {config.time && (
+            <>
+              <span className="text-[11px] text-ink-3">•</span>
+              <span className="text-[12px] text-ink-3">{config.time}</span>
+            </>
+          )}
+        </div>
+      ) : (
+        <div className={cn('flex gap-2.5 pr-6', above ? 'flex-col items-start' : 'items-center')}>
+          <span
+            className="grid h-[21px] w-[21px] shrink-0 place-items-center rounded-full"
+            style={col ? { background: col, color: '#fff' } : { background: 'var(--ink)', color: 'var(--bg)' }}
+          >
+            <VariantGlyph variant={config.variant} size={12} />
+          </span>
+          <span className="text-[14px] font-[650] leading-tight tracking-[-0.01em]">{config.title}</span>
+        </div>
+      )}
+      {config.body && <div className={cn('mt-1.5 leading-relaxed text-ink-2', indent)}>{config.body}</div>}
+      {config.variant === 'Progress' && (
+        <div className={cn('mt-2.5 flex items-center gap-2.5', indent)}>
+          <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-panel-2">
+            <i className="block h-full rounded-full bg-accent" style={{ width: `${progress}%` }} />
+          </span>
+          <span className="text-[12px] tabular-nums text-ink-3">{progress}%</span>
+        </div>
+      )}
+      {(config.secondary || config.primary) && (
+        <div className={cn('mt-2.5 flex items-center gap-4 font-semibold', indent)}>
+          {config.secondary && (
+            <span className="cursor-pointer text-ink" {...act(onDismiss)}>
+              {config.secondary}
+            </span>
+          )}
+          {config.primary && (
+            <span className="cursor-pointer text-accent" {...act(onDismiss)}>
+              {config.primary}
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** Canvas wrapper: the overlay design plus a note when it is click-only. */
+function OverlayOnCanvas({ trigger, children }: { trigger: 'always' | 'button'; children: ReactNode }) {
+  return (
+    <div className="w-full">
+      {children}
+      {trigger === 'button' && (
+        <div className="mt-1.5 text-center text-ui-xs text-ink-3">
+          Shown when a button triggers it — not on the page itself.
+        </div>
+      )}
+    </div>
+  )
 }

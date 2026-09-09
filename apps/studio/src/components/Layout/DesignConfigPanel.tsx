@@ -2,11 +2,14 @@ import type { ReactNode } from 'react'
 import { Input, Select } from '../common'
 import {
   CHART_SHAPES,
+  DIALOG_VARIANTS,
+  FEEDBACK_VARIANTS,
   MEDIA_RATIOS,
   type AlertConfig,
   type BannerConfig,
   type ChartConfig,
   type DesignConfig,
+  type DialogConfig,
   type GalleryConfig,
   type HeroConfig,
   type ImageConfig,
@@ -17,7 +20,9 @@ import {
   type ProgressConfig,
   type QuickLinksConfig,
   type SpacerConfig,
+  type OverlayAxis,
   type StatConfig,
+  type ToastConfig,
   type VideoConfig,
 } from './designTypes'
 import { useGridStore } from './gridStore'
@@ -503,6 +508,216 @@ function ProgressPanel({ itemId, config }: { itemId: string; config: ProgressCon
   )
 }
 
+const TRIGGER_OPTIONS = [
+  { value: 'always', label: 'Always visible (sits on the page)' },
+  { value: 'button', label: 'On button click' },
+]
+const AXIS_X_OPTIONS = [
+  { value: 'start', label: 'Left' },
+  { value: 'center', label: 'Centre' },
+  { value: 'end', label: 'Right' },
+]
+const AXIS_Y_OPTIONS = [
+  { value: 'start', label: 'Top' },
+  { value: 'center', label: 'Middle' },
+  { value: 'end', label: 'Bottom' },
+]
+
+/** Position + trigger + duration rows shared by toasts and dialogs. */
+function OverlayPlacement({
+  config,
+  set,
+}: {
+  config: { trigger: 'always' | 'button'; posX: OverlayAxis; posY: OverlayAxis; duration: number }
+  set: (key: 'trigger' | 'posX' | 'posY' | 'duration', value: never) => void
+}) {
+  const put = set as (key: string, value: unknown) => void
+  return (
+    <div className="space-y-3 border-t border-line pt-3">
+      <Field label="When is it shown">
+        <Select options={TRIGGER_OPTIONS} value={config.trigger} onChange={(v) => put('trigger', v)} />
+      </Field>
+      <div className="grid grid-cols-2 gap-2">
+        <Field label="Horizontal">
+          <Select options={AXIS_X_OPTIONS} value={config.posX} onChange={(v) => put('posX', v)} />
+        </Field>
+        <Field label="Vertical">
+          <Select options={AXIS_Y_OPTIONS} value={config.posY} onChange={(v) => put('posY', v)} />
+        </Field>
+      </div>
+      <Field label="Auto-dismiss after (seconds)" hint="0 keeps it until closed.">
+        <Input
+          type="number"
+          min={0}
+          value={config.duration}
+          onChange={(e) => put('duration', Math.max(0, toInt(e.target.value, 0)))}
+        />
+      </Field>
+    </div>
+  )
+}
+
+function ToastPanel({ itemId, config }: { itemId: string; config: ToastConfig }) {
+  const set = useSetter<ToastConfig>(itemId)
+  const card = config.style === 'Card with actions'
+  return (
+    <>
+      <Field
+        label="Style"
+        hint={
+          card
+            ? 'White card with a heading, a couple of lines and what to do next.'
+            : 'Dark bar with one line and a close button — nothing to decide.'
+        }
+      >
+        <Select
+          options={['Solid bar', 'Card with actions'].map((v) => ({ value: v, label: v }))}
+          value={config.style}
+          onChange={(v) => set('style', v as ToastConfig['style'])}
+        />
+      </Field>
+      <Field label="Kind">
+        <Select
+          options={FEEDBACK_VARIANTS.map((v) => ({ value: v, label: v }))}
+          value={config.variant}
+          onChange={(v) => set('variant', v as ToastConfig['variant'])}
+        />
+      </Field>
+      <Field label={card ? 'Heading' : 'Message'}>
+        <Input value={config.title} onChange={(e) => set('title', e.target.value)} />
+      </Field>
+      {card && (
+        <>
+          <Field label="Body">
+            <textarea
+              value={config.body}
+              onChange={(e) => set('body', e.target.value)}
+              rows={3}
+              className="field field-area"
+            />
+          </Field>
+          <div className="grid grid-cols-2 gap-2">
+            <Field label="Secondary action">
+              <Input value={config.secondary} onChange={(e) => set('secondary', e.target.value)} />
+            </Field>
+            <Field label="Primary action">
+              <Input value={config.primary} onChange={(e) => set('primary', e.target.value)} />
+            </Field>
+          </div>
+        </>
+      )}
+      <Toggle label="Show the close button" checked={config.closable} onChange={(v) => set('closable', v)} />
+      <OverlayPlacement config={config} set={set as never} />
+    </>
+  )
+}
+
+function DialogPanel({ itemId, config }: { itemId: string; config: DialogConfig }) {
+  const set = useSetter<DialogConfig>(itemId)
+  const person = config.variant === 'Person'
+  return (
+    <>
+      <Field label="Kind">
+        <Select
+          options={DIALOG_VARIANTS.map((v) => ({ value: v, label: v }))}
+          value={config.variant}
+          onChange={(v) => set('variant', v as DialogConfig['variant'])}
+        />
+      </Field>
+      {!person && (
+        <Field label="Icon placement">
+          <Select
+            options={['Icon beside', 'Icon above'].map((v) => ({ value: v, label: v }))}
+            value={config.layout}
+            onChange={(v) => set('layout', v as DialogConfig['layout'])}
+          />
+        </Field>
+      )}
+      {person ? (
+        <div className="grid grid-cols-2 gap-2">
+          <Field label="Person">
+            <Input value={config.person} onChange={(e) => set('person', e.target.value)} />
+          </Field>
+          <Field label="Time">
+            <Input value={config.time} onChange={(e) => set('time', e.target.value)} />
+          </Field>
+        </div>
+      ) : (
+        <Field label="Title">
+          <Input value={config.title} onChange={(e) => set('title', e.target.value)} />
+        </Field>
+      )}
+      <Field label="Body">
+        <textarea
+          value={config.body}
+          onChange={(e) => set('body', e.target.value)}
+          rows={3}
+          className="field field-area"
+        />
+      </Field>
+      {config.variant === 'Progress' && (
+        <Field label="Progress (%)">
+          <Input
+            type="number"
+            min={0}
+            max={100}
+            value={config.progress}
+            onChange={(e) => set('progress', Math.max(0, Math.min(100, toInt(e.target.value, 0))))}
+          />
+        </Field>
+      )}
+      <div className="grid grid-cols-2 gap-2">
+        <Field label="Secondary action">
+          <Input value={config.secondary} onChange={(e) => set('secondary', e.target.value)} />
+        </Field>
+        <Field label="Primary action">
+          <Input value={config.primary} onChange={(e) => set('primary', e.target.value)} />
+        </Field>
+      </div>
+      <Toggle label="Show the close button" checked={config.closable} onChange={(v) => set('closable', v)} />
+      <div className="space-y-3 border-t border-line pt-3">
+        <Field label="Backdrop behind it">
+          <Select
+            options={['None', 'Dim the page'].map((v) => ({ value: v, label: v }))}
+            value={config.backdrop}
+            onChange={(v) => set('backdrop', v as DialogConfig['backdrop'])}
+          />
+        </Field>
+        {config.backdrop === 'Dim the page' && (
+          <>
+            <div className="grid grid-cols-2 gap-2">
+              <Field label="Backdrop colour">
+                <Input
+                  value={config.backdropColor}
+                  onChange={(e) => set('backdropColor', e.target.value)}
+                  className="font-mono"
+                />
+              </Field>
+              <Field label="Opacity (%)">
+                <Input
+                  type="number"
+                  min={0}
+                  max={90}
+                  value={config.backdropOpacity}
+                  onChange={(e) =>
+                    set('backdropOpacity', Math.max(0, Math.min(90, toInt(e.target.value, 20))))
+                  }
+                />
+              </Field>
+            </div>
+            <Toggle
+              label="Clicking the backdrop dismisses it"
+              checked={config.backdropClose}
+              onChange={(v) => set('backdropClose', v)}
+            />
+          </>
+        )}
+      </div>
+      <OverlayPlacement config={config} set={set as never} />
+    </>
+  )
+}
+
 /** Inspector Props for a design-only item, or null for other types. */
 export function DesignConfigPanel({ item }: { item: GridItemData }) {
   const c = item.config
@@ -573,6 +788,14 @@ export function DesignConfigPanel({ item }: { item: GridItemData }) {
     case 'progress':
       heading = 'Progress'
       body = <ProgressPanel itemId={item.id} config={c as ProgressConfig} />
+      break
+    case 'toast':
+      heading = 'Toast'
+      body = <ToastPanel itemId={item.id} config={c as ToastConfig} />
+      break
+    case 'dialog':
+      heading = 'Dialog'
+      body = <DialogPanel itemId={item.id} config={c as DialogConfig} />
       break
     default:
       return null

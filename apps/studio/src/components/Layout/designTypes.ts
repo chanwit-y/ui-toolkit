@@ -23,6 +23,8 @@ export type DesignOnlyType =
   | 'alert'
   | 'banner'
   | 'progress'
+  | 'toast'
+  | 'dialog'
 
 export const DESIGN_ONLY_TYPES: ReadonlySet<string> = new Set<DesignOnlyType>([
   'hero',
@@ -41,6 +43,8 @@ export const DESIGN_ONLY_TYPES: ReadonlySet<string> = new Set<DesignOnlyType>([
   'alert',
   'banner',
   'progress',
+  'toast',
+  'dialog',
 ])
 
 export function isDesignOnly(type: string): type is DesignOnlyType {
@@ -178,6 +182,67 @@ export type ProgressConfig = {
   value: number
 }
 
+/** Where an overlay (toast / dialog) sits over the page in the Live Preview. */
+export type OverlayAxis = 'start' | 'center' | 'end'
+export type FeedbackVariant = 'Success' | 'Warning' | 'Error' | 'Info'
+export const FEEDBACK_VARIANTS: FeedbackVariant[] = ['Success', 'Warning', 'Error', 'Info']
+
+/**
+ * A toast the page can show (see the grilled design: toasts and dialogs are
+ * actions on a page, wired from a button's design-only navigation). `trigger`
+ * decides whether it also sits on the page as a block or only appears when a
+ * button shows it.
+ */
+export type ToastConfig = {
+  style: 'Solid bar' | 'Card with actions'
+  variant: FeedbackVariant
+  title: string
+  body: string
+  /** Primary / secondary action labels ('' hides); both dismiss in the preview. */
+  primary: string
+  secondary: string
+  closable: boolean
+  trigger: 'always' | 'button'
+  posX: OverlayAxis
+  posY: OverlayAxis
+  /** Seconds before it auto-dismisses; 0 keeps it until closed. */
+  duration: number
+}
+
+export type DialogVariant = FeedbackVariant | 'Progress' | 'Person'
+export const DIALOG_VARIANTS: DialogVariant[] = [
+  'Success',
+  'Warning',
+  'Error',
+  'Info',
+  'Progress',
+  'Person',
+]
+
+export type DialogConfig = {
+  variant: DialogVariant
+  layout: 'Icon beside' | 'Icon above'
+  title: string
+  body: string
+  primary: string
+  secondary: string
+  closable: boolean
+  /** Progress variant only, 0–100. */
+  progress: number
+  /** Person variant only. */
+  person: string
+  time: string
+  trigger: 'always' | 'button'
+  posX: OverlayAxis
+  posY: OverlayAxis
+  duration: number
+  backdrop: 'None' | 'Dim the page'
+  backdropColor: string
+  /** 0–90. */
+  backdropOpacity: number
+  backdropClose: boolean
+}
+
 export type DesignConfig =
   | HeroConfig
   | ImageConfig
@@ -193,6 +258,8 @@ export type DesignConfig =
   | AlertConfig
   | BannerConfig
   | ProgressConfig
+  | ToastConfig
+  | DialogConfig
 
 /** The mockup's defaults for a freshly dropped design-only component. */
 export function createDefaultDesignConfig(type: DesignOnlyType): DesignConfig {
@@ -291,6 +358,41 @@ export function createDefaultDesignConfig(type: DesignOnlyType): DesignConfig {
       return { text: 'Sync runs every 15 minutes.', action: 'View log' }
     case 'progress':
       return { label: 'Import progress', value: 64 }
+    case 'toast':
+      return {
+        style: 'Solid bar',
+        variant: 'Success',
+        title: 'New location created successfully!',
+        body: 'Includes the all new dashboard view. Pages and exports will now load faster.',
+        primary: 'Install now',
+        secondary: 'Later',
+        closable: true,
+        trigger: 'always',
+        posX: 'end',
+        posY: 'start',
+        duration: 4,
+      }
+    case 'dialog':
+      return {
+        variant: 'Success',
+        layout: 'Icon beside',
+        title: 'Successfully posted',
+        body: 'Lorem ipsum dolor sit amet consectetur adipisicing elit.',
+        primary: 'View changes',
+        secondary: 'Dismiss',
+        closable: true,
+        progress: 75,
+        person: 'Jake Smith',
+        time: '11 min ago',
+        trigger: 'always',
+        posX: 'end',
+        posY: 'start',
+        duration: 5,
+        backdrop: 'None',
+        backdropColor: '#14161a',
+        backdropOpacity: 20,
+        backdropClose: true,
+      }
   }
 }
 
@@ -313,12 +415,20 @@ export function designDefaultSpan(type: DesignOnlyType): number {
     case 'linkcard':
     case 'quicklinks':
     case 'people':
+    case 'toast':
+    case 'dialog':
       return 4
     case 'progress':
       return 3
     case 'stat':
       return 2
   }
+}
+
+/** True for a toast/dialog that only appears when a button shows it. */
+export function isClickOnlyOverlay(type: string, config: unknown): boolean {
+  if (type !== 'toast' && type !== 'dialog') return false
+  return (config as { trigger?: string } | undefined)?.trigger === 'button'
 }
 
 /* -------------------------------------------------------------- parsing */
