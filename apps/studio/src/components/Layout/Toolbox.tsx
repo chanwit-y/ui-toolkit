@@ -6,6 +6,7 @@ import { childCanvasCount } from './types'
 import { COMPONENT_GROUPS, type ComponentDef } from './componentCatalog'
 import { useGridStore } from './gridStore'
 import { LayersPanel } from './LayersPanel'
+import { PagesPanel } from './PagesPanel'
 
 /** dnd-kit id prefix for toolbox draggables — distinguishes them from grid item ids. */
 export const TOOLBOX_DRAG_PREFIX = 'toolbox:'
@@ -64,11 +65,18 @@ export function ToolboxDragOverlay({ def }: { def: ComponentDef }) {
   )
 }
 
-type LeftTab = 'components' | 'layers'
+type LeftTab = 'components' | 'layers' | 'pages'
+
+const LEFT_TABS: { value: LeftTab; label: string }[] = [
+  { value: 'components', label: 'Components' },
+  { value: 'layers', label: 'Layers' },
+  { value: 'pages', label: 'Pages' },
+]
 
 /**
  * The left pane: mini-tabs over the component palette (draggable / clickable
- * tiles, searchable) and the Layers tree of the whole canvas.
+ * tiles, searchable), the Layers tree of the whole canvas, and the project's
+ * Pages.
  */
 export function Toolbox() {
   const [tab, setTab] = useState<LeftTab>('components')
@@ -76,27 +84,21 @@ export function Toolbox() {
   return (
     <aside className="flex w-60 shrink-0 flex-col border-r border-line bg-panel">
       <div className="flex shrink-0 gap-0.5 border-b border-line p-1.5" role="tablist">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === 'components'}
-          onClick={() => setTab('components')}
-          className="mini-tab"
-        >
-          Components
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === 'layers'}
-          onClick={() => setTab('layers')}
-          className="mini-tab"
-        >
-          Layers
-        </button>
+        {LEFT_TABS.map((t) => (
+          <button
+            key={t.value}
+            type="button"
+            role="tab"
+            aria-selected={tab === t.value}
+            onClick={() => setTab(t.value)}
+            className="mini-tab"
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
-      {tab === 'components' ? <Palette /> : <LayersPanel />}
+      {tab === 'components' ? <Palette /> : tab === 'layers' ? <LayersPanel /> : <PagesPanel />}
     </aside>
   )
 }

@@ -5,7 +5,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { AppearanceSync } from '../AppearanceSync'
 import { Button, cn, ConfirmDialog, IconButton, Input } from '../common'
 import { useLibraryUiStore } from '../Library/libraryUiStore'
-import { attachedEndpoints, countComponents, referencedModels } from './snapshots'
+import { attachedEndpoints, countProjectComponents, referencedModels } from './snapshots'
 import type { ProjectDef } from './types'
 import { useWorkspaceStore } from './workspaceStore'
 
@@ -191,7 +191,7 @@ export function ProjectsPage() {
       {dialog?.kind === 'delete' && (
         <ConfirmDialog
           title={`Delete “${dialog.project.name}”?`}
-          body="The project's canvas, env and theme are removed from this browser. Library endpoints and models stay. There is no undo."
+          body="The project's pages, env and theme are removed from this browser. Library endpoints and models stay. There is no undo."
           confirmLabel="Delete project"
           onConfirm={() => {
             useWorkspaceStore.getState().deleteProject(dialog.project.id)
@@ -238,9 +238,9 @@ function ProjectRow({
   const { snapshot } = project
   const endpoints = attachedEndpoints(snapshot.endpointIds, library.endpoints)
   const models = referencedModels(endpoints, library.models)
-  const components = countComponents(snapshot.grid.items)
+  const components = countProjectComponents(snapshot.pages)
   const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`
-  const meta = `${plural(endpoints.length, 'endpoint')} · ${plural(models.length, 'model')} · ${plural(components, 'component')}`
+  const meta = `${plural(endpoints.length, 'endpoint')} · ${plural(models.length, 'model')} · ${plural(snapshot.pages.length, 'page')} · ${plural(components, 'component')}`
 
   return (
     <div
@@ -363,7 +363,7 @@ function ProjectDialog({
       description={
         project
           ? 'Rename the project or change what it is for.'
-          : 'A project owns one screen, its env and theme, and attaches endpoints from the shared library.'
+          : 'A project owns its pages, env and theme, and attaches endpoints from the shared library.'
       }
       width="460px"
     >
@@ -395,8 +395,8 @@ function ProjectDialog({
               onChange={(e) => setFromSeed(e.target.checked)}
               className="h-3.5 w-3.5 accent-accent"
             />
-            Start from the countries example (the canvas, with the country endpoints attached
-            from the library)
+            Start from the countries example (the list page and a detail page, with the
+            country endpoints attached from the library)
           </label>
         )}
         <div className="flex justify-end gap-2 border-t border-line pt-3">

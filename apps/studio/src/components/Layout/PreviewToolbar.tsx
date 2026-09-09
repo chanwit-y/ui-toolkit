@@ -2,6 +2,7 @@ import { Columns3, Play } from 'lucide-react'
 import { Button, cn, IconButton, SegmentedControl } from '../common'
 import { useStudioStore } from '../studioStore'
 import { BreakpointSelector } from './BreakpointSelector'
+import { PageBar } from './PageBar'
 import {
   selectActiveItems,
   selectActiveSettings,
@@ -12,29 +13,19 @@ import {
 const COLUMN_PRESETS = [2, 4, 6, 8, 10, 12]
 
 /**
- * The drill-in trail (Root › Paper › Tab: Details …) in the mockup's mono
- * path style; each ancestor jumps back (`exitToDepth`), the current canvas is
- * inert text. "Root" alone when the editor is at the top level.
+ * The drill-in trail (› Paper › Tab: Details …) in the mockup's mono path
+ * style, continuing from the page name in `PageBar`; each ancestor jumps back
+ * (`exitToDepth`), the current canvas is inert text. Nothing at the top level.
  */
 function Breadcrumb() {
   const trail = useBreadcrumb()
   const exitToDepth = useGridStore((s) => s.exitToDepth)
+  if (trail.length === 0) return null
   return (
     <nav
       aria-label="Canvas breadcrumb"
       className="flex min-w-0 items-center gap-1 font-mono text-ui-sm text-ink-3"
     >
-      <button
-        type="button"
-        onClick={() => exitToDepth(0)}
-        disabled={trail.length === 0}
-        className={cn(
-          'rounded px-1 py-0.5 transition-colors',
-          trail.length === 0 ? 'text-ink' : 'hover:text-ink hover:underline',
-        )}
-      >
-        Root
-      </button>
       {trail.map((seg, i) => {
         const isLast = i === trail.length - 1
         return (
@@ -87,7 +78,8 @@ export function PreviewToolbar() {
   const setPreviewOpen = useStudioStore((s) => s.setPreviewOpen)
 
   return (
-    <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-line bg-panel px-2.5 py-[7px]">
+    <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-line bg-panel px-2.5 py-[7px] @container">
+      <PageBar />
       <Breadcrumb />
 
       <span aria-hidden="true" className="h-5 w-px bg-line" />

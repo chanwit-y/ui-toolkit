@@ -40,7 +40,9 @@ import { PreviewToolbar } from './PreviewToolbar'
 import { Sidebar } from './Sidebar'
 import { Toolbox, ToolboxDragOverlay, type ToolboxDragData } from './Toolbox'
 import type { GridItemData } from './types'
+import { useActivePage, useActiveProject } from '../Workspace/workspaceStore'
 import { useGridFlipAnimation } from './useGridFlipAnimation'
+import { useUndoShortcuts } from './useUndoShortcuts'
 import { escapeClassName } from './utils'
 
 // Dev-only commit logger. No-op in prod (the <Profiler> below is unconditional,
@@ -150,17 +152,22 @@ const GridCanvas = memo(GridCanvasInner)
 
 /**
  * The browser-chrome strip on top of the preview frame (mockup `.frame-chrome`):
- * traffic dots, the canvas path, and `BP · width · columns`. Subscribes to the
- * store itself so the memoized EditorBody never re-renders for it.
+ * traffic dots, the page's route under the project (plus the drill-in trail),
+ * and `BP · width · columns`. Subscribes to the stores itself so the memoized
+ * EditorBody never re-renders for it.
  */
 function FrameChrome() {
   const bp = useGridStore((s) => s.previewBreakpoint)
   const columns = useGridStore((s) => selectActiveSettings(s).columns[s.previewBreakpoint])
   const trail = useBreadcrumb()
+  const project = useActiveProject()
+  const page = useActivePage()
   const width = BREAKPOINTS.find((b) => b.key === bp)?.previewWidth
-  const path = ['root', ...trail.map((t) => t.label)]
-    .map((p) => p.toLowerCase().replace(/\s+/g, '-'))
-    .join('/')
+  const slug = (p: string) => p.toLowerCase().replace(/\s+/g, '-')
+  const path =
+    slug(project?.name ?? 'project') +
+    (page?.path ?? '') +
+    trail.map((t) => '/' + slug(t.label)).join('')
   return (
     <div className="flex h-7 shrink-0 items-center gap-2 border-b border-line bg-panel px-2.5 font-mono text-ui-xs text-ink-3">
       <span className="flex gap-1" aria-hidden="true">
@@ -370,6 +377,8 @@ export function Layout() {
   const clearSelection = useGridStore((s) => s.clearSelection)
 
   const activeItem = useActiveItem()
+
+  useUndoShortcuts()
 
   // Click-away deselect: a pointer-down anywhere that isn't on a grid item or
   // inside a sidebar panel de-activates the current selection. Sidebars are

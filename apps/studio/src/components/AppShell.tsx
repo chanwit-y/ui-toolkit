@@ -6,8 +6,10 @@ import {
   Moon,
   Palette,
   Plug,
+  Redo2,
   SlidersHorizontal,
   Sun,
+  Undo2,
 } from 'lucide-react'
 import { Link, NavLink } from 'react-router-dom'
 import { useProjectEndpoints } from './Library/scope'
@@ -19,22 +21,30 @@ import { useThemeStore } from './Theme/themeStore'
 import type { ProjectDef } from './Workspace/types'
 import { useWorkspaceStore } from './Workspace/workspaceStore'
 
-// Relative to the `/p/:projectId` route the shell is rendered under.
+// Relative to the `/p/:projectId` route the shell is rendered under. Layout's
+// target is filled in per render (`pages/<live page>`), so the tab keeps you on
+// the page you were editing.
 const TABS = [
-  { to: '.', label: 'Layout', icon: LayoutGrid, end: true },
-  { to: 'model', label: 'Models', icon: Boxes, end: false },
-  { to: 'api', label: 'APIs', icon: Plug, end: false },
-  { to: 'env', label: 'Env', icon: SlidersHorizontal, end: false },
-  { to: 'theme', label: 'Theme', icon: Palette, end: false },
+  { to: 'model', label: 'Models', icon: Boxes },
+  { to: 'api', label: 'APIs', icon: Plug },
+  { to: 'env', label: 'Env', icon: SlidersHorizontal },
+  { to: 'theme', label: 'Theme', icon: Palette },
 ]
+
+const TAB_CLASS = ({ isActive }: { isActive: boolean }) =>
+  cn(
+    'relative flex items-center gap-1.5 px-[11px] text-ui font-medium text-ink-2 transition-colors hover:text-ink',
+    'after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:rounded-t-sm after:bg-accent after:opacity-0 after:content-[""]',
+    isActive && 'font-semibold text-ink after:opacity-100',
+  )
 
 const SAVE_LABEL = { saved: 'saved locally', pending: 'saving…', error: 'not saved' } as const
 
 /**
  * The studio topbar shared by every project page (the mockup's studio
- * topbar): back arrow + brand glyph + "Projects / <name>" crumb, page tabs
- * (APIs carries its endpoint count), and on the right the autosave dot, the
- * appearance toggle and Preview. Rendered by ProjectShell above its Outlet.
+ * topbar): back arrow + brand glyph + "Projects / <name>" crumb, studio tabs
+ * (Layout targets the live page; APIs carries its endpoint count), and on the
+ * right the autosave dot, undo/redo, the appearance toggle and Preview. Rendered by ProjectShell above its Outlet.
  *
  * The appearance toggle writes the Theme page's `appearance` — one setting
  * drives the chrome (`.dark` on <html>, set by the library ThemeProvider) and
@@ -49,6 +59,13 @@ export function AppShell({ project }: { project: ProjectDef }) {
   const previewOpen = useStudioStore((s) => s.previewOpen)
   const setPreviewOpen = useStudioStore((s) => s.setPreviewOpen)
   const canvasEmpty = useGridStore((s) => s.items.length === 0)
+  const undoDepth = useGridStore((s) => s.undoDepth)
+  const redoDepth = useGridStore((s) => s.redoDepth)
+  const undo = useGridStore((s) => s.undo)
+  const redo = useGridStore((s) => s.redo)
+  const activePageId = useWorkspaceStore((s) => s.activePageId)
+  const pageId =
+    project.snapshot.pages.find((pg) => pg.id === activePageId)?.id ?? project.snapshot.pages[0]?.id
 
   const isDark = appearance === 'dark'
 
@@ -74,23 +91,16 @@ export function AppShell({ project }: { project: ProjectDef }) {
           <b className="truncate font-semibold text-ink">{project.name}</b>
         </div>
 
-        <nav className="flex h-full items-stretch gap-0.5" aria-label="Pages">
-          {TABS.map(({ to, label, icon: Icon, end }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={end}
-              className={({ isActive }) =>
-                cn(
-                  'relative flex items-center gap-1.5 px-[11px] text-ui font-medium text-ink-2 transition-colors hover:text-ink',
-                  'after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:rounded-t-sm after:bg-accent after:opacity-0 after:content-[""]',
-                  isActive && 'font-semibold text-ink after:opacity-100',
-                )
-              }
-            >
+        <nav className="flex h-full items-stretch gap-0.5" aria-label="Studio tabs">
+          <NavLink to={pageId ? `pages/${pageId}` : '.'} className={TAB_CLASS}>
+            <LayoutGrid size={15} aria-hidden="true" />
+            Layout
+          </NavLink>
+          {TABS.map(({ to, label, icon: Icon }) => (
+            <NavLink key={to} to={to} className={TAB_CLASS}>
               <Icon size={15} aria-hidden="true" />
               {label}
-              {to === '/api' && <span className="tag">{endpointCount}</span>}
+              {to === 'api' && <span className="tag">{endpointCount}</span>}
             </NavLink>
           ))}
         </nav>
@@ -107,6 +117,13 @@ export function AppShell({ project }: { project: ProjectDef }) {
           />
           {SAVE_LABEL[saveState]}
         </span>
+
+        <IconButton label="Undo (⌘Z)" disabled={undoDepth === 0} onClick={undo}>
+          <Undo2 size={15} aria-hidden="true" />
+        </IconButton>
+        <IconButton label="Redo (⇧⌘Z)" disabled={redoDepth === 0} onClick={redo}>
+          <Redo2 size={15} aria-hidden="true" />
+        </IconButton>
 
         <IconButton
           label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}

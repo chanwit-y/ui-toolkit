@@ -8,10 +8,19 @@ import {
   countryEndpointIds,
   countryLibrary,
   countryProjectSnapshot,
+  createPage,
   emptyProjectSnapshot,
+  normalizePath,
   type ProjectStateSnapshot,
 } from './snapshots'
-import type { LibraryData, ProjectDef, ProjectSnapshot, WorkspaceData } from './types'
+import type {
+  LibraryData,
+  PageDef,
+  PageGrid,
+  ProjectDef,
+  ProjectSnapshot,
+  WorkspaceData,
+} from './types'
 
 export const WORKSPACE_STORAGE_KEY = 'gummy.studio.workspace.v1'
 
@@ -22,6 +31,10 @@ type WorkspaceStore = WorkspaceData & {
   saveState: SaveState
   /** The project the studio is inside (route-driven; not persisted). */
   activeProjectId: string | null
+  /** The page whose grid is live in `gridStore` (route-driven; not persisted).
+   * Kept while the APIs / Env / Theme tabs are open so autosave still knows
+   * which page the canvas belongs to. */
+  activePageId: string | null
   /** Bumped whenever `library` is replaced from outside the live stores
    * (reset), so LibrarySync re-hydrates them. */
   libraryEpoch: number
@@ -29,15 +42,24 @@ type WorkspaceStore = WorkspaceData & {
   createProject: (input: { name: string; description: string; fromSeed: boolean }) => ProjectDef
   updateProject: (id: string, patch: { name?: string; description?: string }) => void
   deleteProject: (id: string) => void
-  /** Write the live grid/env/theme back into a project (autosave). */
-  saveProjectState: (id: string, state: ProjectStateSnapshot) => void
+  /** Write the live env/theme and the active page's grid back (autosave). */
+  saveProjectState: (id: string, pageId: string, state: ProjectStateSnapshot) => void
   /** Write the live library stores back (autosave). */
   saveLibrary: (library: LibraryData) => void
   attachEndpoints: (projectId: string, endpointIds: string[]) => void
   detachEndpoint: (projectId: string, endpointId: string) => void
   /** Drop an endpoint id from every project (library delete). */
   detachEverywhere: (endpointId: string) => void
+
+  // Pages (see the grilled pages design): a project always keeps at least one.
+  addPage: (projectId: string, input: { name: string; path?: string; grid?: PageGrid }) => PageDef
+  updatePage: (projectId: string, pageId: string, patch: { name?: string; path?: string }) => void
+  /** Reorder: move the page `delta` positions (clamped). */
+  movePage: (projectId: string, pageId: string, delta: number) => void
+  deletePage: (projectId: string, pageId: string) => void
+
   setActiveProjectId: (id: string | null) => void
+  setActivePageId: (id: string | null) => void
   setSaveState: (state: SaveState) => void
   setAppearance: (appearance: ThemeAppearance) => void
   /** Back to first-run: the seeded library + project, light appearance. */
@@ -62,9 +84,22 @@ function seedProjects(library: LibraryData): ProjectDef[] {
   ]
 }
 
+/** Apply `fn` to one project, stamping `updatedAt`. */
+function patchProject(
+  projects: ProjectDef[],
+  id: string,
+  fn: (p: ProjectDef) => Partial<ProjectDef>,
+): ProjectDef[] {
+  return projects.map((p) => (p.id === id ? { ...p, ...fn(p), updatedAt: Date.now() } : p))
+}
+
+/** v2 projects owned one canvas (`snapshot.grid`) instead of pages. */
+type V2Snapshot = Omit<ProjectSnapshot, 'pages'> & { grid: PageGrid }
+type V2Project = Omit<ProjectDef, 'snapshot'> & { snapshot: V2Snapshot }
+
 /** v1 projects carried their own models/endpoints; the library didn't exist. */
 type V1Project = Omit<ProjectDef, 'snapshot'> & {
-  snapshot: Omit<ProjectSnapshot, 'endpointIds'> & {
+  snapshot: Omit<V2Snapshot, 'endpointIds'> & {
     models?: ModelDef[]
     endpoints?: EndpointDef[]
     endpointIds?: string[]
@@ -77,11 +112,11 @@ type V1Project = Omit<ProjectDef, 'snapshot'> & {
  * ids), file the seed items under the Countries group, and leave each project
  * attached to the endpoints it used to own.
  */
-function migrateV1(projects: V1Project[]): { projects: ProjectDef[]; library: LibraryData } {
+function migrateV1(projects: V1Project[]): { projects: V2Project[]; library: LibraryData } {
   const models = new Map<string, ModelDef>()
   const endpoints = new Map<string, EndpointDef>()
   const isSeed = (id: string) => id.startsWith('seed-')
-  const out: ProjectDef[] = projects.map((p) => {
+  const out: V2Project[] = projects.map((p) => {
     for (const m of p.snapshot.models ?? []) {
       if (!models.has(m.id)) models.set(m.id, { ...m, groupId: isSeed(m.id) ? COUNTRIES_GROUP_ID : null })
     }
@@ -111,6 +146,14 @@ function migrateV1(projects: V1Project[]): { projects: ProjectDef[]; library: Li
   }
 }
 
+/** v2 → v3: the single canvas becomes the project's first (and only) page. */
+function migrateV2(projects: V2Project[]): ProjectDef[] {
+  return projects.map((p) => {
+    const { grid, ...rest } = p.snapshot
+    return { ...p, snapshot: { ...rest, pages: [createPage('Page 1', '/', grid)] } }
+  })
+}
+
 const initialLibrary = countryLibrary()
 
 /**
@@ -122,12 +165,13 @@ const initialLibrary = countryLibrary()
 export const useWorkspaceStore = create<WorkspaceStore>()(
   persist(
     (set) => ({
-      version: 2,
+      version: 3,
       appearance: 'light',
       projects: seedProjects(initialLibrary),
       library: initialLibrary,
       saveState: 'saved',
       activeProjectId: null,
+      activePageId: null,
       libraryEpoch: 0,
 
       createProject: ({ name, description, fromSeed }) => {
@@ -151,57 +195,49 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
 
       updateProject: (id, patch) =>
         set((s) => ({
-          projects: s.projects.map((p) =>
-            p.id === id
-              ? {
-                  ...p,
-                  ...(patch.name != null ? { name: patch.name } : {}),
-                  ...(patch.description != null ? { description: patch.description } : {}),
-                  updatedAt: Date.now(),
-                }
-              : p,
-          ),
+          projects: patchProject(s.projects, id, () => ({
+            ...(patch.name != null ? { name: patch.name } : {}),
+            ...(patch.description != null ? { description: patch.description } : {}),
+          })),
         })),
 
       deleteProject: (id) =>
         set((s) => ({ projects: s.projects.filter((p) => p.id !== id) })),
 
-      saveProjectState: (id, state) =>
+      saveProjectState: (id, pageId, state) =>
         set((s) => ({
           saveState: 'saved',
-          projects: s.projects.map((p) =>
-            p.id === id
-              ? { ...p, snapshot: { ...p.snapshot, ...state }, updatedAt: Date.now() }
-              : p,
-          ),
+          projects: patchProject(s.projects, id, (p) => ({
+            snapshot: {
+              ...p.snapshot,
+              env: state.env,
+              theme: state.theme,
+              pages: p.snapshot.pages.map((pg) =>
+                pg.id === pageId ? { ...pg, grid: state.grid } : pg,
+              ),
+            },
+          })),
         })),
 
       saveLibrary: (library) => set({ library, saveState: 'saved' }),
 
       attachEndpoints: (projectId, endpointIds) =>
         set((s) => ({
-          projects: s.projects.map((p) => {
-            if (p.id !== projectId) return p
+          projects: patchProject(s.projects, projectId, (p) => {
             const have = new Set(p.snapshot.endpointIds)
             const next = [...p.snapshot.endpointIds, ...endpointIds.filter((id) => !have.has(id))]
-            return { ...p, snapshot: { ...p.snapshot, endpointIds: next }, updatedAt: Date.now() }
+            return { snapshot: { ...p.snapshot, endpointIds: next } }
           }),
         })),
 
       detachEndpoint: (projectId, endpointId) =>
         set((s) => ({
-          projects: s.projects.map((p) =>
-            p.id === projectId
-              ? {
-                  ...p,
-                  snapshot: {
-                    ...p.snapshot,
-                    endpointIds: p.snapshot.endpointIds.filter((id) => id !== endpointId),
-                  },
-                  updatedAt: Date.now(),
-                }
-              : p,
-          ),
+          projects: patchProject(s.projects, projectId, (p) => ({
+            snapshot: {
+              ...p.snapshot,
+              endpointIds: p.snapshot.endpointIds.filter((id) => id !== endpointId),
+            },
+          })),
         })),
 
       detachEverywhere: (endpointId) =>
@@ -219,7 +255,61 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
           ),
         })),
 
+      addPage: (projectId, { name, path, grid }) => {
+        const page = createPage(name, path, grid)
+        set((s) => ({
+          projects: patchProject(s.projects, projectId, (p) => ({
+            snapshot: { ...p.snapshot, pages: [...p.snapshot.pages, page] },
+          })),
+        }))
+        return page
+      },
+
+      updatePage: (projectId, pageId, patch) =>
+        set((s) => ({
+          projects: patchProject(s.projects, projectId, (p) => ({
+            snapshot: {
+              ...p.snapshot,
+              pages: p.snapshot.pages.map((pg) => {
+                if (pg.id !== pageId) return pg
+                const name = patch.name != null ? patch.name.trim() || pg.name : pg.name
+                const path = patch.path != null ? normalizePath(patch.path, name) : pg.path
+                return { ...pg, name, path }
+              }),
+            },
+          })),
+        })),
+
+      movePage: (projectId, pageId, delta) =>
+        set((s) => ({
+          projects: patchProject(s.projects, projectId, (p) => {
+            const pages = p.snapshot.pages.slice()
+            const from = pages.findIndex((pg) => pg.id === pageId)
+            if (from === -1) return {}
+            const to = Math.max(0, Math.min(pages.length - 1, from + delta))
+            if (to === from) return {}
+            const [pg] = pages.splice(from, 1)
+            pages.splice(to, 0, pg)
+            return { snapshot: { ...p.snapshot, pages } }
+          }),
+        })),
+
+      deletePage: (projectId, pageId) =>
+        set((s) => ({
+          projects: patchProject(s.projects, projectId, (p) => {
+            if (p.snapshot.pages.length < 2) return {}
+            return {
+              snapshot: {
+                ...p.snapshot,
+                pages: p.snapshot.pages.filter((pg) => pg.id !== pageId),
+              },
+            }
+          }),
+        })),
+
       setActiveProjectId: (activeProjectId) => set({ activeProjectId }),
+
+      setActivePageId: (activePageId) => set({ activePageId }),
 
       setSaveState: (saveState) => set({ saveState }),
 
@@ -238,7 +328,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
     }),
     {
       name: WORKSPACE_STORAGE_KEY,
-      version: 2,
+      version: 3,
       partialize: (s) => ({
         version: s.version,
         appearance: s.appearance,
@@ -253,12 +343,21 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
         const appearance = data.appearance === 'dark' ? 'dark' : 'light'
         if (data.version === 1) {
           const { projects, library } = migrateV1(data.projects as unknown as V1Project[])
-          return { ...current, appearance, projects, library }
+          return { ...current, appearance, projects: migrateV2(projects), library }
         }
-        if (data.version !== 2 || !data.library) return current
+        if (!data.library) return current
+        if (data.version === 2) {
+          return {
+            ...current,
+            appearance,
+            projects: migrateV2(data.projects as unknown as V2Project[]),
+            library: data.library,
+          }
+        }
+        if (data.version !== 3) return current
         return { ...current, appearance, projects: data.projects, library: data.library }
       },
-      // The version bump is handled in `merge` (it sees the raw v1 payload);
+      // The version bumps are handled in `merge` (it sees the raw payload);
       // keep the middleware's own migrate a pass-through.
       migrate: (persisted) => persisted as WorkspaceStore,
     },
@@ -270,6 +369,29 @@ export function useProject(id: string | undefined): ProjectDef | undefined {
   return useWorkspaceStore((s) => (id ? s.projects.find((p) => p.id === id) : undefined))
 }
 
+/** Selector: the project the studio is inside (undefined on the portal). */
+export function useActiveProject(): ProjectDef | undefined {
+  return useWorkspaceStore((s) =>
+    s.activeProjectId ? s.projects.find((p) => p.id === s.activeProjectId) : undefined,
+  )
+}
+
+/** Selector: the active project's pages ([] outside one). */
+export function useActivePages(): PageDef[] {
+  return useWorkspaceStore(
+    (s) => s.projects.find((p) => p.id === s.activeProjectId)?.snapshot.pages ?? EMPTY_PAGES,
+  )
+}
+
+/** Selector: the page whose grid is live (undefined outside a project). */
+export function useActivePage(): PageDef | undefined {
+  return useWorkspaceStore((s) =>
+    s.projects
+      .find((p) => p.id === s.activeProjectId)
+      ?.snapshot.pages.find((pg) => pg.id === s.activePageId),
+  )
+}
+
 /** Selector: the attached endpoint ids of the active project ([] outside one). */
 export function useActiveEndpointIds(): string[] {
   return useWorkspaceStore(
@@ -277,6 +399,7 @@ export function useActiveEndpointIds(): string[] {
   )
 }
 const EMPTY_IDS: string[] = []
+const EMPTY_PAGES: PageDef[] = []
 
 // Dev-only: expose the store for scripted verification (mirrors __gridStore).
 if (import.meta.env.DEV && typeof window !== 'undefined') {

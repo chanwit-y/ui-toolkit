@@ -5,18 +5,33 @@ import type { GroupDef } from '../Library/groupStore'
 import type { ModelDef } from '../Model/types'
 import type { StudioThemeConfig, ThemeAppearance } from '../Theme/types'
 
+/** One canvas tree — the shape `gridStore.hydrate` takes and autosave writes. */
+export type PageGrid = {
+  items: GridItemData[]
+  containerSettings: GridContainerSettings
+  fieldSeq: number
+}
+
+/**
+ * One screen of a project (see the grilled pages design). `path` is the
+ * route the exported app serves it at (`/countries/:code` — `:params` are
+ * read by `pathParams`); only one page's grid is ever live in `gridStore`.
+ */
+export type PageDef = {
+  id: string
+  name: string
+  path: string
+  grid: PageGrid
+}
+
 /**
  * Everything a project owns (see the grilled Workspace + Shared library
- * designs): its canvas, env and theme, plus the ids of the library endpoints
+ * designs): its pages, env and theme, plus the ids of the library endpoints
  * it has attached. Models are not stored — they are derived from the attached
  * endpoints' references at read time.
  */
 export type ProjectSnapshot = {
-  grid: {
-    items: GridItemData[]
-    containerSettings: GridContainerSettings
-    fieldSeq: number
-  }
+  pages: PageDef[]
   env: EnvVarDef[]
   theme: StudioThemeConfig
   /** Attached `EndpointDef.id`s from the shared library, in attach order. */
@@ -42,7 +57,7 @@ export type LibraryData = {
 
 /** The persisted shape (one localStorage key, versioned). */
 export type WorkspaceData = {
-  version: 2
+  version: 3
   /** The portal's own appearance; inside a project the project theme wins. */
   appearance: ThemeAppearance
   projects: ProjectDef[]

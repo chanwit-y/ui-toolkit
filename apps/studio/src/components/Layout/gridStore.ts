@@ -167,6 +167,14 @@ type GridState = {
   sidebarView: SidebarView
   previewBreakpoint: Breakpoint
 
+  // Undo/redo (see the grilled design): per-page snapshot history of the
+  // canvas tree. Depths are mirrored here for the toolbar; the entries
+  // themselves live in module scope (`past` / `future`).
+  undoDepth: number
+  redoDepth: number
+  undo: () => void
+  redo: () => void
+
   // Animation bridge
   animator: AnimationBridge | null
   setAnimator: (animator: AnimationBridge | null) => void
@@ -266,6 +274,61 @@ function createInitialItems(): GridItemData[] {
   return countrySeedGridItems()
 }
 
+/** What one undo step restores — the canvas tree plus where the editor was. */
+type HistoryEntry = {
+  items: GridItemData[]
+  containerSettings: GridContainerSettings
+  fieldSeq: number
+  activePath: PathSeg[]
+  /** Every item id in tree order — two states with the same sequence differ
+   * only in settings/config (an "edit"), not in structure. */
+  ids: string
+}
+
+const HISTORY_CAP = 50
+/** Consecutive edits (typing in the inspector, nudging a span) within this
+ * window collapse into one undo step. */
+const HISTORY_COALESCE_MS = 600
+
+let past: HistoryEntry[] = []
+let future: HistoryEntry[] = []
+/** Set while undo/redo/hydrate write the store, so the recorder ignores them. */
+let historyLock = false
+let lastRecordedAt = 0
+
+function idSequence(items: GridItemData[]): string {
+  const out: string[] = []
+  const walk = (list: GridItemData[]) => {
+    for (const item of list) {
+      out.push(item.id)
+      item.childCanvases?.forEach((c) => walk(c.items))
+    }
+  }
+  walk(items)
+  return out.join(',')
+}
+
+function toHistoryEntry(s: {
+  items: GridItemData[]
+  containerSettings: GridContainerSettings
+  fieldSeq: number
+  activePath: PathSeg[]
+}): HistoryEntry {
+  return {
+    items: s.items,
+    containerSettings: s.containerSettings,
+    fieldSeq: s.fieldSeq,
+    activePath: s.activePath,
+    ids: idSequence(s.items),
+  }
+}
+
+function clearHistory() {
+  past = []
+  future = []
+  lastRecordedAt = 0
+}
+
 export const useGridStore = create<GridState>((set, get) => {
   /** Wrap a data mutation in a FLIP snapshot/animation so layout changes animate. */
   const animated = (mutate: () => void, changedItemId?: string | 'all') => {
@@ -288,6 +351,36 @@ export const useGridStore = create<GridState>((set, get) => {
   const setActiveCanvas = (fn: (canvas: ChildCanvas) => ChildCanvas) => {
     const next = updateCanvasAtPath(rootCanvas(), get().activePath, fn)
     set({ items: next.items, containerSettings: next.settings })
+  }
+
+  /** Write a history entry into the store (animated, recorder muted). */
+  const restoreEntry = (entry: HistoryEntry) => {
+    const root: ChildCanvas = { items: entry.items, settings: entry.containerSettings }
+    const resolvable = resolvePath(root, entry.activePath).items.length
+    const activePath = entry.activePath.slice(0, resolvable)
+    const canvas = canvasAtPath(root, activePath)
+    const { selectedItemId } = get()
+    historyLock = true
+    try {
+      animated(
+        () =>
+          set({
+            items: entry.items,
+            containerSettings: entry.containerSettings,
+            fieldSeq: entry.fieldSeq,
+            activePath,
+            selectedItemId:
+              selectedItemId && canvas.items.some((i) => i.id === selectedItemId)
+                ? selectedItemId
+                : null,
+            undoDepth: past.length,
+            redoDepth: future.length,
+          }),
+        'all',
+      )
+    } finally {
+      historyLock = false
+    }
   }
 
   // Per-id timers that clear an entering flag once the pop has landed. Tracked so
@@ -348,6 +441,26 @@ export const useGridStore = create<GridState>((set, get) => {
     selectedItemId: null,
     sidebarView: 'inspector',
     previewBreakpoint: 'lg',
+
+    undoDepth: 0,
+    redoDepth: 0,
+
+    // Restore the previous tree; the current one goes onto the redo stack. The
+    // drill-in path heals to what still resolves, and the selection survives
+    // only if its cell is still in the active canvas.
+    undo: () => {
+      const entry = past.pop()
+      if (!entry) return
+      future.push(toHistoryEntry(get()))
+      restoreEntry(entry)
+    },
+
+    redo: () => {
+      const entry = future.pop()
+      if (!entry) return
+      past.push(toHistoryEntry(get()))
+      restoreEntry(entry)
+    },
 
     animator: null,
     setAnimator: (animator) => set({ animator }),
@@ -674,16 +787,24 @@ export const useGridStore = create<GridState>((set, get) => {
     hydrate: ({ items, containerSettings, fieldSeq }) => {
       enterTimers.forEach((t) => clearTimeout(t))
       enterTimers.clear()
-      set({
-        items,
-        containerSettings,
-        fieldSeq,
-        activePath: [],
-        enteringIds: new Set(),
-        activeId: null,
-        selectedItemId: null,
-        sidebarView: 'inspector',
-      })
+      clearHistory()
+      historyLock = true
+      try {
+        set({
+          items,
+          containerSettings,
+          fieldSeq,
+          activePath: [],
+          enteringIds: new Set(),
+          activeId: null,
+          selectedItemId: null,
+          sidebarView: 'inspector',
+          undoDepth: 0,
+          redoDepth: 0,
+        })
+      } finally {
+        historyLock = false
+      }
     },
 
     goToCanvas: (path, selectId = null) => {
@@ -719,6 +840,29 @@ export const useGridStore = create<GridState>((set, get) => {
     setSidebarView: (view) => set({ sidebarView: view }),
 
     setPreviewBreakpoint: (bp) => animated(() => set({ previewBreakpoint: bp }), 'all'),
+  }
+})
+
+// The history recorder: every committed change to the canvas tree (that isn't
+// an undo/redo/hydrate) pushes the *previous* state onto the undo stack and
+// clears redo. Recording from a subscription rather than inside each action
+// means new actions get undo for free. Edits to an unchanged structure that
+// land within the coalesce window collapse into the step already recorded.
+useGridStore.subscribe((s, prev) => {
+  if (historyLock) return
+  if (s.items === prev.items && s.containerSettings === prev.containerSettings) return
+  const entry = toHistoryEntry(prev)
+  const now = Date.now()
+  const top = past[past.length - 1]
+  const coalesce = !!top && now - lastRecordedAt < HISTORY_COALESCE_MS && top.ids === entry.ids
+  if (!coalesce) {
+    past.push(entry)
+    if (past.length > HISTORY_CAP) past.shift()
+  }
+  lastRecordedAt = now
+  future = []
+  if (s.undoDepth !== past.length || s.redoDepth !== 0) {
+    useGridStore.setState({ undoDepth: past.length, redoDepth: 0 })
   }
 })
 

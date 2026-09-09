@@ -4,7 +4,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { ApiEditor, EnvEditor, Grid, ModelEditor, ThemeEditor } from './components'
 import { toThemeObjects, useThemeStore } from './components/Theme'
 import { LibraryPage, LibrarySync } from './components/Library'
-import { PortalLayout, ProjectsPage, ProjectShell } from './components/Workspace'
+import { PortalLayout, ProjectIndexRedirect, ProjectsPage, ProjectShell } from './components/Workspace'
 
 function App() {
   // ThemeProvider wraps Radix's <Theme>, supplying the accent CSS vars the
@@ -18,8 +18,9 @@ function App() {
   //
   // BrowserRouter sits inside both providers so every page shares the theme +
   // engine context. `/` is the workspace portal; `/p/:projectId/*` is the
-  // studio, whose ProjectShell hydrates the stores from the project, owns the
-  // topbar, and mounts the pages into its <Outlet>. Appearance is synced per
+  // studio, whose ProjectShell hydrates the stores from the project (and the
+  // routed page's canvas at `pages/:pageId`), owns the topbar, and mounts the
+  // tabs into its <Outlet>. Appearance is synced per
   // route (project theme inside a project, workspace preference on the portal).
   const config = useThemeStore((s) => s.config)
   const { theme, components } = useMemo(() => toThemeObjects(config), [config])
@@ -40,7 +41,8 @@ function App() {
               <Route path="library/models" element={<LibraryPage kind="model" />} />
             </Route>
             <Route path="p/:projectId" element={<ProjectShell />}>
-              <Route index element={<Grid />} />
+              <Route index element={<ProjectIndexRedirect />} />
+              <Route path="pages/:pageId" element={<Grid />} />
               <Route path="model" element={<ModelEditor />} />
               <Route path="api" element={<ApiEditor />} />
               <Route path="env" element={<EnvEditor />} />
