@@ -52,7 +52,7 @@ export function UserButton() {
         type="button"
         onClick={() => setOpen(true)}
         title="Switch who is working"
-        className="flex h-7 items-center gap-1.5 rounded-full border border-line bg-surface pl-1 pr-2 text-[12px] text-ink transition-colors hover:border-line-strong"
+        className="flex h-7 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-line bg-surface pl-1 pr-2 text-[12px] text-ink transition-colors hover:border-line-strong"
       >
         <Avatar name={user} size={20} />
         <span className="hidden sm:inline">{user}</span>

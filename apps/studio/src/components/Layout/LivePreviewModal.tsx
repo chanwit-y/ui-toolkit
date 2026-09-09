@@ -22,6 +22,8 @@ import { useApiUrl } from '../Env'
 import { serializeModels } from '../Model/serialize'
 import { useProjectEndpoints, useProjectModels } from '../Library/scope'
 import { IconButton, Select } from '../common'
+import { designThemeStyle } from '../Theme/designTheme'
+import { useThemeStore } from '../Theme/themeStore'
 import type { PageDef, PageGrid } from '../Workspace/types'
 import { useActivePages, useWorkspaceStore } from '../Workspace/workspaceStore'
 import { DialogPreview, ToastPreview } from './DesignPreviews'
@@ -127,6 +129,8 @@ export function LivePreviewModal({ onClose }: { onClose: () => void }) {
   const models = useProjectModels()
   const endpoints = useProjectEndpoints()
   const apiUrl = useApiUrl()
+  const themeConfig = useThemeStore((s) => s.config)
+  const frameTheme = useMemo(() => designThemeStyle(themeConfig), [themeConfig])
 
   // Which page is being previewed, plus the `:params` the navigation
   // supplied. The live page draws from the grid store; others from snapshot.
@@ -346,7 +350,7 @@ export function LivePreviewModal({ onClose }: { onClose: () => void }) {
         </div>
       )}
 
-      <div className="relative" onClickCapture={onCaptureClick}>
+      <div className="relative rounded-md" style={frameTheme} onClickCapture={onCaptureClick}>
         <PreviewErrorBoundary key={page?.id ?? 'live'}>{preview}</PreviewErrorBoundary>
 
         {scrim && (

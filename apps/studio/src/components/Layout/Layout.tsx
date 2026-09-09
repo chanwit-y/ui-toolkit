@@ -40,6 +40,8 @@ import { PreviewToolbar } from './PreviewToolbar'
 import { Sidebar } from './Sidebar'
 import { Toolbox, ToolboxDragOverlay, type ToolboxDragData } from './Toolbox'
 import type { GridItemData } from './types'
+import { designThemeStyle } from '../Theme/designTheme'
+import { useThemeStore } from '../Theme/themeStore'
 import { useActivePage, useActiveProject } from '../Workspace/workspaceStore'
 import { useGridFlipAnimation } from './useGridFlipAnimation'
 import { useUndoShortcuts } from './useUndoShortcuts'
@@ -245,6 +247,10 @@ function EditorBodyInner({
   templateMode,
 }: EditorBodyProps) {
   const addItem = useGridStore((s) => s.addItem)
+  // Design-only theme (surfaces / font / scaling) paints the frame — see the
+  // Theme page; undefined when everything is at its default.
+  const themeConfig = useThemeStore((s) => s.config)
+  const frameTheme = useMemo(() => designThemeStyle(themeConfig), [themeConfig])
   const moveItem = useGridStore((s) => s.moveItem)
   const setActiveId = useGridStore((s) => s.setActiveId)
   const clearSelection = useGridStore((s) => s.clearSelection)
@@ -323,7 +329,7 @@ function EditorBodyInner({
           <div
             ref={frameRef}
             className="flex w-full max-w-full flex-col self-start overflow-hidden rounded-[10px] border border-line bg-surface shadow-frame"
-            style={{ width: 'var(--preview-frame-w, 100%)' }}
+            style={{ ...frameTheme, width: 'var(--preview-frame-w, 100%)' }}
           >
             <FrameChrome />
             <div className="relative p-4">

@@ -1,18 +1,40 @@
-import { useMemo, type ReactNode } from 'react'
-import { CodeViewer, Select, SegmentedControl, cn } from '../common'
+import { X } from 'lucide-react'
+import { useMemo, useState, type ReactNode } from 'react'
+import { Button, CodeViewer, IconButton, Input, Select, SegmentedControl, cn } from '../common'
+import { useWorkspaceStore } from '../Workspace/workspaceStore'
+import { accentInk, resolvedSurfaces } from './designTheme'
 import { useThemeStore } from './themeStore'
 import { toThemeTs } from './serialize'
 import {
   ACCENT_COLORS,
+  createDefaultDesignTheme,
+  DENSITY_OPTIONS,
+  FONT_OPTIONS,
   LEGACY_MAP_ROLES,
+  nearestAccent,
+  PALETTES,
   RADIUS_VALUES,
+  SURFACE_DEFAULTS,
   type AccentColor,
   type DataTableThemeConfig,
+  type DesignSurfaces,
   type StudioThemeConfig,
   type ThemeAppearance,
+  type ThemePalette,
   type ThemePanelBackground,
   type ThemeRadius,
+  type ThemeScaling,
 } from './types'
+
+function luminance(hex: string): number {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim())
+  if (!m) return 0.5
+  const n = parseInt(m[1], 16)
+  const r = ((n >> 16) & 255) / 255
+  const g = ((n >> 8) & 255) / 255
+  const b = (n & 255) / 255
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b
+}
 
 /** One labelled row in the form. */
 function Field({ label, children }: { label: string; children: ReactNode }) {
@@ -143,12 +165,91 @@ const LEGACY_ROLE_LABELS = new Map(
  * so the canvas previews and the Live Preview re-tint as you pick — and the
  * appearance flips the studio chrome too (one toggle, see the redesign).
  */
+const SURFACE_ROLES: [keyof DesignSurfaces, string, string][] = [
+  ['surface', 'Background', 'page background'],
+  ['panel', 'Panel', 'cards, headers'],
+  ['text', 'Text', 'headings and body'],
+  ['border', 'Border', 'dividers, outlines'],
+]
+
+/** A design-only colour row: swatch picker + hex + reset to the recommended value. */
+function SurfaceRow({
+  label,
+  hint,
+  value,
+  fallback,
+  onChange,
+}: {
+  label: string
+  hint: string
+  value: string
+  fallback: string
+  onChange: (v: string) => void
+}) {
+  const shown = value || fallback
+  return (
+    <div className="flex items-center gap-2">
+      <span className="w-24 text-ui-sm font-medium text-ink-2">{label}</span>
+      <label
+        className="relative h-7 w-7 shrink-0 cursor-pointer overflow-hidden rounded-md border border-line"
+        style={{ background: shown }}
+        title="Pick a colour"
+      >
+        <input
+          type="color"
+          value={/^#[0-9a-f]{6}$/i.test(shown) ? shown : '#888888'}
+          onChange={(e) => onChange(e.target.value)}
+          aria-label={`${label} colour`}
+          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+        />
+      </label>
+      <Input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={fallback}
+        className="w-28! font-mono"
+      />
+      {value ? (
+        <IconButton label={`Reset ${label.toLowerCase()}`} className="btn-icon-sm h-6!" onClick={() => onChange('')}>
+          <X size={12} aria-hidden="true" />
+        </IconButton>
+      ) : (
+        <span className="text-ui-xs text-ink-3">{hint}</span>
+      )}
+    </div>
+  )
+}
+
 export function ThemeEditor() {
   const config = useThemeStore((s) => s.config)
   const update = useThemeStore((s) => s.update)
   const updateDataTable = useThemeStore((s) => s.updateDataTable)
+  const updateSurfaces = useThemeStore((s) => s.updateSurfaces)
+  const setFont = useThemeStore((s) => s.setFont)
+  const applyPalette = useThemeStore((s) => s.applyPalette)
+  const logActivity = useWorkspaceStore((s) => s.logActivity)
+
+  // Palette preview (the mockup's "try it, then Apply"): nothing changes in
+  // the project until Apply — the sample block below paints the candidate.
+  const [preview, setPreview] = useState<{ palette: ThemePalette; surfaces: boolean } | null>(null)
 
   const themeTs = useMemo(() => toThemeTs(config), [config])
+  const mode = config.appearance
+  const design = config.design ?? createDefaultDesignTheme()
+  const surfaces = resolvedSurfaces(config, mode)
+  const sampleAccentName = preview
+    ? nearestAccent(preview.palette.colors[preview.palette.accent])
+    : config.accentColor
+  const sampleSurfaces: DesignSurfaces = preview?.surfaces
+    ? (() => {
+        const byLight = preview.palette.colors.slice().sort((a, b) => luminance(b) - luminance(a))
+        const last = byLight.length - 1
+        return mode === 'light'
+          ? { surface: byLight[0], panel: byLight[1], text: byLight[last], border: surfaces.border }
+          : { surface: byLight[last], panel: byLight[last - 1], text: byLight[0], border: surfaces.border }
+      })()
+    : surfaces
+  const sampleAccentHex = preview ? preview.palette.colors[preview.palette.accent] : ''
 
   const pinnedLegacyRoles = LEGACY_MAP_ROLES.filter(
     (role) => config.dataTable[role] !== '',
@@ -177,8 +278,144 @@ export function ThemeEditor() {
             onChange={(v) => set('appearance', v as ThemeAppearance)}
           />
           <span className="text-ui-sm text-ink-3">
-            The studio and the canvas both show the {config.appearance} set.
+            Editing the {mode} set · the {mode === 'light' ? 'dark' : 'light'} set keeps its own
+            surfaces.
           </span>
+        </div>
+
+        {preview && (
+          <div className="mb-4 flex flex-wrap items-center gap-3 rounded-[10px] border border-line-strong bg-panel px-3.5 py-2.5 text-ui text-ink">
+            <b className="font-semibold">Previewing “{preview.palette.name}”</b>
+            <label className="flex cursor-pointer items-center gap-2 text-ink-2">
+              <input
+                type="checkbox"
+                checked={preview.surfaces}
+                onChange={(e) => setPreview({ ...preview, surfaces: e.target.checked })}
+                className="h-3.5 w-3.5 accent-accent"
+              />
+              Take the surfaces too, not just the accent
+            </label>
+            <span className="flex-1" />
+            <Button size="sm" onClick={() => setPreview(null)}>
+              Discard
+            </Button>
+            <Button
+              size="sm"
+              variant="primary"
+              onClick={() => {
+                applyPalette(preview.palette, preview.surfaces)
+                logActivity(
+                  'applied',
+                  'theme',
+                  preview.palette.name,
+                  preview.surfaces ? 'accent and surfaces' : 'accent only',
+                )
+                setPreview(null)
+              }}
+            >
+              Apply to project
+            </Button>
+          </div>
+        )}
+
+        <Section label="Palettes — a starting point">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2">
+            {PALETTES.map((pl) => {
+              const on = preview?.palette.name === pl.name
+              return (
+                <button
+                  key={pl.name}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => setPreview({ palette: pl, surfaces: preview?.surfaces ?? false })}
+                  className={cn(
+                    'overflow-hidden rounded-md border text-left transition-colors hover:border-line-strong',
+                    on ? 'border-focus ring-1 ring-focus' : 'border-line',
+                  )}
+                >
+                  <span className="flex h-7">
+                    {pl.colors.map((c) => (
+                      <i key={c} className="block flex-1" style={{ background: c }} />
+                    ))}
+                  </span>
+                  <span className="flex items-center gap-1.5 px-2 py-1.5 text-ui-sm">
+                    <b className="min-w-0 flex-1 truncate font-semibold text-ink">{pl.name}</b>
+                    <i
+                      className="block h-2.5 w-2.5 rounded-full border border-line"
+                      style={{ background: pl.colors[pl.accent] }}
+                      title={`accent → ${nearestAccent(pl.colors[pl.accent])}`}
+                    />
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+          <p className="text-ui-sm text-ink-3">
+            Click one to try it. The accent snaps to the nearest Radix colour; nothing changes in
+            the project until you press Apply.
+          </p>
+        </Section>
+
+        {/* Sample screen: painted with the previewed (or current) mode colours. */}
+        <div
+          className="mb-4 rounded-[10px] border p-4"
+          style={{
+            background: sampleSurfaces.surface,
+            color: sampleSurfaces.text,
+            borderColor: sampleSurfaces.border,
+          }}
+        >
+          <h4 className="m-0 text-[14px] font-semibold">Sample screen</h4>
+          <p className="mb-3 mt-0.5 text-ui" style={{ opacity: 0.75 }}>
+            This block is painted with the {preview ? 'previewed' : 'current'} {mode} colours.
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className="inline-flex h-7 items-center rounded-md px-3 text-ui font-semibold"
+              style={
+                sampleAccentHex
+                  ? { background: sampleAccentHex, color: accentInk(sampleAccentHex) }
+                  : { background: `var(--${sampleAccentName}-9)`, color: 'var(--accent-contrast)' }
+              }
+            >
+              Primary action
+            </span>
+            <span
+              className="inline-flex h-7 items-center rounded-md border px-3 text-ui font-semibold"
+              style={{ borderColor: sampleSurfaces.border }}
+            >
+              Secondary
+            </span>
+            <span
+              className="inline-flex h-[18px] items-center rounded px-1.5 font-mono text-ui-xs"
+              style={{ background: sampleSurfaces.panel, border: `1px solid ${sampleSurfaces.border}` }}
+            >
+              badge
+            </span>
+            <span
+              className="inline-flex h-7 flex-1 items-center rounded-md border px-2 text-ui"
+              style={{ borderColor: sampleSurfaces.border, background: sampleSurfaces.panel, opacity: 0.8 }}
+            >
+              Search…
+            </span>
+          </div>
+          <div
+            className="mt-3 overflow-hidden rounded-md border text-ui"
+            style={{ borderColor: sampleSurfaces.border }}
+          >
+            <div
+              className="px-2.5 py-1.5 font-mono text-ui-xs font-semibold uppercase tracking-wide"
+              style={{ background: sampleSurfaces.panel }}
+            >
+              table header
+            </div>
+            <div className="border-t px-2.5 py-1.5" style={{ borderColor: sampleSurfaces.border }}>
+              Row of data
+            </div>
+            <div className="border-t px-2.5 py-1.5" style={{ borderColor: sampleSurfaces.border }}>
+              Row of data
+            </div>
+          </div>
         </div>
 
         <Section label="Accent — shared by both modes">
@@ -192,7 +429,30 @@ export function ThemeEditor() {
           </p>
         </Section>
 
-        <Section label="Shape and surfaces">
+        <Section label={`Surfaces — ${mode} mode only · design annotation`}>
+          <p className="text-ui-sm text-ink-3">
+            Painted on the canvas frame and the Live Preview wrapper and exported in project.json.
+            Library components keep following the Radix accent, so theme.ts does not carry these.
+          </p>
+          <div className="space-y-2">
+            {SURFACE_ROLES.map(([key, label, hint]) => (
+              <SurfaceRow
+                key={key}
+                label={label}
+                hint={hint}
+                value={design[mode][key]}
+                fallback={SURFACE_DEFAULTS[mode][key]}
+                onChange={(v) => updateSurfaces(mode, { [key]: v })}
+              />
+            ))}
+          </div>
+          <p className="text-ui-sm text-ink-3">
+            Muted text and hover shades are mixed from these four, so a lighter background lifts
+            the whole {mode} set with it.
+          </p>
+        </Section>
+
+        <Section label="Shape and type — shared">
           <div className="grid grid-cols-2 gap-4">
             <Field label="Radius">
               <SegmentedControl
@@ -208,6 +468,21 @@ export function ThemeEditor() {
                 options={PANEL_OPTIONS}
                 value={config.panelBackground}
                 onChange={(v) => set('panelBackground', v as ThemePanelBackground)}
+              />
+            </Field>
+            <Field label="Density (Radix scaling)">
+              <SegmentedControl
+                aria-label="Density"
+                options={DENSITY_OPTIONS}
+                value={config.scaling ?? '100%'}
+                onChange={(v) => set('scaling', v as ThemeScaling)}
+              />
+            </Field>
+            <Field label="Font (design annotation)">
+              <Select
+                options={FONT_OPTIONS.map((f) => ({ value: f, label: f }))}
+                value={design.font}
+                onChange={setFont}
               />
             </Field>
           </div>
@@ -278,7 +553,19 @@ export function ThemeEditor() {
         <span className="sec-label mb-2 block">theme.ts</span>
         <CodeViewer
           maxHeightClassName="max-h-[60vh]"
-          tabs={[{ id: 'theme', label: 'theme.ts', language: 'text', code: themeTs }]}
+          tabs={[
+            { id: 'theme', label: 'theme.ts', language: 'text', code: themeTs },
+            {
+              id: 'design',
+              label: 'design (project.json)',
+              language: 'json',
+              code: JSON.stringify(
+                { scaling: config.scaling ?? '100%', font: design.font, light: design.light, dark: design.dark },
+                null,
+                2,
+              ),
+            },
+          ]}
         />
       </div>
     </div>

@@ -28,6 +28,7 @@ export function toThemeObjects(c: StudioThemeConfig): {
       accentColor: c.accentColor,
       radius: c.radius,
       panelBackground: c.panelBackground,
+      ...(c.scaling && c.scaling !== '100%' ? { scaling: c.scaling } : {}),
     },
     components: {
       ...(c.buttonColor
@@ -55,6 +56,7 @@ export function toThemeTs(c: StudioThemeConfig): string {
   if (c.radius !== THEME_DEFAULTS.radius) themeEntries.radius = c.radius
   if (c.panelBackground !== THEME_DEFAULTS.panelBackground)
     themeEntries.panelBackground = c.panelBackground
+  if (c.scaling && c.scaling !== '100%') themeEntries.scaling = c.scaling
 
   const dataTable = dataTableOverrides(c)
 
