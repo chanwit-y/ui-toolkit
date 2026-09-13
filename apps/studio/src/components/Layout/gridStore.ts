@@ -7,6 +7,13 @@ import { updateContainerBreakpoint, updateItemBreakpoint } from './gridSettings'
 import { readSeedCount } from './perf'
 import { countrySeedGridItems } from '../seed/country'
 import {
+  createDefaultDesignConfig,
+  designDefaultSpan,
+  isDesignOnly,
+  type DesignConfig,
+  type ElementStyle,
+} from './designTypes'
+import {
   childCanvasCount,
   createChildCanvas,
   createDefaultAutocompleteConfig,
@@ -128,7 +135,7 @@ function updateCanvasAtPath(
 
 /** Which panel the right sidebar shows. `inspector` resolves to the selected
  * item's config+layout, or the container settings when nothing is selected. */
-export type SidebarView = 'inspector' | 'layout' | 'code'
+export type SidebarView = 'inspector' | 'layout' | 'style' | 'code'
 
 /**
  * Bridge to the FLIP animation layer. The animation relies on DOM refs and
@@ -167,6 +174,14 @@ type GridState = {
   sidebarView: SidebarView
   previewBreakpoint: Breakpoint
 
+  // Undo/redo (see the grilled design): per-page snapshot history of the
+  // canvas tree. Depths are mirrored here for the toolbar; the entries
+  // themselves live in module scope (`past` / `future`).
+  undoDepth: number
+  redoDepth: number
+  undo: () => void
+  redo: () => void
+
   // Animation bridge
   animator: AnimationBridge | null
   setAnimator: (animator: AnimationBridge | null) => void
@@ -194,6 +209,10 @@ type GridState = {
       | CheckboxConfig
       | RadioConfig
       | DateConfig
+      | UploadImageConfig
+      | UploadFileConfig
+      | DataTableConfig
+      | DataTableEditableConfig
       | TextConfig
       | TypographyConfig
       | AvatarConfig
@@ -204,8 +223,14 @@ type GridState = {
       | TabConfig
       | ModalConfig
       | PopoverConfig
+      | DesignConfig
     >,
   ) => void
+  /** Merge Style-tab colours into an item (design-only annotation). */
+  updateItemStyle: (id: string, patch: Partial<ElementStyle>) => void
+  /** Append ready-made items (a template's blocks, already re-id'd) to the
+   * active canvas. */
+  appendItems: (items: GridItemData[]) => void
   moveItem: (activeId: string, overId: string) => void
 
   // Tab canvas sync: add/remove a tab header and its child canvas together, so
@@ -213,9 +238,20 @@ type GridState = {
   addTab: (itemId: string) => void
   removeTab: (itemId: string, index: number) => void
 
+  /** Replace the whole canvas tree from a project snapshot (workspace open /
+   * switch). Resets drill-in, selection, drag and entrance state. */
+  hydrate: (snapshot: {
+    items: GridItemData[]
+    containerSettings: GridContainerSettings
+    fieldSeq: number
+  }) => void
+
   // Drill-in navigation (see the grilled design: breadcrumb, arbitrary depth)
   enterCanvas: (itemId: string, canvasIndex: number) => void
   exitToDepth: (depth: number) => void
+  /** Jump to an arbitrary canvas (the Layers tree crosses canvases), optionally
+   * selecting an item there. A dangling path heals to its deepest ancestor. */
+  goToCanvas: (path: PathSeg[], selectId?: string | null) => void
 
   // Drag actions
   setActiveId: (id: string | null) => void
@@ -251,6 +287,61 @@ function createInitialItems(): GridItemData[] {
   return countrySeedGridItems()
 }
 
+/** What one undo step restores — the canvas tree plus where the editor was. */
+type HistoryEntry = {
+  items: GridItemData[]
+  containerSettings: GridContainerSettings
+  fieldSeq: number
+  activePath: PathSeg[]
+  /** Every item id in tree order — two states with the same sequence differ
+   * only in settings/config (an "edit"), not in structure. */
+  ids: string
+}
+
+const HISTORY_CAP = 50
+/** Consecutive edits (typing in the inspector, nudging a span) within this
+ * window collapse into one undo step. */
+const HISTORY_COALESCE_MS = 600
+
+let past: HistoryEntry[] = []
+let future: HistoryEntry[] = []
+/** Set while undo/redo/hydrate write the store, so the recorder ignores them. */
+let historyLock = false
+let lastRecordedAt = 0
+
+function idSequence(items: GridItemData[]): string {
+  const out: string[] = []
+  const walk = (list: GridItemData[]) => {
+    for (const item of list) {
+      out.push(item.id)
+      item.childCanvases?.forEach((c) => walk(c.items))
+    }
+  }
+  walk(items)
+  return out.join(',')
+}
+
+function toHistoryEntry(s: {
+  items: GridItemData[]
+  containerSettings: GridContainerSettings
+  fieldSeq: number
+  activePath: PathSeg[]
+}): HistoryEntry {
+  return {
+    items: s.items,
+    containerSettings: s.containerSettings,
+    fieldSeq: s.fieldSeq,
+    activePath: s.activePath,
+    ids: idSequence(s.items),
+  }
+}
+
+function clearHistory() {
+  past = []
+  future = []
+  lastRecordedAt = 0
+}
+
 export const useGridStore = create<GridState>((set, get) => {
   /** Wrap a data mutation in a FLIP snapshot/animation so layout changes animate. */
   const animated = (mutate: () => void, changedItemId?: string | 'all') => {
@@ -273,6 +364,36 @@ export const useGridStore = create<GridState>((set, get) => {
   const setActiveCanvas = (fn: (canvas: ChildCanvas) => ChildCanvas) => {
     const next = updateCanvasAtPath(rootCanvas(), get().activePath, fn)
     set({ items: next.items, containerSettings: next.settings })
+  }
+
+  /** Write a history entry into the store (animated, recorder muted). */
+  const restoreEntry = (entry: HistoryEntry) => {
+    const root: ChildCanvas = { items: entry.items, settings: entry.containerSettings }
+    const resolvable = resolvePath(root, entry.activePath).items.length
+    const activePath = entry.activePath.slice(0, resolvable)
+    const canvas = canvasAtPath(root, activePath)
+    const { selectedItemId } = get()
+    historyLock = true
+    try {
+      animated(
+        () =>
+          set({
+            items: entry.items,
+            containerSettings: entry.containerSettings,
+            fieldSeq: entry.fieldSeq,
+            activePath,
+            selectedItemId:
+              selectedItemId && canvas.items.some((i) => i.id === selectedItemId)
+                ? selectedItemId
+                : null,
+            undoDepth: past.length,
+            redoDepth: future.length,
+          }),
+        'all',
+      )
+    } finally {
+      historyLock = false
+    }
   }
 
   // Per-id timers that clear an entering flag once the pop has landed. Tracked so
@@ -334,6 +455,26 @@ export const useGridStore = create<GridState>((set, get) => {
     sidebarView: 'inspector',
     previewBreakpoint: 'lg',
 
+    undoDepth: 0,
+    redoDepth: 0,
+
+    // Restore the previous tree; the current one goes onto the redo stack. The
+    // drill-in path heals to what still resolves, and the selection survives
+    // only if its cell is still in the active canvas.
+    undo: () => {
+      const entry = past.pop()
+      if (!entry) return
+      future.push(toHistoryEntry(get()))
+      restoreEntry(entry)
+    },
+
+    redo: () => {
+      const entry = future.pop()
+      if (!entry) return
+      past.push(toHistoryEntry(get()))
+      restoreEntry(entry)
+    },
+
     animator: null,
     setAnimator: (animator) => set({ animator }),
 
@@ -372,6 +513,7 @@ export const useGridStore = create<GridState>((set, get) => {
           | TabConfig
           | ModalConfig
           | PopoverConfig
+          | DesignConfig
           | undefined
         let nextSeq = fieldSeq
         if (type === 'textfield') {
@@ -439,6 +581,8 @@ export const useGridStore = create<GridState>((set, get) => {
           config = createDefaultModalConfig(`modal_${nextSeq}`)
         } else if (type === 'popover') {
           config = createDefaultPopoverConfig()
+        } else if (isDesignOnly(type)) {
+          config = createDefaultDesignConfig(type)
         }
 
         // Container-hosting types start with their (empty) child canvases —
@@ -475,14 +619,25 @@ export const useGridStore = create<GridState>((set, get) => {
           type === 'text' ||
           type === 'typography'
         const defaultLg = isUpload ? 6 : isWideInput ? 4 : 2
-        const colSpan = isFullBleed
-          ? { xs: bpCols.xs, sm: bpCols.sm, md: bpCols.md, lg: bpCols.lg }
-          : {
-              xs: bpCols.xs,
-              sm: Math.min(3, bpCols.sm),
-              md: Math.min(2, bpCols.md),
-              lg: Math.min(defaultLg, bpCols.lg),
-            }
+        // Design-only kinds carry the mockup's own default width (of 12),
+        // scaled to the canvas: a hero/banner is full-bleed, a stat is narrow.
+        const designLg = isDesignOnly(type) ? designDefaultSpan(type) : null
+        const colSpan =
+          isFullBleed || designLg === 12
+            ? { xs: bpCols.xs, sm: bpCols.sm, md: bpCols.md, lg: bpCols.lg }
+            : designLg != null
+              ? {
+                  xs: bpCols.xs,
+                  sm: Math.min(Math.max(1, Math.round((designLg / 12) * bpCols.sm) * 2), bpCols.sm),
+                  md: Math.min(Math.max(1, Math.round((designLg / 12) * bpCols.md) * 2), bpCols.md),
+                  lg: Math.min(Math.max(1, Math.round((designLg / 12) * bpCols.lg)), bpCols.lg),
+                }
+              : {
+                  xs: bpCols.xs,
+                  sm: Math.min(3, bpCols.sm),
+                  md: Math.min(2, bpCols.md),
+                  lg: Math.min(defaultLg, bpCols.lg),
+                }
         const newItem: GridItemData = {
           id: createId(),
           label: component?.label ?? `Item ${items.length + 1}`,
@@ -591,6 +746,41 @@ export const useGridStore = create<GridState>((set, get) => {
         ),
       })),
 
+    appendItems: (newItems) =>
+      animated(() => {
+        if (newItems.length === 0) return
+        const willEnter = canEnter()
+        const enteringIds = new Set(get().enteringIds)
+        if (willEnter) newItems.forEach((it) => enteringIds.add(it.id))
+        setActiveCanvas((canvas) => ({ ...canvas, items: [...canvas.items, ...newItems] }))
+        set({ enteringIds })
+        if (willEnter) newItems.forEach((it) => scheduleEnterClear(it.id))
+      }),
+
+    updateItemStyle: (id, patch) =>
+      setActiveCanvas((canvas) => ({
+        ...canvas,
+        items: canvas.items.map((item) =>
+          item.id === id
+            ? {
+                ...item,
+                style: {
+                  bg: '',
+                  fg: '',
+                  line: '',
+                  accent: '',
+                  radius: '',
+                  thBg: '',
+                  thFg: '',
+                  zebra: false,
+                  ...item.style,
+                  ...patch,
+                },
+              }
+            : item,
+        ),
+      })),
+
     // dnd-kit already animates items to their preview slots during the drag and
     // lands the dragged item via the DragOverlay drop animation, so we only
     // commit the new order here (no custom FLIP animation).
@@ -656,6 +846,42 @@ export const useGridStore = create<GridState>((set, get) => {
       }))
     },
 
+    hydrate: ({ items, containerSettings, fieldSeq }) => {
+      enterTimers.forEach((t) => clearTimeout(t))
+      enterTimers.clear()
+      clearHistory()
+      historyLock = true
+      try {
+        set({
+          items,
+          containerSettings,
+          fieldSeq,
+          activePath: [],
+          enteringIds: new Set(),
+          activeId: null,
+          selectedItemId: null,
+          sidebarView: 'inspector',
+          undoDepth: 0,
+          redoDepth: 0,
+        })
+      } finally {
+        historyLock = false
+      }
+    },
+
+    goToCanvas: (path, selectId = null) => {
+      const resolvable = resolvePath(rootCanvas(), path).items.length
+      const activePath = path.slice(0, resolvable)
+      const canvas = canvasAtPath(rootCanvas(), activePath)
+      const selectedItemId =
+        selectId && canvas.items.some((i) => i.id === selectId) ? selectId : null
+      set((s) => ({
+        activePath,
+        selectedItemId,
+        sidebarView: s.sidebarView === 'code' ? 'code' : 'inspector',
+      }))
+    },
+
     // Jump back up the breadcrumb: keep the first `depth` segments (0 = root).
     exitToDepth: (depth) =>
       set((s) => ({
@@ -676,6 +902,29 @@ export const useGridStore = create<GridState>((set, get) => {
     setSidebarView: (view) => set({ sidebarView: view }),
 
     setPreviewBreakpoint: (bp) => animated(() => set({ previewBreakpoint: bp }), 'all'),
+  }
+})
+
+// The history recorder: every committed change to the canvas tree (that isn't
+// an undo/redo/hydrate) pushes the *previous* state onto the undo stack and
+// clears redo. Recording from a subscription rather than inside each action
+// means new actions get undo for free. Edits to an unchanged structure that
+// land within the coalesce window collapse into the step already recorded.
+useGridStore.subscribe((s, prev) => {
+  if (historyLock) return
+  if (s.items === prev.items && s.containerSettings === prev.containerSettings) return
+  const entry = toHistoryEntry(prev)
+  const now = Date.now()
+  const top = past[past.length - 1]
+  const coalesce = !!top && now - lastRecordedAt < HISTORY_COALESCE_MS && top.ids === entry.ids
+  if (!coalesce) {
+    past.push(entry)
+    if (past.length > HISTORY_CAP) past.shift()
+  }
+  lastRecordedAt = now
+  future = []
+  if (s.undoDepth !== past.length || s.redoDepth !== 0) {
+    useGridStore.setState({ undoDepth: past.length, redoDepth: 0 })
   }
 })
 

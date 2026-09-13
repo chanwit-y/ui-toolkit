@@ -17,7 +17,8 @@ type CodeViewerProps = {
 
 /**
  * Read-only code viewer with tabs, line numbers, copy-to-clipboard and minimal
- * JSON syntax tinting. Purely presentational so it can be reused anywhere.
+ * JSON syntax tinting, in the mockup's `.code` look (panel-2 well in light,
+ * near-black in dark; keys/numbers lifted to full ink). Purely presentational.
  */
 export function CodeViewer({
   tabs,
@@ -52,20 +53,16 @@ export function CodeViewer({
   }
 
   return (
-    <div className="overflow-hidden rounded-md border border-zinc-800 bg-zinc-950">
-      <div className="flex items-center justify-between gap-2 border-b border-zinc-800 bg-zinc-900/80 px-2 py-1.5">
-        <div className="flex items-center gap-1">
+    <div className="overflow-hidden rounded-md border border-line bg-panel-2 dark:bg-[#0a0b0d]">
+      <div className="flex items-center justify-between gap-2 border-b border-line px-1.5 py-1">
+        <div className="flex items-center gap-0.5">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               type="button"
+              aria-selected={tab.id === activeTab.id}
               onClick={() => setActiveId(tab.id)}
-              className={cn(
-                'rounded px-2 py-1 text-xs font-medium transition-colors',
-                tab.id === activeTab.id
-                  ? 'bg-zinc-800 text-zinc-100'
-                  : 'text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200',
-              )}
+              className="mini-tab flex-none whitespace-nowrap px-2 font-mono text-ui-sm! aria-selected:bg-surface"
             >
               {tab.label}
             </button>
@@ -74,16 +71,16 @@ export function CodeViewer({
         <button
           type="button"
           onClick={handleCopy}
-          className="inline-flex items-center gap-1 rounded px-1.5 py-1 text-xs font-medium text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
+          className="btn btn-sm border-transparent bg-transparent font-mono text-ui-sm text-ink-3 hover:text-ink"
         >
           {copied ? (
             <>
-              <Check size={13} aria-hidden="true" />
+              <Check size={12} aria-hidden="true" />
               Copied
             </>
           ) : (
             <>
-              <Copy size={13} aria-hidden="true" />
+              <Copy size={12} aria-hidden="true" />
               Copy
             </>
           )}
@@ -91,14 +88,14 @@ export function CodeViewer({
       </div>
 
       <div className={cn(maxHeightClassName, 'overflow-auto')}>
-        <pre className="min-w-full text-[11px] leading-relaxed">
+        <pre className="min-w-full py-1.5 font-mono text-[11px] leading-[1.65] text-ink-2">
           <code className="grid grid-cols-[auto_1fr]">
             {lines.map((line, i) => (
               <Fragment key={i}>
-                <span className="select-none border-r border-zinc-800/80 px-2 text-right text-zinc-600">
+                <span className="select-none border-r border-line px-2 text-right text-ink-3">
                   {i + 1}
                 </span>
-                <span className="whitespace-pre px-3 text-zinc-100">
+                <span className="whitespace-pre px-3">
                   {highlight(line, activeTab.language)}
                 </span>
               </Fragment>
@@ -132,25 +129,25 @@ function highlight(line: string, language: CodeTab['language']): ReactNode {
     const [text, propKey, str, num, keyword] = match
     if (propKey) {
       nodes.push(
-        <span key={key++} className="text-sky-300">
+        <span key={key++} className="text-ink">
           {text}
         </span>,
       )
     } else if (str) {
       nodes.push(
-        <span key={key++} className="text-emerald-300">
+        <span key={key++} className="text-ink-2">
           {text}
         </span>,
       )
     } else if (num) {
       nodes.push(
-        <span key={key++} className="text-amber-300">
+        <span key={key++} className="font-semibold text-ink">
           {text}
         </span>,
       )
     } else if (keyword) {
       nodes.push(
-        <span key={key++} className="text-teal-300">
+        <span key={key++} className="font-semibold text-ink">
           {text}
         </span>,
       )

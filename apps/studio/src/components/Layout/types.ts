@@ -1,6 +1,7 @@
 import type { DataType } from '@gummy-ui/ui'
 import type { Breakpoint } from './breakpoints'
 import type { ComponentType } from './componentCatalog'
+import type { DesignConfig, ElementStyle } from './designTypes'
 
 export type { Breakpoint } from './breakpoints'
 export { MAX_GRID_COLUMNS } from './breakpoints'
@@ -608,6 +609,8 @@ export type DataTableConfig = {
   /** Exports `snackbarError: "$exception"` — the only form the engine reads
    * (shows the API error message). */
   deleteSnackbarErrorException: boolean
+  /** Row click → page (engine `DataTableElement.rowNavigate`); absent = off. */
+  rowNavigate?: StudioNavigate
 }
 
 /**
@@ -923,9 +926,54 @@ export type ButtonActionKey =
   | 'SubmitFormToPatchAPI'
   | 'ClearCurrentFormSelected'
   | 'CloseModal'
+  | 'Navigate'
 
 /** Mirrors the library's `SnackbarVariant`. */
+
+/**
+ * Where one `:param` (or query key) of a navigation target gets its value —
+ * the studio-side mirror of the engine `DataValue` sources `NavigateTarget`
+ * accepts. `row` is only offered on a data table's row navigation.
+ */
+export type NavParamSource =
+  | { type: 'value'; value: string }
+  | { type: 'url'; key: string; source: 'param' | 'query' }
+  | { type: 'state'; key: string; path: string }
+  | { type: 'row'; key: string }
+
+/**
+ * A config-driven page change (see the grilled page-router design): the
+ * target page by stable id (resolved to its `key` at export — the engine
+ * `NavigateTarget.page`), one source per `:param` of the target's route, and
+ * whether to replace the history entry. Authored on a button (played by the
+ * `Navigate` action) or on a data table's row click.
+ */
+export type StudioNavigate = {
+  pageId: string
+  params: Record<string, NavParamSource>
+  replace: boolean
+}
+
+export function createDefaultNavigate(): StudioNavigate {
+  return { pageId: '', params: {}, replace: false }
+}
 export type ButtonSnackbarVariant = 'success' | 'error' | 'info' | 'warning' | 'neutral'
+
+/**
+ * A button's design-only navigation (see the grilled design): the engine has
+ * no link, toast or dialog concept, so this rides beside the engine
+ * `actions` untouched, exports into project.json, and is played by the
+ * studio itself in the Live Preview (link, mock overlay). Page changes are
+ * NOT design-only any more — they are the engine `Navigate` action with a
+ * `navigate` target (see {@link StudioNavigate}).
+ */
+export type DesignNavigation =
+  | { kind: 'none' }
+  | { kind: 'link'; href: string; newTab: boolean }
+  | { kind: 'toast'; targetItemId: string }
+  | { kind: 'dialog'; targetItemId: string }
+
+export const NO_NAVIGATION: DesignNavigation = { kind: 'none' }
 
 /**
  * Full editable config for a *standalone* button item — the visual slice plus
@@ -959,6 +1007,11 @@ export type ButtonItemConfig = ButtonConfig & {
   /** Exports `snackbarError: "$exception"` — the only form the engine reads
    * (it shows the thrown API error's message). */
   snackbarErrorException: boolean
+  /** Design-only navigation; absent on configs saved before it existed. */
+  navigation?: DesignNavigation
+  /** Target of the `Navigate` action (engine `ButtonElement.navigate`);
+   * absent until the action is added. */
+  navigate?: StudioNavigate
 }
 
 /** Defaults for a freshly dropped standalone button: direct mode, nothing wired. */
@@ -1139,6 +1192,8 @@ export type GridItemData = {
   /** Which palette component this cell represents (set on drop). */
   type: ComponentType
   settings: GridItemSettings
+  /** Per-element colours from the Style tab — design-only (see `designTypes.ts`). */
+  style?: ElementStyle
   /**
    * Component-specific config, discriminated by `type`: a textfield carries a
    * `TextFieldConfig`, a textarea a `TextareaConfig`, a select or autocomplete a
@@ -1180,6 +1235,7 @@ export type GridItemData = {
     | TabConfig
     | ModalConfig
     | PopoverConfig
+    | DesignConfig
   /**
    * Child canvases for the container-hosting types (see the grilled design:
    * drill-in editing, arbitrary depth). `container`/`paper`/`modal`/`popover`
@@ -1227,6 +1283,28 @@ export type ButtonRefTargets = {
  * its modal's child canvas, so enumeration must be cross-canvas. Used by the
  * button inspector's dropdowns and by the export's id → name resolution.
  */
+/** The toasts / dialogs a button can show, across every canvas of a page. */
+export function collectOverlayTargets(
+  items: GridItemData[],
+): { itemId: string; type: 'toast' | 'dialog'; title: string }[] {
+  const out: { itemId: string; type: 'toast' | 'dialog'; title: string }[] = []
+  const walk = (list: GridItemData[]) => {
+    for (const item of list) {
+      if ((item.type === 'toast' || item.type === 'dialog') && item.config) {
+        const c = item.config as { title?: string; person?: string; variant?: string }
+        out.push({
+          itemId: item.id,
+          type: item.type,
+          title: (c.variant === 'Person' ? c.person : c.title) || item.label,
+        })
+      }
+      item.childCanvases?.forEach((canvas) => walk(canvas.items))
+    }
+  }
+  walk(items)
+  return out
+}
+
 export function collectButtonTargets(items: GridItemData[]): ButtonRefTargets {
   const modals: ButtonRefTargets['modals'] = []
   const tables: ButtonRefTargets['tables'] = []

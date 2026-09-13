@@ -37,6 +37,8 @@ export type ModelDef = {
   id: string
   name: string
   fields: ModelField[]
+  /** Shared-library group (`GroupDef.id`); null/absent = Ungrouped. Never serialized. */
+  groupId?: string | null
 }
 
 export const PRIMITIVE_SET = new Set<string>(PRIMITIVES)

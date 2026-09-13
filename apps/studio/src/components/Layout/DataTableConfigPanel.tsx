@@ -1,13 +1,18 @@
 import { useState, type ReactNode } from 'react'
 import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react'
 import { IconButton, Input, Select, SortableCardList } from '../common'
-import { useApiStore } from '../Api/apiStore'
+import { useProjectEndpoints } from '../Library/scope'
 import { urlParams } from '../Api/warnings'
 import { useGridStore } from './gridStore'
 import { EditContentsButton } from './ContainerHostConfigPanel'
 import { EndpointPicker } from './SelectFieldConfigPanel'
-import { SNACKBAR_VARIANT_OPTIONS, WiringHint } from './ButtonConfigPanel'
-import type { ButtonSnackbarVariant, DataTableColumnConfig, DataTableConfig } from './types'
+import { NavigateEditor, SNACKBAR_VARIANT_OPTIONS, WiringHint } from './ButtonConfigPanel'
+import {
+  createDefaultNavigate,
+  type ButtonSnackbarVariant,
+  type DataTableColumnConfig,
+  type DataTableConfig,
+} from './types'
 
 const ALIGN_OPTIONS = [
   { value: 'start', label: 'start' },
@@ -19,7 +24,7 @@ const ALIGN_OPTIONS = [
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="block space-y-1">
-      <span className="text-xs font-medium text-zinc-600">{label}</span>
+      <span className="text-ui-sm font-medium text-ink-2">{label}</span>
       {children}
     </label>
   )
@@ -37,12 +42,12 @@ function Toggle({
 }) {
   return (
     <label className="flex items-center justify-between gap-2">
-      <span className="text-xs font-medium text-zinc-600">{label}</span>
+      <span className="text-ui-sm font-medium text-ink-2">{label}</span>
       <input
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
-        className="h-4 w-4 rounded border-zinc-300 text-teal-600 focus:ring-teal-500/30"
+        className="h-4 w-4 rounded border-line-strong text-ink focus:ring-focus/30"
       />
     </label>
   )
@@ -96,7 +101,7 @@ function ColumnsEditor({
         <SortableCardList
           items={columns}
           onReorder={onChange}
-          cardClassName="space-y-2 rounded-lg border border-zinc-200 bg-zinc-50/60 p-2"
+          cardClassName="space-y-2 rounded-lg border border-line bg-panel p-2"
           gripLabel={(_, index) => `Reorder column ${index + 1}`}
         >
           {(column, index, { grip, dragging }) => {
@@ -155,7 +160,7 @@ function ColumnsEditor({
                   <button
                     type="button"
                     onClick={() => setExpandedId(expanded ? null : column.id)}
-                    className="flex items-center gap-0.5 text-xs font-medium text-zinc-500 transition-colors hover:text-teal-600"
+                    className="flex items-center gap-0.5 text-ui-sm font-medium text-ink-3 transition-colors hover:text-ink"
                   >
                     {expanded ? (
                       <ChevronUp className="h-3.5 w-3.5" aria-hidden="true" />
@@ -168,7 +173,7 @@ function ColumnsEditor({
                 <IconButton
                   label={`Remove column ${index + 1}`}
                   onClick={() => remove(index)}
-                  className="h-6! w-6! text-zinc-400 hover:text-red-500"
+                  className="h-6! w-6! text-ink-3 hover:text-danger"
                 >
                   <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                 </IconButton>
@@ -180,7 +185,7 @@ function ColumnsEditor({
         <button
           type="button"
           onClick={add}
-          className="flex w-full items-center justify-center gap-1 rounded-md border border-dashed border-zinc-300 py-1.5 text-xs font-medium text-zinc-500 transition-colors hover:border-teal-400 hover:text-teal-600"
+          className="flex w-full items-center justify-center gap-1 rounded-md border border-dashed border-line-strong py-1.5 text-ui-sm font-medium text-ink-3 transition-colors hover:border-focus hover:text-ink"
         >
           <Plus className="h-3.5 w-3.5" aria-hidden="true" />
           Add column
@@ -207,7 +212,7 @@ type DataTableConfigPanelProps = {
  */
 export function DataTableConfigPanel({ itemId, config }: DataTableConfigPanelProps) {
   const updateItemConfig = useGridStore((s) => s.updateItemConfig)
-  const endpoints = useApiStore((s) => s.endpoints)
+  const endpoints = useProjectEndpoints()
   const set = <K extends keyof DataTableConfig>(key: K, value: DataTableConfig[K]) =>
     updateItemConfig(itemId, { [key]: value } as Partial<DataTableConfig>)
 
@@ -223,7 +228,7 @@ export function DataTableConfigPanel({ itemId, config }: DataTableConfigPanelPro
 
   return (
     <div className="space-y-3">
-      <h3 className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400">
+      <h3 className="text-ui-sm font-semibold uppercase tracking-wide text-ink-3">
         Data Table
       </h3>
 
@@ -263,6 +268,19 @@ export function DataTableConfigPanel({ itemId, config }: DataTableConfigPanelPro
       />
 
       <Toggle
+        label="Row click opens a page"
+        checked={!!config.rowNavigate}
+        onChange={(v) => set('rowNavigate', v ? createDefaultNavigate() : undefined)}
+      />
+      {config.rowNavigate && (
+        <NavigateEditor
+          value={config.rowNavigate}
+          onChange={(v) => set('rowNavigate', v)}
+          allowRow
+        />
+      )}
+
+      <Toggle
         label="Edit action"
         checked={config.canEdit}
         onChange={(v) => set('canEdit', v)}
@@ -270,7 +288,7 @@ export function DataTableConfigPanel({ itemId, config }: DataTableConfigPanelPro
       {config.canEdit && (
         <>
           <EditContentsButton itemId={itemId}>Edit modal contents</EditContentsButton>
-          <p className="text-[11px] leading-relaxed text-zinc-400">
+          <p className="text-ui-sm leading-relaxed text-ink-3">
             The edit button opens a modal with these contents; the selected row
             prefills fields whose names match its columns.
           </p>

@@ -7,9 +7,10 @@ function createId(): string {
   return crypto.randomUUID()
 }
 
-function createEndpoint(name: string): EndpointDef {
+function createEndpoint(name: string, groupId: string | null = null): EndpointDef {
   return {
     id: createId(),
+    groupId,
     name,
     description: '',
     url: '',
@@ -42,10 +43,13 @@ type ApiStore = {
   endpoints: EndpointDef[]
   selectedEndpointId: string | null
 
+  /** Replace every endpoint (workspace open / switch). */
+  hydrate: (endpoints: EndpointDef[]) => void
   selectEndpoint: (id: string) => void
-  addEndpoint: () => void
+  /** New endpoint, filed under `groupId` (null = Ungrouped). Returns its id. */
+  addEndpoint: (groupId?: string | null) => string
   /** Clone an endpoint (method/url/refs/description) under an auto-suffixed name. */
-  duplicateEndpoint: (id: string) => void
+  duplicateEndpoint: (id: string) => string | null
   deleteEndpoint: (id: string) => void
   renameEndpoint: (id: string, name: string) => void
   /** Patch any non-identity field of an endpoint (rename goes through renameEndpoint). */
@@ -65,27 +69,30 @@ function patchEndpoint(
   return endpoints.map((e) => (e.id === id ? fn(e) : e))
 }
 
-export const useApiStore = create<ApiStore>((set) => ({
+export const useApiStore = create<ApiStore>((set, get) => ({
   endpoints: initialEndpoints,
   selectedEndpointId: initialEndpoints[0]?.id ?? null,
 
+  hydrate: (endpoints) =>
+    set({ endpoints, selectedEndpointId: endpoints[0]?.id ?? null }),
+
   selectEndpoint: (id) => set({ selectedEndpointId: id }),
 
-  addEndpoint: () =>
-    set((s) => {
-      const endpoint = createEndpoint(nextEndpointName(s.endpoints))
-      return { endpoints: [...s.endpoints, endpoint], selectedEndpointId: endpoint.id }
-    }),
+  addEndpoint: (groupId = null) => {
+    const endpoint = createEndpoint(nextEndpointName(get().endpoints), groupId)
+    set((s) => ({ endpoints: [...s.endpoints, endpoint], selectedEndpointId: endpoint.id }))
+    return endpoint.id
+  },
 
-  duplicateEndpoint: (id) =>
+  duplicateEndpoint: (id) => {
+    const source = get().endpoints.find((e) => e.id === id)
+    if (!source) return null
+    const copy: EndpointDef = {
+      ...source,
+      id: createId(),
+      name: nextCopyName(get().endpoints, source.name || 'endpoint'),
+    }
     set((s) => {
-      const source = s.endpoints.find((e) => e.id === id)
-      if (!source) return s
-      const copy: EndpointDef = {
-        ...source,
-        id: createId(),
-        name: nextCopyName(s.endpoints, source.name || 'endpoint'),
-      }
       const index = s.endpoints.indexOf(source)
       const endpoints = [
         ...s.endpoints.slice(0, index + 1),
@@ -93,7 +100,9 @@ export const useApiStore = create<ApiStore>((set) => ({
         ...s.endpoints.slice(index + 1),
       ]
       return { endpoints, selectedEndpointId: copy.id }
-    }),
+    })
+    return copy.id
+  },
 
   deleteEndpoint: (id) =>
     set((s) => {

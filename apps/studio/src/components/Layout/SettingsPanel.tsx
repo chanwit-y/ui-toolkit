@@ -1,5 +1,7 @@
-import { Input } from '../common'
+import { Trash2 } from 'lucide-react'
+import { Button, Input } from '../common'
 import { MAX_GRID_COLUMNS } from './breakpoints'
+import { COMPONENT_BY_TYPE } from './componentCatalog'
 import { useGridStore, useSelectedItem } from './gridStore'
 import { containerResponsiveFields, itemResponsiveFields } from './gridProperties'
 import { ResponsivePropertyForm } from './ResponsivePropertyForm'
@@ -10,7 +12,7 @@ export function ContainerSettingsPanel() {
 
   return (
     <ResponsivePropertyForm
-      title="Container per breakpoint"
+      title="Grid per breakpoint"
       fields={containerResponsiveFields}
       values={settings}
       maxColumns={MAX_GRID_COLUMNS}
@@ -27,21 +29,19 @@ export function ItemSettingsPanel() {
   const removeSelectedItem = useGridStore((s) => s.removeSelectedItem)
 
   if (!item) return null
+  const def = COMPONENT_BY_TYPE[item.type]
 
   return (
-    <div className="space-y-4">
-      <h3 className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400">
-        Layout
-      </h3>
-      <label className="block space-y-1">
-        <span className="text-xs font-medium text-zinc-600">Label</span>
+    <div className="space-y-3">
+      <label className="block">
+        <span className="mb-1 block text-ui-sm font-medium text-ink-2">Label</span>
         <Input
           value={item.label}
           onChange={(e) => updateItemLabel(item.id, e.target.value)}
         />
       </label>
       <ResponsivePropertyForm
-        title="Item per breakpoint"
+        title="Cell per breakpoint"
         fields={itemResponsiveFields}
         defaultBreakpoint={previewBreakpoint}
         values={item.settings}
@@ -50,13 +50,21 @@ export function ItemSettingsPanel() {
           updateItem(item.id, bp, key, value, animate)
         }
       />
-      <button
-        type="button"
-        onClick={removeSelectedItem}
-        className="w-full rounded-md border border-red-200 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-100"
-      >
-        Remove item
-      </button>
+      <div>
+        <span className="mb-1 block text-ui-sm font-medium text-ink-2">Element</span>
+        <Button size="sm" onClick={removeSelectedItem} className="text-danger">
+          <Trash2 size={12} aria-hidden="true" />
+          Delete
+        </Button>
+      </div>
+      <div className="box mt-1 p-3">
+        <span className="sec-label mb-2 block">Element</span>
+        <div className="flex items-center gap-2 border-b border-line py-1.5">
+          <span className="flex-1 font-mono text-ui-sm text-ink">{def?.label ?? item.type}</span>
+          <span className="type-pill">{item.type}</span>
+        </div>
+        <div className="py-1.5 font-mono text-ui-sm text-ink-3">{item.id}</div>
+      </div>
     </div>
   )
 }

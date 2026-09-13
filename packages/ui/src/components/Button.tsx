@@ -7,6 +7,7 @@ import { ConfirmBox } from "./ConfirmBox";
 import { useLoading, useTheme } from "./context";
 import { useData } from "./context/DataProvider";
 import { useStord } from "./core/stord";
+import { useNavigateTo } from "./core/pages";
 import Icon from "./Icon";
 import type { IconData } from "./core/const/iconData";
 import { useSnackbar } from "./Snackbar";
@@ -58,9 +59,11 @@ const Button = forwardRef<ElementRef<typeof RadixButton>, ButtonProps>(({
 	reloadDataTable,
 	color,
 	modalId,
+	navigate,
 }) => {
 
 	const fnCtxs = useStord((state) => state.fnCtxs)
+	const navigateTo = useNavigateTo()
 	const { clearCurrentFormSelected } = useData()
 	const { showSnackbar } = useSnackbar()
 	const { handleSubmit, formState, trigger } = useFormContext()
@@ -144,6 +147,9 @@ const Button = forwardRef<ElementRef<typeof RadixButton>, ButtonProps>(({
 						fnCtxs?.["modalDatable"]?.bind(fnCtxs)?.(false)
 						fnCtxs?.["modalEdit"]?.bind(fnCtxs)?.(false)
 						break;
+					case 'Navigate':
+						navigateTo(navigate)
+						break;
 					default:
 						break;
 				}
@@ -161,7 +167,7 @@ const Button = forwardRef<ElementRef<typeof RadixButton>, ButtonProps>(({
 				})
 			}
 		}
-	}, [api, clearCurrentFormSelected, handleSubmit, fnCtxs, onClick, showSnackbar, snackbarSuccess, startLoading, stopLoading, modalId, reloadDataTable, formState, trigger, snackbarError])
+	}, [api, clearCurrentFormSelected, handleSubmit, fnCtxs, onClick, showSnackbar, snackbarSuccess, startLoading, stopLoading, modalId, reloadDataTable, formState, trigger, snackbarError, navigateTo, navigate])
 
 	const handleConfirm = useCallback((isConfirm: boolean) => {
 		if (isConfirm) {

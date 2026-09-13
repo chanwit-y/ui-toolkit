@@ -1,18 +1,17 @@
-import React, { useMemo } from "react";
-import { Link, Route, Routes, useLocation, useParams } from "react-router-dom";
+import React, { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import {
-  Core,
+  AppShell,
   DataProvider,
   HttpClientFactory,
+  PageRouter,
   ThemeProvider,
   ThemeToggle,
 } from "@gummy-ui/ui";
 import { model } from "./config/country/model";
 import { api } from "./config/country/api";
-import {
-  containerCountryList,
-  containerCountryStateDetail,
-} from "./config/country/container";
+import { pages } from "./config/country/pages";
+import { menu } from "./config/country/menu";
 import { theme, components } from "./config/theme";
 
 const http = new HttpClientFactory(
@@ -22,71 +21,11 @@ const http = new HttpClientFactory(
   30000
 );
 
-function ListPage() {
-  const ui = useMemo(
-    () => new Core(http as any, model, api, containerCountryList).run(),
-    []
-  );
-  return (
-    <>
-      <nav className="mb-4 flex gap-3 text-sm">
-        <span className="text-gray-500 dark:text-gray-400">
-          State-loader demo →
-        </span>
-        {["1", "3", "12"].map((id) => (
-          <Link
-            key={id}
-            to={`/country/${id}`}
-            className="text-[var(--accent-11)] hover:text-[var(--accent-12)] underline underline-offset-2"
-          >
-            /country/{id}
-          </Link>
-        ))}
-      </nav>
-      {ui}
-    </>
-  );
-}
-
-function DetailPage() {
-  // Re-run Core per :id so react-query inside the loader keys off the new param.
-  const { id } = useParams();
-  const ui = useMemo(
-    () => new Core(http as any, model, api, containerCountryStateDetail).run(),
-    []
-  );
-  return (
-    <>
-      <nav className="mb-4 flex items-center gap-3 text-sm">
-        <Link
-          to="/"
-          className="text-[var(--accent-11)] hover:text-[var(--accent-12)] underline underline-offset-2"
-        >
-          ← Back to list
-        </Link>
-        <span className="text-gray-500 dark:text-gray-400">
-          loading country id <code className="font-mono">{id}</code> into global
-          state
-        </span>
-        {["1", "3", "12"].map((next) => (
-          <Link
-            key={next}
-            to={`/country/${next}`}
-            className="text-[var(--accent-11)] hover:text-[var(--accent-12)] underline underline-offset-2"
-          >
-            {next}
-          </Link>
-        ))}
-      </nav>
-      {ui}
-    </>
-  );
-}
-
 /**
  * Replays a page-enter animation on every navigation. Keying the wrapper by the
  * route pathname forces a remount, so the CSS `.page-enter` animation restarts
- * each time the user lands on a new page.
+ * each time the user lands on a new page. Kept outside `PageRouter` on purpose:
+ * transitions are the consumer's policy, not the router's.
  */
 function PageTransition({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation();
@@ -97,35 +36,105 @@ function PageTransition({ children }: { children: React.ReactNode }) {
   );
 }
 
-function AppContent() {
+function NotFound() {
+  const { pathname } = useLocation();
   return (
-    <>
-      <header className="flex items-center justify-between px-8 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
-        <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-          Gummy UI — Example
-        </h1>
-        <ThemeToggle />
-      </header>
-      <main className="p-8 flex-1 overflow-auto">
+    <div className="text-sm text-gray-500 dark:text-gray-400">
+      No page matches <code className="font-mono">{pathname}</code>.{" "}
+      <Link
+        to="/"
+        className="text-[var(--accent-11)] hover:text-[var(--accent-12)] underline underline-offset-2"
+      >
+        Back to the list
+      </Link>
+    </div>
+  );
+}
+
+type Placement = "sidebar" | "top";
+
+/** Demo switch for `AppShell.navigation` — the same menu as a sidebar or a top strip. */
+function NavPlacementToggle({
+  value,
+  onChange,
+}: {
+  value: Placement;
+  onChange: (v: Placement) => void;
+}) {
+  const options: { value: Placement; label: string }[] = [
+    { value: "sidebar", label: "Side" },
+    { value: "top", label: "Top" },
+  ];
+  return (
+    <div
+      role="radiogroup"
+      aria-label="Navigation placement"
+      className="inline-flex rounded-md border border-[var(--gray-6)] p-0.5 text-xs"
+    >
+      {options.map((o) => (
+        <button
+          key={o.value}
+          type="button"
+          role="radio"
+          aria-checked={value === o.value}
+          onClick={() => onChange(o.value)}
+          className={`rounded px-2 py-0.5 ${
+            value === o.value
+              ? "bg-[var(--accent-9)] text-[var(--accent-contrast)]"
+              : "text-[var(--gray-11)] hover:text-[var(--gray-12)]"
+          }`}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function AppContent() {
+  const [navigation, setNavigation] = useState<Placement>("sidebar");
+  return (
+    // The shell owns the chrome: top bar (brand, collapse toggle, ThemeToggle)
+    // and the menu from config/country/menu.ts — as a sidebar or, via the
+    // toggle, a top strip. The breadcrumb strip follows `parent` in
+    // config/country/pages.ts. Routes stay in PageRouter; the transition
+    // wrapper is the consumer's, as before.
+    <AppShell
+      pages={pages}
+      menu={menu}
+      navigation={navigation}
+      appBar={{
+        title: "Gummy UI — Example",
+        icon: "globe",
+        sidebarToggle: { hide: "panelLeftClose", show: "panelLeftOpen" },
+      }}
+      header={
+        <>
+          <NavPlacementToggle value={navigation} onChange={setNavigation} />
+          <ThemeToggle />
+        </>
+      }
+      footer={<span className="text-xs">@gummy-ui/ui · example</span>}
+    >
+      <div className="p-8">
         <PageTransition>
-          <Routes>
-            <Route path="/" element={<ListPage />} />
-            <Route path="/country/:id" element={<DetailPage />} />
-          </Routes>
+          <PageRouter
+            http={http as any}
+            model={model}
+            api={api}
+            pages={pages}
+            notFound={<NotFound />}
+          />
         </PageTransition>
-      </main>
-    </>
+      </div>
+    </AppShell>
   );
 }
 
 export function App() {
   return (
     <DataProvider>
-      <ThemeProvider
-        theme={theme}
-        components={components}
-        className="flex flex-col w-full min-h-screen"
-      >
+      <ThemeProvider theme={theme} components={components}>
         <AppContent />
       </ThemeProvider>
     </DataProvider>

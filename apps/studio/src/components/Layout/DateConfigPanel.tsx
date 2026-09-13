@@ -23,7 +23,7 @@ const RANGE_FORMAT_OPTIONS = ['yyyy-MM-dd', 'MM/dd/yyyy', 'dd/MM/yyyy'].map((v) 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="block space-y-1">
-      <span className="text-xs font-medium text-zinc-600">{label}</span>
+      <span className="text-ui-sm font-medium text-ink-2">{label}</span>
       {children}
     </label>
   )
@@ -41,12 +41,12 @@ function Toggle({
 }) {
   return (
     <label className="flex items-center justify-between gap-2">
-      <span className="text-xs font-medium text-zinc-600">{label}</span>
+      <span className="text-ui-sm font-medium text-ink-2">{label}</span>
       <input
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
-        className="h-4 w-4 rounded border-zinc-300 text-teal-600 focus:ring-teal-500/30"
+        className="h-4 w-4 rounded border-line-strong text-ink focus:ring-focus/30"
       />
     </label>
   )
@@ -85,7 +85,7 @@ export function DateConfigPanel({ itemId, config }: DateConfigPanelProps) {
 
   return (
     <div className="space-y-3">
-      <h3 className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400">
+      <h3 className="text-ui-sm font-semibold uppercase tracking-wide text-ink-3">
         {HEADINGS[config.kind]}
       </h3>
 
@@ -168,7 +168,6 @@ export function DateConfigPanel({ itemId, config }: DateConfigPanelProps) {
             options={WEEK_START_OPTIONS}
             value={String(config.weekStartsOn)}
             onChange={(v) => set('weekStartsOn', Number(v) as DateConfig['weekStartsOn'])}
-            className="rounded-lg border border-zinc-200 bg-zinc-50 p-1"
             aria-label="Week starts on"
           />
         </Field>

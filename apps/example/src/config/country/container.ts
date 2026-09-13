@@ -2416,6 +2416,11 @@ export const groupList: Bin[] = [
     element: {
       name: "dtCountry",
       title: "Countries",
+      // Router demo: clicking a row opens that country's detail page.
+      rowNavigate: {
+        page: "countryDetail",
+        params: { id: { type: "row", key: "_id" } },
+      },
       modalContainer: containerCountryDetail,
       modalMaxWidth: "800px",
       modalMinWidth: "700px",
@@ -2705,6 +2710,34 @@ const countryStateDetailBins: Bin[] = [
       isRequired: false,
       errorMessage: "",
       value: { type: "state", key: "countryDetail", path: "updated_at" },
+    },
+  },
+  {
+    sm: "6", md: "3", lg: "2", xl: "2",
+    type: "button",
+    justifySelf: "start",
+    alignSelf: "center",
+    element: {
+      label: "Back to list",
+      actions: ["Navigate"],
+      navigate: { page: "countryList" },
+    },
+  },
+  {
+    sm: "6", md: "3", lg: "2", xl: "2",
+    type: "button",
+    justifySelf: "start",
+    alignSelf: "center",
+    element: {
+      label: "Next country",
+      actions: ["Navigate"],
+      // `replace` keeps the browser Back button pointing at the list, not at
+      // every country stepped through. `:id` comes from the `?next=` query.
+      navigate: {
+        page: "countryDetail",
+        params: { id: { type: "url", key: "next", source: "query" } },
+        replace: true,
+      },
     },
   },
 ];

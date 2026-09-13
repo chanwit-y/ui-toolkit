@@ -80,20 +80,20 @@ export function TestRunSection({ endpoint }: { endpoint: EndpointDef }) {
     result == null
       ? ''
       : result.ok
-        ? 'bg-teal-50 text-teal-700 border-teal-200'
-        : 'bg-red-50 text-red-700 border-red-200'
+        ? 'bg-panel-2 text-ink border-line-strong'
+        : 'bg-danger/8 text-danger border-danger/40'
 
   return (
-    <div className="space-y-3 rounded-md border border-zinc-200 p-3">
+    <div className="space-y-3 rounded-md border border-line p-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+        <h3 className="text-ui-sm font-semibold uppercase tracking-wide text-ink-3">
           Test run
         </h3>
         {rows.length > 0 && (
           <button
             type="button"
             onClick={() => resetInputs(endpoint.id)}
-            className="inline-flex items-center gap-1 text-[11px] font-medium text-zinc-400 transition-colors hover:text-teal-600"
+            className="inline-flex items-center gap-1 text-ui-sm font-medium text-ink-3 transition-colors hover:text-ink"
           >
             <RotateCcw size={11} aria-hidden="true" />
             Reset to model skeleton
@@ -103,7 +103,7 @@ export function TestRunSection({ endpoint }: { endpoint: EndpointDef }) {
 
       {parsed.map((row) => (
         <div key={row.key} className="space-y-1">
-          <span className="block text-xs font-medium text-zinc-600">
+          <span className="block text-ui-sm font-medium text-ink-2">
             {row.label} (JSON)
           </span>
           <textarea
@@ -111,10 +111,10 @@ export function TestRunSection({ endpoint }: { endpoint: EndpointDef }) {
             onChange={(e) => setInput(endpoint.id, row.key, e.target.value)}
             rows={Math.min(10, Math.max(3, row.text.split('\n').length))}
             spellCheck={false}
-            className="w-full resize-y rounded-md border border-zinc-300 bg-white px-2.5 py-1.5 font-mono text-xs text-zinc-900 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
+            className="w-full resize-y rounded-md border border-line-strong bg-surface px-2.5 py-1.5 font-mono text-ui-sm text-ink outline-none focus:border-focus focus:ring-2 focus:ring-focus/20"
           />
           {row.error && (
-            <p className="flex items-start gap-1 text-xs text-amber-600">
+            <p className="flex items-start gap-1 text-ui-sm text-warn">
               <AlertTriangle size={12} aria-hidden="true" className="mt-0.5 shrink-0" />
               {row.error}
             </p>
@@ -128,14 +128,14 @@ export function TestRunSection({ endpoint }: { endpoint: EndpointDef }) {
           disabled={!!gap || running || parseErrors.length > 0}
           onClick={run}
           className={cn(
-            'inline-flex items-center gap-1.5 rounded-md bg-teal-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-teal-700',
-            'disabled:cursor-not-allowed disabled:bg-zinc-200 disabled:text-zinc-400',
+            'inline-flex items-center gap-1.5 rounded-md bg-accent px-3 py-1.5 text-ui-sm font-semibold text-accent-ink transition-colors hover:bg-accent',
+            'disabled:cursor-not-allowed disabled:bg-line disabled:text-ink-3',
           )}
         >
           <Play size={12} aria-hidden="true" />
           {running ? 'Running…' : 'Run'}
         </button>
-        <p className="text-[11px] text-zinc-400">
+        <p className="text-ui-sm text-ink-3">
           {gap
             ? `Can't run: ${gap}.`
             : parseErrors.length > 0
@@ -146,7 +146,7 @@ export function TestRunSection({ endpoint }: { endpoint: EndpointDef }) {
 
       {result && (
         <div className="space-y-2">
-          <div className="flex items-center gap-2 text-xs">
+          <div className="flex items-center gap-2 text-ui-sm">
             <span
               className={cn(
                 'inline-flex items-center rounded-full border px-2 py-0.5 font-semibold',
@@ -156,26 +156,26 @@ export function TestRunSection({ endpoint }: { endpoint: EndpointDef }) {
               {result.ok ? 'OK' : 'Error'}
               {result.status != null ? ` · ${result.status}` : ''}
             </span>
-            <span className="text-zinc-400">{result.durationMs} ms</span>
+            <span className="text-ink-3">{result.durationMs} ms</span>
             {result.errorMessage && (
-              <span className="min-w-0 truncate text-red-600">{result.errorMessage}</span>
+              <span className="min-w-0 truncate text-danger">{result.errorMessage}</span>
             )}
           </div>
 
           {result.validation.length > 0 && (
-            <div className="space-y-0.5 rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5">
-              <p className="text-[11px] font-medium text-amber-700">
+            <div className="space-y-0.5 rounded-md border border-warn/40 bg-warn/8 px-2 py-1.5">
+              <p className="text-ui-sm font-medium text-warn">
                 Response doesn’t match the response model:
               </p>
               {result.validation.map((v) => (
-                <p key={v} className="font-mono text-[11px] text-amber-700">
+                <p key={v} className="font-mono text-ui-sm text-warn">
                   {v}
                 </p>
               ))}
             </div>
           )}
 
-          <pre className="max-h-72 overflow-auto rounded-md border border-zinc-200 bg-zinc-50 p-2 font-mono text-[11px] leading-relaxed text-zinc-700">
+          <pre className="max-h-72 overflow-auto rounded-md border border-line bg-panel p-2 font-mono text-ui-sm leading-relaxed text-ink-2">
             {result.body === undefined
               ? '(no response body)'
               : JSON.stringify(result.body, null, 2)}

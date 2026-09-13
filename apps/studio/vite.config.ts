@@ -14,6 +14,15 @@ const reactPath = fileURLToPath(
 const reactDomPath = fileURLToPath(
   new URL('./node_modules/react-dom', import.meta.url),
 )
+// Same story for react-router: the library's built output imports
+// `react-router-dom` (a peer dep) which would resolve to the root's v6 copy,
+// while studio runs v7 — two copies means the engine's `useNavigate` /
+// `useParams` can't see studio's router. Pin it to studio's v7 (which pulls
+// its own nested `react-router`; aliasing that one too would break its
+// `react-router/dom` subpath export).
+const reactRouterDomPath = fileURLToPath(
+  new URL('./node_modules/react-router-dom', import.meta.url),
+)
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -25,10 +34,11 @@ export default defineConfig(({ mode }) => ({
     'process.env.NODE_ENV': JSON.stringify(mode),
   },
   resolve: {
-    dedupe: ['react', 'react-dom'],
+    dedupe: ['react', 'react-dom', 'react-router-dom'],
     alias: {
       react: reactPath,
       'react-dom': reactDomPath,
+      'react-router-dom': reactRouterDomPath,
     },
   },
 }))

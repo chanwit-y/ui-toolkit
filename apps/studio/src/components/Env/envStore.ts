@@ -18,6 +18,8 @@ function nextVarName(vars: EnvVarDef[]): string {
 type EnvStore = {
   vars: EnvVarDef[]
 
+  /** Replace every var (workspace open / switch). */
+  hydrate: (vars: EnvVarDef[]) => void
   addVar: () => void
   /** No-op for locked rows (API_URL) — studio consumes them by name. */
   removeVar: (id: string) => void
@@ -36,6 +38,8 @@ export const useEnvStore = create<EnvStore>((set) => ({
   // Studio boots with the country mock (see seed/country.ts): API_URL preset
   // to the mock API so the Live Preview fetches with zero setup.
   vars: countrySeedEnvVars(),
+
+  hydrate: (vars) => set({ vars }),
 
   addVar: () =>
     set((s) => ({

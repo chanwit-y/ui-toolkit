@@ -1,5 +1,6 @@
 export { ApiEditor } from './Api'
 export { EnvEditor } from './Env'
+export { MenuEditor } from './Menu'
 export { AppShell } from './AppShell'
 export { Grid } from './Grid'
 export { Layout } from './Layout'

@@ -51,13 +51,13 @@ const TYPE_STYLE: Record<
   FieldKind,
   { icon: ComponentType<{ size?: number; 'aria-hidden'?: boolean }>; pill: string }
 > = {
-  string: { icon: Type, pill: 'bg-blue-50 text-blue-600' },
-  number: { icon: Hash, pill: 'bg-amber-50 text-amber-600' },
-  integer: { icon: Hash, pill: 'bg-amber-50 text-amber-600' },
+  string: { icon: Type, pill: 'bg-panel-2 text-ink' },
+  number: { icon: Hash, pill: 'bg-warn/8 text-warn' },
+  integer: { icon: Hash, pill: 'bg-warn/8 text-warn' },
   boolean: { icon: ToggleLeft, pill: 'bg-violet-50 text-violet-600' },
-  any: { icon: Asterisk, pill: 'bg-zinc-100 text-zinc-500' },
-  object: { icon: Braces, pill: 'bg-teal-50 text-teal-600' },
-  array: { icon: Brackets, pill: 'bg-indigo-50 text-indigo-600' },
+  any: { icon: Asterisk, pill: 'bg-panel-2 text-ink-3' },
+  object: { icon: Braces, pill: 'bg-panel-2 text-ink' },
+  array: { icon: Brackets, pill: 'bg-panel-2 text-ink' },
 }
 
 /**
@@ -208,7 +208,7 @@ function FieldRow({ modelId, field, depth }: FieldRowProps) {
               onClick={addNested}
               title="Add nested field"
               aria-label="Add nested field"
-              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-zinc-300 bg-white text-zinc-600 transition-colors hover:bg-zinc-50 hover:text-teal-700"
+              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-line-strong bg-surface text-ink-2 transition-colors hover:bg-panel hover:text-ink"
             >
               <Plus size={15} aria-hidden="true" />
             </button>
@@ -218,7 +218,7 @@ function FieldRow({ modelId, field, depth }: FieldRowProps) {
             onClick={handleDelete}
             title="Delete field"
             aria-label="Delete field"
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-zinc-300 bg-white text-zinc-500 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-600"
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-line-strong bg-surface text-ink-3 transition-colors hover:border-danger/40 hover:bg-danger/8 hover:text-danger"
           >
             <Trash2 size={15} aria-hidden="true" />
           </button>
@@ -235,19 +235,19 @@ function FieldRow({ modelId, field, depth }: FieldRowProps) {
             type="button"
             onClick={() => beginEdit(modelId, field)}
             title="Click to edit"
-            className="flex shrink-0 items-center gap-2 rounded-md py-1.5 text-left transition-colors hover:bg-zinc-100"
+            className="flex shrink-0 items-center gap-2 rounded-md py-1.5 text-left transition-colors hover:bg-panel-2"
           >
             <span
               className={cn(
-                'w-44 max-w-full shrink-0 truncate px-2.5 font-mono text-sm',
-                field.name.trim() ? 'text-zinc-800' : 'italic text-zinc-400',
+                'w-44 max-w-full shrink-0 truncate px-2.5 font-mono text-ui',
+                field.name.trim() ? 'text-ink' : 'italic text-ink-3',
               )}
             >
               {field.name.trim() || 'unnamed'}
             </span>
             <span
               className={cn(
-                'inline-flex shrink-0 items-center gap-1 rounded px-1.5 py-0.5 font-mono text-[11px] font-medium',
+                'inline-flex shrink-0 items-center gap-1 rounded px-1.5 py-0.5 font-mono text-ui-sm font-medium',
                 TYPE_STYLE[field.kind].pill,
               )}
             >
@@ -264,7 +264,7 @@ function FieldRow({ modelId, field, depth }: FieldRowProps) {
               onClick={addNested}
               title="Add nested field"
               aria-label="Add nested field"
-              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-zinc-500 opacity-0 transition-opacity hover:bg-zinc-50 hover:text-teal-700 group-hover:opacity-100"
+              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-3 opacity-0 transition-opacity hover:bg-panel hover:text-ink group-hover:opacity-100"
             >
               <Plus size={15} aria-hidden="true" />
             </button>
@@ -274,7 +274,7 @@ function FieldRow({ modelId, field, depth }: FieldRowProps) {
             onClick={handleDelete}
             title="Delete field"
             aria-label="Delete field"
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-zinc-400 opacity-0 transition-opacity hover:text-red-600 group-hover:opacity-100"
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-3 opacity-0 transition-opacity hover:text-danger group-hover:opacity-100"
           >
             <Trash2 size={15} aria-hidden="true" />
           </button>
@@ -282,9 +282,9 @@ function FieldRow({ modelId, field, depth }: FieldRowProps) {
       )}
 
       {hasChildren && (
-        <div className="ml-3 border-l border-zinc-200 pl-3">
+        <div className="ml-3 border-l border-line pl-3">
           {field.children.length === 0 ? (
-            <p className="py-1 text-xs text-zinc-400">
+            <p className="py-1 text-ui-sm text-ink-3">
               No nested fields yet — use + to add one.
             </p>
           ) : (
@@ -362,12 +362,12 @@ export function FieldTree({ modelId, fields }: FieldTreeProps) {
           ref={emptyRef}
           className="flex flex-col items-center justify-center gap-3 py-16 text-center"
         >
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100 text-zinc-400">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-panel-2 text-ink-3">
             <Braces size={22} aria-hidden="true" />
           </div>
           <div className="space-y-1">
-            <h3 className="text-sm font-semibold text-zinc-700">No fields yet</h3>
-            <p className="max-w-xs text-xs text-zinc-400">
+            <h3 className="text-ui font-semibold text-ink-2">No fields yet</h3>
+            <p className="max-w-xs text-ui-sm text-ink-3">
               Add fields to define this model&apos;s shape — each becomes a key in
               the exported config.
             </p>
@@ -375,7 +375,7 @@ export function FieldTree({ modelId, fields }: FieldTreeProps) {
           <button
             type="button"
             onClick={addRoot}
-            className="inline-flex items-center gap-1.5 rounded-md border border-teal-600 bg-teal-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-teal-700"
+            className="inline-flex items-center gap-1.5 rounded-md border border-focus bg-accent px-3 py-1.5 text-ui font-medium text-accent-ink transition-colors hover:bg-accent"
           >
             <Plus size={15} aria-hidden="true" />
             Add field
@@ -395,7 +395,7 @@ export function FieldTree({ modelId, fields }: FieldTreeProps) {
         onClick={addRoot}
         title="Add field"
         aria-label="Add field"
-        className="mt-2 inline-flex h-8 w-8 items-center justify-center rounded-md border border-teal-600 bg-teal-600 text-white transition-colors hover:bg-teal-700"
+        className="mt-2 inline-flex h-8 w-8 items-center justify-center rounded-md border border-focus bg-accent text-accent-ink transition-colors hover:bg-accent"
       >
         <Plus size={15} aria-hidden="true" />
       </button>

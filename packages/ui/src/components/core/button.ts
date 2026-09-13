@@ -30,6 +30,7 @@ export class Button<M extends TModelMaster, A extends TApiMaster<M>>
       reloadDataTable: props.reloadDataTable,
       apiInfo: apiInfo,
       modalId: props.modalId,
+      navigate: props.navigate,
       color:
         (this._context.theme?.components.button
           ?.color as ThemeProps["accentColor"]) || "blue",

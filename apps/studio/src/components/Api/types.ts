@@ -30,4 +30,6 @@ export type EndpointDef = {
   query: string | null
   parameter: string | null
   body: string | null
+  /** Shared-library group (`GroupDef.id`); null/absent = Ungrouped. Never serialized. */
+  groupId?: string | null
 }

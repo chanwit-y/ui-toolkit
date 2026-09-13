@@ -71,14 +71,12 @@ export function ResponsivePropertyForm({
   }
 
   return (
-    <div className="space-y-3">
-      <h3 className="text-sm font-semibold text-zinc-900">{title}</h3>
+    <div className="space-y-2.5">
+      <span className="sec-label block">{title}</span>
 
-      <div className="rounded-lg bg-zinc-100 p-1">
-        <BreakpointSelector value={activeBp} onChange={setActiveBp} />
-      </div>
+      <BreakpointSelector value={activeBp} onChange={setActiveBp} />
 
-      <p className="text-xs text-zinc-500">{BREAKPOINT_LABELS[activeBp]}</p>
+      <p className="text-ui-sm text-ink-3">{BREAKPOINT_LABELS[activeBp]}</p>
 
       <div className="space-y-2.5">
         {fields.map((field) => {
@@ -89,9 +87,9 @@ export function ResponsivePropertyForm({
 
           return (
             <label key={`${field.key}-${activeBp}`} className="block space-y-1">
-              <span className="font-mono text-xs text-zinc-600">
+              <span className="block text-ui-sm font-medium text-ink-2">
                 {field.label}
-                <span className="ml-1 text-teal-600">@{activeBp}</span>
+                <span className="ml-1 font-mono text-ui-xs text-ink-3">@{activeBp}</span>
               </span>
               {field.type === 'span-buttons' ? (
                 <SpanButtons
@@ -118,7 +116,7 @@ export function ResponsivePropertyForm({
                 />
               )}
               {field.hint ? (
-                <span className="block text-xs text-zinc-400">{field.hint}</span>
+                <span className="block text-ui-xs text-ink-3">{field.hint}</span>
               ) : null}
             </label>
           )

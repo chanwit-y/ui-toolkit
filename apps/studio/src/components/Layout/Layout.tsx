@@ -11,6 +11,7 @@ import {
 } from '@dnd-kit/core'
 import { rectSortingStrategy, SortableContext } from '@dnd-kit/sortable'
 import { LayoutGrid } from 'lucide-react'
+import { useStudioStore } from '../studioStore'
 import {
   memo,
   Profiler,
@@ -21,7 +22,7 @@ import {
   useState,
   type ProfilerOnRenderCallback,
 } from 'react'
-import { useApiStore } from '../Api/apiStore'
+import { useProjectEndpoints } from '../Library/scope'
 import { BREAKPOINTS } from './breakpoints'
 import type { ComponentDef } from './componentCatalog'
 import { SMOOTH_EASING } from './gridAnimation'
@@ -31,6 +32,7 @@ import {
   selectActiveItems,
   selectActiveSettings,
   useActiveItem,
+  useBreadcrumb,
   useGridStore,
 } from './gridStore'
 import { generateGridStyles } from './gridStyles'
@@ -38,7 +40,11 @@ import { PreviewToolbar } from './PreviewToolbar'
 import { Sidebar } from './Sidebar'
 import { Toolbox, ToolboxDragOverlay, type ToolboxDragData } from './Toolbox'
 import type { GridItemData } from './types'
+import { designThemeStyle } from '../Theme/designTheme'
+import { useThemeStore } from '../Theme/themeStore'
+import { useActivePage, useActivePages, useActiveProject } from '../Workspace/workspaceStore'
 import { useGridFlipAnimation } from './useGridFlipAnimation'
+import { useUndoShortcuts } from './useUndoShortcuts'
 import { escapeClassName } from './utils'
 
 // Dev-only commit logger. No-op in prod (the <Profiler> below is unconditional,
@@ -118,13 +124,17 @@ function GridCanvasInner({
     <SortableContext items={sortableIds} strategy={rectSortingStrategy}>
       <div
         ref={setRefs}
-        className={`gl-${layoutId} w-full rounded-lg border border-zinc-200 bg-white p-4 shadow-sm`}
+        className={`gl-${layoutId} relative z-[1] min-h-[398px] w-full`}
         onClick={onCanvasClick}
       >
         {items.length === 0 ? (
-          <div className="col-span-full flex min-h-[140px] flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-zinc-300 text-sm text-zinc-500">
-            <LayoutGrid className="h-6 w-6 text-zinc-400" aria-hidden="true" />
-            Drag a component from the toolbox to add one.
+          <div className="col-span-full flex min-h-[200px] flex-col items-center justify-center gap-1.5 rounded-[10px] border border-dashed border-line-strong px-5 py-10 text-center text-ui text-ink-2">
+            <LayoutGrid className="mb-1 h-5 w-5 text-ink-3" aria-hidden="true" />
+            <b className="text-[13px] font-semibold text-ink">This canvas is empty</b>
+            Drag a component from the left, or click one to append it.
+            <span className="text-ink-3">
+              Containers accept nested components and keep their own column count.
+            </span>
           </div>
         ) : (
           items.map((item) => (
@@ -142,6 +152,65 @@ function GridCanvasInner({
 
 const GridCanvas = memo(GridCanvasInner)
 
+/**
+ * The browser-chrome strip on top of the preview frame (mockup `.frame-chrome`):
+ * traffic dots, the page's route under the project (plus the drill-in trail),
+ * and `BP · width · columns`. Subscribes to the stores itself so the memoized
+ * EditorBody never re-renders for it.
+ */
+function FrameChrome() {
+  const bp = useGridStore((s) => s.previewBreakpoint)
+  const columns = useGridStore((s) => selectActiveSettings(s).columns[s.previewBreakpoint])
+  const trail = useBreadcrumb()
+  const project = useActiveProject()
+  const page = useActivePage()
+  const width = BREAKPOINTS.find((b) => b.key === bp)?.previewWidth
+  const slug = (p: string) => p.toLowerCase().replace(/\s+/g, '-')
+  const path =
+    slug(project?.name ?? 'project') +
+    (page?.path ?? '') +
+    trail.map((t) => '/' + slug(t.label)).join('')
+  return (
+    <div className="flex h-7 shrink-0 items-center gap-2 border-b border-line bg-panel px-2.5 font-mono text-ui-xs text-ink-3">
+      <span className="flex gap-1" aria-hidden="true">
+        <i className="block h-[7px] w-[7px] rounded-full bg-line-strong" />
+        <i className="block h-[7px] w-[7px] rounded-full bg-line-strong" />
+        <i className="block h-[7px] w-[7px] rounded-full bg-line-strong" />
+      </span>
+      <span className="min-w-0 truncate">{path}</span>
+      <span className="flex-1" />
+      <span>
+        {bp.toUpperCase()} · {width ? `${width}px` : 'fluid'} · {columns} col
+      </span>
+    </div>
+  )
+}
+
+/**
+ * Dashed column guides behind the cells (mockup `.stage-guides`), following the
+ * active canvas's column count at the preview breakpoint. Toggled from the
+ * canvas bar; purely decorative (`pointer-events-none`, below the grid).
+ */
+function CanvasGuides() {
+  const guides = useStudioStore((s) => s.guides)
+  const columns = useGridStore((s) => selectActiveSettings(s).columns[s.previewBreakpoint])
+  if (!guides) return null
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-4 z-0 grid"
+      style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}
+    >
+      {Array.from({ length: columns }, (_, i) => (
+        <i
+          key={i}
+          className="block h-full border-l border-dashed border-grid-line last:border-r"
+        />
+      ))}
+    </div>
+  )
+}
+
 type EditorBodyProps = {
   sortableIds: string[]
   items: GridItemData[]
@@ -150,6 +219,8 @@ type EditorBodyProps = {
   layoutId: string
   gridRef: React.RefObject<HTMLDivElement | null>
   frameRef: React.RefObject<HTMLDivElement | null>
+  /** Master-layout editor: no Pages / Templates tabs in the palette. */
+  templateMode: boolean
 }
 
 /**
@@ -173,8 +244,13 @@ function EditorBodyInner({
   layoutId,
   gridRef,
   frameRef,
+  templateMode,
 }: EditorBodyProps) {
   const addItem = useGridStore((s) => s.addItem)
+  // Design-only theme (surfaces / font / scaling) paints the frame — see the
+  // Theme page; undefined when everything is at its default.
+  const themeConfig = useThemeStore((s) => s.config)
+  const frameTheme = useMemo(() => designThemeStyle(themeConfig), [themeConfig])
   const moveItem = useGridStore((s) => s.moveItem)
   const setActiveId = useGridStore((s) => s.setActiveId)
   const clearSelection = useGridStore((s) => s.clearSelection)
@@ -244,35 +320,28 @@ function EditorBodyInner({
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <Toolbox />
+      <Toolbox templateMode={templateMode} />
 
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col p-4">
-        <div className="mx-auto flex min-h-0 w-full flex-1 flex-col">
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-zinc-200 bg-zinc-100/80">
-            <PreviewToolbar />
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-sunken">
+        <PreviewToolbar />
 
-            <div
-              className="flex min-h-0 flex-1 flex-col items-center overflow-y-auto p-4"
-              style={{
-                backgroundImage:
-                  'linear-gradient(to right, rgba(113,113,122,0.12) 1px, transparent 1px), linear-gradient(to bottom, rgba(113,113,122,0.12) 1px, transparent 1px)',
-                backgroundSize: '16px 16px',
-              }}
-            >
-              <div
-                ref={frameRef}
-                className="mx-auto w-full max-w-full rounded-lg"
-                style={{ width: 'var(--preview-frame-w, 100%)' }}
-              >
-                <GridCanvas
-                  sortableIds={sortableIds}
-                  items={items}
-                  selectedItemId={selectedItemId}
-                  layoutId={layoutId}
-                  gridRef={gridRef}
-                  onCanvasClick={clearSelection}
-                />
-              </div>
+        <div className="flex min-h-0 flex-1 justify-center overflow-auto px-5 pb-16 pt-[22px]">
+          <div
+            ref={frameRef}
+            className="flex w-full max-w-full flex-col self-start overflow-hidden rounded-[10px] border border-line bg-surface shadow-frame"
+            style={{ ...frameTheme, width: 'var(--preview-frame-w, 100%)' }}
+          >
+            <FrameChrome />
+            <div className="relative p-4">
+              <CanvasGuides />
+              <GridCanvas
+                sortableIds={sortableIds}
+                items={items}
+                selectedItemId={selectedItemId}
+                layoutId={layoutId}
+                gridRef={gridRef}
+                onCanvasClick={clearSelection}
+              />
             </div>
           </div>
         </div>
@@ -300,7 +369,7 @@ function EditorBodyInner({
 
 const EditorBody = memo(EditorBodyInner)
 
-export function Layout() {
+export function Layout({ templateMode = false }: { templateMode?: boolean } = {}) {
   const layoutId = escapeClassName(useId())
 
   // The canvas renders the ACTIVE canvas (drill-in aware); the code tab always
@@ -317,6 +386,8 @@ export function Layout() {
   const clearSelection = useGridStore((s) => s.clearSelection)
 
   const activeItem = useActiveItem()
+
+  useUndoShortcuts()
 
   // Click-away deselect: a pointer-down anywhere that isn't on a grid item or
   // inside a sidebar panel de-activates the current selection. Sidebars are
@@ -364,12 +435,15 @@ export function Layout() {
   // the whole config and regenerate the full stylesheet for nothing.
   const computeCode = sidebarView === 'code'
 
-  // Endpoint refs resolve against the API page's current names at export.
-  const endpoints = useApiStore((s) => s.endpoints)
+  // Endpoint refs resolve against the attached endpoints' current names at
+  // export — a ref to a detached endpoint is a dangling ref, like a deleted one.
+  const endpoints = useProjectEndpoints()
+  // Page refs resolve a navigation's page id → its exported key.
+  const pages = useActivePages()
 
   const gridConfigJson = useMemo(
-    () => (computeCode ? gridConfigToJson(rootSettings, rootItems, endpoints) : ''),
-    [computeCode, rootSettings, rootItems, endpoints],
+    () => (computeCode ? gridConfigToJson(rootSettings, rootItems, endpoints, pages) : ''),
+    [computeCode, rootSettings, rootItems, endpoints, pages],
   )
 
   const fullGridCss = useMemo(
@@ -386,7 +460,7 @@ export function Layout() {
   return (
     <Profiler id="grid" onRender={onRenderCommit}>
       <div
-        className="flex min-h-0 flex-1 bg-zinc-50"
+        className="flex min-h-0 flex-1 bg-sunken"
         style={{ '--preview-frame-w': previewFrameWidth } as React.CSSProperties}
       >
         <style dangerouslySetInnerHTML={{ __html: gridCss }} />
@@ -399,6 +473,7 @@ export function Layout() {
           layoutId={layoutId}
           gridRef={gridRef}
           frameRef={frameRef}
+          templateMode={templateMode}
         />
 
         <Sidebar gridConfigJson={gridConfigJson} fullGridCss={fullGridCss} />

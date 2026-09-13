@@ -1,6 +1,6 @@
 import { AlertTriangle } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
-import { useApiStore } from '../Api/apiStore'
+import { useProjectEndpoints } from '../Library/scope'
 import { Input, Select, SegmentedControl } from '../common'
 import { useGridStore } from './gridStore'
 import { isSelectFamily, observeWarnings } from './observe'
@@ -19,7 +19,7 @@ export function EndpointPicker({
   value: string | null
   onChange: (id: string | null) => void
 }) {
-  const endpoints = useApiStore((s) => s.endpoints)
+  const endpoints = useProjectEndpoints()
   const isDangling = value != null && !endpoints.some((e) => e.id === value)
   const options = [
     { value: '', label: '— none —' },
@@ -66,7 +66,7 @@ const MODE_OPTIONS = [
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="block space-y-1">
-      <span className="text-xs font-medium text-zinc-600">{label}</span>
+      <span className="text-ui-sm font-medium text-ink-2">{label}</span>
       {children}
     </label>
   )
@@ -84,12 +84,12 @@ function Toggle({
 }) {
   return (
     <label className="flex items-center justify-between gap-2">
-      <span className="text-xs font-medium text-zinc-600">{label}</span>
+      <span className="text-ui-sm font-medium text-ink-2">{label}</span>
       <input
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
-        className="h-4 w-4 rounded border-zinc-300 text-teal-600 focus:ring-teal-500/30"
+        className="h-4 w-4 rounded border-line-strong text-ink focus:ring-focus/30"
       />
     </label>
   )
@@ -119,7 +119,7 @@ function parseOptions(text: string): SelectOption[] | null {
 }
 
 const TEXTAREA_CLASS =
-  'w-full rounded-md border border-zinc-300 bg-white px-2.5 py-1.5 font-mono text-xs text-zinc-900 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20'
+  'w-full rounded-md border border-line-strong bg-surface px-2.5 py-1.5 font-mono text-ui-sm text-ink outline-none focus:border-focus focus:ring-2 focus:ring-focus/20'
 
 /**
  * The static-options editor: a raw-JSON textarea backed by local string state so
@@ -169,7 +169,7 @@ function OptionsEditor({
         spellCheck={false}
         className={TEXTAREA_CLASS}
       />
-      {error && <span className="mt-1 block text-xs text-red-500">{error}</span>}
+      {error && <span className="mt-1 block text-ui-sm text-danger">{error}</span>}
     </Field>
   )
 }
@@ -218,7 +218,7 @@ function ObserveToField({
         <Select options={options} value={value} onChange={onChange} />
       </Field>
       {warnings.map((message) => (
-        <p key={message} className="flex items-start gap-1 text-xs text-amber-600">
+        <p key={message} className="flex items-start gap-1 text-ui-sm text-warn">
           <AlertTriangle size={12} aria-hidden="true" className="mt-0.5 shrink-0" />
           {message}
         </p>
@@ -269,7 +269,7 @@ export function SelectFieldConfigPanel({
 
   return (
     <div className="space-y-3">
-      <h3 className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400">
+      <h3 className="text-ui-sm font-semibold uppercase tracking-wide text-ink-3">
         {heading}
       </h3>
 
@@ -325,7 +325,6 @@ export function SelectFieldConfigPanel({
           options={MODE_OPTIONS}
           value={config.mode}
           onChange={(v) => set('mode', v as SelectFieldConfig['mode'])}
-          className="rounded-lg border border-zinc-200 bg-zinc-50 p-1"
           aria-label="Options source"
         />
       </Field>
@@ -404,8 +403,8 @@ export function SelectFieldConfigPanel({
       )}
 
       {multi && (
-        <div className="space-y-3 rounded-lg border border-zinc-200 bg-zinc-50/60 p-3">
-          <h4 className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400">
+        <div className="space-y-3 rounded-lg border border-line bg-panel p-3">
+          <h4 className="text-ui-sm font-semibold uppercase tracking-wide text-ink-3">
             Multi options
           </h4>
           <Field label="Max selections">

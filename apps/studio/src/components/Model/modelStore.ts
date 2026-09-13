@@ -11,8 +11,8 @@ function createField(name: string): ModelField {
   return { id: createId(), name, kind: 'string', children: [], arrayOf: 'string' }
 }
 
-function createModel(name: string): ModelDef {
-  return { id: createId(), name, fields: [] }
+function createModel(name: string, groupId: string | null = null): ModelDef {
+  return { id: createId(), name, fields: [], groupId }
 }
 
 /** Recursively map the one field matching `id`, returning a new tree. */
@@ -98,9 +98,14 @@ type ModelStore = {
   models: ModelDef[]
   selectedModelId: string | null
 
+  /** Replace every model (workspace open / switch). */
+  hydrate: (models: ModelDef[]) => void
   selectModel: (id: string) => void
-  addModel: () => void
+  /** New model, filed under `groupId` (null = Ungrouped). Returns its id. */
+  addModel: (groupId?: string | null) => string
   deleteModel: (id: string) => void
+  /** Patch group membership (rename goes through renameModel). */
+  setModelGroup: (id: string, groupId: string | null) => void
   renameModel: (id: string, name: string) => void
 
   /** Add a field to a model root (`parentId` null) or under a parent field. */
@@ -143,17 +148,22 @@ function patchModel(
   return models.map((m) => (m.id === id ? fn(m) : m))
 }
 
-export const useModelStore = create<ModelStore>((set) => ({
+export const useModelStore = create<ModelStore>((set, get) => ({
   models: initialModels,
   selectedModelId: initialModels[0]?.id ?? null,
 
+  hydrate: (models) => set({ models, selectedModelId: models[0]?.id ?? null }),
+
   selectModel: (id) => set({ selectedModelId: id }),
 
-  addModel: () =>
-    set((s) => {
-      const model = createModel(nextModelName(s.models))
-      return { models: [...s.models, model], selectedModelId: model.id }
-    }),
+  addModel: (groupId = null) => {
+    const model = createModel(nextModelName(get().models), groupId)
+    set((s) => ({ models: [...s.models, model], selectedModelId: model.id }))
+    return model.id
+  },
+
+  setModelGroup: (id, groupId) =>
+    set((s) => ({ models: patchModel(s.models, id, (m) => ({ ...m, groupId })) })),
 
   deleteModel: (id) =>
     set((s) => {

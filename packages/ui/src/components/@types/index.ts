@@ -80,6 +80,8 @@ export type ButtonProps = BaseComponentProps<
     confirmBox?: ConfirmBoxElement;
     reloadDataTable?: string;
     apiInfo?: TApiMaster<any>;
+    /** Target of the `"Navigate"` action. */
+    navigate?: NavigateTarget;
     // useCount: UseBoundStore<StoreApi<DataState>>
   }
 >;
@@ -423,6 +425,8 @@ export type DataTableProps = {
   modalMaxHeight?: string;
   canEdit?: boolean;
   canDelete?: boolean;
+  /** Row click navigates; `{ type: "row", key }` params read the clicked row. */
+  rowNavigate?: NavigateTarget;
   align?: Record<string, "start" | "center" | "end">;
   context?: Context<DataContextType>;
   // isReload?: boolean;
@@ -588,7 +592,11 @@ export type IconProps = BaseComponentProps<
 >;
 
 export type DataValue = {
-  type: "variable" | "state" | "observe" | "value" | "selectedRow" | "url";
+  /**
+   * `row` is only meaningful inside a {@link NavigateTarget} on a data table's
+   * `rowNavigate`: it reads `key` off the clicked row.
+   */
+  type: "variable" | "state" | "observe" | "value" | "selectedRow" | "url" | "row";
   key: "none" | string;
   value?: any;
   /**
@@ -746,6 +754,8 @@ export type DataTableElement = {
   modalMaxHeight?: string;
   canEdit?: boolean;
   canDelete?: boolean;
+  /** Clicking a row navigates; `{ type: "row", key }` params read the clicked row. */
+  rowNavigate?: NavigateTarget;
   // Editing: {}
 };
 
@@ -1278,7 +1288,88 @@ export type ButtonAction =
   | "SubmitFormToDeleteAPI"
   // | "ReloadDataTable"
   | "ConfirmBox"
-  | "CloseModal";
+  | "CloseModal"
+  /** Go to the page named by the element's `navigate` target (see {@link NavigateTarget}). */
+  | "Navigate";
+
+/**
+ * A config-driven page change, shared by every navigating element
+ * (`ButtonElement.navigate`, `DataTableElement.rowNavigate`). `page` is a key
+ * of the {@link TPageMaster} record the enclosing `PageRouter` was given; its
+ * `path` template is filled from `params` (react-router `generatePath`) and
+ * `query` is appended as a query string. Unknown page keys, unresolved
+ * required params, or no enclosing `PageRouter` warn and do nothing.
+ */
+export type NavigateTarget = {
+  page: string;
+  /** `:param` name → value source (`value` | `url` | `state` | `row`). */
+  params?: Record<string, DataValue>;
+  query?: Record<string, DataValue>;
+  /** Replace the current history entry instead of pushing. */
+  replace?: boolean;
+};
+
+/**
+ * One routed page for `PageRouter`: a react-router `path` template and the
+ * containers `Core` renders when it matches. `title` sets `document.title`
+ * and labels the page's breadcrumb; a {@link DataValue} title (`state` /
+ * `url` / `value`) resolves at render time, so a detail page can read its
+ * label from the slice its container `load` fills. `parent` (a page key)
+ * places the page in the breadcrumb hierarchy: the trail walks up parents,
+ * and each ancestor link fills its `:params` by name from the current route.
+ */
+export type PageElement = {
+  path: string;
+  containers: Container[];
+  title?: string | DataValue;
+  /** Key of the page above this one in the breadcrumb trail. */
+  parent?: string;
+  /** `false` hides the `AppShell` breadcrumb strip on this page. */
+  breadcrumb?: boolean;
+};
+
+/** Pages keyed by name — the routing counterpart of `TModelMaster` / `TApiMaster`. */
+export type TPageMaster = { [K: string]: PageElement };
+
+/**
+ * One entry of an `AppShell` menu. The kind is read off the fields present:
+ * a page link (`navigate`, active when its page — and any fixed `value`
+ * params — match the current route), an external link (`href`), a group
+ * (`items`, open while it contains the active link) or a divider.
+ */
+export type MenuItem =
+  | { label: string; icon?: keyof typeof IconData; navigate: NavigateTarget }
+  | { label: string; icon?: keyof typeof IconData; href: string; newTab?: boolean }
+  | { label: string; icon?: keyof typeof IconData; items: MenuItem[]; collapsed?: boolean }
+  | { divider: true };
+
+/** The sidebar menu `AppShell` renders, top to bottom. */
+export type TMenu = MenuItem[];
+
+/**
+ * The `AppShell` top bar, as plain config (so a studio export can author it).
+ * `brand` on the shell, when given, replaces the title/icon/logo mark.
+ */
+export type AppBarConfig = {
+  /** App name at the left of the bar. */
+  title?: string;
+  /** Glyph before the title (`IconData` key). */
+  icon?: keyof typeof IconData;
+  /** Logo image URL before the title (wins over `icon`). */
+  logo?: string;
+  /** `"panel"` (default): the neutral panel surface. `"accent"`: painted in the accent colour. */
+  variant?: "panel" | "accent";
+  /** Accent for `variant: "accent"`. Unset → the theme accent. */
+  color?: ThemeProps["accentColor"];
+  /** CSS height. Default `3rem`. */
+  height?: string;
+  /**
+   * Glyphs of the desktop collapse/expand button (sidebar placement, when
+   * `collapsible`): `hide` while the sidebar is open, `show` while it is the
+   * icon rail. Defaults `chevronLeft` / `chevronRight`.
+   */
+  sidebarToggle?: { hide?: keyof typeof IconData; show?: keyof typeof IconData };
+};
 
 export type SnackbarElement = {
   type: SnackbarVariant;
@@ -1294,6 +1385,8 @@ export type ButtonElement = {
   modalId?: string;
   snackbarSuccess?: SnackbarElement;
   snackbarError?: SnackbarElement | "$exception";
+  /** Target of the `"Navigate"` action. */
+  navigate?: NavigateTarget;
 };
 
 export type ModalElement = {
@@ -1461,6 +1554,11 @@ export type ThemeComponents = {
     rowHoverColor?: ThemeProps["accentColor"];
     editButtonColor?: ThemeProps["accentColor"];
     deleteButtonColor?: ThemeProps["accentColor"];
+  };
+  /** Sidebar (AppShell) overrides. Unset → the theme accent. */
+  sidebar?: {
+    /** Accent used for the active menu item. */
+    color?: ThemeProps["accentColor"];
   };
   textField?: {};
 };
