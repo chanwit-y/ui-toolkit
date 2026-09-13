@@ -85,6 +85,7 @@ export class DataTable<
       modalMaxHeight: props.modalMaxHeight,
       canEdit: props.canEdit,
       canDelete: props.canDelete,
+      rowNavigate: props.rowNavigate,
       // context: DataContext,
     });
   }

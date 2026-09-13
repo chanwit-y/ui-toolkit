@@ -8,6 +8,8 @@ export type DataValueScope = {
   params?: Record<string, string | undefined>;
   /** Query-string params (react-router `useSearchParams()[0]`). */
   searchParams?: URLSearchParams;
+  /** The clicked data-table row, for `type:"row"` (only `rowNavigate` supplies it). */
+  row?: Record<string, unknown>;
 };
 
 /**
@@ -17,6 +19,7 @@ export type DataValueScope = {
  * - `url`    → a route param (`source:"param"`, default) or query param
  *              (`source:"query"`) named by `key`.
  * - `state`  → the global-state slice named `key`, drilled by `path`.
+ * - `row`    → `scope.row[key]` (drilled by `path` when given).
  * - others   → `undefined` (not resolvable from this scope).
  */
 export function resolveDataValue(
@@ -36,6 +39,11 @@ export function resolveDataValue(
     case "state": {
       const data = getStateStore(dv.key).getState().data;
       return dv.path ? get(data, dv.path) : data;
+    }
+    case "row": {
+      if (!scope.row) return undefined;
+      const v = scope.row[dv.key];
+      return dv.path ? get(v, dv.path) : v;
     }
     default:
       return undefined;

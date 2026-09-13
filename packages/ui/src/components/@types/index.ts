@@ -80,6 +80,8 @@ export type ButtonProps = BaseComponentProps<
     confirmBox?: ConfirmBoxElement;
     reloadDataTable?: string;
     apiInfo?: TApiMaster<any>;
+    /** Target of the `"Navigate"` action. */
+    navigate?: NavigateTarget;
     // useCount: UseBoundStore<StoreApi<DataState>>
   }
 >;
@@ -423,6 +425,8 @@ export type DataTableProps = {
   modalMaxHeight?: string;
   canEdit?: boolean;
   canDelete?: boolean;
+  /** Row click navigates; `{ type: "row", key }` params read the clicked row. */
+  rowNavigate?: NavigateTarget;
   align?: Record<string, "start" | "center" | "end">;
   context?: Context<DataContextType>;
   // isReload?: boolean;
@@ -588,7 +592,11 @@ export type IconProps = BaseComponentProps<
 >;
 
 export type DataValue = {
-  type: "variable" | "state" | "observe" | "value" | "selectedRow" | "url";
+  /**
+   * `row` is only meaningful inside a {@link NavigateTarget} on a data table's
+   * `rowNavigate`: it reads `key` off the clicked row.
+   */
+  type: "variable" | "state" | "observe" | "value" | "selectedRow" | "url" | "row";
   key: "none" | string;
   value?: any;
   /**
@@ -746,6 +754,8 @@ export type DataTableElement = {
   modalMaxHeight?: string;
   canEdit?: boolean;
   canDelete?: boolean;
+  /** Clicking a row navigates; `{ type: "row", key }` params read the clicked row. */
+  rowNavigate?: NavigateTarget;
   // Editing: {}
 };
 
@@ -1278,7 +1288,39 @@ export type ButtonAction =
   | "SubmitFormToDeleteAPI"
   // | "ReloadDataTable"
   | "ConfirmBox"
-  | "CloseModal";
+  | "CloseModal"
+  /** Go to the page named by the element's `navigate` target (see {@link NavigateTarget}). */
+  | "Navigate";
+
+/**
+ * A config-driven page change, shared by every navigating element
+ * (`ButtonElement.navigate`, `DataTableElement.rowNavigate`). `page` is a key
+ * of the {@link TPageMaster} record the enclosing `PageRouter` was given; its
+ * `path` template is filled from `params` (react-router `generatePath`) and
+ * `query` is appended as a query string. Unknown page keys, unresolved
+ * required params, or no enclosing `PageRouter` warn and do nothing.
+ */
+export type NavigateTarget = {
+  page: string;
+  /** `:param` name → value source (`value` | `url` | `state` | `row`). */
+  params?: Record<string, DataValue>;
+  query?: Record<string, DataValue>;
+  /** Replace the current history entry instead of pushing. */
+  replace?: boolean;
+};
+
+/**
+ * One routed page for `PageRouter`: a react-router `path` template and the
+ * containers `Core` renders when it matches. `title` sets `document.title`.
+ */
+export type PageElement = {
+  path: string;
+  containers: Container[];
+  title?: string;
+};
+
+/** Pages keyed by name — the routing counterpart of `TModelMaster` / `TApiMaster`. */
+export type TPageMaster = { [K: string]: PageElement };
 
 export type SnackbarElement = {
   type: SnackbarVariant;
@@ -1294,6 +1336,8 @@ export type ButtonElement = {
   modalId?: string;
   snackbarSuccess?: SnackbarElement;
   snackbarError?: SnackbarElement | "$exception";
+  /** Target of the `"Navigate"` action. */
+  navigate?: NavigateTarget;
 };
 
 export type ModalElement = {

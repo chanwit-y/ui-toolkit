@@ -14,6 +14,7 @@ import { TextFieldBase as TextField } from "./TextField"
 import { useLoading, useTheme } from "./context"
 import { useData } from "./context/DataProvider"
 import { useStord } from "./core/stord"
+import { useNavigateTo } from "./core/pages"
 
 // Utility function to highlight matching text
 const highlightText = (text: string, searchTerm: string) => {
@@ -81,9 +82,19 @@ export const DataTable2 = <T extends Record<string, any>>({
 	canEdit = false,
 	canDelete = false,
 	align = {},
+	rowNavigate,
 
 	// editModalContainer,
 }: DataTableProps) => {
+
+	const navigateTo = useNavigateTo()
+	// Row click → page change. Clicks that land on a control inside the row
+	// (edit/delete buttons, links, inputs) keep their own behaviour.
+	const onRowClick = useCallback((e: React.MouseEvent<HTMLTableRowElement>, row: T) => {
+		if (!rowNavigate) return
+		if ((e.target as HTMLElement).closest('button, a, input, select, textarea, [role="menuitem"]')) return
+		navigateTo(rowNavigate, { row })
+	}, [rowNavigate, navigateTo])
 
 	const [openModal, setOpenModal] = useState(false)
 	const [openConfirmBox, setOpenConfirmBox] = useState(false)
@@ -558,8 +569,9 @@ export const DataTable2 = <T extends Record<string, any>>({
 							</tr>
 						))
 						: table.getPaginationRowModel().rows.map(row => (
-							<tr key={row.id} className={`datatable-body-row
-							${dtRowHoverClass(theme.components.dataTable?.rowHoverColor)}`}>
+							<tr key={row.id} className={`datatable-body-row ${rowNavigate ? 'cursor-pointer' : ''}
+							${dtRowHoverClass(theme.components.dataTable?.rowHoverColor)}`}
+								onClick={rowNavigate ? (e) => onRowClick(e, row.original) : undefined}>
 								{row.getVisibleCells().map(cell => (
 									<td key={cell.id} className="datatable-body-cell px-4 py-1" style={{ width: cell.column.getSize(), textAlign: align[cell.column.id] }}>
 										<div className="min-h-10 flex flex-col justify-center">

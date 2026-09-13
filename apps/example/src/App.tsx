@@ -1,18 +1,15 @@
-import React, { useMemo } from "react";
-import { Link, Route, Routes, useLocation, useParams } from "react-router-dom";
+import React from "react";
+import { Link, useLocation } from "react-router-dom";
 import {
-  Core,
   DataProvider,
   HttpClientFactory,
+  PageRouter,
   ThemeProvider,
   ThemeToggle,
 } from "@gummy-ui/ui";
 import { model } from "./config/country/model";
 import { api } from "./config/country/api";
-import {
-  containerCountryList,
-  containerCountryStateDetail,
-} from "./config/country/container";
+import { pages } from "./config/country/pages";
 import { theme, components } from "./config/theme";
 
 const http = new HttpClientFactory(
@@ -22,77 +19,32 @@ const http = new HttpClientFactory(
   30000
 );
 
-function ListPage() {
-  const ui = useMemo(
-    () => new Core(http as any, model, api, containerCountryList).run(),
-    []
-  );
-  return (
-    <>
-      <nav className="mb-4 flex gap-3 text-sm">
-        <span className="text-gray-500 dark:text-gray-400">
-          State-loader demo →
-        </span>
-        {["1", "3", "12"].map((id) => (
-          <Link
-            key={id}
-            to={`/country/${id}`}
-            className="text-[var(--accent-11)] hover:text-[var(--accent-12)] underline underline-offset-2"
-          >
-            /country/{id}
-          </Link>
-        ))}
-      </nav>
-      {ui}
-    </>
-  );
-}
-
-function DetailPage() {
-  // Re-run Core per :id so react-query inside the loader keys off the new param.
-  const { id } = useParams();
-  const ui = useMemo(
-    () => new Core(http as any, model, api, containerCountryStateDetail).run(),
-    []
-  );
-  return (
-    <>
-      <nav className="mb-4 flex items-center gap-3 text-sm">
-        <Link
-          to="/"
-          className="text-[var(--accent-11)] hover:text-[var(--accent-12)] underline underline-offset-2"
-        >
-          ← Back to list
-        </Link>
-        <span className="text-gray-500 dark:text-gray-400">
-          loading country id <code className="font-mono">{id}</code> into global
-          state
-        </span>
-        {["1", "3", "12"].map((next) => (
-          <Link
-            key={next}
-            to={`/country/${next}`}
-            className="text-[var(--accent-11)] hover:text-[var(--accent-12)] underline underline-offset-2"
-          >
-            {next}
-          </Link>
-        ))}
-      </nav>
-      {ui}
-    </>
-  );
-}
-
 /**
  * Replays a page-enter animation on every navigation. Keying the wrapper by the
  * route pathname forces a remount, so the CSS `.page-enter` animation restarts
- * each time the user lands on a new page.
+ * each time the user lands on a new page. Kept outside `PageRouter` on purpose:
+ * transitions are the consumer's policy, not the router's.
  */
 function PageTransition({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation();
   return (
     <div key={pathname} className="page-enter">
       {children}
+    </div>
+  );
+}
+
+function NotFound() {
+  const { pathname } = useLocation();
+  return (
+    <div className="text-sm text-gray-500 dark:text-gray-400">
+      No page matches <code className="font-mono">{pathname}</code>.{" "}
+      <Link
+        to="/"
+        className="text-[var(--accent-11)] hover:text-[var(--accent-12)] underline underline-offset-2"
+      >
+        Back to the list
+      </Link>
     </div>
   );
 }
@@ -108,10 +60,15 @@ function AppContent() {
       </header>
       <main className="p-8 flex-1 overflow-auto">
         <PageTransition>
-          <Routes>
-            <Route path="/" element={<ListPage />} />
-            <Route path="/country/:id" element={<DetailPage />} />
-          </Routes>
+          {/* Routes come from config/country/pages.ts; the pages' own buttons
+              and the country table's row click do the navigating. */}
+          <PageRouter
+            http={http as any}
+            model={model}
+            api={api}
+            pages={pages}
+            notFound={<NotFound />}
+          />
         </PageTransition>
       </main>
     </>

@@ -32,6 +32,9 @@ export type { MultiAutocompleteProps } from "./components/@types";
 export { Provider as CoreProvider } from "./components/core/context";
 export * from "./components/core/core";
 export * from "./components/core/containerBuilder";
+export { PageRouter } from "./components/core/PageRouter";
+export type { PageRouterProps } from "./components/core/PageRouter";
+export { PagesProvider, usePages, useNavigateTo, buildNavigateUrl, pathParamNames } from "./components/core/pages";
 export {
 	DEFAULT_CONTAINER_GRID,
 	getBinGridItemStyle,
@@ -101,7 +104,7 @@ export { uploadFileToApi, deleteFileFromApi } from "./util/uploadApi";
 export * from "./components/RadioButton2"
 export * from "./components/ThemeToggle"
 export type { ThemeToggleProps } from "./components/ThemeToggle"
-export type { Bin, Container, ContainerSurface, ContainerLoad, DataValue, DataTableElement, RadioElement } from "./components/@types"
+export type { Bin, Container, ContainerSurface, ContainerLoad, DataValue, DataTableElement, RadioElement, NavigateTarget, PageElement, TPageMaster } from "./components/@types"
 export { getStateStore, stateStoreKeys } from "./components/core/stateStore"
 export type { StateSlice, StateStore } from "./components/core/stateStore"
 // Engine debug mirror — runtime state (container forms, contextData, loaders)
