@@ -1,5 +1,5 @@
 import { useDraggable } from '@dnd-kit/core'
-import { Search } from 'lucide-react'
+import { Blocks, Files, Layers, LayoutTemplate, Search, type LucideIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { cn } from '../common'
 import { childCanvasCount } from './types'
@@ -79,11 +79,12 @@ export function ToolboxDragOverlay({ def }: { def: ComponentDef }) {
 
 type LeftTab = 'components' | 'layers' | 'pages' | 'templates'
 
-const LEFT_TABS: { value: LeftTab; label: string; projectOnly?: boolean }[] = [
-  { value: 'components', label: 'Components' },
-  { value: 'layers', label: 'Layers' },
-  { value: 'pages', label: 'Pages', projectOnly: true },
-  { value: 'templates', label: 'Templates', projectOnly: true },
+/** Icon-only tabs: `label` is the accessible name and the hover tooltip. */
+const LEFT_TABS: { value: LeftTab; label: string; icon: LucideIcon; projectOnly?: boolean }[] = [
+  { value: 'components', label: 'Components', icon: Blocks },
+  { value: 'layers', label: 'Layers', icon: Layers },
+  { value: 'pages', label: 'Pages', icon: Files, projectOnly: true },
+  { value: 'templates', label: 'Templates', icon: LayoutTemplate, projectOnly: true },
 ]
 
 /**
@@ -107,9 +108,11 @@ export function Toolbox({ templateMode = false }: { templateMode?: boolean }) {
             role="tab"
             aria-selected={current === t.value}
             onClick={() => setTab(t.value)}
-            className="mini-tab"
+            aria-label={t.label}
+            title={t.label}
+            className="mini-tab flex items-center justify-center"
           >
-            {t.label}
+            <t.icon size={14} strokeWidth={1.75} aria-hidden />
           </button>
         ))}
       </div>
