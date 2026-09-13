@@ -34,7 +34,10 @@ export * from "./components/core/core";
 export * from "./components/core/containerBuilder";
 export { PageRouter } from "./components/core/PageRouter";
 export type { PageRouterProps } from "./components/core/PageRouter";
-export { PagesProvider, usePages, useNavigateTo, buildNavigateUrl, pathParamNames } from "./components/core/pages";
+export { PagesProvider, usePages, useNavigateTo, buildNavigateUrl, pathParamNames, matchPageKey, matchPage, breadcrumbTrail, usePageTitle } from "./components/core/pages";
+export { AppShell } from "./components/AppShell";
+export type { AppShellProps } from "./components/AppShell";
+export type { AppBarConfig, MenuItem, TMenu } from "./components/@types";
 export {
 	DEFAULT_CONTAINER_GRID,
 	getBinGridItemStyle,

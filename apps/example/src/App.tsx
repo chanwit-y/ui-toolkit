@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
+  AppShell,
   DataProvider,
   HttpClientFactory,
   PageRouter,
@@ -10,6 +11,7 @@ import {
 import { model } from "./config/country/model";
 import { api } from "./config/country/api";
 import { pages } from "./config/country/pages";
+import { menu } from "./config/country/menu";
 import { theme, components } from "./config/theme";
 
 const http = new HttpClientFactory(
@@ -49,19 +51,73 @@ function NotFound() {
   );
 }
 
-function AppContent() {
+type Placement = "sidebar" | "top";
+
+/** Demo switch for `AppShell.navigation` — the same menu as a sidebar or a top strip. */
+function NavPlacementToggle({
+  value,
+  onChange,
+}: {
+  value: Placement;
+  onChange: (v: Placement) => void;
+}) {
+  const options: { value: Placement; label: string }[] = [
+    { value: "sidebar", label: "Side" },
+    { value: "top", label: "Top" },
+  ];
   return (
-    <>
-      <header className="flex items-center justify-between px-8 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
-        <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-          Gummy UI — Example
-        </h1>
-        <ThemeToggle />
-      </header>
-      <main className="p-8 flex-1 overflow-auto">
+    <div
+      role="radiogroup"
+      aria-label="Navigation placement"
+      className="inline-flex rounded-md border border-[var(--gray-6)] p-0.5 text-xs"
+    >
+      {options.map((o) => (
+        <button
+          key={o.value}
+          type="button"
+          role="radio"
+          aria-checked={value === o.value}
+          onClick={() => onChange(o.value)}
+          className={`rounded px-2 py-0.5 ${
+            value === o.value
+              ? "bg-[var(--accent-9)] text-[var(--accent-contrast)]"
+              : "text-[var(--gray-11)] hover:text-[var(--gray-12)]"
+          }`}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function AppContent() {
+  const [navigation, setNavigation] = useState<Placement>("sidebar");
+  return (
+    // The shell owns the chrome: top bar (brand, collapse toggle, ThemeToggle)
+    // and the menu from config/country/menu.ts — as a sidebar or, via the
+    // toggle, a top strip. The breadcrumb strip follows `parent` in
+    // config/country/pages.ts. Routes stay in PageRouter; the transition
+    // wrapper is the consumer's, as before.
+    <AppShell
+      pages={pages}
+      menu={menu}
+      navigation={navigation}
+      appBar={{
+        title: "Gummy UI — Example",
+        icon: "globe",
+        sidebarToggle: { hide: "panelLeftClose", show: "panelLeftOpen" },
+      }}
+      header={
+        <>
+          <NavPlacementToggle value={navigation} onChange={setNavigation} />
+          <ThemeToggle />
+        </>
+      }
+      footer={<span className="text-xs">@gummy-ui/ui · example</span>}
+    >
+      <div className="p-8">
         <PageTransition>
-          {/* Routes come from config/country/pages.ts; the pages' own buttons
-              and the country table's row click do the navigating. */}
           <PageRouter
             http={http as any}
             model={model}
@@ -70,19 +126,15 @@ function AppContent() {
             notFound={<NotFound />}
           />
         </PageTransition>
-      </main>
-    </>
+      </div>
+    </AppShell>
   );
 }
 
 export function App() {
   return (
     <DataProvider>
-      <ThemeProvider
-        theme={theme}
-        components={components}
-        className="flex flex-col w-full min-h-screen"
-      >
+      <ThemeProvider theme={theme} components={components}>
         <AppContent />
       </ThemeProvider>
     </DataProvider>
