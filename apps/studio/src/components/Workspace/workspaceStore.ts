@@ -16,6 +16,8 @@ import {
   emptyPageGrid,
   emptyProjectSnapshot,
   normalizePath,
+  defaultAppBar,
+  defaultShell,
   type LiveLibrary,
   type ProjectStateSnapshot,
 } from './snapshots'
@@ -27,11 +29,15 @@ import type {
   PageGrid,
   ProjectDef,
   ProjectSnapshot,
+  AppBarSettings,
+  ShellSettings,
   TemplateDef,
   WorkspaceData,
+  MenuItemDef,
 } from './types'
 import { walkItems } from '../Layout/pageLinks'
-import type { ButtonItemConfig, GridItemData } from '../Layout/types'
+import { defaultMenu } from './menu'
+import type { ButtonItemConfig, GridItemData, NavParamSource } from '../Layout/types'
 
 const ACTIVITY_CAP = 500
 /** Autosaves are continuous; a "saved" line is worth recording this often. */
@@ -65,6 +71,9 @@ type WorkspaceStore = WorkspaceData & {
 
   createProject: (input: { name: string; description: string; fromSeed: boolean }) => ProjectDef
   updateProject: (id: string, patch: { name?: string; description?: string }) => void
+  /** Replace the project's app-shell menu (the Menu tab). */
+  updateProjectMenu: (id: string, menu: MenuItemDef[]) => void
+  updateProjectShell: (id: string, shell: ShellSettings) => void
   deleteProject: (id: string) => void
   /** Write the live env/theme and the active page's grid back (autosave). */
   saveProjectState: (id: string, pageId: string, state: ProjectStateSnapshot) => void
@@ -100,7 +109,16 @@ type WorkspaceStore = WorkspaceData & {
   updatePage: (
     projectId: string,
     pageId: string,
-    patch: { name?: string; path?: string; key?: string },
+    patch: {
+      name?: string
+      path?: string
+      key?: string
+      /** `null` clears. Rejected when it is the page itself or one of its descendants (a cycle). */
+      parentId?: string | null
+      /** `null` clears (label falls back to the page name). */
+      crumb?: NavParamSource | null
+      hideBreadcrumbs?: boolean
+    },
   ) => void
   /** Reorder: move the page `delta` positions (clamped). */
   movePage: (projectId: string, pageId: string, delta: number) => void
@@ -126,6 +144,18 @@ type WorkspaceStore = WorkspaceData & {
 
 function createId(): string {
   return crypto.randomUUID()
+}
+
+/** Is `candidate` reachable from `ancestorId` by following `parentId` upward? (Cycle guard for parent picks.) */
+function isDescendant(pages: PageDef[], candidate: string, ancestorId: string): boolean {
+  const seen = new Set<string>()
+  let cur: string | undefined = candidate
+  while (cur && !seen.has(cur)) {
+    if (cur === ancestorId) return true
+    seen.add(cur)
+    cur = pages.find((pg) => pg.id === cur)?.parentId
+  }
+  return false
 }
 
 function seedProjects(library: LibraryData): ProjectDef[] {
@@ -250,8 +280,109 @@ function migrateButtonNavigation(items: GridItemData[]): void {
   })
 }
 
-function migrateV3(projects: V3Project[], library: LibraryData): { projects: ProjectDef[]; library: LibraryData } {
-  const out: ProjectDef[] = projects.map((p) => {
+/** v4 projects had no app-shell menu. */
+type V4Project = Omit<ProjectDef, 'snapshot'> & {
+  snapshot: Omit<ProjectSnapshot, 'menu' | 'shell'> & { menu?: MenuItemDef[] }
+}
+
+/** v4 → v5: every project gets a menu, seeded with one link per param-less page. */
+function migrateV4(projects: V4Project[]): V5Project[] {
+  return projects.map((p) => ({
+    ...p,
+    snapshot: {
+      ...p.snapshot,
+      menu: Array.isArray(p.snapshot.menu) ? p.snapshot.menu : defaultMenu(p.snapshot.pages),
+    },
+  }))
+}
+
+/** v5 projects had no shell settings. */
+type V5Project = Omit<ProjectDef, 'snapshot'> & {
+  snapshot: Omit<ProjectSnapshot, 'shell'> & { shell?: Omit<ShellSettings, 'appBar' | 'menuIcons' | 'collapsible'> }
+}
+
+/** v5 → v6: every project gets shell settings (sidebar navigation, breadcrumbs on). */
+function migrateV5(projects: V5Project[]): V6Project[] {
+  return projects.map((p) => ({
+    ...p,
+    snapshot: { ...p.snapshot, shell: p.snapshot.shell ?? defaultShell() },
+  }))
+}
+
+/** v6 shell settings had no app bar. */
+type V6Project = Omit<ProjectDef, 'snapshot'> & {
+  snapshot: Omit<ProjectSnapshot, 'shell'> & {
+    shell: Omit<ShellSettings, 'appBar' | 'menuIcons' | 'collapsible'> & {
+      appBar?: V8Project['snapshot']['shell']['appBar']
+      menuIcons?: boolean
+      collapsible?: boolean
+    }
+  }
+}
+
+/** v6 → v7: the app bar defaults to a panel bar titled after the project. */
+function migrateV6(projects: V6Project[]): V7Project[] {
+  return projects.map((p) => ({
+    ...p,
+    snapshot: {
+      ...p.snapshot,
+      shell: { ...p.snapshot.shell, appBar: p.snapshot.shell.appBar ?? defaultAppBar(p.name) },
+    },
+  }))
+}
+
+/** v7 shell settings had no menu-icons switch. */
+type V7Project = Omit<ProjectDef, 'snapshot'> & {
+  snapshot: Omit<ProjectSnapshot, 'shell'> & {
+    shell: Omit<ShellSettings, 'menuIcons' | 'appBar' | 'collapsible'> & {
+      menuIcons?: boolean
+      appBar: V8Project['snapshot']['shell']['appBar']
+      collapsible?: boolean
+    }
+  }
+}
+
+/** v7 → v8: menu item icons shown. */
+function migrateV7(projects: V7Project[]): V8Project[] {
+  return projects.map((p) => ({
+    ...p,
+    snapshot: {
+      ...p.snapshot,
+      shell: { ...p.snapshot.shell, menuIcons: p.snapshot.shell.menuIcons ?? true },
+    },
+  }))
+}
+
+/** v8 had no sidebar-toggle icons and no collapsible switch. */
+type V8Project = Omit<ProjectDef, 'snapshot'> & {
+  snapshot: Omit<ProjectSnapshot, 'shell'> & {
+    shell: Omit<ShellSettings, 'appBar' | 'collapsible'> & {
+      appBar: Omit<AppBarSettings, 'sidebarToggle'> & { sidebarToggle?: AppBarSettings['sidebarToggle'] }
+      collapsible?: boolean
+    }
+  }
+}
+
+/** v8 → v9: collapsible sidebar with the library's default toggle glyphs. */
+function migrateV8(projects: V8Project[]): ProjectDef[] {
+  return projects.map((p) => ({
+    ...p,
+    snapshot: {
+      ...p.snapshot,
+      shell: {
+        ...p.snapshot.shell,
+        appBar: {
+          ...p.snapshot.shell.appBar,
+          sidebarToggle: p.snapshot.shell.appBar.sidebarToggle ?? { hide: '', show: '' },
+        },
+        collapsible: p.snapshot.shell.collapsible ?? true,
+      },
+    },
+  }))
+}
+
+function migrateV3(projects: V3Project[], library: LibraryData): { projects: V4Project[]; library: LibraryData } {
+  const out: V4Project[] = projects.map((p) => {
     const taken: string[] = []
     const pages: PageDef[] = p.snapshot.pages.map((pg) => {
       const key = uniquePageKey(pg.key?.trim() || pg.name, taken)
@@ -301,7 +432,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
       const templateOf = (id: string) => get().library.templates.find((t) => t.id === id)
 
       return {
-      version: 4,
+      version: 9,
       appearance: 'light',
       user: MOCK_USERS[0].name,
       projects: seedProjects(initialLibrary),
@@ -326,12 +457,24 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
             updatedAt: now,
             snapshot: fromSeed
               ? { ...countryProjectSnapshot(s.library), endpointIds: countryEndpointIds(s.library) }
-              : emptyProjectSnapshot(),
+              : emptyProjectSnapshot(name.trim() || 'Untitled project'),
           }
           return { projects: [created, ...s.projects] }
         })
         log('created', 'project', created.name, fromSeed ? 'from the countries example' : 'empty project', created.id)
         return created
+      },
+
+      updateProjectMenu: (id, menu) => {
+        set((s) => ({
+          projects: patchProject(s.projects, id, (p) => ({ snapshot: { ...p.snapshot, menu } })),
+        }))
+      },
+
+      updateProjectShell: (id, shell) => {
+        set((s) => ({
+          projects: patchProject(s.projects, id, (p) => ({ snapshot: { ...p.snapshot, shell } })),
+        }))
       },
 
       updateProject: (id, patch) =>
@@ -532,7 +675,25 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
                   !p.snapshot.pages.some((other) => other.id !== pageId && other.key === wanted)
                     ? wanted
                     : pg.key
-                return { ...pg, name, path, key }
+                const next: PageDef = { ...pg, name, path, key }
+                if (patch.parentId !== undefined) {
+                  if (patch.parentId === null) delete next.parentId
+                  else if (
+                    patch.parentId !== pageId &&
+                    p.snapshot.pages.some((other) => other.id === patch.parentId) &&
+                    !isDescendant(p.snapshot.pages, patch.parentId, pageId)
+                  )
+                    next.parentId = patch.parentId
+                }
+                if (patch.crumb !== undefined) {
+                  if (patch.crumb === null) delete next.crumb
+                  else next.crumb = patch.crumb
+                }
+                if (patch.hideBreadcrumbs !== undefined) {
+                  if (patch.hideBreadcrumbs) next.hideBreadcrumbs = true
+                  else delete next.hideBreadcrumbs
+                }
+                return next
               }),
             },
           })),
@@ -606,7 +767,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
     },
     {
       name: WORKSPACE_STORAGE_KEY,
-      version: 4,
+      version: 9,
       partialize: (s) => ({
         version: s.version,
         appearance: s.appearance,
@@ -627,7 +788,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
         if (data.version === 1) {
           const v1 = migrateV1(data.projects as unknown as V1Project[])
           const { projects, library } = migrateV3(migrateV2(v1.projects), v1.library)
-          return { ...current, appearance, user, activity, projects, library }
+          return { ...current, appearance, user, activity, projects: migrateV8(migrateV7(migrateV6(migrateV5(migrateV4(projects))))), library }
         }
         if (!data.library) return current
         // Libraries saved before templates existed get the builtin set.
@@ -639,13 +800,28 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
         }
         if (data.version === 2) {
           const migrated = migrateV3(migrateV2(data.projects as unknown as V2Project[]), library)
-          return { ...current, appearance, user, activity, ...migrated }
+          return { ...current, appearance, user, activity, projects: migrateV8(migrateV7(migrateV6(migrateV5(migrateV4(migrated.projects))))), library: migrated.library }
         }
         if (data.version === 3) {
           const migrated = migrateV3(data.projects as unknown as V3Project[], library)
-          return { ...current, appearance, user, activity, ...migrated }
+          return { ...current, appearance, user, activity, projects: migrateV8(migrateV7(migrateV6(migrateV5(migrateV4(migrated.projects))))), library: migrated.library }
         }
-        if (data.version !== 4) return current
+        if (data.version === 4) {
+          return { ...current, appearance, user, activity, projects: migrateV8(migrateV7(migrateV6(migrateV5(migrateV4(data.projects as unknown as V4Project[]))))), library }
+        }
+        if (data.version === 5) {
+          return { ...current, appearance, user, activity, projects: migrateV8(migrateV7(migrateV6(migrateV5(data.projects as unknown as V5Project[])))), library }
+        }
+        if (data.version === 6) {
+          return { ...current, appearance, user, activity, projects: migrateV8(migrateV7(migrateV6(data.projects as unknown as V6Project[]))), library }
+        }
+        if (data.version === 7) {
+          return { ...current, appearance, user, activity, projects: migrateV8(migrateV7(data.projects as unknown as V7Project[])), library }
+        }
+        if (data.version === 8) {
+          return { ...current, appearance, user, activity, projects: migrateV8(data.projects as unknown as V8Project[]), library }
+        }
+        if (data.version !== 9) return current
         return { ...current, appearance, user, activity, projects: data.projects, library }
       },
       // The version bumps are handled in `merge` (it sees the raw payload);

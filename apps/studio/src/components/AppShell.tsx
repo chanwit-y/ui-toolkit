@@ -7,6 +7,7 @@ import {
   Moon,
   Network,
   Palette,
+  PanelLeft,
   Plug,
   Redo2,
   SlidersHorizontal,
@@ -34,6 +35,7 @@ const TABS = [
   { to: 'api', label: 'APIs', icon: Plug },
   { to: 'env', label: 'Env', icon: SlidersHorizontal },
   { to: 'theme', label: 'Theme', icon: Palette },
+  { to: 'menu', label: 'Menu', icon: PanelLeft },
 ]
 
 const TAB_CLASS = ({ isActive }: { isActive: boolean }) =>

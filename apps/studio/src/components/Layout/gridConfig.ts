@@ -1,3 +1,4 @@
+import type { NavigateTarget } from '@gummy-ui/ui'
 import { urlParams } from '../Api/warnings'
 import { MAX_GRID_COLUMNS } from './breakpoints'
 import { MISSING_OBSERVE_TARGET, observeContext, type ObserveContext } from './observe'
@@ -119,7 +120,7 @@ function makeButtonRefMaps(rootItems: GridItemData[], pages: PageRef[]): ButtonR
 
 /** One studio param source → the engine `DataValue` it stands for, or
  * `undefined` when it names nothing (dropped: emit authored, omit empty). */
-function navParamValue(src: NavParamSource): Record<string, unknown> | undefined {
+export function navParamValue(src: NavParamSource): Record<string, unknown> | undefined {
   switch (src.type) {
     case 'value':
       return src.value === '' ? undefined : { type: 'value', key: 'none', value: src.value }
@@ -139,7 +140,10 @@ function navParamValue(src: NavParamSource): Record<string, unknown> | undefined
  * its current key (loud `MISSING_PAGE` when the page is gone), each authored
  * param to a `DataValue`. `undefined` when no page was picked.
  */
-function navigateTarget(nav: StudioNavigate, refs: ButtonRefMaps): Record<string, unknown> | undefined {
+export function toNavigateTarget(
+  nav: StudioNavigate,
+  pageKeyById: Map<string, string>,
+): NavigateTarget | undefined {
   if (!nav.pageId) return undefined
   const params = Object.fromEntries(
     Object.entries(nav.params)
@@ -147,10 +151,14 @@ function navigateTarget(nav: StudioNavigate, refs: ButtonRefMaps): Record<string
       .filter((e): e is readonly [string, Record<string, unknown>] => e[1] !== undefined),
   )
   return {
-    page: refs.pageKeyById.get(nav.pageId) ?? MISSING_PAGE,
-    ...(Object.keys(params).length ? { params } : {}),
+    page: pageKeyById.get(nav.pageId) ?? MISSING_PAGE,
+    ...(Object.keys(params).length ? { params: params as NavigateTarget['params'] } : {}),
     ...(nav.replace ? { replace: true } : {}),
   }
+}
+
+function navigateTarget(nav: StudioNavigate, refs: ButtonRefMaps): Record<string, unknown> | undefined {
+  return toNavigateTarget(nav, refs.pageKeyById) as Record<string, unknown> | undefined
 }
 
 /** The engine root `Container` for a page: the authored (lg) grid settings —

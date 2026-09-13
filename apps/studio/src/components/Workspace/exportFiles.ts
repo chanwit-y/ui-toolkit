@@ -6,6 +6,8 @@ import type { ButtonItemConfig, DataTableConfig, GridItemData } from '../Layout/
 import { toModelTs } from '../Model/serialize'
 import type { ModelDef } from '../Model/types'
 import { toThemeTs } from '../Theme/serialize'
+import { appWiringSnippet, toMenuTs } from './menu'
+import { enginePageMeta } from './pageMeta'
 import { pathParams } from './snapshots'
 import type { PageDef, ProjectDef } from './types'
 
@@ -142,10 +144,13 @@ export function buildExportFiles(
       snapshot.pages
         .map((pg, i) => {
           const container = rootContainer(pg.key, pg.grid.containerSettings, pages[i].bins)
+          const meta = enginePageMeta(pg, snapshot.pages)
           return (
             `  ${pg.key}: {\n` +
             `    path: ${JSON.stringify(pg.path)},\n` +
-            `    title: ${JSON.stringify(pg.name)},\n` +
+            `    title: ${JSON.stringify(meta.title)},\n` +
+            (meta.parent !== undefined ? `    parent: ${JSON.stringify(meta.parent)},\n` : '') +
+            (meta.breadcrumb === false ? `    breadcrumb: false,\n` : '') +
             `    containers: [${indent(JSON.stringify(container, null, 2), 4)}],\n` +
             `  },`
           )
@@ -154,12 +159,20 @@ export function buildExportFiles(
       '\n} satisfies TPageMaster;\n',
   })
 
+  // The sidebar menu the exported `AppShell` takes (page ids → keys).
+  out.push({ name: 'menu.ts', lang: 'ts', body: toMenuTs(snapshot.menu, snapshot.pages, snapshot.shell) })
+
   const lines: string[] = [`# ${project.name}`, '', project.description || '', '', '## Pages', '']
   for (const pg of snapshot.pages) {
     const params = pathParams(pg.path)
     lines.push(`### ${pg.name}  \`${pg.path}\``)
     lines.push(`- key: \`${pg.key}\` (in pages.ts)`)
     if (params.length) lines.push(`- expects: ${params.map((x) => `\`${x}\``).join(', ')}`)
+    if (pg.parentId) {
+      const parent = snapshot.pages.find((x) => x.id === pg.parentId)
+      lines.push(`- breadcrumb: under ${parent ? `\`${parent.key}\`` : 'a deleted page (MISSING_PAGE)'}`)
+    }
+    if (pg.hideBreadcrumbs) lines.push('- breadcrumb strip hidden on this page')
     const eps = pageEndpointNames(pg, endpoints)
     if (eps.length) lines.push(`- data: ${eps.map((x) => `\`${x}\``).join(', ')}`)
     const buttons = pageButtons(pg.grid.items, snapshot.pages)
@@ -176,7 +189,7 @@ export function buildExportFiles(
   }
   lines.push('', '## Environment', '')
   for (const e of snapshot.env) lines.push(`- \`VITE_${e.name}\` = ${e.value}`)
-  lines.push('')
+  lines.push('', '## App wiring', '', 'pages.ts + menu.ts drop straight into `AppShell` / `PageRouter`:', '', '```tsx', appWiringSnippet(), '```', '')
   out.push({ name: 'HANDOFF.md', lang: 'md', body: lines.join('\n') })
 
   return out

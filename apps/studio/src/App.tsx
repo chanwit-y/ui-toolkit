@@ -1,7 +1,7 @@
 import { CoreProvider, ThemeProvider } from '@gummy-ui/ui'
 import { useMemo } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
-import { ApiEditor, EnvEditor, Grid, ModelEditor, ThemeEditor } from './components'
+import { ApiEditor, EnvEditor, Grid, MenuEditor, ModelEditor, ThemeEditor } from './components'
 import { toThemeObjects, useThemeStore } from './components/Theme'
 import { LibraryPage, LibrarySync, TemplateShell, TemplatesPage } from './components/Library'
 import {
@@ -56,6 +56,7 @@ function App() {
               <Route path="api" element={<ApiEditor />} />
               <Route path="env" element={<EnvEditor />} />
               <Route path="theme" element={<ThemeEditor />} />
+              <Route path="menu" element={<MenuEditor />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

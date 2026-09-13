@@ -18,12 +18,16 @@ export {
   MOCK_USERS,
   WORKSPACE_STORAGE_KEY,
 } from './workspaceStore'
-export { pathParams, slugPath, normalizePath, createPage, pageKey, uniquePageKey, isValidPageKey } from './snapshots'
+export { pathParams, slugPath, normalizePath, createPage, pageKey, uniquePageKey, isValidPageKey, defaultShell } from './snapshots'
+export { enginePageMeta } from './pageMeta'
+export { createMenuItem, defaultMenu, menuToEngine, toMenuTs } from './menu'
 export type {
   ProjectDef,
   ProjectSnapshot,
   PageDef,
   PageGrid,
+  MenuItemDef,
+  ShellSettings,
   TemplateDef,
   ActivityEntry,
   ActivityKind,

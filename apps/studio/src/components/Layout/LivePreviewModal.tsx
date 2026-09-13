@@ -1,14 +1,17 @@
 import {
+  AppShell,
   HttpClientFactory,
   Modal,
   PageRouter,
   type TApiMaster,
+  type TMenu,
   type TModelMaster,
   type TPageMaster,
 } from '@gummy-ui/ui'
 import { ArrowLeft, FileText, Undo2 } from 'lucide-react'
 import {
   Component,
+  memo,
   useCallback,
   useEffect,
   useMemo,
@@ -34,9 +37,11 @@ import { useProjectEndpoints, useProjectModels } from '../Library/scope'
 import { IconButton, Input, Select } from '../common'
 import { designThemeStyle } from '../Theme/designTheme'
 import { useThemeStore } from '../Theme/themeStore'
-import { pathParams } from '../Workspace/snapshots'
-import type { PageDef, PageGrid } from '../Workspace/types'
+import { defaultShell, pathParams } from '../Workspace/snapshots'
+import type { PageDef, PageGrid, ShellSettings } from '../Workspace/types'
 import { useActivePages, useWorkspaceStore } from '../Workspace/workspaceStore'
+import { menuToEngine, shellToEngine, type EngineShellProps } from '../Workspace/menu'
+import { enginePageMeta } from '../Workspace/pageMeta'
 import { DialogPreview, ToastPreview } from './DesignPreviews'
 import type { DialogConfig, OverlayAxis, ToastConfig } from './designTypes'
 import { gridConfigToJson } from './gridConfig'
@@ -159,6 +164,21 @@ function overlayPosition(x: OverlayAxis, y: OverlayAxis): React.CSSProperties {
 
 type OpenOverlay = { itemId: string; openedAt: number }
 
+/** `PageRouter`'s `notFound` — a component, so the element PreviewApp passes
+ * can be created once (a fresh inline element per render would make
+ * PageRouter rebuild its routes). */
+function NotFoundNote() {
+  const { pathname } = useLocation()
+  return (
+    <p className="p-4 text-ui text-ink-3">
+      No page matches <span className="font-mono">{pathname}</span>.
+    </p>
+  )
+}
+const NOT_FOUND = <NotFoundNote />
+/** The template editor has no project, so no authored shell settings. */
+const DEFAULT_SHELL: ShellSettings = defaultShell('Template')
+
 /** A page with its grid resolved (the live page from the grid store). */
 type PreviewPage = PageDef & { grid: PageGrid }
 
@@ -261,8 +281,9 @@ export function LivePreviewModal({ onClose }: { onClose: () => void }) {
     return { model, api: fetchableApi, wiring }
   }, [models, endpoints, apiUrl])
 
-  // The engine's pages record: every page's exported container under its key.
-  // No `title` — PageRouter would rename the studio's own tab.
+  // The engine's pages record: every page's exported container under its key,
+  // with its breadcrumb meta (title / parent / breadcrumb) as pages.ts emits
+  // it. PageRouter gets `documentTitle={false}` so the studio's tab keeps its name.
   const enginePages = useMemo<TPageMaster>(
     () =>
       Object.fromEntries(
@@ -270,6 +291,7 @@ export function LivePreviewModal({ onClose }: { onClose: () => void }) {
           pg.key,
           {
             path: pg.path,
+            ...enginePageMeta(pg, pages),
             containers: [
               buildLivePreviewContainer(
                 pg.grid.containerSettings,
@@ -287,6 +309,13 @@ export function LivePreviewModal({ onClose }: { onClose: () => void }) {
   )
 
   const projectSlug = (project?.name ?? 'project').toLowerCase().replace(/\s+/g, '-')
+  // The project's sidebar menu, as the exported menu.ts has it (no project →
+  // the template editor → no shell menu).
+  const engineMenu = useMemo<TMenu>(
+    () => (project ? menuToEngine(project.snapshot.menu, pages) : []),
+    [project, pages],
+  )
+  const engineShell = useMemo(() => shellToEngine(project?.snapshot.shell ?? DEFAULT_SHELL), [project])
 
   return (
     <Modal
@@ -307,6 +336,8 @@ export function LivePreviewModal({ onClose }: { onClose: () => void }) {
             livePage={livePage}
             endpoints={endpoints}
             enginePages={enginePages}
+            engineMenu={engineMenu}
+            engineShell={engineShell}
             http={http}
             model={engine.model}
             api={engine.api}
@@ -337,12 +368,16 @@ export function LivePreviewModal({ onClose }: { onClose: () => void }) {
  * The routed preview: page bar + the engine's `PageRouter`, plus the
  * design-only overlays the studio plays itself. Lives inside the
  * `MemoryRouter` so it can read and drive the preview's own location.
+ * Memoized: the modal re-renders on every API log entry (dev tools), and
+ * every prop here is stable, so the engine tree must not re-render for that.
  */
-function PreviewApp({
+const PreviewApp = memo(function PreviewApp({
   pages,
   livePage,
   endpoints,
   enginePages,
+  engineMenu,
+  engineShell,
   http,
   model,
   api,
@@ -354,6 +389,8 @@ function PreviewApp({
   livePage: PreviewPage
   endpoints: EndpointDef[]
   enginePages: TPageMaster
+  engineMenu: TMenu
+  engineShell: EngineShellProps
   http: HttpClientFactory
   model: TModelMaster
   api: TApiMaster<TModelMaster>
@@ -525,19 +562,28 @@ function PreviewApp({
         </div>
       </div>
 
-      <div className="relative rounded-md" style={frameTheme} onClickCapture={onCaptureClick}>
+      <div className="relative overflow-hidden rounded-md border border-line" style={frameTheme} onClickCapture={onCaptureClick}>
         <PreviewErrorBoundary key={current?.page.id ?? 'none'}>
-          <PageRouter
-            http={http}
-            model={model}
-            api={api}
+          {/* The exported app's chrome: AppShell around PageRouter, exactly as
+              HANDOFF.md wires it. Its height is bounded to the modal. */}
+          <AppShell
             pages={enginePages}
-            notFound={
-              <p className="p-4 text-ui text-ink-3">
-                No page matches <span className="font-mono">{location.pathname}</span>.
-              </p>
-            }
-          />
+            menu={engineMenu}
+            {...engineShell}
+            sidebarWidth="13rem"
+            height="calc(85vh - 11rem)"
+          >
+            <div className="p-4">
+              <PageRouter
+                http={http}
+                model={model}
+                api={api}
+                pages={enginePages}
+                notFound={NOT_FOUND}
+                documentTitle={false}
+              />
+            </div>
+          </AppShell>
         </PreviewErrorBoundary>
 
         {scrim && (
@@ -578,4 +624,4 @@ function PreviewApp({
       </div>
     </>
   )
-}
+})

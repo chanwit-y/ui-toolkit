@@ -24,7 +24,8 @@ import {
 import { builtinTemplates } from '../seed/templates'
 import { useThemeStore } from '../Theme/themeStore'
 import type { StudioThemeConfig } from '../Theme/types'
-import type { LibraryData, PageDef, PageGrid, ProjectSnapshot } from './types'
+import type { LibraryData, PageDef, PageGrid, ProjectSnapshot, AppBarSettings, ShellSettings } from './types'
+import { defaultMenu } from './menu'
 
 export const COUNTRIES_GROUP_ID = 'seed-group-countries'
 
@@ -107,6 +108,22 @@ export function pathParams(path: string): string[] {
   return out
 }
 
+/** A new project's shell: sidebar navigation with the breadcrumb strip on. */
+export function defaultAppBar(title: string): AppBarSettings {
+  return { title, icon: '', logo: '', variant: 'panel', sidebarToggle: { hide: '', show: '' } }
+}
+
+/** Sidebar navigation, breadcrumbs on, a panel app bar titled after the project. */
+export function defaultShell(title = 'My app'): ShellSettings {
+  return {
+    navigation: 'sidebar',
+    breadcrumbs: true,
+    appBar: defaultAppBar(title),
+    menuIcons: true,
+    collapsible: true,
+  }
+}
+
 export function emptyPageGrid(): PageGrid {
   return { items: [], containerSettings: defaultContainerSettings, fieldSeq: 0 }
 }
@@ -159,8 +176,7 @@ function countryDetailSeedItems(): GridItemData[] {
 /** The countries example: the list page (modal + table), plus an empty detail
  * page routed with a `:code` param, attached to the seeded endpoints. */
 export function countryProjectSnapshot(library: LibraryData): ProjectSnapshot {
-  return {
-    pages: [
+  const pages: PageDef[] = [
       {
         id: 'seed-page-countries',
         key: 'countries',
@@ -171,6 +187,8 @@ export function countryProjectSnapshot(library: LibraryData): ProjectSnapshot {
           containerSettings: defaultContainerSettings,
           fieldSeq: 0,
         },
+        // The list is the root: no trail worth a strip.
+        hideBreadcrumbs: true,
       },
       {
         id: 'seed-page-country-detail',
@@ -182,8 +200,17 @@ export function countryProjectSnapshot(library: LibraryData): ProjectSnapshot {
           containerSettings: defaultContainerSettings,
           fieldSeq: 0,
         },
+        // Breadcrumb "Countries / TH": under the list, labelled by the route's :code.
+        parentId: 'seed-page-countries',
+        crumb: { type: 'url', key: 'code', source: 'param' },
       },
-    ],
+  ]
+  const menu = defaultMenu(pages)
+  if (menu[0]?.kind === 'page') menu[0].icon = 'globe'
+  return {
+    pages,
+    menu,
+    shell: defaultShell('Country manager'),
     env: countrySeedEnvVars(),
     theme: countrySeedTheme(),
     endpointIds: countryEndpointIds(library),
@@ -214,9 +241,12 @@ function defaultThemeConfig(): StudioThemeConfig {
 }
 
 /** A blank project: one empty page, nothing attached, the locked API_URL, default theme. */
-export function emptyProjectSnapshot(): ProjectSnapshot {
+export function emptyProjectSnapshot(name = 'My app'): ProjectSnapshot {
+  const pages = [createPage('Page 1')]
   return {
-    pages: [createPage('Page 1')],
+    pages,
+    menu: defaultMenu(pages),
+    shell: defaultShell(name),
     env: countrySeedEnvVars(),
     theme: defaultThemeConfig(),
     endpointIds: [],
