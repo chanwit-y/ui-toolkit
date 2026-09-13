@@ -24,6 +24,10 @@ export interface ModalProps {
 	onOpenChange?: (open: boolean) => void
 	hiddenTrigger?: boolean
 	isHideTitleLine?: boolean // New prop to control title line visibility
+	/** Fill the viewport edge to edge; `width`/`height`/`maxWidth`/`minWidth` are ignored while set. */
+	fullscreen?: boolean
+	/** Extra controls rendered in the title row, left of the close button. */
+	headerActions?: ReactNode
 }
 
 const Modal = forwardRef<HTMLDivElement, ModalProps>(
@@ -43,6 +47,8 @@ const Modal = forwardRef<HTMLDivElement, ModalProps>(
 			onOpenChange,
 			hiddenTrigger,
 			isHideTitleLine,
+			fullscreen,
+			headerActions,
 		},
 		ref
 	) => {
@@ -64,6 +70,7 @@ const Modal = forwardRef<HTMLDivElement, ModalProps>(
 		// }, [trigger])
 
 		const contentStyle = useMemo<CSSProperties | undefined>(() => {
+			if (fullscreen) return undefined
 			if (!maxWidth && !minWidth && !width && !height) return undefined
 
 			return {
@@ -73,7 +80,7 @@ const Modal = forwardRef<HTMLDivElement, ModalProps>(
 				maxWidth: maxWidth ?? width,
 				minWidth,
 			}
-		}, [width, height, maxWidth, minWidth])
+		}, [width, height, maxWidth, minWidth, fullscreen])
 
 		const handleOpenChange = useCallback(
 			(nextOpen: boolean) => {
@@ -124,7 +131,11 @@ const Modal = forwardRef<HTMLDivElement, ModalProps>(
 						onInteractOutside={guardDevtoolsInteraction}
 						onFocusOutside={guardDevtoolsInteraction}
 						{...(description ? {} : { "aria-describedby": undefined })}
-						className="modal-content fixed top-1/2 left-1/2 z-99999 mx-4 min-w-[400px] max-w-lg max-h-[90vh] transform -translate-x-1/2 -translate-y-1/2 rounded-lg shadow-lg flex flex-col"
+						className={
+							fullscreen
+								? "modal-content fixed inset-0 z-99999 w-screen h-screen max-w-none max-h-none rounded-none shadow-lg flex flex-col"
+								: "modal-content fixed top-1/2 left-1/2 z-99999 mx-4 min-w-[400px] max-w-lg max-h-[90vh] transform -translate-x-1/2 -translate-y-1/2 rounded-lg shadow-lg flex flex-col"
+						}
 					>
 
 						<ThemeProvider
@@ -135,7 +146,11 @@ const Modal = forwardRef<HTMLDivElement, ModalProps>(
 									size: "2",
 								}
 							}}
-							className="flex flex-col flex-1 min-h-0 rounded-lg overflow-hidden bg-[var(--color-panel-solid)]">
+							className={
+								fullscreen
+									? "flex flex-col flex-1 min-h-0 rounded-none overflow-hidden bg-[var(--color-panel-solid)]"
+									: "flex flex-col flex-1 min-h-0 rounded-lg overflow-hidden bg-[var(--color-panel-solid)]"
+							}>
 							<div className={`flex items-start justify-between gap-4 flex-shrink-0 py-4 px-6 ${isHideTitleLine ? "" : "border-b border-[var(--gray-6)]"}`}>
 								<div className="flex-1">
 									{title && (
@@ -150,6 +165,9 @@ const Modal = forwardRef<HTMLDivElement, ModalProps>(
 									)}
 								</div>
 
+								{headerActions && (
+									<div className="flex items-center gap-2">{headerActions}</div>
+								)}
 								<AlertDialog.Close asChild>
 									<button
 										type="button"

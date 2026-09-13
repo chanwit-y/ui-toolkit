@@ -8,7 +8,7 @@ import {
   type TModelMaster,
   type TPageMaster,
 } from '@gummy-ui/ui'
-import { ArrowLeft, FileText, Undo2 } from 'lucide-react'
+import { ArrowLeft, FileText, Maximize2, Minimize2, Undo2 } from 'lucide-react'
 import {
   Component,
   memo,
@@ -203,6 +203,9 @@ export function LivePreviewModal({ onClose }: { onClose: () => void }) {
   // engine client's onLog hook (the seam the API test runner uses); newest
   // first, capped so a polling table can't grow it unbounded.
   const [devOpen, setDevOpen] = useState(false)
+  // Full screen: the library Modal fills the viewport and the engine shell
+  // grows with it (its height is bounded to the modal either way).
+  const [fullscreen, setFullscreen] = useState(false)
   const [apiLog, setApiLog] = useState<ApiLogEntry[]>([])
   const [configJson, setConfigJson] = useState('[]')
   const logSeq = useRef(0)
@@ -328,6 +331,20 @@ export function LivePreviewModal({ onClose }: { onClose: () => void }) {
       description="Rendered by the engine from the exported JSON config"
       width="min(90vw, 72rem)"
       height="85vh"
+      fullscreen={fullscreen}
+      headerActions={
+        <IconButton
+          label={fullscreen ? 'Exit full screen' : 'Full screen'}
+          active={fullscreen}
+          onClick={() => setFullscreen((v) => !v)}
+        >
+          {fullscreen ? (
+            <Minimize2 size={14} aria-hidden="true" />
+          ) : (
+            <Maximize2 size={14} aria-hidden="true" />
+          )}
+        </IconButton>
+      }
     >
       <NestedRouterBoundary>
         <MemoryRouter initialEntries={[fillPath(livePage.path, {})]}>
@@ -343,6 +360,7 @@ export function LivePreviewModal({ onClose }: { onClose: () => void }) {
             api={engine.api}
             frameTheme={frameTheme}
             projectSlug={projectSlug}
+            fullscreen={fullscreen}
             onConfigJson={setConfigJson}
           />
         </MemoryRouter>
@@ -383,6 +401,7 @@ const PreviewApp = memo(function PreviewApp({
   api,
   frameTheme,
   projectSlug,
+  fullscreen,
   onConfigJson,
 }: {
   pages: PreviewPage[]
@@ -396,6 +415,7 @@ const PreviewApp = memo(function PreviewApp({
   api: TApiMaster<TModelMaster>
   frameTheme: React.CSSProperties
   projectSlug: string
+  fullscreen: boolean
   onConfigJson: (json: string) => void
 }) {
   const location = useLocation()
@@ -565,13 +585,14 @@ const PreviewApp = memo(function PreviewApp({
       <div className="relative overflow-hidden rounded-md border border-line" style={frameTheme} onClickCapture={onCaptureClick}>
         <PreviewErrorBoundary key={current?.page.id ?? 'none'}>
           {/* The exported app's chrome: AppShell around PageRouter, exactly as
-              HANDOFF.md wires it. Its height is bounded to the modal. */}
+              HANDOFF.md wires it. Its height is bounded to the modal (85vh,
+              or the viewport in full screen) minus the modal and page-bar chrome. */}
           <AppShell
             pages={enginePages}
             menu={engineMenu}
             {...engineShell}
             sidebarWidth="13rem"
-            height="calc(85vh - 11rem)"
+            height={fullscreen ? 'calc(100vh - 11rem)' : 'calc(85vh - 11rem)'}
           >
             <div className="p-4">
               <PageRouter
