@@ -18,10 +18,12 @@ import type {
   GridItemData,
   HiddenConfig,
   ModalConfig,
+  NavParamSource,
   PaperConfig,
   PopoverConfig,
   RadioConfig,
   SelectFieldConfig,
+  StudioNavigate,
   TabConfig,
   TextareaConfig,
   TextConfig,
@@ -69,6 +71,14 @@ export const MISSING_ENDPOINT = 'MISSING_ENDPOINT'
  * endpoint actually has). Both callers pass the full `EndpointDef[]`. */
 export type EndpointRef = { id: string; name: string; url?: string }
 
+/** The slice of a project page the serializer needs: stable id → exported
+ * `key` (the engine `NavigateTarget.page`). `PageDef` satisfies it. */
+export type PageRef = { id: string; key: string }
+
+/** Emitted for a navigation whose page was deleted: `PageRouter` warns on it
+ * at mount instead of the config silently pointing nowhere. */
+export const MISSING_PAGE = 'MISSING_PAGE'
+
 /** id → current endpoint name; `undefined` for an unset (null) ref, loud
  * `MISSING_ENDPOINT` for a dangling one. */
 export type ResolveEndpoint = (id: string | null) => string | undefined
@@ -94,13 +104,75 @@ type ButtonRefMaps = {
   modalIdByItem: Map<string, string>
   /** Table grid-item id → current binding `name` (the `fnCtxs` refetch key). */
   tableNameByItem: Map<string, string>
+  /** Page id → current `key` (the engine `NavigateTarget.page`). */
+  pageKeyById: Map<string, string>
 }
 
-function makeButtonRefMaps(rootItems: GridItemData[]): ButtonRefMaps {
+function makeButtonRefMaps(rootItems: GridItemData[], pages: PageRef[]): ButtonRefMaps {
   const targets = collectButtonTargets(rootItems)
   return {
     modalIdByItem: new Map(targets.modals.map((m) => [m.itemId, m.modalId])),
     tableNameByItem: new Map(targets.tables.map((t) => [t.itemId, t.name])),
+    pageKeyById: new Map(pages.map((p) => [p.id, p.key])),
+  }
+}
+
+/** One studio param source → the engine `DataValue` it stands for, or
+ * `undefined` when it names nothing (dropped: emit authored, omit empty). */
+function navParamValue(src: NavParamSource): Record<string, unknown> | undefined {
+  switch (src.type) {
+    case 'value':
+      return src.value === '' ? undefined : { type: 'value', key: 'none', value: src.value }
+    case 'url':
+      return src.key ? { type: 'url', key: src.key, source: src.source } : undefined
+    case 'state':
+      return src.key ? { type: 'state', key: src.key, ...(src.path ? { path: src.path } : {}) } : undefined
+    case 'row':
+      return src.key ? { type: 'row', key: src.key } : undefined
+    default:
+      return undefined
+  }
+}
+
+/**
+ * A studio navigation → the engine `NavigateTarget`: the page id resolves to
+ * its current key (loud `MISSING_PAGE` when the page is gone), each authored
+ * param to a `DataValue`. `undefined` when no page was picked.
+ */
+function navigateTarget(nav: StudioNavigate, refs: ButtonRefMaps): Record<string, unknown> | undefined {
+  if (!nav.pageId) return undefined
+  const params = Object.fromEntries(
+    Object.entries(nav.params)
+      .map(([k, src]) => [k, navParamValue(src)] as const)
+      .filter((e): e is readonly [string, Record<string, unknown>] => e[1] !== undefined),
+  )
+  return {
+    page: refs.pageKeyById.get(nav.pageId) ?? MISSING_PAGE,
+    ...(Object.keys(params).length ? { params } : {}),
+    ...(nav.replace ? { replace: true } : {}),
+  }
+}
+
+/** The engine root `Container` for a page: the authored (lg) grid settings —
+ * the engine Container isn't responsive for these, one value each, mirroring
+ * how the export collapses xl onto lg. Shared by the Live Preview and the
+ * hand-off `pages.ts`. */
+export function rootContainer(
+  name: string,
+  settings: GridContainerSettings,
+  bins: unknown[],
+): Record<string, unknown> {
+  return {
+    id: name,
+    name,
+    isArray: false,
+    bins,
+    ...(settings.gap.lg !== '' ? { gap: settings.gap.lg } : {}),
+    ...(settings.justifyItems.lg !== '' ? { justifyItems: settings.justifyItems.lg } : {}),
+    ...(settings.alignItems.lg !== '' ? { alignItems: settings.alignItems.lg } : {}),
+    ...(settings.justifyContent.lg !== '' ? { justifyContent: settings.justifyContent.lg } : {}),
+    ...(settings.alignContent.lg !== '' ? { alignContent: settings.alignContent.lg } : {}),
+    ...(settings.gridAutoFlow.lg !== '' ? { gridAutoFlow: settings.gridAutoFlow.lg } : {}),
   }
 }
 
@@ -436,9 +508,11 @@ function dataTableElement(
   )
   const editCanvas = childCanvasAt(item, 0)
   const emitEditModal = c.canEdit && editCanvas.items.length > 0
+  const rowNavigate = c.rowNavigate ? navigateTarget(c.rowNavigate, refs) : undefined
   return {
     name: c.name,
     title: c.title,
+    ...(rowNavigate ? { rowNavigate } : {}),
     columns: c.columns.map((col) => ({
       accessor: col.accessor,
       header: col.header,
@@ -637,6 +711,8 @@ function buttonItemElement(
   const effective = confirm ? [...c.confirmTrue, ...c.confirmFalse] : c.actions
   const usesSubmit = effective.some(isSubmitAction)
   const usesCloseModal = effective.includes('CloseModal')
+  const usesNavigate = effective.includes('Navigate')
+  const navigate = usesNavigate && c.navigate ? navigateTarget(c.navigate, refs) : undefined
 
   const apiName = usesSubmit ? resolveEndpoint(c.endpointId) : undefined
   const modalId = usesCloseModal && c.modalItemId
@@ -672,6 +748,7 @@ function buttonItemElement(
         }
       : {}),
     ...(usesSubmit && c.snackbarErrorException ? { snackbarError: '$exception' } : {}),
+    ...(navigate ? { navigate } : {}),
   }
 }
 
@@ -698,7 +775,7 @@ function toEngineContainer(
     id: name,
     name,
     isArray: false,
-    bins: buildBins(canvas.settings, canvas.items, endpoints, refs),
+    bins: buildBins(canvas.settings, canvas.items, endpoints, [], refs),
     ...(s.gap.lg !== '' ? { gap: s.gap.lg } : {}),
     ...(s.justifyItems.lg !== '' ? { justifyItems: s.justifyItems.lg } : {}),
     ...(s.alignItems.lg !== '' ? { alignItems: s.alignItems.lg } : {}),
@@ -910,11 +987,12 @@ export function buildBins(
   container: GridContainerSettings,
   items: GridItemData[],
   endpoints: EndpointRef[],
+  pages: PageRef[] = [],
   refs?: ButtonRefMaps,
 ): Record<string, unknown>[] {
   const cols = container.columns
   const resolveEndpoint = makeEndpointResolver(endpoints)
-  const buttonRefs = refs ?? makeButtonRefMaps(items)
+  const buttonRefs = refs ?? makeButtonRefMaps(items, pages)
   return items.map((item) => {
     const span = item.settings.colSpan
     const lg = toBoxRange(span.lg, cols.lg)
@@ -956,8 +1034,9 @@ export function buildBins(
       ...(designOnly
         ? { designOnly: { type: item.type, label: item.label, config: item.config ?? {} } }
         : {}),
-      // A button's design-only navigation (page / link / toast / dialog) rides
-      // beside the engine element: read by the Live Preview and project.json.
+      // A button's design-only navigation (link / toast / dialog) rides beside
+      // the engine element: read by the Live Preview and project.json. Page
+      // navigation is the engine `navigate` on the element itself.
       ...(item.type === 'button' &&
       item.config &&
       (item.config as ButtonItemConfig).navigation &&
@@ -978,6 +1057,7 @@ export function gridConfigToJson(
   container: GridContainerSettings,
   items: GridItemData[],
   endpoints: EndpointRef[],
+  pages: PageRef[] = [],
 ): string {
-  return JSON.stringify(buildBins(container, items, endpoints), null, 2)
+  return JSON.stringify(buildBins(container, items, endpoints, pages), null, 2)
 }

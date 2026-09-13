@@ -402,6 +402,13 @@ export function countrySeedGridItems(): GridItemData[] {
         // through the panel's delete section instead of hand-wired.
         deleteEndpointId: DELETE_COUNTRY_ENDPOINT_ID,
         deleteParams: { id: '_id' },
+        // Row click → the detail page, `:code` read off the clicked row (the
+        // engine's rowNavigate; see the grilled page-router design).
+        rowNavigate: {
+          pageId: 'seed-page-country-detail',
+          params: { code: { type: 'row', key: 'code' } },
+          replace: false,
+        },
         deleteConfirmTitle: 'Delete Country',
         deleteConfirmDescription: 'Are you sure you want to delete this country?',
         deleteSnackbarSuccessEnabled: true,

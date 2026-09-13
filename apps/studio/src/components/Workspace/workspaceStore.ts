@@ -11,6 +11,8 @@ import {
   countryLibrary,
   countryProjectSnapshot,
   createPage,
+  isValidPageKey,
+  uniquePageKey,
   emptyPageGrid,
   emptyProjectSnapshot,
   normalizePath,
@@ -28,6 +30,8 @@ import type {
   TemplateDef,
   WorkspaceData,
 } from './types'
+import { walkItems } from '../Layout/pageLinks'
+import type { ButtonItemConfig, GridItemData } from '../Layout/types'
 
 const ACTIVITY_CAP = 500
 /** Autosaves are continuous; a "saved" line is worth recording this often. */
@@ -89,8 +93,15 @@ type WorkspaceStore = WorkspaceData & {
   detachEverywhere: (endpointId: string) => void
 
   // Pages (see the grilled pages design): a project always keeps at least one.
-  addPage: (projectId: string, input: { name: string; path?: string; grid?: PageGrid }) => PageDef
-  updatePage: (projectId: string, pageId: string, patch: { name?: string; path?: string }) => void
+  addPage: (
+    projectId: string,
+    input: { name: string; path?: string; grid?: PageGrid; key?: string },
+  ) => PageDef
+  updatePage: (
+    projectId: string,
+    pageId: string,
+    patch: { name?: string; path?: string; key?: string },
+  ) => void
   /** Reorder: move the page `delta` positions (clamped). */
   movePage: (projectId: string, pageId: string, delta: number) => void
   deletePage: (projectId: string, pageId: string) => void
@@ -194,12 +205,64 @@ function migrateV1(projects: V1Project[]): { projects: V2Project[]; library: Lib
   }
 }
 
+/** v3 pages had no `key`. */
+type V3Page = Omit<PageDef, 'key'> & { key?: string }
+type V3Project = Omit<ProjectDef, 'snapshot'> & {
+  snapshot: Omit<ProjectSnapshot, 'pages'> & { pages: V3Page[] }
+}
+
 /** v2 → v3: the single canvas becomes the project's first (and only) page. */
-function migrateV2(projects: V2Project[]): ProjectDef[] {
+function migrateV2(projects: V2Project[]): V3Project[] {
   return projects.map((p) => {
     const { grid, ...rest } = p.snapshot
     return { ...p, snapshot: { ...rest, pages: [createPage('Page 1', '/', grid)] } }
   })
+}
+
+/** The v3 design-only page navigation a button carried. */
+type V3PageNavigation = { kind: 'page'; pageId: string; params: Record<string, string> }
+
+/**
+ * v3 → v4 (see the grilled page-router design): every page gets a `key`
+ * derived from its name, and a button's design-only "go to page" becomes the
+ * engine `Navigate` action with a `navigate` target (fixed values → `value`
+ * sources), appended to its direct or confirm-true action list. Templates
+ * carry the same button configs, so their grids are migrated too (their page
+ * refs are dropped on insert anyway, see `cloneItems`).
+ */
+function migrateButtonNavigation(items: GridItemData[]): void {
+  walkItems(items, (item) => {
+    if (item.type !== 'button' || !item.config) return
+    const c = item.config as ButtonItemConfig & { navigation?: { kind: string } }
+    const nav = c.navigation as V3PageNavigation | { kind: string } | undefined
+    if (!nav || nav.kind !== 'page') return
+    const page = nav as V3PageNavigation
+    c.navigate = {
+      pageId: page.pageId ?? '',
+      params: Object.fromEntries(
+        Object.entries(page.params ?? {}).map(([k, v]) => [k, { type: 'value', value: v }]),
+      ),
+      replace: false,
+    }
+    const list = c.mode === 'confirm' ? c.confirmTrue : c.actions
+    if (!list.includes('Navigate')) list.push('Navigate')
+    c.navigation = { kind: 'none' }
+  })
+}
+
+function migrateV3(projects: V3Project[], library: LibraryData): { projects: ProjectDef[]; library: LibraryData } {
+  const out: ProjectDef[] = projects.map((p) => {
+    const taken: string[] = []
+    const pages: PageDef[] = p.snapshot.pages.map((pg) => {
+      const key = uniquePageKey(pg.key?.trim() || pg.name, taken)
+      taken.push(key)
+      migrateButtonNavigation(pg.grid.items)
+      return { ...pg, key }
+    })
+    return { ...p, snapshot: { ...p.snapshot, pages } }
+  })
+  for (const t of library.templates) migrateButtonNavigation(t.grid.items)
+  return { projects: out, library }
 }
 
 const initialLibrary = countryLibrary()
@@ -238,7 +301,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
       const templateOf = (id: string) => get().library.templates.find((t) => t.id === id)
 
       return {
-      version: 3,
+      version: 4,
       appearance: 'light',
       user: MOCK_USERS[0].name,
       projects: seedProjects(initialLibrary),
@@ -438,8 +501,9 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
           ),
         })),
 
-      addPage: (projectId, { name, path, grid }) => {
-        const page = createPage(name, path, grid)
+      addPage: (projectId, { name, path, grid, key }) => {
+        const taken = get().projects.find((p) => p.id === projectId)?.snapshot.pages.map((pg) => pg.key) ?? []
+        const page = createPage(name, path, grid, taken, key)
         set((s) => ({
           projects: patchProject(s.projects, projectId, (p) => ({
             snapshot: { ...p.snapshot, pages: [...p.snapshot.pages, page] },
@@ -459,7 +523,16 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
                 if (pg.id !== pageId) return pg
                 const name = patch.name != null ? patch.name.trim() || pg.name : pg.name
                 const path = patch.path != null ? normalizePath(patch.path, name) : pg.path
-                return { ...pg, name, path }
+                // A key is accepted only when it is a valid identifier no other
+                // page of the project uses; otherwise the current one stays.
+                const wanted = patch.key?.trim()
+                const key =
+                  wanted &&
+                  isValidPageKey(wanted) &&
+                  !p.snapshot.pages.some((other) => other.id !== pageId && other.key === wanted)
+                    ? wanted
+                    : pg.key
+                return { ...pg, name, path, key }
               }),
             },
           })),
@@ -533,7 +606,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
     },
     {
       name: WORKSPACE_STORAGE_KEY,
-      version: 3,
+      version: 4,
       partialize: (s) => ({
         version: s.version,
         appearance: s.appearance,
@@ -552,8 +625,9 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
           typeof data.user === 'string' && data.user ? data.user : MOCK_USERS[0].name
         const activity = Array.isArray(data.activity) ? data.activity : seedActivity()
         if (data.version === 1) {
-          const { projects, library } = migrateV1(data.projects as unknown as V1Project[])
-          return { ...current, appearance, user, activity, projects: migrateV2(projects), library }
+          const v1 = migrateV1(data.projects as unknown as V1Project[])
+          const { projects, library } = migrateV3(migrateV2(v1.projects), v1.library)
+          return { ...current, appearance, user, activity, projects, library }
         }
         if (!data.library) return current
         // Libraries saved before templates existed get the builtin set.
@@ -564,16 +638,14 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
             : builtinTemplates(),
         }
         if (data.version === 2) {
-          return {
-            ...current,
-            appearance,
-            user,
-            activity,
-            projects: migrateV2(data.projects as unknown as V2Project[]),
-            library,
-          }
+          const migrated = migrateV3(migrateV2(data.projects as unknown as V2Project[]), library)
+          return { ...current, appearance, user, activity, ...migrated }
         }
-        if (data.version !== 3) return current
+        if (data.version === 3) {
+          const migrated = migrateV3(data.projects as unknown as V3Project[], library)
+          return { ...current, appearance, user, activity, ...migrated }
+        }
+        if (data.version !== 4) return current
         return { ...current, appearance, user, activity, projects: data.projects, library }
       },
       // The version bumps are handled in `merge` (it sees the raw payload);

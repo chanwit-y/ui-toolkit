@@ -21,7 +21,7 @@ function download(name: string, body: string) {
 
 /**
  * "Hand off" (the mockup's export dialog): the bundle a developer needs —
- * project.json, api.ts, model.ts, theme.ts, routes.ts, HANDOFF.md — with a
+ * project.json, api.ts, model.ts, theme.ts, pages.ts, HANDOFF.md — with a
  * file list, the selected file's code (with copy), Download, and Download all.
  * Built from the persisted project (the autosave is 400 ms behind at most).
  */

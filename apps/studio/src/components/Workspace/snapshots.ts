@@ -4,7 +4,13 @@ import type { EndpointDef } from '../Api/types'
 import { MODEL_REF_KEYS } from '../Api/types'
 import { useEnvStore } from '../Env/envStore'
 import { useGridStore } from '../Layout/gridStore'
-import { defaultContainerSettings, type GridItemData } from '../Layout/types'
+import {
+  createDefaultButtonItemConfig,
+  createDefaultItemSettings,
+  createDefaultTextConfig,
+  defaultContainerSettings,
+  type GridItemData,
+} from '../Layout/types'
 import { useGroupStore } from '../Library/groupStore'
 import { useModelStore } from '../Model/modelStore'
 import type { ModelDef } from '../Model/types'
@@ -63,6 +69,35 @@ export function normalizePath(path: string, fallbackName: string): string {
   return withSlash.length > 1 ? withSlash.replace(/\/+$/, '') : withSlash
 }
 
+/** `"Country detail"` → `"countryDetail"` — the default page key (a JS identifier). */
+export function pageKey(name: string): string {
+  const words = name
+    .replace(/[^A-Za-z0-9]+/g, ' ')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+  const raw = words
+    .map((w, i) => (i === 0 ? w.toLowerCase() : w[0].toUpperCase() + w.slice(1).toLowerCase()))
+    .join('')
+  const key = raw.replace(/^[0-9]+/, '')
+  return key || 'page'
+}
+
+/** A page key not already in `taken`: the base, then `base2`, `base3`, … */
+export function uniquePageKey(base: string, taken: Iterable<string>): string {
+  const set = new Set(taken)
+  const clean = pageKey(base)
+  if (!set.has(clean)) return clean
+  let n = 2
+  while (set.has(`${clean}${n}`)) n++
+  return `${clean}${n}`
+}
+
+/** True for a usable page key: a JS identifier (letters, digits, `_`, `$`). */
+export function isValidPageKey(key: string): boolean {
+  return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(key)
+}
+
 /** The `:param` names in a route, in order (`/countries/:code` → `['code']`). */
 export function pathParams(path: string): string[] {
   const out: string[] = []
@@ -76,15 +111,49 @@ export function emptyPageGrid(): PageGrid {
   return { items: [], containerSettings: defaultContainerSettings, fieldSeq: 0 }
 }
 
-/** A new page: fresh id, the given name, its slug as the route, an empty canvas. */
-export function createPage(name: string, path?: string, grid?: PageGrid): PageDef {
+/** A new page: fresh id, the given name, its slug as the route, a key unique
+ * among `takenKeys`, an empty canvas. */
+export function createPage(
+  name: string,
+  path?: string,
+  grid?: PageGrid,
+  takenKeys: Iterable<string> = [],
+  key?: string,
+): PageDef {
   const cleanName = name.trim() || 'Untitled page'
   return {
     id: crypto.randomUUID(),
+    key: uniquePageKey(key?.trim() || cleanName, takenKeys),
     name: cleanName,
     path: normalizePath(path ?? '', cleanName),
     grid: grid ?? emptyPageGrid(),
   }
+}
+
+/** The seeded detail page: a heading and a Back button that plays the engine
+ * `Navigate` action — the round trip of the table's row navigation. */
+function countryDetailSeedItems(): GridItemData[] {
+  return [
+    {
+      id: 'seed-item-detail-heading',
+      label: 'Text',
+      type: 'text',
+      settings: createDefaultItemSettings({ colSpan: { xs: 4, sm: 6, md: 8, lg: 12 } }),
+      config: { ...createDefaultTextConfig(), text: 'Country detail — :code comes from the row you clicked' },
+    },
+    {
+      id: 'seed-item-detail-back',
+      label: 'Button',
+      type: 'button',
+      settings: createDefaultItemSettings({ colSpan: { xs: 4, sm: 3, md: 3, lg: 3 } }),
+      config: {
+        ...createDefaultButtonItemConfig(),
+        label: 'Back to countries',
+        actions: ['Navigate'],
+        navigate: { pageId: 'seed-page-countries', params: {}, replace: false },
+      },
+    },
+  ]
 }
 
 /** The countries example: the list page (modal + table), plus an empty detail
@@ -94,6 +163,7 @@ export function countryProjectSnapshot(library: LibraryData): ProjectSnapshot {
     pages: [
       {
         id: 'seed-page-countries',
+        key: 'countries',
         name: 'Countries',
         path: '/countries',
         grid: {
@@ -104,9 +174,14 @@ export function countryProjectSnapshot(library: LibraryData): ProjectSnapshot {
       },
       {
         id: 'seed-page-country-detail',
+        key: 'countryDetail',
         name: 'Country detail',
         path: '/countries/:code',
-        grid: emptyPageGrid(),
+        grid: {
+          items: countryDetailSeedItems(),
+          containerSettings: defaultContainerSettings,
+          fieldSeq: 0,
+        },
       },
     ],
     env: countrySeedEnvVars(),

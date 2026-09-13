@@ -1,8 +1,8 @@
 import { toApiTs } from '../Api/serialize'
 import type { EndpointDef } from '../Api/types'
-import { buildBins } from '../Layout/gridConfig'
-import { pageLinks, walkItems } from '../Layout/pageLinks'
-import type { ButtonItemConfig, GridItemData } from '../Layout/types'
+import { buildBins, rootContainer } from '../Layout/gridConfig'
+import { buttonNavigates, pageLinks, walkItems } from '../Layout/pageLinks'
+import type { ButtonItemConfig, DataTableConfig, GridItemData } from '../Layout/types'
 import { toModelTs } from '../Model/serialize'
 import type { ModelDef } from '../Model/types'
 import { toThemeTs } from '../Theme/serialize'
@@ -32,18 +32,26 @@ export function pageItemCount(page: PageDef): number {
   return n
 }
 
-function pageButtons(items: GridItemData[]): { label: string; does: string }[] {
+function pageButtons(items: GridItemData[], pages: PageDef[]): { label: string; does: string }[] {
   const out: { label: string; does: string }[] = []
+  const pageName = (id: string) => pages.find((p) => p.id === id)?.name ?? 'a missing page'
   walkItems(items, (item) => {
-    if (item.type !== 'button' || !item.config) return
+    if (!item.config) return
+    if (item.type === 'datatable') {
+      const t = item.config as DataTableConfig
+      if (t.rowNavigate?.pageId)
+        out.push({ label: `${t.title || t.name} row`, does: `go to ${pageName(t.rowNavigate.pageId)}` })
+      return
+    }
+    if (item.type !== 'button') return
     const c = item.config as ButtonItemConfig
     const parts: string[] = []
     const actions = c.mode === 'confirm' ? c.confirmTrue : c.actions
     if (c.mode === 'confirm') parts.push('confirm first')
     if (actions.length) parts.push(actions.join(' → '))
+    if (buttonNavigates(c) && c.navigate?.pageId) parts.push(`go to ${pageName(c.navigate.pageId)}`)
     const nav = c.navigation
-    if (nav?.kind === 'page') parts.push('go to a page')
-    else if (nav?.kind === 'link') parts.push(`open ${nav.href || 'a link'}`)
+    if (nav?.kind === 'link') parts.push(`open ${nav.href || 'a link'}`)
     else if (nav?.kind === 'toast' || nav?.kind === 'dialog') parts.push(`show a ${nav.kind}`)
     if (parts.length) out.push({ label: c.label || 'button', does: parts.join(', ') })
   })
@@ -53,7 +61,8 @@ function pageButtons(items: GridItemData[]): { label: string; does: string }[] {
 /**
  * The hand-off bundle (the mockup's `exportFiles`): the whole project as
  * data, the contracts in the shape the team already writes (`api.ts`,
- * `model.ts`, `theme.ts`), the routes with their parameters, and a README a
+ * `model.ts`, `theme.ts`), a `pages.ts` the library's `PageRouter` takes as
+ * is (keyed pages with their route and engine containers), and a README a
  * developer can actually read. `project.json` carries every page's engine
  * bins as the code tab exports them, design-only items and navigation
  * included, so a runtime (or a person) has everything in one file.
@@ -66,6 +75,7 @@ export function buildExportFiles(
   const { snapshot } = project
   const pages = snapshot.pages.map((pg) => ({
     id: pg.id,
+    key: pg.key,
     name: pg.name,
     path: pg.path,
     params: pathParams(pg.path),
@@ -81,7 +91,7 @@ export function buildExportFiles(
       columns: pg.grid.containerSettings.columns,
       gap: pg.grid.containerSettings.gap,
     },
-    bins: buildBins(pg.grid.containerSettings, pg.grid.items, endpoints),
+    bins: buildBins(pg.grid.containerSettings, pg.grid.items, endpoints, snapshot.pages),
   }))
 
   const out: ExportFile[] = []
@@ -116,30 +126,43 @@ export function buildExportFiles(
   out.push({ name: 'model.ts', lang: 'ts', body: toModelTs(models) })
   out.push({ name: 'theme.ts', lang: 'ts', body: toThemeTs(snapshot.theme) })
 
+  // The keyed pages record the library's `PageRouter` renders:
+  //   <PageRouter http={http} model={model} api={api} pages={pages} />
+  const indent = (text: string, spaces: number) =>
+    text
+      .split('\n')
+      .map((line, i) => (i === 0 ? line : ' '.repeat(spaces) + line))
+      .join('\n')
   out.push({
-    name: 'routes.ts',
+    name: 'pages.ts',
     lang: 'ts',
     body:
-      'export const routes = [\n' +
-      pages
-        .map(
-          (pg) =>
-            `  { name: ${JSON.stringify(pg.name)}, path: ${JSON.stringify(pg.path)}, params: [${pg.params
-              .map((x) => JSON.stringify(x))
-              .join(', ')}] },`,
-        )
+      'import type { TPageMaster } from "@gummy-ui/ui";\n\n' +
+      'export const pages = {\n' +
+      snapshot.pages
+        .map((pg, i) => {
+          const container = rootContainer(pg.key, pg.grid.containerSettings, pages[i].bins)
+          return (
+            `  ${pg.key}: {\n` +
+            `    path: ${JSON.stringify(pg.path)},\n` +
+            `    title: ${JSON.stringify(pg.name)},\n` +
+            `    containers: [${indent(JSON.stringify(container, null, 2), 4)}],\n` +
+            `  },`
+          )
+        })
         .join('\n') +
-      '\n];\n',
+      '\n} satisfies TPageMaster;\n',
   })
 
   const lines: string[] = [`# ${project.name}`, '', project.description || '', '', '## Pages', '']
   for (const pg of snapshot.pages) {
     const params = pathParams(pg.path)
     lines.push(`### ${pg.name}  \`${pg.path}\``)
+    lines.push(`- key: \`${pg.key}\` (in pages.ts)`)
     if (params.length) lines.push(`- expects: ${params.map((x) => `\`${x}\``).join(', ')}`)
     const eps = pageEndpointNames(pg, endpoints)
     if (eps.length) lines.push(`- data: ${eps.map((x) => `\`${x}\``).join(', ')}`)
-    const buttons = pageButtons(pg.grid.items)
+    const buttons = pageButtons(pg.grid.items, snapshot.pages)
     if (buttons.length)
       lines.push(`- actions: ${buttons.map((b) => `\`${b.label}\` → ${b.does}`).join('; ')}`)
     lines.push(`- ${pageItemCount(pg)} component(s)`, '')

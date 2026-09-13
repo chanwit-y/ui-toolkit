@@ -6,8 +6,13 @@ import { urlParams } from '../Api/warnings'
 import { useGridStore } from './gridStore'
 import { EditContentsButton } from './ContainerHostConfigPanel'
 import { EndpointPicker } from './SelectFieldConfigPanel'
-import { SNACKBAR_VARIANT_OPTIONS, WiringHint } from './ButtonConfigPanel'
-import type { ButtonSnackbarVariant, DataTableColumnConfig, DataTableConfig } from './types'
+import { NavigateEditor, SNACKBAR_VARIANT_OPTIONS, WiringHint } from './ButtonConfigPanel'
+import {
+  createDefaultNavigate,
+  type ButtonSnackbarVariant,
+  type DataTableColumnConfig,
+  type DataTableConfig,
+} from './types'
 
 const ALIGN_OPTIONS = [
   { value: 'start', label: 'start' },
@@ -261,6 +266,19 @@ export function DataTableConfigPanel({ itemId, config }: DataTableConfigPanelPro
         columns={config.columns}
         onChange={(columns) => set('columns', columns)}
       />
+
+      <Toggle
+        label="Row click opens a page"
+        checked={!!config.rowNavigate}
+        onChange={(v) => set('rowNavigate', v ? createDefaultNavigate() : undefined)}
+      />
+      {config.rowNavigate && (
+        <NavigateEditor
+          value={config.rowNavigate}
+          onChange={(v) => set('rowNavigate', v)}
+          allowRow
+        />
+      )}
 
       <Toggle
         label="Edit action"

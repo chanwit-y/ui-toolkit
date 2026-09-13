@@ -42,7 +42,7 @@ import { Toolbox, ToolboxDragOverlay, type ToolboxDragData } from './Toolbox'
 import type { GridItemData } from './types'
 import { designThemeStyle } from '../Theme/designTheme'
 import { useThemeStore } from '../Theme/themeStore'
-import { useActivePage, useActiveProject } from '../Workspace/workspaceStore'
+import { useActivePage, useActivePages, useActiveProject } from '../Workspace/workspaceStore'
 import { useGridFlipAnimation } from './useGridFlipAnimation'
 import { useUndoShortcuts } from './useUndoShortcuts'
 import { escapeClassName } from './utils'
@@ -438,10 +438,12 @@ export function Layout({ templateMode = false }: { templateMode?: boolean } = {}
   // Endpoint refs resolve against the attached endpoints' current names at
   // export — a ref to a detached endpoint is a dangling ref, like a deleted one.
   const endpoints = useProjectEndpoints()
+  // Page refs resolve a navigation's page id → its exported key.
+  const pages = useActivePages()
 
   const gridConfigJson = useMemo(
-    () => (computeCode ? gridConfigToJson(rootSettings, rootItems, endpoints) : ''),
-    [computeCode, rootSettings, rootItems, endpoints],
+    () => (computeCode ? gridConfigToJson(rootSettings, rootItems, endpoints, pages) : ''),
+    [computeCode, rootSettings, rootItems, endpoints, pages],
   )
 
   const fullGridCss = useMemo(

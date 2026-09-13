@@ -1,7 +1,7 @@
 import { Modal } from '@gummy-ui/ui'
 import { useState, type FormEvent } from 'react'
 import { Button, Input } from '../common'
-import { normalizePath, pathParams, slugPath } from './snapshots'
+import { isValidPageKey, normalizePath, pageKey, pathParams, slugPath } from './snapshots'
 import type { PageDef } from './types'
 import { useWorkspaceStore } from './workspaceStore'
 
@@ -25,20 +25,31 @@ export function PageDialog({
 }) {
   const addPage = useWorkspaceStore((s) => s.addPage)
   const updatePage = useWorkspaceStore((s) => s.updatePage)
+  const siblings = useWorkspaceStore(
+    (s) => s.projects.find((p) => p.id === projectId)?.snapshot.pages ?? [],
+  )
   const [name, setName] = useState(page?.name ?? '')
   const [path, setPath] = useState(page?.path ?? '')
   const [pathTouched, setPathTouched] = useState(!!page)
+  const [key, setKey] = useState(page?.key ?? '')
+  const [keyTouched, setKeyTouched] = useState(!!page)
 
   const effectivePath = pathTouched ? path : slugPath(name || 'page')
   const params = pathParams(normalizePath(effectivePath, name || 'page'))
+  // The key follows the name until edited by hand (a new page's key is made
+  // unique on create; an edited one must already be unique and an identifier).
+  const effectiveKey = keyTouched ? key.trim() : pageKey(name || 'page')
+  const keyTaken = siblings.some((p) => p.id !== page?.id && p.key === effectiveKey)
+  const keyInvalid = keyTouched && (!isValidPageKey(effectiveKey) || keyTaken)
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
+    if (keyInvalid) return
     if (page) {
-      updatePage(projectId, page.id, { name, path: effectivePath })
+      updatePage(projectId, page.id, { name, path: effectivePath, key: effectiveKey })
       onClose()
     } else {
-      const created = addPage(projectId, { name, path: effectivePath })
+      const created = addPage(projectId, { name, path: effectivePath, key: effectiveKey })
       onCreated?.(created)
       onClose()
     }
@@ -86,11 +97,31 @@ export function PageDialog({
               : 'Use :name for a parameter, e.g. /countries/:code.'}
           </span>
         </label>
+        <label className="block">
+          <span className="mb-1 block text-ui-sm font-medium text-ink-2">Key</span>
+          <Input
+            value={effectiveKey}
+            onChange={(e) => {
+              setKeyTouched(true)
+              setKey(e.target.value)
+            }}
+            placeholder="countryDetail"
+            className="font-mono"
+            aria-invalid={keyInvalid || undefined}
+          />
+          <span className={`mt-1 block text-ui-xs ${keyInvalid ? 'text-danger' : 'text-ink-3'}`}>
+            {keyInvalid
+              ? keyTaken
+                ? 'Another page already uses this key.'
+                : 'Letters, digits and _ only, not starting with a digit.'
+              : 'Names the page in pages.ts — what a “Go to page” action points at.'}
+          </span>
+        </label>
         <div className="flex justify-end gap-2 border-t border-line pt-3">
           <Button type="button" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" variant="primary">
+          <Button type="submit" variant="primary" disabled={keyInvalid}>
             {page ? 'Save' : 'Create page'}
           </Button>
         </div>

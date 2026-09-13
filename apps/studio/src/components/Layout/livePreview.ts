@@ -1,5 +1,5 @@
 import type { Bin, Container } from '@gummy-ui/ui'
-import { gridConfigToJson, MISSING_ENDPOINT, type EndpointRef } from './gridConfig'
+import { gridConfigToJson, MISSING_ENDPOINT, rootContainer, type EndpointRef, type PageRef } from './gridConfig'
 import { isClickOnlyOverlay } from './designTypes'
 import type { DesignNavigation, GridContainerSettings, GridItemData } from './types'
 
@@ -223,21 +223,12 @@ export function buildLivePreviewContainer(
   items: GridItemData[],
   endpoints: EndpointRef[],
   wiring: LivePreviewWiring,
+  pages: PageRef[] = [],
+  name = 'studio-live-preview',
 ): Container {
   const bins = previewBins(
-    JSON.parse(gridConfigToJson(settings, items, endpoints)) as ParsedBin[],
+    JSON.parse(gridConfigToJson(settings, items, endpoints, pages)) as ParsedBin[],
     wiring,
   )
-  return {
-    id: 'studio-live-preview',
-    name: 'studio-live-preview',
-    isArray: false,
-    bins: bins as unknown as Bin[],
-    ...(settings.gap.lg !== '' ? { gap: settings.gap.lg } : {}),
-    ...(settings.justifyItems.lg !== '' ? { justifyItems: settings.justifyItems.lg } : {}),
-    ...(settings.alignItems.lg !== '' ? { alignItems: settings.alignItems.lg } : {}),
-    ...(settings.justifyContent.lg !== '' ? { justifyContent: settings.justifyContent.lg } : {}),
-    ...(settings.alignContent.lg !== '' ? { alignContent: settings.alignContent.lg } : {}),
-    ...(settings.gridAutoFlow.lg !== '' ? { gridAutoFlow: settings.gridAutoFlow.lg } : {}),
-  } as Container
+  return rootContainer(name, settings, bins as unknown as Bin[]) as unknown as Container
 }

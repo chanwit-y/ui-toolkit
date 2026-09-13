@@ -18,7 +18,7 @@ export {
   MOCK_USERS,
   WORKSPACE_STORAGE_KEY,
 } from './workspaceStore'
-export { pathParams, slugPath, normalizePath, createPage } from './snapshots'
+export { pathParams, slugPath, normalizePath, createPage, pageKey, uniquePageKey, isValidPageKey } from './snapshots'
 export type {
   ProjectDef,
   ProjectSnapshot,

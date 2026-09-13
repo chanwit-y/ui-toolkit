@@ -19,6 +19,10 @@ export type PageGrid = {
  */
 export type PageDef = {
   id: string
+  /** Identifier in the exported `pages` record (`countryDetail`) — what an
+   * engine `NavigateTarget.page` names. Unique per project; navigation refs
+   * store the `id` and resolve to this at export, so it can be edited freely. */
+  key: string
   name: string
   path: string
   grid: PageGrid
@@ -98,7 +102,7 @@ export type ActivityEntry = {
 
 /** The persisted shape (one localStorage key, versioned). */
 export type WorkspaceData = {
-  version: 3
+  version: 4
   /** The portal's own appearance; inside a project the project theme wins. */
   appearance: ThemeAppearance
   /** The mock identity stamped on activity and templates (see `MOCK_USERS`). */

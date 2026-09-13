@@ -1,13 +1,12 @@
 import {
-  ApiFactory,
-  ApiMaster,
-  ContainerBuilder,
   HttpClientFactory,
   Modal,
+  PageRouter,
   type TApiMaster,
   type TModelMaster,
+  type TPageMaster,
 } from '@gummy-ui/ui'
-import { ArrowLeft, FileText } from 'lucide-react'
+import { ArrowLeft, FileText, Undo2 } from 'lucide-react'
 import {
   Component,
   useCallback,
@@ -15,28 +14,40 @@ import {
   useMemo,
   useRef,
   useState,
+  type ContextType,
   type ReactNode,
 } from 'react'
+import {
+  MemoryRouter,
+  matchPath,
+  UNSAFE_LocationContext,
+  UNSAFE_NavigationContext,
+  UNSAFE_RouteContext,
+  useLocation,
+  useNavigate,
+} from 'react-router-dom'
 import { serializeEndpoints } from '../Api/serialize'
+import type { EndpointDef } from '../Api/types'
 import { useApiUrl } from '../Env'
 import { serializeModels } from '../Model/serialize'
 import { useProjectEndpoints, useProjectModels } from '../Library/scope'
-import { IconButton, Select } from '../common'
+import { IconButton, Input, Select } from '../common'
 import { designThemeStyle } from '../Theme/designTheme'
 import { useThemeStore } from '../Theme/themeStore'
+import { pathParams } from '../Workspace/snapshots'
 import type { PageDef, PageGrid } from '../Workspace/types'
 import { useActivePages, useWorkspaceStore } from '../Workspace/workspaceStore'
 import { DialogPreview, ToastPreview } from './DesignPreviews'
 import type { DialogConfig, OverlayAxis, ToastConfig } from './designTypes'
 import { gridConfigToJson } from './gridConfig'
 import { useGridStore } from './gridStore'
-import { buildLivePreviewContainer, collectPreviewNavigation } from './livePreview'
+import { buildLivePreviewContainer, collectPreviewNavigation, type LivePreviewWiring } from './livePreview'
 import { indexItems } from './pageLinks'
 import { PreviewDevTools, PreviewDevToolsToggle, type ApiLogEntry } from './PreviewDevTools'
 import type { GridItemData } from './types'
 
 /**
- * Renders a page's *exported JSON config* through the real declarative
+ * Renders the project's *exported JSON config* through the real declarative
  * engine — a round-trip test of the code-tab output (see `livePreview.ts`).
  * The engine's `ApiMaster` is built from the Model + API pages' stores with
  * the Env page's `API_URL` as the HttpClientFactory base URL, so bins whose
@@ -44,13 +55,22 @@ import type { GridItemData } from './types'
  * placeholders that say what's missing before rendering (see the grilled Env
  * design).
  *
- * Pages (see the grilled design): the preview opens on the live page and a
- * page bar switches between the project's pages; the live page renders from
- * the grid store (unsaved edits included), the others from their snapshots.
- * A button's design-only navigation is played by the studio: a capture-phase
- * click matched by button label switches the page (with its fixed `:params`
- * shown in the bar), opens the link, or shows the mock toast / dialog
- * overlay over the page. Engine actions on the same button still run.
+ * Pages (see the grilled page-router design): the whole project renders
+ * through the library's `PageRouter` — every page's exported container keyed
+ * by its `key` — inside a `MemoryRouter`, so a button's `Navigate` action and
+ * a table's row click change pages exactly as they will in the exported app,
+ * and the engine's `useParams` reads the real route. The preview opens on
+ * the page being edited (drawn from the grid store, unsaved edits included;
+ * the others from their snapshots). The page bar shows the route, one input
+ * per `:param` (a page opened directly has none filled — type one), a page
+ * select, and back. The design-only kinds (link / toast / dialog) are still
+ * played by the studio: a capture-phase click matched by button label opens
+ * the link or shows the mock overlay over the page.
+ *
+ * react-router forbids a `<Router>` inside another, and the studio itself is
+ * a `BrowserRouter`. `NestedRouterBoundary` clears the router contexts right
+ * above the `MemoryRouter`, so the preview app is a self-contained router the
+ * studio's routes never see (its `useRoutes` starts from `/`).
  *
  * The dialog chrome is the library's own `Modal` — the preview dogfoods
  * packages/ui for the shell, not just the content. It portals to body, which
@@ -60,7 +80,7 @@ import type { GridItemData } from './types'
  * CSS vars. Escape / backdrop close come from Radix.
  *
  * Mount fresh on every open (`{open && <LivePreviewModal/>}` in the toolbar)
- * so form state resets.
+ * so form state and the memory history reset.
  *
  * No viewport control by design: the engine's `sm-col-span-*` classes are
  * window media queries, so narrowing a wrapper div can't change the active
@@ -92,8 +112,31 @@ class PreviewErrorBoundary extends Component<{ children: ReactNode }, BoundarySt
   }
 }
 
-/** `/countries/:code` + `{code: 'TH'}` → `/countries/TH`. */
-function fillPath(path: string, params: Record<string, string>): string {
+/**
+ * Resets react-router's contexts so a `MemoryRouter` can mount inside the
+ * studio's `BrowserRouter` (the `Router` invariant only checks that no
+ * location context is above it; the route context reset keeps the nested
+ * `useRoutes` from prefixing the studio's `/p/:projectId/...` path).
+ */
+function NestedRouterBoundary({ children }: { children: ReactNode }) {
+  return (
+    <UNSAFE_LocationContext.Provider
+      value={null as unknown as ContextType<typeof UNSAFE_LocationContext>}
+    >
+      <UNSAFE_NavigationContext.Provider
+        value={null as unknown as ContextType<typeof UNSAFE_NavigationContext>}
+      >
+        <UNSAFE_RouteContext.Provider value={{ outlet: null, matches: [], isDataRoute: false }}>
+          {children}
+        </UNSAFE_RouteContext.Provider>
+      </UNSAFE_NavigationContext.Provider>
+    </UNSAFE_LocationContext.Provider>
+  )
+}
+
+/** `/countries/:code` + `{code: 'TH'}` → `/countries/TH`; an unfilled param
+ * stays literal (`/countries/:code`), which the route still matches. */
+function fillPath(path: string, params: Record<string, string | undefined>): string {
   return path.replace(/:([A-Za-z_][A-Za-z0-9_]*)/g, (_, k: string) => params[k] || `:${k}`)
 }
 
@@ -116,10 +159,13 @@ function overlayPosition(x: OverlayAxis, y: OverlayAxis): React.CSSProperties {
 
 type OpenOverlay = { itemId: string; openedAt: number }
 
+/** A page with its grid resolved (the live page from the grid store). */
+type PreviewPage = PageDef & { grid: PageGrid }
+
 export function LivePreviewModal({ onClose }: { onClose: () => void }) {
   const liveItems = useGridStore((s) => s.items)
   const liveSettings = useGridStore((s) => s.containerSettings)
-  const pages = useActivePages()
+  const projectPages = useActivePages()
   const livePageId = useWorkspaceStore((s) => s.activePageId)
   const project = useWorkspaceStore((s) =>
     s.projects.find((p) => p.id === s.activeProjectId),
@@ -132,44 +178,64 @@ export function LivePreviewModal({ onClose }: { onClose: () => void }) {
   const themeConfig = useThemeStore((s) => s.config)
   const frameTheme = useMemo(() => designThemeStyle(themeConfig), [themeConfig])
 
-  // Which page is being previewed, plus the `:params` the navigation
-  // supplied. The live page draws from the grid store; others from snapshot.
-  const [pageId, setPageId] = useState<string | null>(livePageId)
-  const [params, setParams] = useState<Record<string, string>>({})
-  const [overlays, setOverlays] = useState<OpenOverlay[]>([])
-  const page: PageDef | undefined = pages.find((p) => p.id === pageId) ?? pages[0]
-  const grid: PageGrid | null = page
-    ? page.id === livePageId
-      ? { items: liveItems, containerSettings: liveSettings, fieldSeq: 0 }
-      : page.grid
-    : liveItems.length
-      ? { items: liveItems, containerSettings: liveSettings, fieldSeq: 0 }
-      : null
-
   // Dev tools (see the grilled design): closed on every open — the modal
   // mounts fresh, and so does this. The request log is captured through the
   // engine client's onLog hook (the seam the API test runner uses); newest
   // first, capped so a polling table can't grow it unbounded.
   const [devOpen, setDevOpen] = useState(false)
   const [apiLog, setApiLog] = useState<ApiLogEntry[]>([])
+  const [configJson, setConfigJson] = useState('[]')
   const logSeq = useRef(0)
 
-  const items = grid?.items ?? []
-  const containerSettings = grid?.containerSettings ?? liveSettings
-
-  // The raw code-tab export (pre-placeholder-rewrite) for the Config tab, and
-  // the source of the navigation lookup.
-  const configJson = useMemo(
-    () => gridConfigToJson(containerSettings, items, endpoints),
-    [containerSettings, items, endpoints],
+  // The live page draws from the grid store; the others from their
+  // snapshots. Outside a project (the template editor) the live canvas is the
+  // only page.
+  const liveGrid: PageGrid = useMemo(
+    () => ({ items: liveItems, containerSettings: liveSettings, fieldSeq: 0 }),
+    [liveItems, liveSettings],
   )
-  const navigation = useMemo(
-    () => collectPreviewNavigation(JSON.parse(configJson)),
-    [configJson],
+  const pages: PreviewPage[] = useMemo(
+    () =>
+      projectPages.length
+        ? projectPages.map((pg) => (pg.id === livePageId ? { ...pg, grid: liveGrid } : pg))
+        : [{ id: 'live', key: 'live', name: 'Template', path: '/', grid: liveGrid }],
+    [projectPages, livePageId, liveGrid],
   )
-  const itemsById = useMemo(() => indexItems(items), [items])
+  const livePage = pages.find((p) => p.id === livePageId) ?? pages[0]
 
-  const preview = useMemo(() => {
+  // onLog fires for successes and API errors alike (it's the only hook that
+  // sees the raw axios response) — exactly what the dev-tools API tab wants.
+  const http = useMemo(
+    () =>
+      new HttpClientFactory(
+        apiUrl,
+        async () => '',
+        '1.0.0',
+        30000,
+        [],
+        [],
+        undefined,
+        undefined,
+        (response) => {
+          setApiLog((prev) =>
+            [
+              {
+                id: ++logSeq.current,
+                method: (response?.config?.method ?? '?').toUpperCase(),
+                url: response?.config?.url ?? '(unknown)',
+                status: response?.status ?? null,
+                time: new Date().toLocaleTimeString(),
+                data: response?.data,
+              },
+              ...prev,
+            ].slice(0, 50),
+          )
+        },
+      ),
+    [apiUrl],
+  )
+
+  const engine = useMemo(() => {
     // The same lowering the Model/API code tabs export — the preview's
     // ApiMaster is exactly what a consumer pasting model.ts + api.ts would run.
     const model = serializeModels(models) as TModelMaster
@@ -184,38 +250,6 @@ export function LivePreviewModal({ onClose }: { onClose: () => void }) {
         return typeof response === 'string' && response in model
       }),
     )
-    const container = buildLivePreviewContainer(containerSettings, items, endpoints, {
-      apiUrl,
-      apiNames,
-      fetchableNames,
-    })
-    // onLog fires for successes and API errors alike (it's the only hook that
-    // sees the raw axios response) — exactly what the dev-tools API tab wants.
-    const http = new HttpClientFactory(
-      apiUrl,
-      async () => '',
-      '1.0.0',
-      30000,
-      [],
-      [],
-      undefined,
-      undefined,
-      (response) => {
-        setApiLog((prev) =>
-          [
-            {
-              id: ++logSeq.current,
-              method: (response?.config?.method ?? '?').toUpperCase(),
-              url: response?.config?.url ?? '(unknown)',
-              status: response?.status ?? null,
-              time: new Date().toLocaleTimeString(),
-              data: response?.data,
-            },
-            ...prev,
-          ].slice(0, 50),
-        )
-      },
-    )
     // Only the fetchable entries reach the engine: an endpoint whose response
     // model is missing (a freshly created one, say) would make its schema
     // conversion throw and blank the whole preview, while the bins bound to it
@@ -223,15 +257,157 @@ export function LivePreviewModal({ onClose }: { onClose: () => void }) {
     const fetchableApi = Object.fromEntries(
       Object.entries(api).filter(([name]) => fetchableNames.has(name)),
     ) as TApiMaster<TModelMaster>
-    const apis = new ApiMaster(model, fetchableApi, new ApiFactory(http, model))
-    // draw(true, false) mirrors Core.run(): isRoot gives the preview its own
-    // engine context (form, query client, observe table) isolated from the
-    // canvas's cell previews; withAuth stays off.
-    return new ContainerBuilder([container], apis).draw(true, false)
-  }, [containerSettings, items, models, endpoints, apiUrl])
+    const wiring: LivePreviewWiring = { apiUrl, apiNames, fetchableNames }
+    return { model, api: fetchableApi, wiring }
+  }, [models, endpoints, apiUrl])
 
-  // Design-only navigation: a capture-phase click on any engine button whose
-  // label carries a navigation. The engine's own handler still runs after.
+  // The engine's pages record: every page's exported container under its key.
+  // No `title` — PageRouter would rename the studio's own tab.
+  const enginePages = useMemo<TPageMaster>(
+    () =>
+      Object.fromEntries(
+        pages.map((pg) => [
+          pg.key,
+          {
+            path: pg.path,
+            containers: [
+              buildLivePreviewContainer(
+                pg.grid.containerSettings,
+                pg.grid.items,
+                endpoints,
+                engine.wiring,
+                pages,
+                `page-${pg.key}`,
+              ),
+            ],
+          },
+        ]),
+      ),
+    [pages, endpoints, engine],
+  )
+
+  const projectSlug = (project?.name ?? 'project').toLowerCase().replace(/\s+/g, '-')
+
+  return (
+    <Modal
+      id="studio-live-preview"
+      open
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) onClose()
+      }}
+      title="Live preview"
+      description="Rendered by the engine from the exported JSON config"
+      width="min(90vw, 72rem)"
+      height="85vh"
+    >
+      <NestedRouterBoundary>
+        <MemoryRouter initialEntries={[fillPath(livePage.path, {})]}>
+          <PreviewApp
+            pages={pages}
+            livePage={livePage}
+            endpoints={endpoints}
+            enginePages={enginePages}
+            http={http}
+            model={engine.model}
+            api={engine.api}
+            frameTheme={frameTheme}
+            projectSlug={projectSlug}
+            onConfigJson={setConfigJson}
+          />
+        </MemoryRouter>
+      </NestedRouterBoundary>
+
+      {/* Both render through portals above the Radix dialog layer, so they
+          stay visible and clickable while engine modals (with full-screen
+          backdrops) are open — react-query-devtools style. */}
+      {devOpen ? (
+        <PreviewDevTools
+          log={apiLog}
+          configJson={configJson}
+          onClose={() => setDevOpen(false)}
+        />
+      ) : (
+        <PreviewDevToolsToggle onOpen={() => setDevOpen(true)} />
+      )}
+    </Modal>
+  )
+}
+
+/**
+ * The routed preview: page bar + the engine's `PageRouter`, plus the
+ * design-only overlays the studio plays itself. Lives inside the
+ * `MemoryRouter` so it can read and drive the preview's own location.
+ */
+function PreviewApp({
+  pages,
+  livePage,
+  endpoints,
+  enginePages,
+  http,
+  model,
+  api,
+  frameTheme,
+  projectSlug,
+  onConfigJson,
+}: {
+  pages: PreviewPage[]
+  livePage: PreviewPage
+  endpoints: EndpointDef[]
+  enginePages: TPageMaster
+  http: HttpClientFactory
+  model: TModelMaster
+  api: TApiMaster<TModelMaster>
+  frameTheme: React.CSSProperties
+  projectSlug: string
+  onConfigJson: (json: string) => void
+}) {
+  const location = useLocation()
+  const navigate = useNavigate()
+
+  // Which page the preview's location matches, with its `:params`.
+  const current = useMemo(() => {
+    for (const pg of pages) {
+      const m = matchPath({ path: pg.path, end: true }, location.pathname)
+      if (m) return { page: pg, params: m.params as Record<string, string | undefined> }
+    }
+    return null
+  }, [pages, location.pathname])
+
+  // The last params seen per page, so the page select can reopen a page at
+  // the values it was last shown with.
+  const paramsByPage = useRef(new Map<string, Record<string, string | undefined>>())
+  useEffect(() => {
+    if (current) paramsByPage.current.set(current.page.id, current.params)
+  }, [current])
+
+  const goTo = (pg: PreviewPage) =>
+    navigate(fillPath(pg.path, paramsByPage.current.get(pg.id) ?? {}))
+  const setParam = (key: string, value: string) => {
+    if (!current) return
+    navigate(fillPath(current.page.path, { ...current.params, [key]: value }), { replace: true })
+  }
+
+  // The current page's raw code-tab export (pre-placeholder-rewrite): the dev
+  // tools' Config tab, and the source of the design-only navigation lookup.
+  const grid = current?.page.grid ?? null
+  const configJson = useMemo(
+    () => (grid ? gridConfigToJson(grid.containerSettings, grid.items, endpoints, pages) : '[]'),
+    [grid, endpoints, pages],
+  )
+  useEffect(() => onConfigJson(configJson), [configJson, onConfigJson])
+  const navigation = useMemo(
+    () => collectPreviewNavigation(JSON.parse(configJson)),
+    [configJson],
+  )
+  const itemsById = useMemo(() => indexItems(grid?.items ?? []), [grid])
+
+  const [overlays, setOverlays] = useState<OpenOverlay[]>([])
+  const currentPageId = current?.page.id
+  useEffect(() => setOverlays([]), [currentPageId])
+
+  // Design-only navigation (link / toast / dialog): a capture-phase click on
+  // any engine button whose label carries one. The engine's own handler —
+  // including a `Navigate` action — still runs after.
   const onCaptureClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
       const target = e.target as HTMLElement | null
@@ -240,12 +416,7 @@ export function LivePreviewModal({ onClose }: { onClose: () => void }) {
       const label = (button.textContent ?? '').trim()
       const nav = navigation.get(label)
       if (!nav) return
-      if (nav.kind === 'page') {
-        if (!nav.pageId || !pages.some((p) => p.id === nav.pageId)) return
-        setOverlays([])
-        setParams(nav.params ?? {})
-        setPageId(nav.pageId)
-      } else if (nav.kind === 'link') {
+      if (nav.kind === 'link') {
         if (nav.href) window.open(nav.href, nav.newTab ? '_blank' : '_self', 'noopener')
       } else if (nav.kind === 'toast' || nav.kind === 'dialog') {
         if (!nav.targetItemId || !itemsById.has(nav.targetItemId)) return
@@ -256,7 +427,7 @@ export function LivePreviewModal({ onClose }: { onClose: () => void }) {
         )
       }
     },
-    [navigation, pages, itemsById],
+    [navigation, itemsById],
   )
 
   // Auto-dismiss overlays whose duration has elapsed.
@@ -300,58 +471,74 @@ export function LivePreviewModal({ onClose }: { onClose: () => void }) {
     }
   }
 
-  const projectSlug = (project?.name ?? 'project').toLowerCase().replace(/\s+/g, '-')
-  const shownPath = page ? fillPath(page.path, params) : ''
+  const paramKeys = current ? pathParams(current.page.path) : []
 
   return (
-    <Modal
-      id="studio-live-preview"
-      open
-      onOpenChange={(nextOpen) => {
-        if (!nextOpen) onClose()
-      }}
-      title="Live preview"
-      description="Rendered by the engine from the exported JSON config"
-      width="min(90vw, 72rem)"
-      height="85vh"
-    >
-      {pages.length > 0 && page && (
-        <div className="mb-3 flex flex-wrap items-center gap-2 rounded-md border border-line bg-panel px-2 py-1.5">
-          <IconButton
-            label="Back to the page you were editing"
-            className="btn-icon-sm h-6!"
-            disabled={page.id === livePageId}
-            onClick={() => {
-              setOverlays([])
-              setParams({})
-              setPageId(livePageId)
+    <>
+      <div className="mb-3 flex flex-wrap items-center gap-2 rounded-md border border-line bg-panel px-2 py-1.5">
+        <IconButton label="Back" className="btn-icon-sm h-6!" onClick={() => navigate(-1)}>
+          <Undo2 size={13} aria-hidden="true" />
+        </IconButton>
+        <IconButton
+          label="Back to the page you were editing"
+          className="btn-icon-sm h-6!"
+          disabled={current?.page.id === livePage.id}
+          onClick={() => goTo(livePage)}
+        >
+          <ArrowLeft size={13} aria-hidden="true" />
+        </IconButton>
+        <FileText size={13} aria-hidden="true" className="text-ink-3" />
+        <span className="font-mono text-ui-xs text-ink-3">
+          {projectSlug}
+          <b className="font-semibold text-ink">{location.pathname}</b>
+          {location.search && <span className="text-ink-3">{location.search}</span>}
+        </span>
+        {paramKeys.map((key) => {
+          const raw = current?.params[key] ?? ''
+          const shown = raw === `:${key}` ? '' : raw
+          return (
+            <div key={key} className="w-32">
+              <Input
+                aria-label={`Value of :${key}`}
+                value={shown}
+                onChange={(e) => setParam(key, e.target.value)}
+                placeholder={`:${key}`}
+                className="h-6! font-mono text-ui-xs"
+              />
+            </div>
+          )
+        })}
+        <span className="flex-1" />
+        <div className="w-52">
+          <Select
+            aria-label="Preview page"
+            options={[
+              ...(current ? [] : [{ value: '', label: '— no page matches —' }]),
+              ...pages.map((p) => ({ value: p.id, label: p.name })),
+            ]}
+            value={current?.page.id ?? ''}
+            onChange={(id) => {
+              const pg = pages.find((p) => p.id === id)
+              if (pg) goTo(pg)
             }}
-          >
-            <ArrowLeft size={13} aria-hidden="true" />
-          </IconButton>
-          <FileText size={13} aria-hidden="true" className="text-ink-3" />
-          <span className="font-mono text-ui-xs text-ink-3">
-            {projectSlug}
-            <b className="font-semibold text-ink">{shownPath}</b>
-          </span>
-          <span className="flex-1" />
-          <div className="w-52">
-            <Select
-              aria-label="Preview page"
-              options={pages.map((p) => ({ value: p.id, label: p.name }))}
-              value={page.id}
-              onChange={(id) => {
-                setOverlays([])
-                setParams({})
-                setPageId(id)
-              }}
-            />
-          </div>
+          />
         </div>
-      )}
+      </div>
 
       <div className="relative rounded-md" style={frameTheme} onClickCapture={onCaptureClick}>
-        <PreviewErrorBoundary key={page?.id ?? 'live'}>{preview}</PreviewErrorBoundary>
+        <PreviewErrorBoundary key={current?.page.id ?? 'none'}>
+          <PageRouter
+            http={http}
+            model={model}
+            api={api}
+            pages={enginePages}
+            notFound={
+              <p className="p-4 text-ui text-ink-3">
+                No page matches <span className="font-mono">{location.pathname}</span>.
+              </p>
+            }
+          />
+        </PreviewErrorBoundary>
 
         {scrim && (
           <div
@@ -389,19 +576,6 @@ export function LivePreviewModal({ onClose }: { onClose: () => void }) {
           )
         })}
       </div>
-
-      {/* Both render through portals above the Radix dialog layer, so they
-          stay visible and clickable while engine modals (with full-screen
-          backdrops) are open — react-query-devtools style. */}
-      {devOpen ? (
-        <PreviewDevTools
-          log={apiLog}
-          configJson={configJson}
-          onClose={() => setDevOpen(false)}
-        />
-      ) : (
-        <PreviewDevToolsToggle onOpen={() => setDevOpen(true)} />
-      )}
-    </Modal>
+    </>
   )
 }

@@ -10,11 +10,14 @@ import { EndpointPicker } from './SelectFieldConfigPanel'
 import {
   collectButtonTargets,
   collectOverlayTargets,
+  createDefaultNavigate,
   NO_NAVIGATION,
   type ButtonActionKey,
   type ButtonItemConfig,
   type ButtonSnackbarVariant,
   type DesignNavigation,
+  type NavParamSource,
+  type StudioNavigate,
 } from './types'
 
 /** One labelled row in the config form. */
@@ -117,6 +120,7 @@ const ACTION_LABELS: Record<ButtonActionKey, string> = {
   StopLoading: 'Stop loading',
   ClearCurrentFormSelected: 'Clear form selection',
   CloseModal: 'Close modal',
+  Navigate: 'Go to page',
 }
 const ALL_ACTIONS = Object.keys(ACTION_LABELS) as ButtonActionKey[]
 
@@ -411,117 +415,269 @@ export function ButtonConfigPanel({
       )}
 
       <NavigationSection
-        navigation={config.navigation ?? NO_NAVIGATION}
-        onChange={(navigation) => set('navigation', navigation)}
+        config={config}
+        update={(patch) => updateItemConfig(itemId, patch)}
         rootItems={rootItems}
       />
     </div>
   )
 }
 
-const NAV_OPTIONS: { value: DesignNavigation['kind']; label: string }[] = [
-  { value: 'none', label: 'Nothing (engine actions only)' },
-  { value: 'page', label: 'Go to another page' },
-  { value: 'toast', label: 'Show a toast' },
-  { value: 'dialog', label: 'Show a dialog' },
-  { value: 'link', label: 'Open a link' },
+const SOURCE_OPTIONS_BASE: { value: NavParamSource['type']; label: string }[] = [
+  { value: 'value', label: 'Fixed value' },
+  { value: 'url', label: 'From the current URL' },
+  { value: 'state', label: 'From global state' },
+]
+const ROW_SOURCE_OPTION: { value: NavParamSource['type']; label: string } = {
+  value: 'row',
+  label: 'From the clicked row',
+}
+const URL_SOURCE_OPTIONS = [
+  { value: 'param', label: ':param' },
+  { value: 'query', label: '?query' },
 ]
 
+/** A fresh source of the given type for the `:param` named `key`. */
+function defaultSource(type: NavParamSource['type'], key: string): NavParamSource {
+  switch (type) {
+    case 'url':
+      return { type: 'url', key, source: 'param' }
+    case 'state':
+      return { type: 'state', key: '', path: '' }
+    case 'row':
+      return { type: 'row', key }
+    default:
+      return { type: 'value', value: '' }
+  }
+}
+
 /**
- * The button's design-only navigation (see the grilled design): a page (with
- * its `:params` filled in), a link, or a toast / dialog on this page. It rides
- * beside the engine actions above — both run in the Live Preview, only the
- * engine actions reach the exported ButtonElement.
+ * Editor for a {@link StudioNavigate} (see the grilled page-router design):
+ * the target page, one value source per `:param` of its route (a literal,
+ * the current URL's param / query, a global-state slice, or — on a table's
+ * row click — a field of the clicked row), and the history `replace` flag.
+ * Shared by the button panel (the `Navigate` action) and the data table
+ * panel (row click).
  */
-function NavigationSection({
-  navigation,
+export function NavigateEditor({
+  value,
   onChange,
-  rootItems,
+  allowRow = false,
 }: {
-  navigation: DesignNavigation
-  onChange: (next: DesignNavigation) => void
-  rootItems: ReturnType<typeof useGridStore.getState>['items']
+  value: StudioNavigate
+  onChange: (next: StudioNavigate) => void
+  /** Offer the "clicked row" source (data tables only). */
+  allowRow?: boolean
 }) {
   const pages = useActivePages()
   const projectId = useWorkspaceStore((s) => s.activeProjectId)
-  const activePageId = useWorkspaceStore((s) => s.activePageId)
   const navigate = useNavigate()
+  const target = pages.find((p) => p.id === value.pageId)
+  const params = target ? pathParams(target.path) : []
+  const dangling = value.pageId !== '' && !target
+  const sourceOptions = allowRow ? [ROW_SOURCE_OPTION, ...SOURCE_OPTIONS_BASE] : SOURCE_OPTIONS_BASE
+  const seedType: NavParamSource['type'] = allowRow ? 'row' : 'value'
+  const setParam = (key: string, src: NavParamSource) =>
+    onChange({ ...value, params: { ...value.params, [key]: src } })
+
+  return (
+    <div className="space-y-3">
+      <Field label="Which page">
+        <Select
+          options={[
+            { value: '', label: '— pick one —' },
+            ...(dangling ? [{ value: value.pageId, label: '⚠ missing page' }] : []),
+            ...pages.map((p) => ({ value: p.id, label: `${p.name}  ${p.path}` })),
+          ]}
+          value={value.pageId}
+          onChange={(pageId) => {
+            const t = pages.find((p) => p.id === pageId)
+            const keys = t ? pathParams(t.path) : []
+            onChange({
+              ...value,
+              pageId,
+              params: Object.fromEntries(
+                keys.map((k) => [k, value.params[k] ?? defaultSource(seedType, k)]),
+              ),
+            })
+          }}
+        />
+      </Field>
+      {params.map((key) => {
+        const src = value.params[key] ?? defaultSource(seedType, key)
+        return (
+          <div key={key} className="space-y-1.5 rounded-md border border-line bg-panel p-2">
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-mono text-ui-sm font-medium text-ink-2">:{key}</span>
+              <div className="w-44">
+                <Select
+                  aria-label={`Source of :${key}`}
+                  options={sourceOptions}
+                  value={src.type}
+                  onChange={(t) => setParam(key, defaultSource(t as NavParamSource['type'], key))}
+                />
+              </div>
+            </div>
+            {src.type === 'value' && (
+              <Input
+                value={src.value}
+                onChange={(e) => setParam(key, { ...src, value: e.target.value })}
+                placeholder="fixed value"
+                className="font-mono"
+              />
+            )}
+            {src.type === 'url' && (
+              <div className="flex gap-1.5">
+                <div className="flex-1">
+                  <Input
+                    value={src.key}
+                    onChange={(e) => setParam(key, { ...src, key: e.target.value })}
+                    placeholder="param / query name"
+                    className="font-mono"
+                  />
+                </div>
+                <div className="w-24">
+                  <Select
+                    aria-label="URL part"
+                    options={URL_SOURCE_OPTIONS}
+                    value={src.source}
+                    onChange={(s) => setParam(key, { ...src, source: s as 'param' | 'query' })}
+                  />
+                </div>
+              </div>
+            )}
+            {src.type === 'state' && (
+              <div className="flex gap-1.5">
+                <div className="flex-1">
+                  <Input
+                    value={src.key}
+                    onChange={(e) => setParam(key, { ...src, key: e.target.value })}
+                    placeholder="state key"
+                    className="font-mono"
+                  />
+                </div>
+                <div className="flex-1">
+                  <Input
+                    value={src.path}
+                    onChange={(e) => setParam(key, { ...src, path: e.target.value })}
+                    placeholder="path (optional)"
+                    className="font-mono"
+                  />
+                </div>
+              </div>
+            )}
+            {src.type === 'row' && (
+              <Input
+                value={src.key}
+                onChange={(e) => setParam(key, { ...src, key: e.target.value })}
+                placeholder="row field, e.g. _id"
+                className="font-mono"
+              />
+            )}
+          </div>
+        )
+      })}
+      <CheckboxRow
+        label="Replace the history entry (Back skips this page)"
+        checked={value.replace}
+        onChange={(replace) => onChange({ ...value, replace })}
+      />
+      {target && projectId && (
+        <button
+          type="button"
+          onClick={() => navigate(`/p/${projectId}/pages/${target.id}`)}
+          className="text-ui-sm font-medium text-ink underline-offset-2 hover:underline"
+        >
+          Lay out “{target.name}” →
+        </button>
+      )}
+      {value.pageId === '' && (
+        <WiringHint>Pick a page — without one, Go to page does nothing.</WiringHint>
+      )}
+      {dangling && (
+        <WiringHint>That page was deleted — the export marks it MISSING_PAGE.</WiringHint>
+      )}
+    </div>
+  )
+}
+
+/** The Navigation dropdown: the engine page change plus the design-only kinds. */
+type NavKind = 'none' | 'page' | DesignNavigation['kind']
+
+const NAV_OPTIONS: { value: NavKind; label: string }[] = [
+  { value: 'none', label: 'Nothing (engine actions only)' },
+  { value: 'page', label: 'Go to another page' },
+  { value: 'toast', label: 'Show a toast (design only)' },
+  { value: 'dialog', label: 'Show a dialog (design only)' },
+  { value: 'link', label: 'Open a link (design only)' },
+]
+
+/**
+ * What the button does besides its actions. "Go to another page" is the
+ * engine `Navigate` action (see the grilled page-router design): picking it
+ * appends `Navigate` to the button's effective action list — the end of the
+ * direct list, or of the confirm-true list — and edits its `navigate` target
+ * here; the action chip above stays in sync, so a sequence like submit →
+ * navigate can be reordered there. The other kinds are design-only: a link,
+ * or a toast / dialog on this page, played by the Live Preview but never
+ * exported into the engine `ButtonElement`.
+ */
+function NavigationSection({
+  config,
+  update,
+  rootItems,
+}: {
+  config: ButtonItemConfig
+  update: (patch: Partial<ButtonItemConfig>) => void
+  rootItems: ReturnType<typeof useGridStore.getState>['items']
+}) {
   const overlays = useMemo(() => collectOverlayTargets(rootItems), [rootItems])
+  const navigation = config.navigation ?? NO_NAVIGATION
+  const confirm = config.mode === 'confirm'
+  const usesNavigate = (confirm ? [...config.confirmTrue, ...config.confirmFalse] : config.actions)
+    .includes('Navigate')
+  const kind: NavKind = usesNavigate ? 'page' : navigation.kind
 
-  const setKind = (kind: DesignNavigation['kind']) => {
-    if (kind === navigation.kind) return
-    if (kind === 'none') onChange(NO_NAVIGATION)
-    else if (kind === 'page') onChange({ kind, pageId: '', params: {} })
-    else if (kind === 'link') onChange({ kind, href: '', newTab: true })
-    else onChange({ kind, targetItemId: '' })
+  const withoutNavigate = (list: ButtonActionKey[]) => list.filter((a) => a !== 'Navigate')
+
+  const setKind = (next: NavKind) => {
+    if (next === kind) return
+    if (next === 'page') {
+      // Engine navigation: add the action where the click will run it.
+      update({
+        navigation: NO_NAVIGATION,
+        navigate: config.navigate ?? createDefaultNavigate(),
+        ...(confirm
+          ? { confirmTrue: [...withoutNavigate(config.confirmTrue), 'Navigate'] }
+          : { actions: [...withoutNavigate(config.actions), 'Navigate'] }),
+      })
+      return
+    }
+    const cleared = {
+      actions: withoutNavigate(config.actions),
+      confirmTrue: withoutNavigate(config.confirmTrue),
+      confirmFalse: withoutNavigate(config.confirmFalse),
+    }
+    if (next === 'none') update({ ...cleared, navigation: NO_NAVIGATION })
+    else if (next === 'link') update({ ...cleared, navigation: { kind: 'link', href: '', newTab: true } })
+    else update({ ...cleared, navigation: { kind: next, targetItemId: '' } })
   }
-
-  const targetPage = navigation.kind === 'page' ? pages.find((p) => p.id === navigation.pageId) : undefined
-  const params = targetPage ? pathParams(targetPage.path) : []
+  const onChange = (nextNav: DesignNavigation) => update({ navigation: nextNav })
 
   return (
     <div className="space-y-3 border-t border-line pt-3">
       <h3 className="text-ui-sm font-semibold uppercase tracking-wide text-ink-3">
-        Navigation <span className="font-normal normal-case tracking-normal">· design only</span>
+        Navigation
       </h3>
       <Field label="When this button is clicked, also">
-        <Select
-          options={NAV_OPTIONS}
-          value={navigation.kind}
-          onChange={(v) => setKind(v as DesignNavigation['kind'])}
-        />
+        <Select options={NAV_OPTIONS} value={kind} onChange={(v) => setKind(v as NavKind)} />
       </Field>
 
-      {navigation.kind === 'page' && (
-        <>
-          <Field label="Which page">
-            <Select
-              options={[
-                { value: '', label: '— pick one —' },
-                ...pages
-                  .filter((p) => p.id !== activePageId)
-                  .map((p) => ({ value: p.id, label: `${p.name}  ${p.path}` })),
-              ]}
-              value={navigation.pageId}
-              onChange={(pageId) => {
-                const target = pages.find((p) => p.id === pageId)
-                const keys = target ? pathParams(target.path) : []
-                onChange({
-                  kind: 'page',
-                  pageId,
-                  params: Object.fromEntries(keys.map((k) => [k, navigation.params[k] ?? ''])),
-                })
-              }}
-            />
-          </Field>
-          {params.map((key) => (
-            <Field key={key} label={`Parameter :${key}`}>
-              <Input
-                value={navigation.params[key] ?? ''}
-                onChange={(e) =>
-                  onChange({
-                    ...navigation,
-                    params: { ...navigation.params, [key]: e.target.value },
-                  })
-                }
-                placeholder="fixed value shown in the preview"
-                className="font-mono"
-              />
-            </Field>
-          ))}
-          {targetPage && projectId && (
-            <button
-              type="button"
-              onClick={() => navigate(`/p/${projectId}/pages/${targetPage.id}`)}
-              className="text-ui-sm font-medium text-ink underline-offset-2 hover:underline"
-            >
-              Lay out “{targetPage.name}” →
-            </button>
-          )}
-          {navigation.pageId === '' && (
-            <WiringHint>No page picked yet — the button does nothing in the preview.</WiringHint>
-          )}
-        </>
+      {kind === 'page' && (
+        <NavigateEditor
+          value={config.navigate ?? createDefaultNavigate()}
+          onChange={(v) => update({ navigate: v })}
+        />
       )}
 
       {(navigation.kind === 'toast' || navigation.kind === 'dialog') && (
