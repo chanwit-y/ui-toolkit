@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useMemo, useSyncExternalStore, 
 import { generatePath, matchRoutes, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import type { DataValue, NavigateTarget, PageElement, TPageMaster } from "../@types";
 import { resolveDataValue } from "./dataValue";
+import { useRowScope } from "./rowScope";
 import { getStateStore } from "./stateStore";
 
 const PagesContext = createContext<TPageMaster | null>(null);
@@ -25,8 +26,8 @@ export function pathParamNames(path: string): string[] {
   return out;
 }
 
-/** Extra sources a navigating element can add beyond the URL (a clicked table row). */
-export type NavigateScope = { row?: Record<string, unknown> };
+/** Extra sources a navigating element can add beyond the URL (a clicked table row, a repeater item). */
+export type NavigateScope = { row?: unknown };
 
 /**
  * Turn a {@link NavigateTarget} into a concrete URL against `pages`, or `null`
@@ -75,24 +76,26 @@ export function buildNavigateUrl(
 
 /**
  * Navigation for config-driven elements: resolves the target's `params`/`query`
- * from the current URL (and an optional row) and pushes or replaces history.
- * A target that can't be built warns and does nothing — never throws.
+ * from the current URL (and a row: the one passed in, else the enclosing
+ * repeater item) and pushes or replaces history. A target that can't be built
+ * warns and does nothing — never throws.
  */
 export function useNavigateTo() {
   const pages = usePages();
   const navigate = useNavigate();
   const params = useParams();
   const [searchParams] = useSearchParams();
+  const item = useRowScope();
   return useCallback(
     (target: NavigateTarget | undefined, extra: NavigateScope = {}) => {
       if (!target) {
         console.warn("[gummy-ui] Navigate action has no `navigate` target.");
         return;
       }
-      const url = buildNavigateUrl(target, pages, { params, searchParams, ...extra });
+      const url = buildNavigateUrl(target, pages, { params, searchParams, row: item?.row, ...extra });
       if (url) navigate(url, { replace: !!target.replace });
     },
-    [pages, navigate, params, searchParams]
+    [pages, navigate, params, searchParams, item]
   );
 }
 

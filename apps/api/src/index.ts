@@ -3,6 +3,9 @@ import { cors } from 'hono/cors';
 import { serve } from '@hono/node-server';
 import { countryRoutes } from './routes/countries.js';
 import { uploadRoutes } from './routes/upload.js';
+import { languageRoutes } from './routes/languages.js';
+import { formListDemoRoutes } from './routes/formListDemo.js';
+import { regionRoutes } from './routes/regions.js';
 
 const app = new Hono();
 const PORT = Number(process.env.PORT) || 9000;
@@ -22,6 +25,9 @@ app.use('/*', cors({
 // Routes
 app.route('/', countryRoutes);
 app.route('/', uploadRoutes);
+app.route('/', languageRoutes);
+app.route('/', formListDemoRoutes);
+app.route('/', regionRoutes);
 
 // Health check
 app.get('/health', (c) => {

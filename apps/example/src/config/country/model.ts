@@ -75,4 +75,84 @@ export const model: TModelMaster = {
   countrySearchQuery: {
     search: "string",
   },
+  // Languages of a country (FormList demo on the detail page).
+  languageRes: {
+    data: {
+      type: "array",
+      collection: {
+        _id: "string",
+        countryId: "string",
+        country: "string",
+        name: "string",
+      },
+    },
+    status: "number",
+    success: "boolean",
+    message: "string",
+  },
+  languageBody: {
+    country: "string",
+    name: "string",
+  },
+  languageCountryParam: {
+    country: "string",
+  },
+  languageParam: {
+    country: "string",
+    id: "string",
+  },
+  // Form list demo page (`/form-list`): contacts (full CRUD) and notes.
+  contactRes: {
+    data: {
+      type: "array",
+      collection: { _id: "string", name: "string", email: "string", role: "string" },
+    },
+    status: "number",
+    success: "boolean",
+    message: "string",
+  },
+  contactBody: {
+    name: "string",
+    email: "string",
+    role: "string",
+  },
+  noteRes: {
+    data: {
+      type: "array",
+      collection: { _id: "string", text: "string", createdAt: "string" },
+    },
+    status: "number",
+    success: "boolean",
+    message: "string",
+  },
+  noteBody: {
+    text: "string",
+  },
+  idParam: {
+    id: "string",
+  },
+  // Regions with their countries (Repeater demo — nested repeater source).
+  regionRes: {
+    data: {
+      type: "array",
+      collection: {
+        _id: "string",
+        name: "string",
+        description: "string",
+        featured: "boolean",
+        countries: {
+          type: "array",
+          collection: {
+            _id: "string",
+            name: "string",
+            code: "string",
+            avatar: "any",
+          },
+        },
+      },
+    },
+    status: "number",
+    success: "boolean",
+    message: "string",
+  },
 };

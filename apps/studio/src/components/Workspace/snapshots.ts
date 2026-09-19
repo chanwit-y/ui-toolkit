@@ -15,9 +15,18 @@ import { useGroupStore } from '../Library/groupStore'
 import { useModelStore } from '../Model/modelStore'
 import type { ModelDef } from '../Model/types'
 import {
+  countryLanguagesSeedItem,
+  formListDemoSeedItems,
+  REPEATER_PAGE_ID,
+  repeaterDemoSeedItems,
+  UPLOAD_PAGE_ID,
+  uploadDemoSeedItems,
+  FORM_LIST_PAGE_ID,
   countrySeedEndpoints,
   countrySeedEnvVars,
   countrySeedGridItems,
+  iconDemoSeedItems,
+  optionDisplaySeedItems,
   countrySeedModels,
   countrySeedTheme,
 } from '../seed/country'
@@ -170,11 +179,115 @@ function countryDetailSeedItems(): GridItemData[] {
         navigate: { pageId: 'seed-page-countries', params: {}, replace: false },
       },
     },
+    countryLanguagesSeedItem(),
   ]
 }
 
-/** The countries example: the list page (modal + table), plus an empty detail
- * page routed with a `:code` param, attached to the seeded endpoints. */
+/**
+ * The select-family demo pages of the seeded project: "Option display" (icon,
+ * title, subtitle and image on the three fields) and "Icons" (the two icon
+ * slots on their own). Used by the fresh seed and by the workspace migration
+ * that appends them to an existing seeded project (`migrateV10`).
+ */
+export function optionDemoPages(): PageDef[] {
+  return [
+    {
+      id: 'seed-page-option-display',
+      key: 'optionDisplay',
+      name: 'Option display',
+      path: '/option-display',
+      grid: {
+        items: optionDisplaySeedItems(),
+        containerSettings: defaultContainerSettings,
+        fieldSeq: 0,
+      },
+    },
+    {
+      id: 'seed-page-icons',
+      key: 'icons',
+      name: 'Icons',
+      path: '/icons',
+      grid: {
+        items: iconDemoSeedItems(),
+        containerSettings: defaultContainerSettings,
+        fieldSeq: 0,
+      },
+    },
+  ]
+}
+
+/**
+ * The "Form list" demo page of the seeded project (the example app's
+ * `/form-list`). Used by the fresh seed and appended to an existing seeded
+ * project by `migrateV12`.
+ */
+export function formListDemoPage(): PageDef {
+  return {
+    id: FORM_LIST_PAGE_ID,
+    key: 'formList',
+    name: 'Form list',
+    path: '/form-list',
+    grid: {
+      items: formListDemoSeedItems(),
+      containerSettings: defaultContainerSettings,
+      fieldSeq: 0,
+    },
+    parentId: 'seed-page-countries',
+  }
+}
+
+/**
+ * The "Repeater" demo page of the seeded project (the example app's
+ * `/repeater`). Used by the fresh seed and appended to an existing seeded
+ * project by `migrateV15`.
+ */
+export function repeaterDemoPage(): PageDef {
+  return {
+    id: REPEATER_PAGE_ID,
+    key: 'repeater',
+    name: 'Repeater',
+    path: '/repeater',
+    grid: {
+      items: repeaterDemoSeedItems(),
+      containerSettings: defaultContainerSettings,
+      fieldSeq: 0,
+    },
+    parentId: 'seed-page-countries',
+  }
+}
+
+/**
+ * The "Upload" demo page of the seeded project (the example app's `/file-upload`).
+ * Used by the fresh seed and appended to an existing seeded project by
+ * `migrateV17`.
+ */
+export function uploadDemoPage(): PageDef {
+  return {
+    id: UPLOAD_PAGE_ID,
+    key: 'upload',
+    name: 'Upload',
+    path: '/file-upload',
+    grid: {
+      items: uploadDemoSeedItems(),
+      containerSettings: defaultContainerSettings,
+      fieldSeq: 0,
+    },
+    parentId: 'seed-page-countries',
+  }
+}
+
+/** Sidebar glyph per demo page id. */
+export const OPTION_DEMO_MENU_ICONS: Record<string, string> = {
+  'seed-page-option-display': 'list',
+  'seed-page-icons': 'star',
+  [FORM_LIST_PAGE_ID]: 'listFilter',
+  [REPEATER_PAGE_ID]: 'grid',
+  [UPLOAD_PAGE_ID]: 'upload',
+}
+
+/** The countries example: the list page (modal + table), a detail page routed
+ * with a `:code` param, and the option-display example page, attached to the
+ * seeded endpoints. */
 export function countryProjectSnapshot(library: LibraryData): ProjectSnapshot {
   const pages: PageDef[] = [
       {
@@ -204,9 +317,16 @@ export function countryProjectSnapshot(library: LibraryData): ProjectSnapshot {
         parentId: 'seed-page-countries',
         crumb: { type: 'url', key: 'code', source: 'param' },
       },
+      ...optionDemoPages(),
+      formListDemoPage(),
+      repeaterDemoPage(),
+      uploadDemoPage(),
   ]
   const menu = defaultMenu(pages)
   if (menu[0]?.kind === 'page') menu[0].icon = 'globe'
+  for (const item of menu) {
+    if (item.kind === 'page') item.icon ||= OPTION_DEMO_MENU_ICONS[item.navigate.pageId] ?? ''
+  }
   return {
     pages,
     menu,

@@ -30,6 +30,26 @@ const MIME_MAP: Record<string, string> = {
   '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   '.csv': 'text/csv',
+  '.bmp': 'image/bmp',
+  '.avif': 'image/avif',
+  '.xls': 'application/vnd.ms-excel',
+  '.ppt': 'application/vnd.ms-powerpoint',
+  '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  '.txt': 'text/plain',
+  '.md': 'text/plain',
+  '.log': 'text/plain',
+  '.json': 'application/json',
+  '.xml': 'text/plain',
+  '.zip': 'application/zip',
+  '.mp3': 'audio/mpeg',
+  '.wav': 'audio/wav',
+  '.ogg': 'audio/ogg',
+  '.m4a': 'audio/mp4',
+  '.mp4': 'video/mp4',
+  '.webm': 'video/webm',
+  '.mov': 'video/quicktime',
+  // .svg / .html stay application/octet-stream on purpose: served as documents
+  // from this origin they would run their scripts.
 };
 
 function uniqueFilename(originalName: string): string {

@@ -4,6 +4,7 @@ import type { Breakpoint } from './breakpoints'
 import type { ComponentType } from './componentCatalog'
 import { ENTER_DURATION_MS, prefersReducedMotion } from './gridAnimation'
 import { updateContainerBreakpoint, updateItemBreakpoint } from './gridSettings'
+import { ancestorRepeaters, isBlockedInRepeater, withoutBlockedItems } from './repeaterRules'
 import { readSeedCount } from './perf'
 import { countrySeedGridItems } from '../seed/country'
 import {
@@ -22,6 +23,8 @@ import {
   createDefaultCheckboxConfig,
   createDefaultDataTableConfig,
   createDefaultDataTableEditableConfig,
+  createDefaultFormListConfig,
+  createDefaultRepeaterConfig,
   createDefaultDateConfig,
   createDefaultDividerConfig,
   createDefaultHiddenConfig,
@@ -46,6 +49,8 @@ import {
   type ChildCanvas,
   type DataTableConfig,
   type DataTableEditableConfig,
+  type FormListConfig,
+  type RepeaterConfig,
   type DateConfig,
   type DividerConfig,
   type GridContainerSettings,
@@ -213,6 +218,8 @@ type GridState = {
       | UploadFileConfig
       | DataTableConfig
       | DataTableEditableConfig
+      | FormListConfig
+      | RepeaterConfig
       | TextConfig
       | TypographyConfig
       | AvatarConfig
@@ -359,6 +366,7 @@ export const useGridStore = create<GridState>((set, get) => {
 
   /** The canvas the editor is currently inside. */
   const activeCanvas = (): ChildCanvas => canvasAtPath(rootCanvas(), get().activePath)
+  const insideRepeater = (): boolean => ancestorRepeaters(get().items, get().activePath).length > 0
 
   /** Apply `fn` to the active canvas and commit the rebuilt root. */
   const setActiveCanvas = (fn: (canvas: ChildCanvas) => ChildCanvas) => {
@@ -487,6 +495,8 @@ export const useGridStore = create<GridState>((set, get) => {
         const { items, settings } = activeCanvas()
         const bpCols = settings.columns
         const type: ComponentType = component?.type ?? 'empty'
+        // A repeater's item template is read-only: no form-bound types inside.
+        if (isBlockedInRepeater(type) && insideRepeater()) return
 
         // Textfields and textareas get a unique binding name + a default config
         // (sharing the one `fieldSeq` counter for global uniqueness); other types
@@ -503,6 +513,8 @@ export const useGridStore = create<GridState>((set, get) => {
           | UploadFileConfig
           | DataTableConfig
           | DataTableEditableConfig
+          | FormListConfig
+          | RepeaterConfig
           | TextConfig
           | TypographyConfig
           | AvatarConfig
@@ -558,6 +570,12 @@ export const useGridStore = create<GridState>((set, get) => {
         } else if (type === 'datatableeditable') {
           nextSeq = fieldSeq + 1
           config = createDefaultDataTableEditableConfig(`editableTable_${nextSeq}`)
+        } else if (type === 'formlist') {
+          nextSeq = fieldSeq + 1
+          config = createDefaultFormListConfig(`formList_${nextSeq}`)
+        } else if (type === 'repeater') {
+          nextSeq = fieldSeq + 1
+          config = createDefaultRepeaterConfig(`repeater_${nextSeq}`)
         } else if (type === 'text') {
           config = createDefaultTextConfig()
         } else if (type === 'typography') {
@@ -603,6 +621,8 @@ export const useGridStore = create<GridState>((set, get) => {
         const isFullBleed =
           type === 'datatable' ||
           type === 'datatableeditable' ||
+          type === 'formlist' ||
+          type === 'repeater' ||
           type === 'divider' ||
           type === 'container' ||
           type === 'paper' ||
@@ -746,8 +766,10 @@ export const useGridStore = create<GridState>((set, get) => {
         ),
       })),
 
-    appendItems: (newItems) =>
+    appendItems: (incoming) =>
       animated(() => {
+        // A template dropped into a repeater's item template loses its inputs.
+        const newItems = insideRepeater() ? withoutBlockedItems(incoming) : incoming
         if (newItems.length === 0) return
         const willEnter = canEnter()
         const enteringIds = new Set(get().enteringIds)

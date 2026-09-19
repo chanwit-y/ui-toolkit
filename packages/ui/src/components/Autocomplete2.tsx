@@ -11,7 +11,7 @@ import {
 import type { AutocompleteItem2, AutocompleteProps2, DataValue, Obs } from "./@types";
 import { Box, Text } from "@radix-ui/themes";
 import { cn } from "../util/utils";
-import { AlertCircle, Check, ChevronDown, Loader2, Search, X, type LucideIcon } from "lucide-react";
+import { AlertCircle, Check, ChevronDown, Loader2, Search } from "lucide-react";
 import { useCore } from "./core/context";
 import { debounce, distinct, interval, Subject, switchMap } from "rxjs";
 import { isEmpty } from "lodash";
@@ -19,8 +19,9 @@ import { useQuery } from "@tanstack/react-query";
 import { useObservableCleanup } from "../hooks";
 import { ConditionExpression } from "./core/expression";
 import { useData } from "./context/DataProvider";
-import { IconData } from "./core/const/iconData";
 import { Avatar } from "./Avatar";
+import { OptionRow, matchesOptionQuery, resolveIcon, resolveItemAvatar, resolveItemIcon, resolveItemSubtitle } from "./OptionRow";
+import { OptionSearch, OPTION_SEARCH_HEIGHT } from "./OptionSearch";
 
 const createAutocomplete = <T extends Record<string, any>>() => {
 	return forwardRef<
@@ -103,8 +104,8 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 		const filteredItems = useMemo(() => {
 			if (!query.trim()) return items;
 
-			return items.filter(item => item[searchKey].toLowerCase().includes(query.toLowerCase()))
-		}, [query, items, maxResults])
+			return items.filter(item => matchesOptionQuery(item, query, searchKey, itemSubtitle))
+		}, [query, items, maxResults, searchKey, itemSubtitle])
 		const hasError = useMemo(() => error && !!errorMessage, [error, errorMessage]);
 		const displayHelperText = useMemo(() => hasError ? errorMessage : helperText, [hasError, errorMessage, helperText]);
 		const selectedItem = useMemo(() => items.find(item => String(item[idKey]) === String(value)), [items, value, searchKey]);
@@ -258,7 +259,7 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 
 			const viewportPadding = 8;
 			const triggerGap = 4;
-			const dropdownHeaderHeight = 44;
+			const dropdownHeaderHeight = OPTION_SEARCH_HEIGHT;
 			const preferredListHeight = typeof maxHeight === "number" ? Math.max(120, maxHeight - dropdownHeaderHeight) : 236;
 			const minListHeight = 80;
 			const estimatedDropdownHeight = dropdownHeaderHeight + preferredListHeight;
@@ -431,36 +432,29 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 
 		const showFetching = isFetching || isSearching;
 
+		// The chosen item's avatar replaces the input icon; an icon-only item keeps it
+		// (one glyph shared by every option says nothing about which one is selected).
+		const selectedAvatar = selectedItem ? resolveItemAvatar(selectedItem, itemAvatar, displayKey) : null;
+		const InputIconComponent = resolveIcon(inputIcon) ?? Search;
+
 		const dropdown = isOpen ? (
 			<div
 				ref={dropdownContainerRef}
 				style={dropdownStyles}
-				className="dropdown flex flex-col bg-white dark:bg-gray-900 border ring-2 ring-[var(--accent-8,#60a5fa)] border-transparent rounded-md shadow-lg overflow-hidden ease-in duration-100 opacity-100 z-[100000]"
+				className="dropdown flex flex-col bg-[var(--color-panel-solid)] border border-[var(--gray-a6)] rounded-md shadow-lg overflow-hidden ease-in duration-100 opacity-100 z-[100000]"
 			>
-				<div className="flex items-center border-b border-gray-100 dark:border-gray-800 px-3">
-					<Search className="h-4 w-4 text-gray-400 dark:text-gray-500 mr-2" />
-					<input
-						type="text"
-						ref={searchInputRef}
-						value={query}
-						onChange={(e) => {
-							setQuery(e.target.value);
-							subject && subject.next(e.target.value);
-						}}
-						onKeyDown={handleKeyDown}
-						placeholder="Type to search..."
-						className="flex-1 py-2 text-sm border-none outline-none bg-transparent placeholder:text-gray-400 dark:placeholder:text-gray-500"
-					/>
-					{query && (
-						<button
-							onClick={() => setQuery('')}
-							className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
-						>
-							<X className="h-3 w-3 text-gray-400 dark:text-gray-500" />
-						</button>
-					)}
-
-				</div>
+				<OptionSearch
+					ref={searchInputRef}
+					value={query}
+					onChange={(text) => {
+						setQuery(text);
+						subject && subject.next(text);
+					}}
+					onKeyDown={handleKeyDown}
+					listboxId={listboxId}
+					loading={isSearching}
+					resultCount={filteredItems.length}
+				/>
 				<div
 					ref={dropdownListRef}
 					id={listboxId}
@@ -482,89 +476,23 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 						: filteredItems.map((item, index) => {
 							const isSelected = selectedIndex === index;
 							const isCurrent = value === item[idKey];
-							
-							// Determine the icon for this item
-							let ItemIconComponent: LucideIcon | null = null;
-							if (itemIcon) {
-								if (typeof itemIcon === 'function') {
-									const iconResult = itemIcon(item);
-									if (typeof iconResult === 'string') {
-										ItemIconComponent = IconData[iconResult as keyof typeof IconData] as LucideIcon;
-									} else {
-										ItemIconComponent = iconResult as LucideIcon;
-									}
-								} else if (typeof itemIcon === 'string') {
-									ItemIconComponent = IconData[itemIcon as keyof typeof IconData] as LucideIcon;
-								} else {
-									ItemIconComponent = itemIcon as LucideIcon;
-								}
-							}
 
-							// Determine the subtitle for this item
-							let itemSubtitleText: string | null = null;
-							if (itemSubtitle) {
-								if (typeof itemSubtitle === 'function') {
-									itemSubtitleText = itemSubtitle(item);
-								} else {
-									itemSubtitleText = item[itemSubtitle] as string;
-								}
-							}
-							
-							// Determine the avatar for this item
-							let itemAvatarProps: { src: string; alt?: string; fallback?: string } | null = null;
-							if (itemAvatar) {
-								if (typeof itemAvatar === 'function') {
-									const avatarResult = itemAvatar(item);
-									if (typeof avatarResult === 'string') {
-										itemAvatarProps = { src: avatarResult, alt: item[displayKey] };
-									} else if (avatarResult && typeof avatarResult === 'object') {
-										itemAvatarProps = {
-											src: avatarResult.src,
-											alt: avatarResult.alt || item[displayKey],
-											fallback: avatarResult.fallback
-										};
-									}
-								} else {
-									const avatarValue = item[itemAvatar];
-									if (typeof avatarValue === 'string') {
-										itemAvatarProps = { src: avatarValue, alt: item[displayKey] };
-									} else if (avatarValue && typeof avatarValue === 'object' && 'src' in avatarValue) {
-										itemAvatarProps = {
-											src: (avatarValue as any).src,
-											alt: (avatarValue as any).alt || item[displayKey],
-											fallback: (avatarValue as any).fallback
-										};
-									}
-								}
-							}
-							
 							return (<button key={item[idKey]}
 								onClick={() => handleSelect(item)}
 								aria-selected={isCurrent}
 								data-focused={isSelected}
-								className={cn("w-full flex items-center justify-between px-3 text-sm text-left transition-colors cursor-pointer",
-									itemSubtitleText ? "py-2" : "py-2",
+								className={cn("w-full flex items-center justify-between px-3 py-2 text-sm text-left transition-colors cursor-pointer",
 									isSelected
 										? "bg-[var(--accent-3,#eff6ff)] text-[var(--accent-11,#1d4ed8)] font-semibold"
 										: "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800",
 									isCurrent ? "bg-[var(--accent-3,#eff6ff)] text-[var(--accent-11,#1d4ed8)] font-semibold" : ""
 								)}>
-								<div className="flex items-center gap-2 flex-1 min-w-0">
-									{itemAvatarProps && <Avatar 
-										src={itemAvatarProps.src} 
-										alt={itemAvatarProps.alt} 
-										size="xs" 
-										fallback={itemAvatarProps.fallback}
-										className="flex-shrink-0" 
-									/>}
-									{!itemAvatarProps && ItemIconComponent && <ItemIconComponent className="h-4 w-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />}
-									<div className="flex flex-col gap-0.5 min-w-0 flex-1">
-										<span className="truncate">{item[displayKey]}</span>
-										{itemSubtitleText && (
-											<span className="text-xs text-gray-500 dark:text-gray-400 truncate">{itemSubtitleText}</span>
-										)}
-									</div>
-								</div>
+								<OptionRow
+									title={String(item[displayKey] ?? "")}
+									subtitle={resolveItemSubtitle(item, itemSubtitle)}
+									icon={resolveItemIcon(item, itemIcon)}
+									avatar={resolveItemAvatar(item, itemAvatar, displayKey)}
+								/>
 								{isCurrent && (<Check className="h-4 w-4 text-[var(--accent-11,#2563eb)] ml-2 flex-shrink-0" />)}
 							</button>)
 						})}
@@ -603,19 +531,9 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 					{...props}
 				>
 					<div className="flex flex-1 min-w-0 items-center gap-3">
-						{(() => {
-							let IconComponent: LucideIcon;
-							if (inputIcon) {
-								if (typeof inputIcon === 'string') {
-									IconComponent = IconData[inputIcon as keyof typeof IconData] as LucideIcon || Search;
-								} else {
-									IconComponent = inputIcon;
-								}
-							} else {
-								IconComponent = Search;
-							}
-							return <IconComponent className="h-4 w-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />;
-						})()}
+						{selectedAvatar
+							? <Avatar src={selectedAvatar.src} alt={selectedAvatar.alt} size="xs" fallback={selectedAvatar.fallback} className="flex-shrink-0" />
+							: <InputIconComponent className="h-4 w-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />}
 						<span className={`truncate ${!selectedItem ? 'text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'}`}>
 							{selectedItem ? selectedItem[displayKey] : placeholder}
 						</span>

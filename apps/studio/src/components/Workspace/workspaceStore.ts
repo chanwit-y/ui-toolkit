@@ -4,6 +4,16 @@ import type { EndpointDef } from '../Api/types'
 import type { ModelDef } from '../Model/types'
 import type { ThemeAppearance } from '../Theme/types'
 import { seedActivity } from '../seed/activity'
+import {
+  countryLanguagesSeedItem,
+  formListDemoSeedEndpoints,
+  formListDemoSeedModels,
+  repeaterDemoSeedEndpoints,
+  repeaterDemoSeedModels,
+  languageSeedEndpoints,
+  languageSeedModels,
+  LANGUAGES_ITEM_ID,
+} from '../seed/country'
 import { builtinTemplates } from '../seed/templates'
 import {
   COUNTRIES_GROUP_ID,
@@ -18,6 +28,11 @@ import {
   normalizePath,
   defaultAppBar,
   defaultShell,
+  optionDemoPages,
+  formListDemoPage,
+  repeaterDemoPage,
+  uploadDemoPage,
+  OPTION_DEMO_MENU_ICONS,
   type LiveLibrary,
   type ProjectStateSnapshot,
 } from './snapshots'
@@ -37,7 +52,7 @@ import type {
 } from './types'
 import { walkItems } from '../Layout/pageLinks'
 import { defaultMenu } from './menu'
-import type { ButtonItemConfig, GridItemData, NavParamSource } from '../Layout/types'
+import type { AvatarConfig, ButtonItemConfig, FormListConfig, GridItemData, ModalConfig, NavParamSource, PopoverConfig, SelectFieldConfig, TextConfig, TypographyConfig, UploadFileConfig } from '../Layout/types'
 
 const ACTIVITY_CAP = 500
 /** Autosaves are continuous; a "saved" line is worth recording this often. */
@@ -381,6 +396,294 @@ function migrateV8(projects: V8Project[]): ProjectDef[] {
   }))
 }
 
+const SELECT_FAMILY = new Set(['select', 'autocomplete', 'multiAutocomplete'])
+
+/**
+ * v9 → v10 (see the grilled option-display design): the select family keeps one
+ * flat key set for both modes. Source mode used to edit `dataSource.valueKey` /
+ * `labelKey`, which the export never read (it always emitted the static-only
+ * `idKey`/`displayKey`/`searchKey`) — so what the author typed there is carried
+ * onto the flat keys, then dropped. The new option-display fields start unset.
+ * Templates carry the same configs, so their grids are migrated too.
+ */
+function migrateSelectKeys(items: GridItemData[]): void {
+  walkItems(items, (item) => {
+    if (!SELECT_FAMILY.has(item.type) || !item.config) return
+    const c = item.config as SelectFieldConfig & {
+      dataSource: SelectFieldConfig['dataSource'] & { valueKey?: string; labelKey?: string }
+    }
+    const { valueKey, labelKey, ...dataSource } = c.dataSource ?? { endpointId: null, paths: '' }
+    if (c.mode === 'source') {
+      if (valueKey?.trim()) c.idKey = valueKey.trim()
+      if (labelKey?.trim()) c.displayKey = c.searchKey = labelKey.trim()
+    }
+    c.dataSource = dataSource
+    c.subtitleKey ??= ''
+    c.avatarKey ??= ''
+    c.inputIcon ??= ''
+    c.itemIcon ??= ''
+  })
+}
+
+function migrateV9(projects: ProjectDef[], library: LibraryData): ProjectDef[] {
+  for (const p of projects) for (const pg of p.snapshot.pages) migrateSelectKeys(pg.grid.items)
+  for (const t of library.templates) migrateSelectKeys(t.grid.items)
+  return projects
+}
+
+/**
+ * v10 → v11: the seeded Country manager gains the select-family demo pages
+ * ("Option display", "Icons") that only fresh demo data used to get — appended
+ * once, with a sidebar link each, and only when that page id is absent, so a
+ * page the user deleted afterwards stays deleted. Other projects are untouched.
+ */
+/**
+ * Append demo pages (with a sidebar link each) to a project, skipping page
+ * ids it already has — so a page the user deleted afterwards stays deleted.
+ * Seed keys stay camelCase unless the user already took them.
+ */
+function appendDemoPages(p: ProjectDef, demos: PageDef[]): ProjectDef {
+  const missing = demos.filter((demo) => !p.snapshot.pages.some((pg) => pg.id === demo.id))
+  if (missing.length === 0) return p
+  const taken = new Set(p.snapshot.pages.map((pg) => pg.key))
+  const pages = missing.map((demo) => ({
+    ...demo,
+    key: taken.has(demo.key) ? uniquePageKey(demo.key, taken) : demo.key,
+  }))
+  const menu: MenuItemDef[] = pages.map((pg) => ({
+    id: crypto.randomUUID(),
+    kind: 'page',
+    label: pg.name,
+    icon: OPTION_DEMO_MENU_ICONS[pg.id] ?? '',
+    navigate: { pageId: pg.id, params: {}, replace: false },
+  }))
+  return {
+    ...p,
+    snapshot: {
+      ...p.snapshot,
+      pages: [...p.snapshot.pages, ...pages],
+      menu: [...p.snapshot.menu, ...menu],
+    },
+  }
+}
+
+function migrateV10(projects: ProjectDef[]): ProjectDef[] {
+  return projects.map((p) => (p.id === 'seed-project-country' ? appendDemoPages(p, optionDemoPages()) : p))
+}
+
+/**
+ * Add seeded models / endpoints the library doesn't have yet (by id, filed
+ * under the Countries group) and attach the endpoints to the seeded project.
+ */
+function seedLibraryAdditions(
+  projects: ProjectDef[],
+  library: LibraryData,
+  models: ModelDef[],
+  endpoints: EndpointDef[],
+): { projects: ProjectDef[]; library: LibraryData } {
+  const modelIds = new Set(library.models.map((m) => m.id))
+  const endpointIds = new Set(library.endpoints.map((e) => e.id))
+  const newModels = models.filter((m) => !modelIds.has(m.id)).map((m) => ({ ...m, groupId: COUNTRIES_GROUP_ID }))
+  const newEndpoints = endpoints
+    .filter((e) => !endpointIds.has(e.id))
+    .map((e) => ({ ...e, groupId: COUNTRIES_GROUP_ID }))
+  const nextLibrary =
+    newModels.length || newEndpoints.length
+      ? { ...library, models: [...library.models, ...newModels], endpoints: [...library.endpoints, ...newEndpoints] }
+      : library
+  const seedEndpointIds = endpoints.map((e) => e.id)
+  const nextProjects = projects.map((p) => {
+    if (p.id !== 'seed-project-country') return p
+    const attached = new Set(p.snapshot.endpointIds)
+    const missing = seedEndpointIds.filter((id) => !attached.has(id))
+    if (missing.length === 0) return p
+    return { ...p, snapshot: { ...p.snapshot, endpointIds: [...p.snapshot.endpointIds, ...missing] } }
+  })
+  return { projects: nextProjects, library: nextLibrary }
+}
+
+/**
+ * v11 → v12: the FormList demo. The shared library gains the seeded
+ * `languages` models and endpoints (by id, so re-runs and user edits are
+ * safe), and the seeded Country manager attaches them and gets the Languages
+ * form list on its detail page — only when that item is absent, so a list
+ * the user deleted stays deleted. Other projects are untouched.
+ */
+function migrateV11(
+  projects: ProjectDef[],
+  library: LibraryData,
+): { projects: ProjectDef[]; library: LibraryData } {
+  const seeded = seedLibraryAdditions(projects, library, languageSeedModels(), languageSeedEndpoints())
+  const nextProjects = seeded.projects.map((p) => {
+    if (p.id !== 'seed-project-country') return p
+    const pages = p.snapshot.pages.map((pg) => {
+      if (pg.id !== 'seed-page-country-detail') return pg
+      if (pg.grid.items.some((it) => it.id === LANGUAGES_ITEM_ID)) return pg
+      return { ...pg, grid: { ...pg.grid, items: [...pg.grid.items, countryLanguagesSeedItem()] } }
+    })
+    return { ...p, snapshot: { ...p.snapshot, pages } }
+  })
+  return { projects: nextProjects, library: seeded.library }
+}
+
+/**
+ * v12 → v13: the Form list demo page. The shared library gains the seeded
+ * `contacts` / `notes` models and endpoints, the seeded Country manager
+ * attaches them and gets the "Form list" page (+ sidebar link) unless that
+ * page id already exists. Other projects are untouched.
+ */
+function migrateV12(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  const seeded = seedLibraryAdditions(
+    data.projects,
+    data.library,
+    formListDemoSeedModels(),
+    formListDemoSeedEndpoints(),
+  )
+  return {
+    projects: seeded.projects.map((p) =>
+      p.id === 'seed-project-country' ? appendDemoPages(p, [formListDemoPage()]) : p,
+    ),
+    library: seeded.library,
+  }
+}
+
+/**
+ * v13 → v14: form lists gain Add / Remove button icons, placement and display
+ * (`addIcon/addPosition/addAlign/addDisplay`, `removeIcon/removePosition/
+ * removeDisplay`), filled with the component's defaults on every canvas
+ * (pages and templates). v14 → v15 reruns the same fill for `*Display`.
+ */
+function migrateFormListChrome(items: GridItemData[]): void {
+  walkItems(items, (item) => {
+    if (item.type !== 'formlist' || !item.config) return
+    const c = item.config as FormListConfig
+    c.addIcon ??= ''
+    c.addPosition ??= 'bottom'
+    c.addAlign ??= 'start'
+    c.removeIcon ??= ''
+    c.removePosition ??= 'end'
+    c.addDisplay ??= 'both'
+    c.removeDisplay ??= 'both'
+  })
+}
+
+function migrateV13(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  for (const p of data.projects) for (const pg of p.snapshot.pages) migrateFormListChrome(pg.grid.items)
+  for (const t of data.library.templates) migrateFormListChrome(t.grid.items)
+  return data
+}
+
+/**
+ * v15 → v16: the repeater. Text / Typography / Avatar configs gain their
+ * item bindings (`binding`, `srcBinding` / `fallbackBinding`), filled `null`
+ * (static) on every canvas — pages and templates. The shared library gains
+ * the seeded `regions` model and endpoint, and the seeded Country manager
+ * attaches them and gets the "Repeater" page (+ sidebar link) unless that
+ * page id already exists. Other projects are untouched.
+ */
+function migrateItemBindings(items: GridItemData[]): void {
+  walkItems(items, (item) => {
+    if (!item.config) return
+    if (item.type === 'text' || item.type === 'typography') {
+      ;(item.config as TextConfig | TypographyConfig).binding ??= null
+    } else if (item.type === 'avatar') {
+      const c = item.config as AvatarConfig
+      c.srcBinding ??= null
+      c.fallbackBinding ??= null
+    }
+  })
+}
+
+function migrateV15(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  for (const p of data.projects) for (const pg of p.snapshot.pages) migrateItemBindings(pg.grid.items)
+  for (const t of data.library.templates) migrateItemBindings(t.grid.items)
+  const seeded = seedLibraryAdditions(
+    data.projects,
+    data.library,
+    repeaterDemoSeedModels(),
+    repeaterDemoSeedEndpoints(),
+  )
+  return {
+    projects: seeded.projects.map((p) =>
+      p.id === 'seed-project-country' ? appendDemoPages(p, [repeaterDemoPage()]) : p,
+    ),
+    library: seeded.library,
+  }
+}
+
+/**
+ * v16 → v17: the file upload's preview + accept presets. Every Upload File —
+ * pages and templates — gains `acceptPresets: []` (its free-text `accept`
+ * carries on as the extra types), `preview: true` and `previewLayout: 'list'`,
+ * the engine defaults.
+ */
+function migrateUploadFiles(items: GridItemData[]): void {
+  walkItems(items, (item) => {
+    if (item.type !== 'uploadfile' || !item.config) return
+    const c = item.config as UploadFileConfig
+    c.acceptPresets ??= []
+    c.preview ??= true
+    c.previewLayout ??= 'list'
+  })
+}
+
+function migrateV16(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  for (const p of data.projects) for (const pg of p.snapshot.pages) migrateUploadFiles(pg.grid.items)
+  for (const t of data.library.templates) migrateUploadFiles(t.grid.items)
+  return data
+}
+
+/**
+ * v17 → v18: the seeded Country manager gets the "Upload" demo page (+ sidebar
+ * link) unless that page id already exists. Other projects are untouched.
+ */
+function migrateV17(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  return {
+    projects: data.projects.map((p) =>
+      p.id === 'seed-project-country' ? appendDemoPages(p, [uploadDemoPage()]) : p,
+    ),
+    library: data.library,
+  }
+}
+
+/**
+ * v18 → v19: the button `variant`. Every button — standalone items and the
+ * modal / popover trigger buttons, pages and templates — gains
+ * `variant: 'contained'`, the engine default.
+ */
+function migrateButtonVariants(items: GridItemData[]): void {
+  walkItems(items, (item) => {
+    if (!item.config) return
+    if (item.type === 'button') (item.config as ButtonItemConfig).variant ??= 'contained'
+    else if (item.type === 'modal') (item.config as ModalConfig).trigger.variant ??= 'contained'
+    else if (item.type === 'popover') (item.config as PopoverConfig).triggerButton.variant ??= 'contained'
+  })
+}
+
+function migrateV18(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  for (const p of data.projects) for (const pg of p.snapshot.pages) migrateButtonVariants(pg.grid.items)
+  for (const t of data.library.templates) migrateButtonVariants(t.grid.items)
+  return data
+}
+
 function migrateV3(projects: V3Project[], library: LibraryData): { projects: V4Project[]; library: LibraryData } {
   const out: V4Project[] = projects.map((p) => {
     const taken: string[] = []
@@ -432,7 +735,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
       const templateOf = (id: string) => get().library.templates.find((t) => t.id === id)
 
       return {
-      version: 9,
+      version: 19,
       appearance: 'light',
       user: MOCK_USERS[0].name,
       projects: seedProjects(initialLibrary),
@@ -767,7 +1070,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
     },
     {
       name: WORKSPACE_STORAGE_KEY,
-      version: 9,
+      version: 19,
       partialize: (s) => ({
         version: s.version,
         appearance: s.appearance,
@@ -788,7 +1091,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
         if (data.version === 1) {
           const v1 = migrateV1(data.projects as unknown as V1Project[])
           const { projects, library } = migrateV3(migrateV2(v1.projects), v1.library)
-          return { ...current, appearance, user, activity, projects: migrateV8(migrateV7(migrateV6(migrateV5(migrateV4(projects))))), library }
+          return { ...current, appearance, user, activity, ...migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(migrateV7(migrateV6(migrateV5(migrateV4(projects))))), library)), library))))))) }
         }
         if (!data.library) return current
         // Libraries saved before templates existed get the builtin set.
@@ -800,28 +1103,58 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
         }
         if (data.version === 2) {
           const migrated = migrateV3(migrateV2(data.projects as unknown as V2Project[]), library)
-          return { ...current, appearance, user, activity, projects: migrateV8(migrateV7(migrateV6(migrateV5(migrateV4(migrated.projects))))), library: migrated.library }
+          return { ...current, appearance, user, activity, ...migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(migrateV7(migrateV6(migrateV5(migrateV4(migrated.projects))))), migrated.library)), migrated.library))))))) }
         }
         if (data.version === 3) {
           const migrated = migrateV3(data.projects as unknown as V3Project[], library)
-          return { ...current, appearance, user, activity, projects: migrateV8(migrateV7(migrateV6(migrateV5(migrateV4(migrated.projects))))), library: migrated.library }
+          return { ...current, appearance, user, activity, ...migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(migrateV7(migrateV6(migrateV5(migrateV4(migrated.projects))))), migrated.library)), migrated.library))))))) }
         }
         if (data.version === 4) {
-          return { ...current, appearance, user, activity, projects: migrateV8(migrateV7(migrateV6(migrateV5(migrateV4(data.projects as unknown as V4Project[]))))), library }
+          return { ...current, appearance, user, activity, ...migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(migrateV7(migrateV6(migrateV5(migrateV4(data.projects as unknown as V4Project[]))))), library)), library))))))) }
         }
         if (data.version === 5) {
-          return { ...current, appearance, user, activity, projects: migrateV8(migrateV7(migrateV6(migrateV5(data.projects as unknown as V5Project[])))), library }
+          return { ...current, appearance, user, activity, ...migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(migrateV7(migrateV6(migrateV5(data.projects as unknown as V5Project[])))), library)), library))))))) }
         }
         if (data.version === 6) {
-          return { ...current, appearance, user, activity, projects: migrateV8(migrateV7(migrateV6(data.projects as unknown as V6Project[]))), library }
+          return { ...current, appearance, user, activity, ...migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(migrateV7(migrateV6(data.projects as unknown as V6Project[]))), library)), library))))))) }
         }
         if (data.version === 7) {
-          return { ...current, appearance, user, activity, projects: migrateV8(migrateV7(data.projects as unknown as V7Project[])), library }
+          return { ...current, appearance, user, activity, ...migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(migrateV7(data.projects as unknown as V7Project[])), library)), library))))))) }
         }
         if (data.version === 8) {
-          return { ...current, appearance, user, activity, projects: migrateV8(data.projects as unknown as V8Project[]), library }
+          return { ...current, appearance, user, activity, ...migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(data.projects as unknown as V8Project[]), library)), library))))))) }
         }
-        if (data.version !== 9) return current
+        if (data.version === 9) {
+          return { ...current, appearance, user, activity, ...migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(data.projects, library)), library))))))) }
+        }
+        if (data.version === 10) {
+          return { ...current, appearance, user, activity, ...migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(data.projects), library))))))) }
+        }
+        if (data.version === 11) {
+          return { ...current, appearance, user, activity, ...migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(data.projects, library))))))) }
+        }
+        if (data.version === 12) {
+          return { ...current, appearance, user, activity, ...migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12({ projects: data.projects, library })))))) }
+        }
+        if (data.version === 13) {
+          return { ...current, appearance, user, activity, ...migrateV18(migrateV17(migrateV16(migrateV15(migrateV13({ projects: data.projects, library }))))) }
+        }
+        if (data.version === 14) {
+          return { ...current, appearance, user, activity, ...migrateV18(migrateV17(migrateV16(migrateV15(migrateV13({ projects: data.projects, library }))))) }
+        }
+        if (data.version === 15) {
+          return { ...current, appearance, user, activity, ...migrateV18(migrateV17(migrateV16(migrateV15({ projects: data.projects, library })))) }
+        }
+        if (data.version === 16) {
+          return { ...current, appearance, user, activity, ...migrateV18(migrateV17(migrateV16({ projects: data.projects, library }))) }
+        }
+        if (data.version === 17) {
+          return { ...current, appearance, user, activity, ...migrateV18(migrateV17({ projects: data.projects, library })) }
+        }
+        if (data.version === 18) {
+          return { ...current, appearance, user, activity, ...migrateV18({ projects: data.projects, library }) }
+        }
+        if (data.version !== 19) return current
         return { ...current, appearance, user, activity, projects: data.projects, library }
       },
       // The version bumps are handled in `merge` (it sees the raw payload);

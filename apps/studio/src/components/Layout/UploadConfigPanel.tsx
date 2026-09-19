@@ -1,7 +1,10 @@
 import type { ReactNode } from 'react'
-import { Input, Select, SegmentedControl } from '../common'
+import { ACCEPT_PRESETS, resolveAccept } from '@gummy-ui/ui'
+import { Input, Select, SegmentedControl, cn } from '../common'
 import { useGridStore } from './gridStore'
+import { uploadAccept } from './types'
 import type {
+  UploadAcceptPreset,
   UploadApiSettings,
   UploadFileConfig,
   UploadImageConfig,
@@ -18,6 +21,16 @@ const SHAPE_OPTIONS = [
   { value: 'square', label: 'Square' },
   { value: 'circle', label: 'Circle' },
 ]
+
+const MODE_OPTIONS = [
+  { value: 'single', label: 'Single' },
+  { value: 'multiple', label: 'Multiple' },
+]
+const PREVIEW_LAYOUT_OPTIONS = [
+  { value: 'list', label: 'List' },
+  { value: 'grid', label: 'Grid' },
+]
+const ACCEPT_PRESET_KEYS = Object.keys(ACCEPT_PRESETS) as UploadAcceptPreset[]
 
 /** One labelled row in the config form. */
 function Field({ label, children }: { label: string; children: ReactNode }) {
@@ -253,9 +266,11 @@ type UploadFileConfigPanelProps = {
 }
 
 /**
- * Editor for a file upload. `multiple` enables multi-file selection and reveals
- * the `maxFiles` cap (single mode has no cap to set). `accept` is a comma list of
- * extensions/mime types. `valueFormat` reveals the shared API section in `'api'`
+ * Editor for a file upload. Mode writes `multiple`; Multiple reveals the
+ * `maxFiles` cap (single mode has no cap to set). Accepted types are preset chips
+ * (`acceptPresets`) plus a comma list of extra extensions/mime types (`accept`),
+ * exported together as the engine's `accept` array. Preview toggles the
+ * thumbnails + viewer and reveals its list/grid layout. `valueFormat` reveals the shared API section in `'api'`
  * mode. The engine `dataType` is fixed `any` on export (a file upload stores an
  * array), so it isn't surfaced here.
  */
@@ -263,6 +278,7 @@ export function UploadFileConfigPanel({ itemId, config }: UploadFileConfigPanelP
   const updateItemConfig = useGridStore((s) => s.updateItemConfig)
   const set = <K extends keyof UploadFileConfig>(key: K, value: UploadFileConfig[K]) =>
     updateItemConfig(itemId, { [key]: value } as Partial<UploadFileConfig>)
+  const accepted = resolveAccept(uploadAccept(config)).filter((t) => t.startsWith('.'))
 
   return (
     <div className="space-y-3">
@@ -302,20 +318,53 @@ export function UploadFileConfigPanel({ itemId, config }: UploadFileConfigPanelP
         />
       </Field>
 
-      <Field label="Accept">
+      <Field label="Mode">
+        <SegmentedControl
+          options={MODE_OPTIONS}
+          value={config.multiple ? 'multiple' : 'single'}
+          onChange={(v) => set('multiple', v === 'multiple')}
+          aria-label="Mode"
+        />
+      </Field>
+
+      <div className="space-y-1">
+        <span className="text-ui-sm font-medium text-ink-2">Accepted types</span>
+        <div className="flex flex-wrap gap-1">
+          {ACCEPT_PRESET_KEYS.map((preset) => {
+            const on = config.acceptPresets.includes(preset)
+            return (
+              <button
+                key={preset}
+                type="button"
+                aria-pressed={on}
+                onClick={() =>
+                  set(
+                    'acceptPresets',
+                    // Kept in catalog order so the export doesn't depend on click order.
+                    ACCEPT_PRESET_KEYS.filter((p) => (p === preset ? !on : config.acceptPresets.includes(p))),
+                  )
+                }
+                className={cn('tag cursor-pointer', on && 'tag-solid')}
+              >
+                {ACCEPT_PRESETS[preset].label}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      <Field label="Extra types">
         <Input
           value={config.accept}
           onChange={(e) => set('accept', e.target.value)}
           className="font-mono"
-          placeholder=".pdf,.docx"
+          placeholder=".dwg,.psd"
         />
       </Field>
 
-      <Toggle
-        label="Allow multiple"
-        checked={config.multiple}
-        onChange={(v) => set('multiple', v)}
-      />
+      <p className="text-ui-xs text-ink-3 break-words">
+        {accepted.length > 0 ? `Accepts ${accepted.join(' ')}` : 'Accepts every file type'}
+      </p>
 
       <div className="grid grid-cols-2 gap-2">
         {config.multiple && (
@@ -333,6 +382,23 @@ export function UploadFileConfigPanel({ itemId, config }: UploadFileConfigPanelP
           onChange={(v) => set('maxSizeMB', v)}
         />
       </div>
+
+      <Toggle
+        label="Preview (thumbnails + viewer)"
+        checked={config.preview}
+        onChange={(v) => set('preview', v)}
+      />
+
+      {config.preview && (
+        <Field label="Preview layout">
+          <SegmentedControl
+            options={PREVIEW_LAYOUT_OPTIONS}
+            value={config.previewLayout}
+            onChange={(v) => set('previewLayout', v as UploadFileConfig['previewLayout'])}
+            aria-label="Preview layout"
+          />
+        </Field>
+      )}
 
       <UploadValueFormatSection
         valueFormat={config.valueFormat}

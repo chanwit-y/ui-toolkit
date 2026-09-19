@@ -1,17 +1,17 @@
 import { IconData } from '@gummy-ui/ui'
-import { Ban, Plus, Trash2, X } from 'lucide-react'
-import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react'
+import { Plus, Trash2 } from 'lucide-react'
+import { useMemo, type ReactNode } from 'react'
 import {
   Button,
   CodeViewer,
   IconButton,
+  IconField,
   Input,
-  Popover,
   SegmentedControl,
   SortableCardList,
   cn,
 } from '../common'
-import { IconPicker, NavigateEditor, WiringHint } from '../Layout/ButtonConfigPanel'
+import { NavigateEditor, WiringHint } from '../Layout/ButtonConfigPanel'
 import { createMenuItem, toMenuTs } from '../Workspace/menu'
 import type { AppBarSettings, MenuItemDef, ShellSettings } from '../Workspace/types'
 import { defaultShell } from '../Workspace/snapshots'
@@ -54,81 +54,6 @@ function MenuGlyph({ icon, size = 14, className }: { icon: string; size?: number
   const Glyph = icon ? IconData[icon as keyof typeof IconData] : undefined
   if (!Glyph) return null
   return <Glyph size={size} className={className} aria-hidden="true" />
-}
-
-/**
- * The item's icon (the library `MenuItem.icon` — an `IconData` key the
- * sidebar, the icon rail and the top-bar strip all render). A visible field:
- * the trigger shows the current glyph and key and opens the shared
- * `IconPicker` in a popover (the grid is too tall to sit inline once a menu
- * has a handful of items); the × clears it.
- */
-function IconField({
-  value,
-  onChange,
-  label = 'Icon',
-  placeholder = 'No icon — click to choose',
-  disabled,
-}: {
-  value: string
-  onChange: (v: string) => void
-  label?: string
-  placeholder?: string
-  disabled?: boolean
-}) {
-  const [anchor, setAnchor] = useState<DOMRect | null>(null)
-  const close = useCallback(() => setAnchor(null), [])
-  // The popover closes itself on any outside pointerdown — including one on
-  // this trigger — so the click that follows must not reopen it.
-  const wasOpen = useRef(false)
-  const known = !!value && value in IconData
-  return (
-    <div className={cn('block space-y-1', disabled && 'opacity-50')}>
-      <span className="text-ui-sm font-medium text-ink-2">{label}</span>
-      <div className="flex items-center gap-1.5">
-        <button
-          type="button"
-          aria-label={`Choose ${label.toLowerCase()}`}
-          aria-haspopup="dialog"
-          aria-expanded={anchor !== null}
-          disabled={disabled}
-          onPointerDown={() => {
-            wasOpen.current = anchor !== null
-          }}
-          onClick={(e) => {
-            if (!wasOpen.current) setAnchor(e.currentTarget.getBoundingClientRect())
-          }}
-          className="field flex min-w-0 flex-1 items-center gap-2 text-left hover:bg-panel-2"
-        >
-          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-panel-2 text-ink">
-            {known ? <MenuGlyph icon={value} size={14} /> : <Ban size={13} className="text-ink-3" aria-hidden="true" />}
-          </span>
-          {value ? (
-            <span className={cn('truncate font-mono', known ? 'text-ink' : 'text-danger')}>
-              {value}
-              {!known && ' (unknown key)'}
-            </span>
-          ) : (
-            <span className="truncate text-ink-3">{placeholder}</span>
-          )}
-        </button>
-        {value && !disabled && (
-          <IconButton label={`Clear ${label.toLowerCase()}`} className="btn-icon-sm" onClick={() => onChange('')}>
-            <X size={13} aria-hidden="true" />
-          </IconButton>
-        )}
-      </div>
-      <Popover anchor={anchor} title="Icon" onClose={close}>
-        <IconPicker
-          value={value}
-          onChange={(icon) => {
-            onChange(icon)
-            close()
-          }}
-        />
-      </Popover>
-    </div>
-  )
 }
 
 const KIND_LABEL: Record<MenuItemDef['kind'], string> = {

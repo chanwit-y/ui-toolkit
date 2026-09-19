@@ -1,9 +1,11 @@
 import { AlertTriangle } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
-import { useProjectEndpoints } from '../Library/scope'
-import { Input, Select, SegmentedControl } from '../common'
+import { OptionRow } from '@gummy-ui/ui'
+import { useProjectEndpoints, useProjectModels } from '../Library/scope'
+import { FieldPicker, IconField, Input, Select, SegmentedControl } from '../common'
 import { useGridStore } from './gridStore'
 import { isSelectFamily, observeWarnings } from './observe'
+import { IMAGE_KINDS, rowFieldsFor, TEXT_KINDS } from './rowFields'
 import type { MultiAutocompleteConfig, SelectFieldConfig, SelectOption } from './types'
 
 /**
@@ -227,6 +229,116 @@ function ObserveToField({
   )
 }
 
+/** Reads an option record's image value the way the engine's `itemAvatar` does. */
+function previewAvatar(value: unknown, alt: string) {
+  if (typeof value === 'string') return value ? { src: value, alt } : null
+  if (value && typeof value === 'object' && 'src' in value) {
+    const v = value as { src: string; alt?: string; fallback?: string }
+    return { src: v.src, alt: v.alt || alt, fallback: v.fallback }
+  }
+  return null
+}
+
+/**
+ * One option as the dropdown will draw it — the library's own `OptionRow`, so the
+ * strip can't drift from the runtime. Static mode shows the first record; source
+ * mode has no rows on the canvas, so it shows the picked field names in ‹guillemets›.
+ */
+function OptionPreview({ config }: { config: SelectFieldConfig }) {
+  const first = config.mode === 'static' ? config.options[0] : undefined
+  const text = (key: string) =>
+    !key ? '' : first ? String(first[key] ?? '') : `‹${key}›`
+  const title = text(config.displayKey) || '(no title field)'
+  const avatar = !config.avatarKey
+    ? null
+    : first
+      ? previewAvatar(first[config.avatarKey], title)
+      : // No rows on the canvas: the runtime's own fallback, the title's initial.
+        { src: '', alt: config.displayKey || '?' }
+  return (
+    <div className="pointer-events-none rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink">
+      <OptionRow
+        title={title}
+        subtitle={text(config.subtitleKey) || null}
+        icon={(config.itemIcon || null) as never}
+        avatar={avatar}
+      />
+    </div>
+  )
+}
+
+/**
+ * How one option reads: its id/title/search/subtitle/image fields and the two
+ * icons. One flat key set for both modes (see the grilled option-display design)
+ * — the pickers list the static records' keys or the source endpoint's response
+ * row fields, and fall back to free text when neither resolves.
+ */
+function OptionDisplaySection({
+  config,
+  set,
+}: {
+  config: SelectFieldConfig
+  set: <K extends keyof SelectFieldConfig>(key: K, value: SelectFieldConfig[K]) => void
+}) {
+  const endpoints = useProjectEndpoints()
+  const models = useProjectModels()
+  const row = rowFieldsFor(config, endpoints, models)
+  const picker = (
+    key: 'idKey' | 'displayKey' | 'searchKey' | 'subtitleKey' | 'avatarKey',
+    label: string,
+    opts: { kinds: readonly string[]; allowNone?: boolean },
+  ) => (
+    <Field label={label}>
+      <FieldPicker
+        fields={row.fields}
+        value={config[key] ?? ''}
+        onChange={(v) => set(key, v)}
+        kinds={opts.kinds}
+        allowNone={opts.allowNone}
+        aria-label={label}
+      />
+    </Field>
+  )
+  return (
+    <div className="space-y-3 rounded-lg border border-line bg-panel p-3">
+      <h4 className="text-ui-sm font-semibold uppercase tracking-wide text-ink-3">
+        Option display
+      </h4>
+      {row.fields === null && <p className="text-ui-xs text-ink-3">{row.reason}</p>}
+      <div className="grid grid-cols-2 gap-2">
+        {picker('idKey', 'ID field', { kinds: TEXT_KINDS })}
+        {picker('searchKey', 'Search field', { kinds: TEXT_KINDS })}
+      </div>
+      {picker('displayKey', 'Title field', { kinds: TEXT_KINDS })}
+      <div className="space-y-1">
+        {picker('subtitleKey', 'Subtitle field', { kinds: TEXT_KINDS, allowNone: true })}
+        {config.subtitleKey && <p className="text-ui-xs text-ink-3">Also matched when searching.</p>}
+      </div>
+      <div className="space-y-1">
+        {picker('avatarKey', 'Image field', { kinds: IMAGE_KINDS, allowNone: true })}
+        {config.avatarKey && config.itemIcon && (
+          <p className="text-ui-xs text-ink-3">The image replaces the option icon on each row.</p>
+        )}
+      </div>
+      <IconField
+        label="Option icon"
+        value={config.itemIcon ?? ''}
+        onChange={(v) => set('itemIcon', v)}
+      />
+      <IconField
+        label="Input icon"
+        placeholder="Default (search) — click to choose"
+        value={config.inputIcon ?? ''}
+        onChange={(v) => set('inputIcon', v)}
+      />
+      <div className="space-y-1">
+        <span className="text-ui-sm font-medium text-ink-2">Option preview</span>
+        <OptionPreview config={config} />
+      </div>
+    </div>
+  )
+}
+
 type SelectFieldConfigPanelProps = {
   itemId: string
   config: SelectFieldConfig
@@ -234,8 +346,7 @@ type SelectFieldConfigPanelProps = {
   heading?: string
   /**
    * When true, render the multi-only controls (`maxSelections`, `showSelectedCount`).
-   * The `config` is then a `MultiAutocompleteConfig` superset; these knobs drive the
-   * studio preview only (not the exported Bin). Off for select/autocomplete.
+   * The `config` is then a `MultiAutocompleteConfig` superset. Off for select/autocomplete.
    */
   multi?: boolean
 }
@@ -336,29 +447,6 @@ export function SelectFieldConfigPanel({
             options={config.options}
             onCommit={(options) => set('options', options)}
           />
-          <div className="grid grid-cols-3 gap-2">
-            <Field label="ID key">
-              <Input
-                value={config.idKey}
-                onChange={(e) => set('idKey', e.target.value)}
-                className="font-mono"
-              />
-            </Field>
-            <Field label="Display key">
-              <Input
-                value={config.displayKey}
-                onChange={(e) => set('displayKey', e.target.value)}
-                className="font-mono"
-              />
-            </Field>
-            <Field label="Search key">
-              <Input
-                value={config.searchKey}
-                onChange={(e) => set('searchKey', e.target.value)}
-                className="font-mono"
-              />
-            </Field>
-          </div>
         </div>
       ) : (
         <div className="space-y-3">
@@ -378,22 +466,6 @@ export function SelectFieldConfigPanel({
               />
             </Field>
           )}
-          <div className="grid grid-cols-2 gap-2">
-            <Field label="Value key">
-              <Input
-                value={config.dataSource.valueKey}
-                onChange={(e) => setSource({ valueKey: e.target.value })}
-                className="font-mono"
-              />
-            </Field>
-            <Field label="Label key">
-              <Input
-                value={config.dataSource.labelKey}
-                onChange={(e) => setSource({ labelKey: e.target.value })}
-                className="font-mono"
-              />
-            </Field>
-          </div>
           <ObserveToField
             itemId={itemId}
             value={config.observeToItemId ?? ''}
@@ -401,6 +473,8 @@ export function SelectFieldConfigPanel({
           />
         </div>
       )}
+
+      <OptionDisplaySection config={config} set={set} />
 
       {multi && (
         <div className="space-y-3 rounded-lg border border-line bg-panel p-3">

@@ -24,6 +24,7 @@ import type {
 } from "react-hook-form";
 import type { SnackbarVariant } from "../Snackbar";
 import type { UploadFileContent, UploadValueFormat } from "../../util/file";
+import type { AcceptConfig } from "../../util/accept";
 import { DataContextType } from "../context/DataProvider";
 // import { DataState } from "../core/stord";
 import { TApiMaster } from "../../api/APIMaster";
@@ -65,10 +66,17 @@ export type BaseComponentProps<
   T extends Record<string, any> = {}
 > = T & ComponentPropsWithoutRef<U>;
 
-export type ButtonProps = BaseComponentProps<
-  typeof RadixButton,
+/**
+ * A button's visual weight: "contained" is the filled accent button,
+ * "outlined" an accent border on a clear surface, "text" the bare label.
+ */
+export type ButtonVariant = "contained" | "outlined" | "text";
+
+// Radix's own `variant` is omitted: ours names the same prop in its own vocabulary.
+export type ButtonProps = Omit<ComponentPropsWithoutRef<typeof RadixButton>, "variant"> &
   {
-    variant?: "solid" | "outline" | "ghost" | "link";
+    /** Visual weight. Defaults to "contained". */
+    variant?: ButtonVariant;
     label: string;
     icon?: keyof typeof IconData;
     color?: ThemeProps["accentColor"];
@@ -83,8 +91,7 @@ export type ButtonProps = BaseComponentProps<
     /** Target of the `"Navigate"` action. */
     navigate?: NavigateTarget;
     // useCount: UseBoundStore<StoreApi<DataState>>
-  }
->;
+  };
 
 export type DataType =
   | "date"
@@ -381,6 +388,7 @@ export type MultiAutocompleteProps<T extends Record<string, any> = {}> =
     {
       name?: string;
       label?: string;
+      subtitle?: string;
       placeholder?: string;
       helperText?: string;
       error?: boolean;
@@ -389,6 +397,9 @@ export type MultiAutocompleteProps<T extends Record<string, any> = {}> =
       size?: "1" | "2" | "3";
       radius?: "none" | "small" | "medium" | "large" | "full";
       inputIcon?: keyof typeof IconData | LucideIcon;
+      itemIcon?: keyof typeof IconData | LucideIcon | ((item: T) => keyof typeof IconData | LucideIcon);
+      itemSubtitle?: keyof T | ((item: T) => string);
+      itemAvatar?: keyof T | ((item: T) => string | { src: string; alt?: string; fallback?: string });
       options: T[];
       searchKey: keyof T;
       idKey: keyof T;
@@ -398,10 +409,12 @@ export type MultiAutocompleteProps<T extends Record<string, any> = {}> =
       onChange?: (values: string[]) => void;
       onBlur?: () => void;
       maxResults?: number;
+      maxHeight?: number | string;
       canObserve?: boolean;
       observeTo?: string;
       api?: APIFunction;
       apiInfo?: API;
+      enabledWhen?: CondExpression;
       maxSelections?: number;
       showSelectedCount?: boolean;
       fields?: any[];
@@ -557,6 +570,190 @@ export type DataTableEditableElement = {
   };
 };
 
+
+/* ------------------------------------------------------------ form list */
+
+/**
+ * `read` API of a {@link FormListElement}: the standard {@link API} shape —
+ * `params`/`query`/`body` are {@link DataValue} maps resolved at render time
+ * (`url` / `state` / `value`), so a list scoped to a parent record can read
+ * the parent id off the route. `paths` drills into the response to reach the
+ * row array. The list refetches when the resolved values change.
+ */
+export type FormListReadApiRef = API;
+
+/**
+ * `create` / `update` API of a {@link FormListElement}. `params` maps a URL
+ * `:param` to a **row field** (e.g. `{ id: "_id" }`), like the editable table;
+ * `extraParams` / `extraBody` / `query` are {@link DataValue} maps merged in
+ * from the route / global state / literals (the parent id on a create, say).
+ * The row's form values are the body; `extraBody` keys override them.
+ */
+export type FormListMutationApiRef = {
+  /** API name registered in ApiMaster. */
+  name: string;
+  /** URL/path parameter mapping: API param name -> row field. */
+  params?: Record<string, string>;
+  /** Extra URL/path params resolved from the route / state / literals. */
+  extraParams?: Record<string, DataValue>;
+  /** Extra body fields resolved from the route / state / literals. */
+  extraBody?: Record<string, DataValue>;
+  /** Query-string values resolved from the route / state / literals. */
+  query?: Record<string, DataValue>;
+  snackbarSuccess?: SnackbarElement;
+  snackbarError?: SnackbarElement | "$exception";
+};
+
+export type FormListDeleteApiRef = FormListMutationApiRef & {
+  confirmBox?: Pick<ConfirmBoxElement, "title" | "description">;
+};
+
+/** What a chrome button shows: its icon and label, the icon only, or the label only. */
+export type ButtonDisplay = "both" | "icon" | "label";
+
+/**
+ * Config-driven repeating form (Bin type `"formlist"`): `read` loads the rows,
+ * each row renders `rowContainer` as its **own** form (fields only — the
+ * component owns the Save / Remove / Add chrome), Save calls `create` for a
+ * draft or `update` for a persisted row (by `idKey`), Remove confirms then
+ * calls `delete` (a draft is just discarded). Every mutation refetches `read`,
+ * whose refetch is also registered under `name` for `reloadDataTable`. Drafts
+ * are local and render after the persisted rows, so a refetch never drops an
+ * unsaved sibling. Add appears only with `create`, Remove only with `delete`,
+ * and without `update` the persisted rows are read-only.
+ */
+export type FormListElement = {
+  name: string;
+  title?: string;
+  /** Row key holding the record id (draft = missing). Defaults to "id". */
+  idKey?: string;
+  /** The per-row form: fields only, the chrome is the component's. */
+  rowContainer: Container;
+  apiCrud: {
+    read: FormListReadApiRef;
+    create?: FormListMutationApiRef;
+    update?: FormListMutationApiRef;
+    delete?: FormListDeleteApiRef;
+  };
+  /** Add button label. Defaults to "Add". */
+  addLabel?: string;
+  /** Add button icon. Defaults to "puls". */
+  addIcon?: keyof typeof IconData;
+  /** Where the Add button sits: above the rows or below them. Defaults to "bottom". */
+  addPosition?: "top" | "bottom";
+  /** Horizontal alignment of the Add button. Defaults to "start". */
+  addAlign?: "start" | "center" | "end";
+  /**
+   * What the Add button shows. Defaults to "both". With "icon" the label
+   * becomes the button's accessible name and tooltip.
+   */
+  addDisplay?: ButtonDisplay;
+  /** Per-row save button label (tooltip). Defaults to "Save". */
+  saveLabel?: string;
+  /** Per-row remove button label. Defaults to "Remove". */
+  removeLabel?: string;
+  /** Per-row remove button icon. Defaults to "trash". */
+  removeIcon?: keyof typeof IconData;
+  /**
+   * Where a row's controls (Save + Remove) sit: beside the fields at the end
+   * (default) or start, or on their own line below the fields.
+   */
+  removePosition?: "start" | "end" | "below";
+  /** What the Remove button shows. Defaults to "both" (see `addDisplay`). */
+  removeDisplay?: ButtonDisplay;
+  /** Shown when `read` returns no rows and no draft is open. */
+  emptyText?: string;
+};
+
+/** Which caller segments an endpoint declares — the built API function takes
+ * them positionally in this order (see `ApiFactory`). */
+export type ApiSegments = { query: boolean; parameter: boolean; body: boolean };
+
+/** Resolved `read` config for {@link FormListProps}. */
+export type FormListReadApi = FormListReadApiRef & {
+  api: APIFunction;
+  /** Declared segments; omitted ⇒ `api(query? | params? | body?)` best effort. */
+  segments?: ApiSegments;
+  /** `:param` names in the endpoint URL; the read is held until all resolve. */
+  urlParams?: string[];
+};
+
+/** Resolved mutation config for {@link FormListProps}. */
+export type FormListMutationApi = FormListMutationApiRef & {
+  api: APIFunction;
+  segments?: ApiSegments;
+};
+
+export type FormListDeleteApi = FormListDeleteApiRef & FormListMutationApi;
+
+export type FormListApiConfig = {
+  read: FormListReadApi;
+  create?: FormListMutationApi;
+  update?: FormListMutationApi;
+  delete?: FormListDeleteApi;
+};
+
+export type FormListProps = Omit<FormListElement, "apiCrud"> & {
+  apiCrud: FormListApiConfig;
+  /** Renders the row template's bins (the same builder the engine uses). */
+  renderBins: (container: Container, form: any) => ReactNode;
+};
+
+/* -------------------------------------------------------------- repeater */
+
+/** Breakpoint spans of one repeated item, in the Bin's 12-column vocabulary. */
+export type RepeaterItemSpan = { sm: BoxRange; md: BoxRange; lg: BoxRange; xl: BoxRange };
+
+/**
+ * Config-driven read-only repeater (Bin type `"repeater"`): renders
+ * `itemContainer` once per item of an array and puts that item in scope, so
+ * the components inside bind to it through `type:"row"` {@link DataValue}s —
+ * `typography`/`text` `value`, `avatar` `srcValue`/`fallbackValue`, a
+ * `Navigate` button's params, and bin `condition`s (`{ key:"row", path }`,
+ * `{ key:"index" }`). `{ type:"row", key:"none" }` is the item itself.
+ *
+ * The array comes from exactly one source: `api` (own fetch — the standard
+ * {@link API} shape, `paths` drilling to the array, held until every URL
+ * `:param` resolves, refetch registered under `name` for `reloadDataTable`)
+ * or `items` (an array already in scope: a `state` slice, or a `row` field,
+ * which nests a repeater inside another's item).
+ *
+ * Items lay out on a 12-column grid by `itemSpan`; `itemSurface` draws a card
+ * around each and `itemNavigate` makes the whole item a link. Inputs inside
+ * the template are not supported — editable rows are `formlist`'s job.
+ */
+export type RepeaterElement = {
+  name: string;
+  title?: string;
+  /** Item key used as the React key. Defaults to "id"; falls back to the index. */
+  idKey?: string;
+  /** Own fetch. Exactly one of `api` / `items`. */
+  api?: API;
+  /** An array already in scope (`state` slice or `row` field). */
+  items?: DataValue;
+  /** The template rendered once per item. */
+  itemContainer: Container;
+  /** Per-breakpoint span of one item out of 12. Defaults to "12" everywhere (a list). */
+  itemSpan?: Partial<RepeaterItemSpan>;
+  /** Gap between items — Tailwind scale key or CSS length. Defaults to "4". */
+  gap?: string | number;
+  /** Card drawn around each item. Defaults to "none". */
+  itemSurface?: "none" | "outlined" | "elevation";
+  /** Padding inside the item surface — Tailwind scale key or CSS length. Defaults to "4" with a surface, else "0". */
+  itemPadding?: string | number;
+  /** Makes the whole item a link; `type:"row"` params read the item. */
+  itemNavigate?: NavigateTarget;
+  /** Shown when the source yields no items. */
+  emptyText?: string;
+};
+
+export type RepeaterProps = Omit<RepeaterElement, "api"> & {
+  /** `api` resolved against the ApiMaster. */
+  api?: FormListReadApi;
+  /** Renders the item template's bins with `ctx` as the bins' condition data. */
+  renderBins: (container: Container, ctx: Record<string, unknown>) => ReactNode;
+};
+
 export type PopoverProps = BaseComponentProps<
   "div",
   {
@@ -706,6 +903,8 @@ export type AutocompleteElement = {
   dataType: string;
   label: string;
   subtitle?: string;
+  placeholder?: string;
+  helperText?: string;
   canObserve: boolean;
   observeTo: string;
   // enabledWhen: ConditionTerm;
@@ -730,6 +929,10 @@ export type AutocompleteElement = {
   itemIcon?: keyof typeof IconData | LucideIcon | ((item: any) => keyof typeof IconData | LucideIcon);
   itemSubtitle?: keyof any | ((item: any) => string);
   itemAvatar?: keyof any | ((item: any) => string | { src: string; alt?: string; fallback?: string });
+  /** `multiAutocomplete` only. */
+  maxSelections?: number;
+  /** `multiAutocomplete` only. */
+  showSelectedCount?: boolean;
 };
 
 export type ColumnDef = {
@@ -915,6 +1118,8 @@ export type TextElement = BaseComponentProps<
   {
     text?: ReactNode;
     isLabel?: boolean;
+    /** Bound text (`row` / `state` / `url` / `value`); `text` is the fallback when it resolves empty. */
+    value?: DataValue;
   }
 >;
 
@@ -922,6 +1127,8 @@ export type TypographyElement = BaseComponentProps<
   "div",
   {
     text?: ReactNode;
+    /** Bound text (`row` / `state` / `url` / `value`); `text` is the fallback when it resolves empty. */
+    value?: DataValue;
     variant?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'body1' | 'body2' | 'subtitle1' | 'subtitle2' | 'caption' | 'overline' | 'button' | 'display1' | 'display2';
     component?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'p' | 'span' | 'div' | 'label';
     size?: '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9';
@@ -956,6 +1163,10 @@ export type AvatarProps = BaseComponentProps<
 
 export type AvatarElement = {
   name?: string;
+  /** Bound image URL — a string, or an object with a `src`/`url` field; `src` is the fallback. */
+  srcValue?: DataValue;
+  /** Bound fallback text (shown as initials when there is no image); `fallback` is the fallback. */
+  fallbackValue?: DataValue;
 } & AvatarProps;
 
 export type UploadApiConfig = {
@@ -1033,14 +1244,31 @@ export type UploadFileProps = BaseComponentProps<
     isRequired?: boolean;
     error?: boolean;
     errorMessage?: string;
-    /** Accepted file types passed to the file input (e.g. ".pdf,.docx"). */
-    accept?: string;
-    /** Allow selecting multiple files. Defaults to false. */
+    /**
+     * Accepted file types: a comma list or an array mixing presets ("image",
+     * "pdf", "document", "spreadsheet", "presentation", "text", "archive",
+     * "audio", "video") with raw tokens (".dwg", "image/png"). Filters the
+     * file dialog and is enforced on pick / drop; files that don't match are
+     * skipped and reported.
+     */
+    accept?: AcceptConfig;
+    /**
+     * Allow selecting multiple files. Defaults to false: a single file, which
+     * replaces the dropzone once picked (Replace / Remove on the file itself).
+     * The value is an array in both modes.
+     */
     multiple?: boolean;
     /** Maximum number of files when multiple is enabled. */
     maxFiles?: number;
     /** Maximum file size in megabytes (per file). */
     maxSizeMB?: number;
+    /**
+     * Image thumbnails, file-type icons and a click-to-open viewer (images,
+     * PDF, video, audio, text). Defaults to true; false lists plain rows.
+     */
+    preview?: boolean;
+    /** "list" (default): rows with a thumbnail. "grid": square cards. */
+    previewLayout?: "list" | "grid";
     isFullWidth?: boolean;
     width?: number;
     disabled?: boolean;
@@ -1114,6 +1342,8 @@ export type TElement =
   | CheckboxElement
   | DataTableElement
   | DataTableEditableElement
+  | FormListElement
+  | RepeaterElement
   | DatePickerElement
   | DateRangePickerElement
   | DateTimePickerElement
@@ -1136,6 +1366,8 @@ export type BinType =
   | "button"
   | "datatable"
   | "datatableeditable"
+  | "formlist"
+  | "repeater"
   | "autocomplete"
   | "textfield"
   | "select"
@@ -1378,6 +1610,8 @@ export type SnackbarElement = {
 export type ButtonElement = {
   label: string;
   icon?: keyof typeof IconData;
+  /** Visual weight: "contained" (default), "outlined" or "text". */
+  variant?: ButtonVariant;
   confirmBox?: ConfirmBoxElement;
   reloadDataTable?: string;
   actions: ButtonAction[];

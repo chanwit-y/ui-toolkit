@@ -3,6 +3,9 @@ import {
   containerCountryList,
   containerCountryStateDetail,
 } from "./container";
+import { containerFormListDemo } from "./formListDemo";
+import { containerRepeaterDemo } from "./repeaterDemo";
+import { containerUploadDemo } from "./uploadDemo";
 
 /**
  * Router demo: the pages the example app serves, keyed by name. Navigating
@@ -33,6 +36,31 @@ export const pages = {
     parent: "countryList",
     title: { type: "state", key: "countryDetail", path: "name" },
     containers: containerCountryStateDetail,
+  },
+  formListDemo: {
+    // The `formlist` component on its own: a full-CRUD list and a
+    // create-and-delete-only one (see ./formListDemo.ts).
+    path: "/form-list",
+    parent: "countryList",
+    title: "Form list",
+    containers: containerFormListDemo,
+  },
+  repeaterDemo: {
+    // The read-only `repeater`: a card grid that links to the detail page and
+    // a nested repeater over a row field (see ./repeaterDemo.ts).
+    path: "/repeater",
+    parent: "countryList",
+    title: "Repeater",
+    containers: containerRepeaterDemo,
+  },
+  uploadDemo: {
+    // The `uploadfile` config on its own: single / multiple, accept presets
+    // and the list / grid preview with its viewer (see ./uploadDemo.ts).
+    // Not `/upload`: the dev server proxies that prefix to the API.
+    path: "/file-upload",
+    parent: "countryList",
+    title: "Upload",
+    containers: containerUploadDemo,
   },
 } satisfies TPageMaster;
 

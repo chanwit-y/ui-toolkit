@@ -19,6 +19,8 @@ export class Autocomplete<M extends TModelMaster, A extends TApiMaster<M>>
       form: this._context.form,
       label: props.label,
       subtitle: props.subtitle,
+      placeholder: props.placeholder,
+      helperText: props.helperText,
       searchKey: props.keys.search,
       idKey: props.keys.id,
       displayKey: props.keys.display,
@@ -53,7 +55,10 @@ export class MultiAutocomplete<M extends TModelMaster, A extends TApiMaster<M>>
     return createElement(MultiAutocompleteComponent, {
       name: props.name,
       form: this._context.form,
-      placeholder: "Choose multiple items...",
+      label: props.label,
+      subtitle: props.subtitle,
+      placeholder: props.placeholder || "Choose multiple items...",
+      helperText: props.helperText,
       searchKey: props.keys.search,
       idKey: props.keys.id,
       displayKey: props.keys.display,
@@ -63,9 +68,17 @@ export class MultiAutocomplete<M extends TModelMaster, A extends TApiMaster<M>>
       observeTo: props.observeTo,
       apiInfo: props.api,
 
+      enabledWhen: props.enabledWhen,
+
       // defaultData: props.defaultData ?? {},
-      options: [], // Add required options property
+      options: props.options ?? [],
+      maxHeight: props.maxHeight,
+      maxSelections: props.maxSelections,
+      showSelectedCount: props.showSelectedCount,
       inputIcon: props.inputIcon,
+      itemIcon: props.itemIcon,
+      itemSubtitle: props.itemSubtitle as any,
+      itemAvatar: props.itemAvatar as any,
     });
   }
 }

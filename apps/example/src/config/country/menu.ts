@@ -8,6 +8,9 @@ import type { TMenu } from "@gummy-ui/ui";
  */
 export const menu: TMenu = [
   { label: "Countries", icon: "globe", navigate: { page: "countryList" } },
+  { label: "Form list", icon: "list", navigate: { page: "formListDemo" } },
+  { label: "Repeater", icon: "grid", navigate: { page: "repeaterDemo" } },
+  { label: "Upload", icon: "upload", navigate: { page: "uploadDemo" } },
   {
     label: "Shortcuts",
     icon: "bookmark",

@@ -21,6 +21,8 @@ import {
   TypographyConfigPanel,
 } from './DisplayConfigPanel'
 import { FieldConfigPanel } from './FieldConfigPanel'
+import { FormListConfigPanel } from './FormListConfigPanel'
+import { RepeaterConfigPanel } from './RepeaterConfigPanel'
 import { useBreadcrumb, useGridStore, useSelectedItem, type SidebarView } from './gridStore'
 import { RadioConfigPanel } from './RadioConfigPanel'
 import { SelectFieldConfigPanel } from './SelectFieldConfigPanel'
@@ -36,6 +38,8 @@ import type {
   DataTableEditableConfig,
   DateConfig,
   DividerConfig,
+  FormListConfig,
+  RepeaterConfig,
   HiddenConfig,
   ModalConfig,
   PaperConfig,
@@ -219,6 +223,16 @@ export function Sidebar({ gridConfigJson, fullGridCss }: SidebarProps) {
             <DataTableEditableConfigPanel
               itemId={selectedItem.id}
               config={selectedItem.config as DataTableEditableConfig}
+            />
+          ) : selectedItem.type === 'formlist' && selectedItem.config ? (
+            <FormListConfigPanel
+              itemId={selectedItem.id}
+              config={selectedItem.config as FormListConfig}
+            />
+          ) : selectedItem.type === 'repeater' && selectedItem.config ? (
+            <RepeaterConfigPanel
+              itemId={selectedItem.id}
+              config={selectedItem.config as RepeaterConfig}
             />
           ) : selectedItem.type === 'text' && selectedItem.config ? (
             <TextConfigPanel

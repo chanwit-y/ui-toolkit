@@ -15,6 +15,7 @@ export { RadioButtonBase } from "./components/RadioButton";
 // the engine Button renders through this, so the preview can't drift.
 export { ButtonBase } from "./components/Button";
 export type { ButtonBaseProps } from "./components/Button";
+export type { ButtonVariant } from "./components/@types";
 // The curated lucide glyph map ButtonElement.icon keys into (studio icon picker).
 export { IconData } from "./components/core/const/iconData";
 export type { CheckboxProps, CheckboxElement } from "./components/@types";
@@ -26,6 +27,10 @@ export * from "./components/Autocomplete2";
 // studio canvas). Like Autocomplete2 it calls useCore, so it needs CoreProvider.
 export { MultiAutocompleteBase } from "./components/MultiAutocomplete";
 export type { MultiAutocompleteProps } from "./components/@types";
+// The option row (avatar/icon + title + subtitle) both autocompletes render — also
+// the studio's "Option preview" strip.
+export { OptionRow } from "./components/OptionRow";
+export type { OptionRowProps } from "./components/OptionRow";
 // Core context provider (observe table + Data/Query/Loading/Snackbar) — required
 // by engine-aware components like Autocomplete2 when used outside the engine
 // (e.g. the studio canvas live preview).
@@ -63,6 +68,24 @@ export type {
 	CrudDeleteApiRef,
 	DataTableEditableElement,
 } from "./components/@types";
+export * from "./components/FormList";
+export type {
+	FormListElement,
+	FormListProps,
+	FormListApiConfig,
+	FormListReadApi,
+	FormListReadApiRef,
+	FormListMutationApi,
+	FormListMutationApiRef,
+	FormListDeleteApi,
+	FormListDeleteApiRef,
+	ApiSegments,
+	ButtonDisplay,
+} from "./components/@types";
+export * from "./components/Repeater";
+export type { RepeaterElement, RepeaterProps, RepeaterItemSpan } from "./components/@types";
+export { RowScopeProvider, useRowScope, useDataValue } from "./components/core/rowScope";
+export type { RowScope } from "./components/core/rowScope";
 export * from "./components/Icon";
 // export * from "./components/Icon.example";
 export * from "./components/Modal";
@@ -102,6 +125,7 @@ export type {
 	UploadApiConfig,
 } from "./components/@types";
 export * from "./util/file";
+export * from "./util/accept";
 export { uploadFileToApi, deleteFileFromApi } from "./util/uploadApi";
 
 export * from "./components/RadioButton2"

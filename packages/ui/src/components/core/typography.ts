@@ -4,6 +4,7 @@ import type { IElement, TypographyElement } from "../@types";
 import type { TApiMaster } from "../../api/APIMaster";
 import type { ElementContext } from "./elementBuilder";
 import type { TModelMaster } from "../../model/master";
+import { BoundTypography } from "./bound";
 
 export class Typography<M extends TModelMaster, A extends TApiMaster<M>>
   implements IElement
@@ -12,6 +13,7 @@ export class Typography<M extends TModelMaster, A extends TApiMaster<M>>
 
   create(): JSX.Element {
     const props = this._context.props as TypographyElement;
+    if (props.value) return createElement(BoundTypography, props);
     return createElement(TypographyComponent, {
       ...props,
       text: props.text,

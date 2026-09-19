@@ -1,11 +1,11 @@
-import type { ButtonItemConfig, DataTableConfig, GridItemData } from './types'
+import type { ButtonItemConfig, DataTableConfig, GridItemData, RepeaterConfig } from './types'
 
 /**
  * Deep-clone a canvas tree with fresh ids (the mockup's `instantiate`): every
  * item and nested child canvas gets a new id, and the stable-id references a
  * button carries (modal to close, table to reload, toast / dialog to show) are
  * remapped onto the copies. Page navigation (a button's `navigate` target, a
- * table's row click) is dropped — a template is project-agnostic and the
+ * table's row click, a repeater's item click) is dropped — a template is project-agnostic and the
  * target page would not exist here. Used to insert a template into a page
  * and to save a page as a template.
  */
@@ -37,6 +37,8 @@ export function cloneItems(items: GridItemData[]): GridItemData[] {
       } else if (item.type === 'datatable' && item.config) {
         const t = item.config as DataTableConfig
         if (t.rowNavigate) delete t.rowNavigate
+      } else if (item.type === 'repeater' && item.config) {
+        ;(item.config as RepeaterConfig).itemNavigate = null
       }
       item.childCanvases?.forEach((c) => remap(c.items))
     }

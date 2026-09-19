@@ -4,6 +4,7 @@ import type { IElement, AvatarElement } from "../@types";
 import type { TApiMaster } from "../../api/APIMaster";
 import type { ElementContext } from "./elementBuilder";
 import type { TModelMaster } from "../../model/master";
+import { BoundAvatar } from "./bound";
 
 export class Avatar<M extends TModelMaster, A extends TApiMaster<M>>
   implements IElement
@@ -12,6 +13,19 @@ export class Avatar<M extends TModelMaster, A extends TApiMaster<M>>
 
   create(): JSX.Element {
     const props = this._context.props as AvatarElement;
+    if (props.srcValue || props.fallbackValue) {
+      return createElement(BoundAvatar, {
+        src: props.src,
+        alt: props.alt,
+        size: props.size,
+        fallback: props.fallback,
+        className: props.className,
+        loading: props.loading,
+        onError: props.onError,
+        srcValue: props.srcValue,
+        fallbackValue: props.fallbackValue,
+      });
+    }
     return createElement(AvatarComponent, {
       src: props.src,
       alt: props.alt,

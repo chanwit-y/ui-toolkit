@@ -8,15 +8,18 @@ import {
 	type CSSProperties,
 	type ElementRef
 } from "react";
-import type { MultiAutocompleteProps } from "./@types";
+import type { MultiAutocompleteProps, Obs } from "./@types";
 import { Box, Text } from "@radix-ui/themes";
 import { cn } from "../util/utils";
-import { AlertCircle, Check, ChevronDown, Search, X, type LucideIcon } from "lucide-react";
-import { IconData } from "./core/const/iconData";
+import { AlertCircle, Check, ChevronDown, Search, X } from "lucide-react";
 import { useCore } from "./core/context";
 import { debounce, distinct, interval, Subject, switchMap } from "rxjs";
 import { isEmpty } from "lodash";
 import { useObservableCleanup } from "../hooks";
+import { ConditionExpression } from "./core/expression";
+import { useData } from "./context/DataProvider";
+import { OptionRow, matchesOptionQuery, resolveIcon, resolveItemAvatar, resolveItemIcon, resolveItemSubtitle } from "./OptionRow";
+import { OptionSearch, OPTION_SEARCH_HEIGHT } from "./OptionSearch";
 
 const createMultiAutocomplete = <T extends Record<string, any>>() => {
 	return forwardRef<
@@ -24,9 +27,13 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 		MultiAutocompleteProps<T> & { onChange?: (values: string[]) => void }
 	>(({
 		label,
+		subtitle,
 		name,
 		placeholder,
 		inputIcon,
+		itemIcon,
+		itemSubtitle,
+		itemAvatar,
 		options,
 		searchKey,
 		idKey,
@@ -36,11 +43,13 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 		error,
 		errorMessage,
 		maxResults,
+		maxHeight = 280,
 		className,
 		canObserve,
 		observeTo,
 		api,
 		apiInfo,
+		enabledWhen,
 		maxSelections,
 		showSelectedCount = true,
 		onValuesChange,
@@ -64,6 +73,7 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 		const [triggerElement, setTriggerElement] = useState<HTMLButtonElement | null>(null);
 		const [observeData, setObserveData] = useState<unknown>();
 		const [internalValues, setInternalValues] = useState<string[]>(values);
+		const [isObserveEnabled, setIsObserveEnabled] = useState(true);
 
 		const dropdownRef = useRef<HTMLDivElement>(null);
 		const dropdownContainerRef = useRef<HTMLDivElement>(null);
@@ -87,8 +97,8 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 		const filteredItems = useMemo(() => {
 			if (!query.trim()) return items;
 
-			return items.filter(item => item[searchKey].toLowerCase().includes(query.toLowerCase()))
-		}, [query, items, searchKey])
+			return items.filter(item => matchesOptionQuery(item, query, searchKey, itemSubtitle))
+		}, [query, items, searchKey, itemSubtitle])
 
 		const hasError = useMemo(() => error && !!errorMessage, [error, errorMessage]);
 		const displayHelperText = useMemo(() => hasError ? errorMessage : helperText, [hasError, errorMessage, helperText]);
@@ -99,7 +109,8 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 
 		const fetchData = useCallback((text: string) => {
 			const q = Object.entries(apiInfo?.query ?? {}).reduce((acc, [key, value]) => {
-				return { ...acc, [key]: value.type === "value" ? value.value : undefined }
+				// Same as Autocomplete2: a `value` entry with no literal carries the typed text.
+				return { ...acc, [key]: value.type === "value" ? (value.value !== undefined ? value.value : text) : undefined }
 			}, {})
 			if (observeTo !== "") {
 				if (!isEmpty(apiInfo?.params)) {
@@ -130,6 +141,19 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 				)
 			} else return undefined
 		}, [subject, apiInfo, fetchData, observeData])
+
+		const { contextData: ctx } = useData()
+
+		useObservableCleanup(
+			enabledWhen ? getDataValue({ key: (enabledWhen.left as Obs).key, type: "observe" }) : null,
+			(data: unknown) => {
+				if (enabledWhen) {
+					const result = (!(new ConditionExpression(ctx).expression({ ...enabledWhen, left: { val: data } })));
+					setIsObserveEnabled(result)
+				}
+			},
+			[enabledWhen, ctx]
+		)
 
 		const handleValuesChange = useCallback((newValues: string[]) => {
 			setInternalValues(newValues);
@@ -182,9 +206,8 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 
 			const viewportPadding = 8;
 			const triggerGap = 4;
-			const dropdownHeaderHeight = 44;
-			const maxHeight = 280;
-			const preferredListHeight = Math.max(120, maxHeight - dropdownHeaderHeight);
+			const dropdownHeaderHeight = OPTION_SEARCH_HEIGHT;
+			const preferredListHeight = typeof maxHeight === "number" ? Math.max(120, maxHeight - dropdownHeaderHeight) : 236;
 			const minListHeight = 80;
 			const estimatedDropdownHeight = dropdownHeaderHeight + preferredListHeight;
 
@@ -216,7 +239,7 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 
 			setDropdownStyles(styles);
 			setDropdownListMaxHeight(computedListHeight);
-		}, [triggerElement]);
+		}, [maxHeight, triggerElement]);
 
 		const openDropdown = useCallback(() => {
 			if (!isOpen) {
@@ -373,6 +396,8 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 		}, [selectedItems, displayKey, placeholder, showSelectedCount]);
 
 		const isMaxReached = maxSelections ? internalValues.length >= maxSelections : false;
+		const InputIconComponent = resolveIcon(inputIcon) ?? Search;
+		const maxChips = showSelectedCount ? 10 : 6;
 
 		return <Box className="w-full" >
 			{
@@ -385,10 +410,18 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 					</Text>
 				)
 			}
+			{
+				subtitle && (
+					<Text size="1" className="block mb-1 text-gray-600 dark:text-gray-400">
+						{subtitle}
+					</Text>
+				)
+			}
 			<div className="relative mb-2" ref={dropdownRef}>
 				<button
 					ref={setTriggerButtonRef}
 					onClick={openDropdown}
+					disabled={!isObserveEnabled}
 					className={cn("w-full min-h-[40px] px-4 py-2 text-sm flex items-center justify-between",
 						"bg-white dark:bg-gray-900 border rounded-md shadow-sm transition-all duration-200",
 						"text-left focus:ring-2 focus:ring-[var(--accent-8,#3b82f6)] focus:border-transparent",
@@ -400,23 +433,11 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 					{...props}
 				>
 					<div className="flex flex-1 min-w-0 items-center gap-3">
-						{(() => {
-							let IconComponent: LucideIcon;
-							if (inputIcon) {
-								if (typeof inputIcon === 'string') {
-									IconComponent = IconData[inputIcon as keyof typeof IconData] as LucideIcon || Search;
-								} else {
-									IconComponent = inputIcon;
-								}
-							} else {
-								IconComponent = Search;
-							}
-							return <IconComponent className="h-4 w-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />;
-						})()}
+						<InputIconComponent className="h-4 w-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />
 						<div className="flex-1 min-w-0">
 							{selectedItems.length > 0 && (
 								<div className="flex flex-wrap gap-1 mb-1 max-h-24 overflow-y-auto">
-									{selectedItems.slice(0, showSelectedCount ? 10 : 6).map((item) => (
+									{selectedItems.slice(0, maxChips).map((item) => (
 										<span
 											key={item[idKey]}
 											className="flex items-center justify-between gap-1 px-2 py-1 bg-[var(--accent-3,#dbeafe)] text-[var(--accent-12,#1e40af)] text-xs rounded-md max-w-[120px] border border-[var(--accent-6,#bfdbfe)]"
@@ -431,9 +452,9 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 											</button>
 										</span>
 									))}
-									{selectedItems.length > (showSelectedCount ? 10 : 6) && (
+									{selectedItems.length > maxChips && (
 										<span className="text-xs text-gray-500 dark:text-gray-400 flex items-center">
-											+{selectedItems.length - (showSelectedCount ? 4 : 6)} more
+											+{selectedItems.length - maxChips} more
 										</span>
 									)}
 								</div>
@@ -453,32 +474,20 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 				<div
 					ref={dropdownContainerRef}
 					style={dropdownStyles}
-					className="flex flex-col bg-white dark:bg-gray-900 border ring-2 ring-[var(--accent-8,#60a5fa)] border-transparent rounded-md shadow-lg overflow-hidden ease-in duration-100 opacity-100 z-[100000]"
+					className="flex flex-col bg-[var(--color-panel-solid)] border border-[var(--gray-a6)] rounded-md shadow-lg overflow-hidden ease-in duration-100 opacity-100 z-[100000]"
 				>
-					<div className="flex items-center border-b border-gray-100 dark:border-gray-800 px-3">
-						<Search className="h-4 w-4 text-gray-400 dark:text-gray-500 mr-2" />
-						<input
-							type="text"
-							ref={searchInputRef}
-							value={query}
-							onChange={(e) => {
-								setQuery(e.target.value);
-								subject && subject.next(e.target.value);
-							}}
-							onKeyDown={handleKeyDown}
-							placeholder="Type to search..."
-							className="flex-1 py-2 text-sm border-none outline-none bg-transparent placeholder:text-gray-400 dark:placeholder:text-gray-500"
-						/>
-						{query && (
-							<button
-								onClick={() => setQuery('')}
-								className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
-							>
-								<X className="h-3 w-3 text-gray-400 dark:text-gray-500" />
-							</button>
-						)}
-
-					</div>
+					<OptionSearch
+						ref={searchInputRef}
+						value={query}
+						onChange={(text) => {
+							setQuery(text);
+							subject && subject.next(text);
+						}}
+						onKeyDown={handleKeyDown}
+						listboxId={listboxId}
+						loading={false}
+						resultCount={filteredItems.length}
+					/>
 					<div
 						id={listboxId}
 						className="flex-1 min-h-0 overflow-auto py-1"
@@ -506,7 +515,12 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 												: "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800",
 										isCurrent ? "bg-[var(--accent-3,#eff6ff)] text-[var(--accent-11,#1d4ed8)] font-semibold" : ""
 									)}>
-									{item[displayKey]}
+									<OptionRow
+										title={String(item[displayKey] ?? "")}
+										subtitle={resolveItemSubtitle(item, itemSubtitle)}
+										icon={resolveItemIcon(item, itemIcon)}
+										avatar={resolveItemAvatar(item, itemAvatar, displayKey)}
+									/>
 									{isCurrent && (<Check className="h-4 w-4 text-[var(--accent-11,#2563eb)] ml-2 flex-shrink-0" />)}
 								</button>)
 							})}

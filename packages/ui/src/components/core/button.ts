@@ -22,6 +22,7 @@ export class Button<M extends TModelMaster, A extends TApiMaster<M>>
     return createElement(ElementButton, {
       label: props.label,
       icon: props.icon,
+      variant: props.variant,
       actions: props.actions,
       api: this._context.api,
       snackbarSuccess: props.snackbarSuccess,

@@ -21,7 +21,8 @@ import {
   UploadFileBase,
   UploadImageBase,
 } from '@gummy-ui/ui'
-import type { IconData, TypographyProps } from '@gummy-ui/ui'
+import { IconData } from '@gummy-ui/ui'
+import type { TypographyProps, UploadedFile } from '@gummy-ui/ui'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import {
@@ -43,12 +44,14 @@ import {
   PanelTop,
   Phone,
   Pilcrow,
+  Plus,
   Search,
   SeparatorHorizontal,
   SquareCheck,
   StickyNote,
   Table,
   TextWrap,
+  Trash2,
   Type,
   Upload,
   User,
@@ -62,6 +65,7 @@ import { renderDesignPreview } from './DesignPreviews'
 import { elementStyleVars, hasElementStyle, isDesignOnly } from './designTypes'
 import { ENTER_DURATION_MS, prefersReducedMotion, UPGRADE_FADE_MS } from './gridAnimation'
 import { useGridStore, useIsEntering } from './gridStore'
+import { bindingToken } from './ItemBindingField'
 import type {
   AvatarConfig,
   ButtonConfig,
@@ -73,6 +77,8 @@ import type {
   DataTableEditableConfig,
   DateConfig,
   DividerConfig,
+  FormListConfig,
+  RepeaterConfig,
   GridItemData,
   ModalConfig,
   MultiAutocompleteConfig,
@@ -88,6 +94,7 @@ import type {
   UploadFileConfig,
   UploadImageConfig,
 } from './types'
+import { uploadAccept } from './types'
 import { escapeClassName } from './utils'
 
 type GridItemProps = {
@@ -133,7 +140,8 @@ const ALWAYS_LIVE: LiveThresholds = { liveMin: 0, chipMax: -1 }
 
 /** The live/chip thresholds for a given component kind. */
 function thresholdsForType(type: GridItemData['type']): LiveThresholds {
-  if (type === 'datatable' || type === 'datatableeditable') return TABLE_THRESHOLDS
+  if (type === 'datatable' || type === 'datatableeditable' || type === 'formlist')
+    return TABLE_THRESHOLDS
   if (
     type === 'divider' ||
     type === 'text' ||
@@ -143,6 +151,8 @@ function thresholdsForType(type: GridItemData['type']): LiveThresholds {
     // Overlays render only their trigger on the canvas — as cheap as a button.
     type === 'modal' ||
     type === 'popover' ||
+    // A repeater previews its item template like the other container hosts.
+    type === 'repeater' ||
     // Design-only kinds are the design itself — nothing heavier to gate.
     isDesignOnly(type)
   ) {
@@ -475,6 +485,10 @@ function SelectLivePreview({ config }: { config: SelectFieldConfig }) {
         idKey={config.idKey as never}
         displayKey={config.displayKey as never}
         searchKey={config.searchKey as never}
+        inputIcon={(config.inputIcon || undefined) as never}
+        itemIcon={(config.itemIcon || undefined) as never}
+        itemSubtitle={(config.subtitleKey || undefined) as never}
+        itemAvatar={(config.avatarKey || undefined) as never}
       />
     </div>
   )
@@ -486,8 +500,7 @@ function SelectLivePreview({ config }: { config: SelectFieldConfig }) {
  * Unlike `SelectLivePreview`, the options are fed in *both* modes (the config always
  * carries the static starter records) and the first option is pre-selected via
  * `values`, so a freshly-dropped source-mode cell still shows a removable chip —
- * making the "multi" nature read on the canvas. `maxSelections`/`showSelectedCount`
- * drive the preview only (the engine has no home for them). Options/keys are cast
+ * making the "multi" nature read on the canvas. Options/keys are cast
  * through `never`: the base's generic is fixed to `{ id, label }` for typing, but it
  * reads the keys off each record at runtime, so arbitrary record shapes work. Needs
  * the core providers from `App.tsx` (useCore).
@@ -513,6 +526,10 @@ function MultiAutocompleteLivePreview({ config }: { config: MultiAutocompleteCon
         idKey={config.idKey as never}
         displayKey={config.displayKey as never}
         searchKey={config.searchKey as never}
+        inputIcon={(config.inputIcon || undefined) as never}
+        itemIcon={(config.itemIcon || undefined) as never}
+        itemSubtitle={(config.subtitleKey || undefined) as never}
+        itemAvatar={(config.avatarKey || undefined) as never}
         maxSelections={config.maxSelections === '' ? undefined : config.maxSelections}
         showSelectedCount={config.showSelectedCount}
       />
@@ -691,12 +708,24 @@ function UploadImageLivePreview({ config }: { config: UploadImageConfig }) {
 /**
  * The live, real `<UploadFileBase>` from the library, rendered in-cell once the
  * cell is wide enough. Inert (`pointer-events-none`) like the other previews — the
- * dropzone shows its empty state with no files listed. `multiple` flips the prompt
- * copy ("a file" ↔ "files"); `maxFiles` only matters in multi mode. UploadFile owns
+ * dropzone is fed `UPLOAD_SAMPLE_FILES` so the preview layout is visible: both in
+ * multi mode, one in single mode (where the file card replaces the dropzone). UploadFile owns
  * its `isRequired` prop (asterisk), so it's passed through, not baked into the label.
  * `isFullWidth` is forced so the cell owns sizing. Empty `accept`/`maxFiles`/`maxSizeMB`
  * fall back to the component's defaults.
  */
+/** Stand-in files so the cell shows the preview settings (list / grid, thumbnails,
+ * the single-mode file card). Canvas-only — never part of the config or export. */
+const UPLOAD_SAMPLE_FILES: UploadedFile[] = [
+  {
+    name: 'Photo.svg',
+    size: 248_000,
+    type: 'image/svg+xml',
+    data: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA4MCA4MCI+PHJlY3Qgd2lkdGg9IjgwIiBoZWlnaHQ9IjgwIiBmaWxsPSIjY2JkNWUxIi8+PGNpcmNsZSBjeD0iNTYiIGN5PSIyNCIgcj0iOSIgZmlsbD0iI2Y4ZmFmYyIvPjxwYXRoIGQ9Ik0wIDY0bDI0LTI2IDE4IDE4IDEyLTEyIDI2IDI2djEwSDB6IiBmaWxsPSIjNjQ3NDhiIi8+PC9zdmc+',
+  },
+  { name: 'Report.pdf', size: 1_340_000, type: 'application/pdf', data: '' },
+]
+
 function UploadFileLivePreview({ config }: { config: UploadFileConfig }) {
   return (
     <div
@@ -709,10 +738,13 @@ function UploadFileLivePreview({ config }: { config: UploadFileConfig }) {
         isRequired={config.isRequired}
         error={!!config.errorMessage}
         errorMessage={config.errorMessage}
-        accept={config.accept || undefined}
+        accept={uploadAccept(config)}
         multiple={config.multiple}
         maxFiles={config.maxFiles === '' ? undefined : config.maxFiles}
         maxSizeMB={config.maxSizeMB === '' ? undefined : config.maxSizeMB}
+        preview={config.preview}
+        previewLayout={config.previewLayout}
+        value={config.multiple ? UPLOAD_SAMPLE_FILES : UPLOAD_SAMPLE_FILES.slice(0, 1)}
         valueFormat={config.valueFormat}
         isFullWidth
       />
@@ -906,7 +938,8 @@ function TextLivePreview({ config }: { config: TextConfig }) {
       data-grid-item-content
       className="pointer-events-none flex h-full w-full items-center px-3"
     >
-      <Text text={config.text} isLabel={config.isLabel} />
+      {/* A bound text shows its `{field}` token — real values appear in the Live Preview. */}
+      <Text text={config.binding ? bindingToken(config.binding) : config.text} isLabel={config.isLabel} />
     </div>
   )
 }
@@ -925,7 +958,7 @@ function TypographyLivePreview({ config }: { config: TypographyConfig }) {
     >
       <Typography
         className="w-full"
-        text={config.text}
+        text={config.binding ? bindingToken(config.binding) : config.text}
         variant={config.variant}
         weight={config.weight || undefined}
         color={(config.color || undefined) as TypographyProps['color']}
@@ -949,10 +982,10 @@ function AvatarLivePreview({ config }: { config: AvatarConfig }) {
       className="pointer-events-none flex h-full w-full items-center justify-center px-3"
     >
       <Avatar
-        src={config.src || undefined}
+        src={config.srcBinding ? undefined : config.src || undefined}
         alt={config.alt || undefined}
         size={config.size}
-        fallback={config.fallback || undefined}
+        fallback={config.srcBinding || config.fallbackBinding ? '{ }' : config.fallback || undefined}
       />
     </div>
   )
@@ -993,6 +1026,7 @@ function ButtonLivePreview({ config }: { config: ButtonConfig }) {
       <ButtonBase
         label={config.label}
         icon={(config.icon || undefined) as keyof typeof IconData | undefined}
+        variant={config.variant}
       />
     </div>
   )
@@ -1053,6 +1087,133 @@ function ContainerLivePreview({ canvas }: { canvas: ChildCanvas }) {
       className="pointer-events-none flex h-full w-full items-center px-3 py-2"
     >
       <ChildCanvasPreview canvas={canvas} />
+    </div>
+  )
+}
+
+/**
+ * A form list on the canvas: the title, one row of the row template (the
+ * child canvas, read-only) with the Remove control the real component draws
+ * beside every row, and the Add button. The real `FormList` needs an
+ * ApiMaster to fetch rows, so — like a modal's content — the rows are
+ * exercised in the Live Preview; here the chrome is what's previewed.
+ */
+function FormListLivePreview({ config, canvas }: { config: FormListConfig; canvas: ChildCanvas }) {
+  const glyph = (key: string, fallback: LucideIcon): LucideIcon =>
+    (key && (IconData as Record<string, LucideIcon>)[key]) || fallback
+  const AddGlyph = glyph(config.addIcon, Plus)
+  const RemoveGlyph = glyph(config.removeIcon, Trash2)
+  const below = config.removePosition === 'below'
+  const add = config.canCreate && (
+    <div
+      className={
+        config.addAlign === 'end'
+          ? 'flex justify-end'
+          : config.addAlign === 'center'
+            ? 'flex justify-center'
+            : 'flex justify-start'
+      }
+    >
+      <span
+        className={cn(
+          'inline-flex items-center gap-1.5 rounded-md border border-[var(--accent-8)] py-1.5 text-sm font-medium text-[var(--accent-11)]',
+          config.addDisplay === 'icon' ? 'px-2' : 'px-3',
+        )}
+        title={config.addLabel || 'Add'}
+      >
+        {config.addDisplay !== 'label' && <AddGlyph className="h-3.5 w-3.5" aria-hidden="true" />}
+        {config.addDisplay !== 'icon' && (config.addLabel || 'Add')}
+      </span>
+    </div>
+  )
+  const remove = config.canDelete && (
+    <span
+      className={cn(
+        'inline-flex shrink-0 items-center gap-1 text-sm text-slate-500 dark:text-gray-400',
+        below ? 'justify-end' : 'pt-7',
+      )}
+    >
+      {config.removeDisplay !== 'label' && <RemoveGlyph className="h-3.5 w-3.5" aria-hidden="true" />}
+      {config.removeDisplay !== 'icon' && (config.removeLabel || 'Remove')}
+    </span>
+  )
+  return (
+    <div data-grid-item-content className="pointer-events-none w-full px-3 py-2">
+      <div className="flex w-full flex-col gap-3">
+        {config.title && (
+          <h3 className="text-sm font-semibold text-slate-800 dark:text-gray-100">{config.title}</h3>
+        )}
+        {config.addPosition === 'top' && add}
+        <div className={below ? 'flex flex-col gap-2' : 'flex items-start gap-3'}>
+          {config.removePosition === 'start' && remove}
+          <div className="min-w-0 flex-1">
+            <ChildCanvasPreview canvas={canvas} />
+          </div>
+          {config.removePosition !== 'start' && remove}
+        </div>
+        {config.addPosition === 'bottom' && add}
+      </div>
+    </div>
+  )
+}
+
+/** A repeater gap / padding value as CSS: a Tailwind scale key (`4` → 1rem) or a raw length. */
+function scaleToCss(value: string, fallback: string): string {
+  const v = value.trim() || fallback
+  return /^\d+(\.\d+)?$/.test(v) ? `${Number(v) * 0.25}rem` : v
+}
+
+// The library `Repeater`'s item surfaces (Radix theme vars — the canvas sits
+// inside the library ThemeProvider, so they follow the project's appearance).
+const REPEATER_SURFACE_CLASS: Record<RepeaterConfig['itemSurface'], string> = {
+  none: '',
+  outlined: 'rounded-lg border border-[var(--gray-a6)] bg-[var(--color-panel-solid)]',
+  elevation: 'rounded-lg bg-[var(--color-panel-solid)] shadow-md',
+}
+
+/**
+ * A repeater on the canvas: the item template (the child canvas, read-only)
+ * once at full opacity, then faded ghost copies — enough for two rows at the
+ * previewed breakpoint's item span, capped at 6 — inside the real 12-column
+ * grid with the gap and item surface applied, so span / gap / surface edits
+ * show immediately. Bound cells show their `{field}` tokens; the real
+ * `Repeater` needs an ApiMaster to fetch items, so — like a form list's rows —
+ * real data is exercised in the Live Preview.
+ */
+function RepeaterLivePreview({ config, canvas }: { config: RepeaterConfig; canvas: ChildCanvas }) {
+  const bp = useGridStore((s) => s.previewBreakpoint)
+  const span = Math.min(12, Math.max(1, config.itemSpan[bp] ?? 12))
+  const perRow = Math.max(1, Math.floor(12 / span))
+  const copies = Math.min(6, Math.max(2, perRow * 2))
+  const padding = scaleToCss(config.itemPadding, config.itemSurface === 'none' ? '0' : '4')
+  return (
+    <div data-grid-item-content className="pointer-events-none w-full px-3 py-2">
+      <div className="flex w-full flex-col gap-3">
+        {config.title && (
+          <h3 className="text-sm font-semibold text-[var(--gray-12)]">{config.title}</h3>
+        )}
+        <div
+          className="w-full"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(12, minmax(0, 1fr))',
+            gap: scaleToCss(config.gap, '4'),
+          }}
+        >
+          {Array.from({ length: copies }, (_, i) => (
+            <div
+              key={i}
+              className={cn('min-w-0', i > 0 && 'opacity-40')}
+              style={{ gridColumn: `span ${span}` }}
+              aria-hidden={i > 0 || undefined}
+            >
+              <div className={cn('h-full', REPEATER_SURFACE_CLASS[config.itemSurface])} style={{ padding }}>
+                <ChildCanvasPreview canvas={canvas} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
@@ -1141,6 +1302,7 @@ function ModalLivePreview({ config }: { config: ModalConfig }) {
       <ButtonBase
         label={config.trigger.label}
         icon={(config.trigger.icon || undefined) as keyof typeof IconData | undefined}
+        variant={config.trigger.variant}
       />
     </div>
   )
@@ -1163,6 +1325,7 @@ function PopoverLivePreview({ config }: { config: PopoverConfig }) {
           icon={
             (config.triggerButton.icon || undefined) as keyof typeof IconData | undefined
           }
+          variant={config.triggerButton.variant}
         />
       ) : (
         <Text text={config.triggerText.text} isLabel={config.triggerText.isLabel} />
@@ -1247,6 +1410,22 @@ function renderLive(item: GridItemData, isLive: boolean) {
   }
   if (item.type === 'button' && item.config) {
     return <ButtonLivePreview config={item.config as ButtonConfig} />
+  }
+  if (item.type === 'formlist' && item.config && item.childCanvases?.[0]) {
+    return (
+      <FormListLivePreview
+        config={item.config as FormListConfig}
+        canvas={item.childCanvases[0]}
+      />
+    )
+  }
+  if (item.type === 'repeater' && item.config && item.childCanvases?.[0]) {
+    return (
+      <RepeaterLivePreview
+        config={item.config as RepeaterConfig}
+        canvas={item.childCanvases[0]}
+      />
+    )
   }
   if (item.type === 'container' && item.childCanvases?.[0]) {
     return <ContainerLivePreview canvas={item.childCanvases[0]} />

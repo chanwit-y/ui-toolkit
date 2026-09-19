@@ -7,6 +7,8 @@ import { Button } from "../button";
 import { Checkbox } from "../checkbox";
 import { DataTable } from "../dataTable";
 import { DataTableEditable } from "../dataTableEditable";
+import { FormList } from "../formList";
+import { Repeater } from "../repeater";
 import { Hidden } from "../hidden";
 import { Modal } from "../modal";
 import { Radio } from "../radio";
@@ -42,6 +44,8 @@ export const ElementData = {
 	multiAutocomplete: MultiAutocomplete,
 	datatable: DataTable,
 	datatableeditable: DataTableEditable,
+	formlist: FormList,
+	repeater: Repeater,
 	textfield: TextField,
 	textarea: Textarea,
 	checkbox: Checkbox,
