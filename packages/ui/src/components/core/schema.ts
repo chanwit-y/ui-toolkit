@@ -34,6 +34,10 @@ export class Schema {
 		const fields: Record<string, z.ZodTypeAny> = {};
 
 		boxes.forEach(box => {
+			// A form list's rows are independent forms (see FormListElement): its
+			// `name` is a binding key, not a field of the enclosing form.
+			// A repeater's template is read-only display, rendered once per item.
+			if (box.type === "formlist" || box.type === "repeater") return;
 			if (box.element) {
 				if (this.isTabElement(box.element)) {
 					box.element.tabs.forEach((tab) => {

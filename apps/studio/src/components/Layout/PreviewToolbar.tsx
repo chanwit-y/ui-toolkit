@@ -1,4 +1,4 @@
-import { Columns3, Play } from 'lucide-react'
+import { ArrowLeft, Columns3, Play } from 'lucide-react'
 import { Button, cn, IconButton, SegmentedControl } from '../common'
 import { useStudioStore } from '../studioStore'
 import { BreakpointSelector } from './BreakpointSelector'
@@ -49,6 +49,23 @@ function Breadcrumb() {
   )
 }
 
+/**
+ * Back to the page's main layout from any drill-in depth (a container, a
+ * repeater's item template, a tab inside a paper …). The breadcrumb beside it
+ * still steps to an intermediate ancestor; nothing renders at the top level.
+ */
+function BackToMainLayout() {
+  const isNested = useGridStore((s) => s.activePath.length > 0)
+  const exitToDepth = useGridStore((s) => s.exitToDepth)
+  if (!isNested) return null
+  return (
+    <Button title="Back to the page's main layout" onClick={() => exitToDepth(0)}>
+      <ArrowLeft size={14} aria-hidden="true" />
+      Main layout
+    </Button>
+  )
+}
+
 /** The mockup's "Page grid" seg, bound to the active canvas's column count at
  * the preview breakpoint. A value outside the presets (set from the inspector)
  * is shown as an extra option so the control always reflects the state. */
@@ -79,6 +96,7 @@ export function PreviewToolbar() {
 
   return (
     <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-line bg-panel px-2.5 py-[7px] @container">
+      <BackToMainLayout />
       <PageBar />
       <Breadcrumb />
 

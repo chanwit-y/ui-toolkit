@@ -2,7 +2,7 @@ import { Button as RadixButton, type ThemeProps } from '@radix-ui/themes';
 import { forwardRef, useCallback, useState, type ElementRef } from "react";
 import { useFormContext } from "react-hook-form";
 import { getErrorMessage } from "../util/error";
-import { ButtonAction, ButtonProps } from "./@types";
+import { ButtonAction, ButtonProps, ButtonVariant } from "./@types";
 import { ConfirmBox } from "./ConfirmBox";
 import { useLoading, useTheme } from "./context";
 import { useData } from "./context/DataProvider";
@@ -12,9 +12,19 @@ import Icon from "./Icon";
 import type { IconData } from "./core/const/iconData";
 import { useSnackbar } from "./Snackbar";
 
+// The Radix look behind each variant. "text" is Radix's ghost, whose negative
+// margins (meant for inline optical alignment) are reset so the button keeps
+// its own box inside a grid cell.
+const RADIX_VARIANTS = {
+	contained: "solid",
+	outlined: "outline",
+	text: "ghost",
+} as const satisfies Record<ButtonVariant, "solid" | "outline" | "ghost">;
+
 export type ButtonBaseProps = {
 	label: string;
 	icon?: keyof typeof IconData;
+	variant?: ButtonVariant;
 	color?: ThemeProps["accentColor"];
 	onClick?: React.MouseEventHandler<HTMLButtonElement>;
 };
@@ -25,12 +35,13 @@ export type ButtonBaseProps = {
  * `Button` renders through this, so the two can't drift.
  */
 const ButtonBase = forwardRef<ElementRef<typeof RadixButton>, ButtonBaseProps>(
-	({ label, icon, color, onClick }, ref) => {
+	({ label, icon, variant = "contained", color, onClick }, ref) => {
 		const theme = useTheme();
 		return (
 			<RadixButton
 				ref={ref}
-				className="cursor-pointer "
+				variant={RADIX_VARIANTS[variant] ?? "solid"}
+				className={variant === "text" ? "cursor-pointer !m-0" : "cursor-pointer"}
 				color={
 					(theme.components.button?.color as ThemeProps["accentColor"]) ||
 					color ||
@@ -52,6 +63,7 @@ const Button = forwardRef<ElementRef<typeof RadixButton>, ButtonProps>(({
 	actions,
 	api,
 	icon,
+	variant,
 	onClick,
 	snackbarSuccess,
 	snackbarError,
@@ -204,6 +216,7 @@ const Button = forwardRef<ElementRef<typeof RadixButton>, ButtonProps>(({
 		<ButtonBase
 			label={label}
 			icon={icon}
+			variant={variant}
 			color={color}
 			onClick={handleClick}
 		/>

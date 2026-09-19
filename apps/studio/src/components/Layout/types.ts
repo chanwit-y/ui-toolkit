@@ -129,12 +129,28 @@ export type SelectFieldConfig = {
   regexErrorMessage: string
   mode: 'static' | 'source'
   options: SelectOption[]
+  /**
+   * The option-display keys below are one flat set shared by both modes: they
+   * name fields of an option row, whether that row is a static record or a row of
+   * the `dataSource` response. `''` = unset for the optional ones.
+   */
   /** Which option-record key holds the stored value (Autocomplete2 `idKey`). */
   idKey: string
-  /** Which option-record key is shown in the list/trigger (`displayKey`). */
+  /** The option's title — shown in the list and the trigger (`displayKey`). */
   displayKey: string
   /** Which option-record key the type-ahead filters on (`searchKey`). */
   searchKey: string
+  /** Second line under the title (engine `itemSubtitle`); also matched by search. */
+  subtitleKey: string
+  /**
+   * Field holding an image URL or `{ src, alt, fallback }` (engine `itemAvatar`).
+   * Wins over `itemIcon` — a row has one leading visual.
+   */
+  avatarKey: string
+  /** `IconData` key shown in the trigger (engine `inputIcon`); `''` = the default search glyph. */
+  inputIcon: string
+  /** `IconData` key shown on every option row (engine `itemIcon`). */
+  itemIcon: string
   /**
    * Runtime data source (`source` mode): the API page endpoint, referenced by
    * `EndpointDef.id` (rename-safe like model refs; `null` = none picked) and
@@ -145,8 +161,6 @@ export type SelectFieldConfig = {
   dataSource: {
     endpointId: string | null
     paths: string
-    valueKey: string
-    labelKey: string
   }
   /**
    * `GridItemData.id` of another select-family item this one observes for a
@@ -164,8 +178,8 @@ export type SelectFieldConfig = {
  * record-array option model) plus the two multi-only knobs the base component adds:
  * `maxSelections` caps how many items can be chosen (`''` = unlimited, mirroring
  * `width`/`maxLength`), and `showSelectedCount` toggles the `(n/max)` label + chip
- * overflow. These two are honored in the studio preview only — the engine's
- * `AutocompleteElement` has no home for them, so they are not emitted to the Bin JSON.
+ * overflow. Both are exported on the `multiAutocomplete` element
+ * (`maxSelections` only when it is a number).
  */
 export type MultiAutocompleteConfig = SelectFieldConfig & {
   /** Max selectable items; `''` means unlimited. */
@@ -235,7 +249,11 @@ export function createDefaultSelectFieldConfig(name: string): SelectFieldConfig 
     idKey: 'id',
     displayKey: 'name',
     searchKey: 'name',
-    dataSource: { endpointId: null, paths: '', valueKey: '', labelKey: '' },
+    subtitleKey: '',
+    avatarKey: '',
+    inputIcon: '',
+    itemIcon: '',
+    dataSource: { endpointId: null, paths: '' },
     observeToItemId: '',
   }
 }
@@ -470,10 +488,24 @@ export type UploadImageConfig = {
   api: UploadApiSettings
 }
 
+/** Accept presets offered as chips. Mirrors the library's `AcceptPreset`. */
+export type UploadAcceptPreset =
+  | 'image'
+  | 'pdf'
+  | 'document'
+  | 'spreadsheet'
+  | 'presentation'
+  | 'text'
+  | 'archive'
+  | 'audio'
+  | 'video'
+
 /**
  * Editable config for a file upload. Maps onto the library's `UploadFileBase` /
- * engine `UploadFileElement`. `accept` is a comma list (e.g. `.pdf,.docx`);
- * `multiple` enables multi-file selection with an optional `maxFiles` cap (`''` =
+ * engine `UploadFileElement`. The engine `accept` is authored in two parts:
+ * `acceptPresets` (chips) plus `accept`, a comma list of extra raw types
+ * (e.g. `.dwg,.psd`) — see `uploadAccept`. `preview`/`previewLayout` drive the
+ * thumbnails + viewer. `multiple` enables multi-file selection with an optional `maxFiles` cap (`''` =
  * unset). `valueFormat`/`api` behave as in the image upload. `dataType` is fixed
  * to the engine's `any` on export (a file upload stores an array of files), so
  * isn't edited here.
@@ -484,12 +516,25 @@ export type UploadFileConfig = {
   helperText: string
   isRequired: boolean
   errorMessage: string
+  acceptPresets: UploadAcceptPreset[]
   accept: string
   multiple: boolean
   maxFiles: number | ''
   maxSizeMB: number | ''
+  preview: boolean
+  previewLayout: 'list' | 'grid'
   valueFormat: UploadValueFormat
   api: UploadApiSettings
+}
+
+/** The engine `accept` of a file upload: presets first, then the extra raw
+ * types. `undefined` when nothing is set (every file is accepted). */
+export function uploadAccept(
+  c: Pick<UploadFileConfig, 'acceptPresets' | 'accept'>,
+): string[] | undefined {
+  const extra = c.accept.split(',').map((t) => t.trim()).filter(Boolean)
+  const tokens = [...c.acceptPresets, ...extra]
+  return tokens.length > 0 ? tokens : undefined
 }
 
 /** Empty API wiring — surfaced only when `valueFormat` is `'api'`. */
@@ -516,7 +561,7 @@ export function createDefaultUploadImageConfig(name: string): UploadImageConfig 
 }
 
 /** Defaults for a freshly dropped file upload. Single-file, no accept filter,
- * dataUrl — matching UploadFileBase's own defaults. */
+ * list preview, dataUrl — matching UploadFileBase's own defaults. */
 export function createDefaultUploadFileConfig(name: string): UploadFileConfig {
   return {
     name,
@@ -524,10 +569,13 @@ export function createDefaultUploadFileConfig(name: string): UploadFileConfig {
     helperText: '',
     isRequired: false,
     errorMessage: '',
+    acceptPresets: [],
     accept: '',
     multiple: false,
     maxFiles: '',
     maxSizeMB: '',
+    preview: true,
+    previewLayout: 'list',
     valueFormat: 'dataUrl',
     api: createDefaultUploadApiSettings(),
   }
@@ -656,6 +704,155 @@ export function createDefaultDataTableConfig(name: string): DataTableConfig {
     deleteSnackbarSuccessType: 'success',
     deleteSnackbarSuccessMessage: '',
     deleteSnackbarErrorException: false,
+  }
+}
+
+/**
+ * One CRUD call of a form list (see the grilled design). `endpointId` is the
+ * API page ref (`null` = unwired). `params` holds one source per `:param` of
+ * the endpoint URL (seeded on pick, pruned at export): a `row` source maps the
+ * param to a row field (engine `params`), any other source resolves from the
+ * route / state / a literal (engine `extraParams`, or `params` on the read
+ * call — `row` isn't offered there). `extra` is a free-form key → source map:
+ * the read call's `query`, a mutation's `extraBody`.
+ */
+export type FormListCrudRef = {
+  endpointId: string | null
+  params: Record<string, NavParamSource>
+  extra: Record<string, NavParamSource>
+}
+
+export function createFormListCrudRef(): FormListCrudRef {
+  return { endpointId: null, params: {}, extra: {} }
+}
+
+/**
+ * Editable config for a form list. Maps onto the engine's `FormListElement`;
+ * the row template is the item's single child canvas (drill-in like a
+ * container). The three action toggles model `apiCrud.create/update/delete`
+ * presence — Add / Save / Remove exist only when their API is set — and the
+ * read call is always emitted (the engine throws loudly until it resolves).
+ * Empty labels fall back to the component's defaults at export.
+ */
+export type FormListConfig = {
+  name: string
+  title: string
+  idKey: string
+  addLabel: string
+  /** `IconData` key; `''` = the component's default glyph. */
+  addIcon: string
+  addPosition: 'top' | 'bottom'
+  addAlign: 'start' | 'center' | 'end'
+  /** What the Add button shows: icon + label, icon only, or label only. */
+  addDisplay: 'both' | 'icon' | 'label'
+  saveLabel: string
+  removeLabel: string
+  /** `IconData` key; `''` = the component's default glyph. */
+  removeIcon: string
+  /** Where a row's Save / Remove controls sit relative to its fields. */
+  removePosition: 'start' | 'end' | 'below'
+  removeDisplay: 'both' | 'icon' | 'label'
+  emptyText: string
+  /** Dot path into the read response to the row array (`data`). */
+  readPaths: string
+  canCreate: boolean
+  canUpdate: boolean
+  canDelete: boolean
+  read: FormListCrudRef
+  create: FormListCrudRef
+  update: FormListCrudRef
+  delete: FormListCrudRef
+  deleteConfirmEnabled: boolean
+  deleteConfirmTitle: string
+  deleteConfirmDescription: string
+}
+
+/** Defaults for a freshly dropped form list: all three actions on, nothing wired. */
+export function createDefaultFormListConfig(name: string): FormListConfig {
+  return {
+    name,
+    title: 'Form List',
+    idKey: 'id',
+    addLabel: 'Add',
+    addIcon: '',
+    addPosition: 'bottom',
+    addAlign: 'start',
+    addDisplay: 'both',
+    saveLabel: '',
+    removeLabel: '',
+    removeIcon: '',
+    removePosition: 'end',
+    removeDisplay: 'both',
+    emptyText: '',
+    readPaths: 'data',
+    canCreate: true,
+    canUpdate: true,
+    canDelete: true,
+    read: createFormListCrudRef(),
+    create: createFormListCrudRef(),
+    update: createFormListCrudRef(),
+    delete: createFormListCrudRef(),
+    deleteConfirmEnabled: true,
+    deleteConfirmTitle: 'Delete item',
+    deleteConfirmDescription: 'This action cannot be undone. Are you sure you want to continue?',
+  }
+}
+
+/**
+ * A display prop bound to the item of the enclosing repeater (see the grilled
+ * repeater design): the item field `key` plus an optional lodash `path` into
+ * it (`flag` + `png`). `null` = static. Exported as the engine
+ * `{ type:'row', key, path? }` DataValue; the static prop stays as the
+ * fallback shown when the value resolves empty.
+ */
+export type ItemBinding = { key: string; path: string } | null
+
+/**
+ * Editable config for a repeater. Maps onto the engine's `RepeaterElement`;
+ * the item template is the item's single child canvas (drill-in like a
+ * container). The array comes from an endpoint (`read` — endpoint, `:param`
+ * sources, query extras — drilled by `readPaths`) or, inside another
+ * repeater's template, from an array field of the parent item
+ * (`parentField` → engine `items: { type:'row', key }`). `itemSpan` is out of
+ * 12 per studio breakpoint (exported like a bin: xs→sm, sm→md, md→lg, lg→lg+xl).
+ */
+export type RepeaterConfig = {
+  name: string
+  title: string
+  idKey: string
+  source: 'endpoint' | 'parent'
+  read: FormListCrudRef
+  /** Dot path into the read response to the item array (`data`). */
+  readPaths: string
+  /** Array field of the enclosing repeater's item (source `parent`). */
+  parentField: string
+  itemSpan: Responsive<number>
+  /** Tailwind spacing scale key (`'4'`) or a CSS length. */
+  gap: string
+  itemSurface: 'none' | 'outlined' | 'elevation'
+  /** `''` = the component default (4 with a surface, else 0). */
+  itemPadding: string
+  emptyText: string
+  /** Whole-item link; `null` = items aren't clickable. */
+  itemNavigate: StudioNavigate | null
+}
+
+/** Defaults for a freshly dropped repeater: a full-width list, nothing wired. */
+export function createDefaultRepeaterConfig(name: string): RepeaterConfig {
+  return {
+    name,
+    title: '',
+    idKey: 'id',
+    source: 'endpoint',
+    read: createFormListCrudRef(),
+    readPaths: 'data',
+    parentField: '',
+    itemSpan: { xs: 12, sm: 12, md: 12, lg: 12 },
+    gap: '4',
+    itemSurface: 'none',
+    itemPadding: '',
+    emptyText: '',
+    itemNavigate: null,
   }
 }
 
@@ -804,12 +1001,14 @@ export function createDefaultDataTableEditableConfig(name: string): DataTableEdi
 export type TextConfig = {
   text: string
   isLabel: boolean
+  /** Inside a repeater: show this item field instead (`text` = fallback). */
+  binding: ItemBinding
 }
 
 /** Defaults for a freshly dropped text: label styling on (the common use — a
  * field caption), mirroring what the serializer emitted before text had a config. */
 export function createDefaultTextConfig(): TextConfig {
-  return { text: 'Text', isLabel: true }
+  return { text: 'Text', isLabel: true, binding: null }
 }
 
 /**
@@ -844,6 +1043,8 @@ export type TypographyConfig = {
   align: '' | 'left' | 'center' | 'right' | 'justify'
   truncate: boolean
   href: string
+  /** Inside a repeater: show this item field instead (`text` = fallback). */
+  binding: ItemBinding
 }
 
 /** Defaults for a freshly dropped typography: a body-copy paragraph with every
@@ -857,6 +1058,7 @@ export function createDefaultTypographyConfig(): TypographyConfig {
     align: '',
     truncate: false,
     href: '',
+    binding: null,
   }
 }
 
@@ -872,11 +1074,15 @@ export type AvatarConfig = {
   alt: string
   size: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
   fallback: string
+  /** Inside a repeater: image URL from this item field (`src` = fallback). */
+  srcBinding: ItemBinding
+  /** Inside a repeater: initials from this item field (`fallback` = fallback). */
+  fallbackBinding: ItemBinding
 }
 
 /** Defaults for a freshly dropped avatar: no image, initials fallback, medium. */
 export function createDefaultAvatarConfig(name: string): AvatarConfig {
-  return { name, src: '', alt: '', size: 'md', fallback: 'AB' }
+  return { name, src: '', alt: '', size: 'md', fallback: 'AB', srcBinding: null, fallbackBinding: null }
 }
 
 /**
@@ -894,8 +1100,17 @@ export function createDefaultDividerConfig(): DividerConfig {
   return { variant: 'fullWidth', spacing: '' }
 }
 
+/** A button's visual weight. Mirrors the library's `ButtonVariant`. */
+export type ButtonVariant = 'contained' | 'outlined' | 'text'
+
+export const BUTTON_VARIANT_OPTIONS: { value: ButtonVariant; label: string }[] = [
+  { value: 'contained', label: 'Contained' },
+  { value: 'outlined', label: 'Outlined' },
+  { value: 'text', label: 'Text' },
+]
+
 /**
- * Editable config for a button's visual slice: `label` + an optional `icon` key
+ * Editable config for a button's visual slice: `label`, its `variant` + an optional `icon` key
  * into the library's `IconData` glyph map (`''` = no icon). Modal/popover
  * trigger buttons carry exactly this (their behavior is owned by the host);
  * standalone button items extend it with behavior via `ButtonItemConfig`.
@@ -905,11 +1120,13 @@ export type ButtonConfig = {
   label: string
   /** `IconData` key; `''` = no icon. */
   icon: string
+  /** Exported only off the engine default (`contained`). */
+  variant: ButtonVariant
 }
 
 /** Defaults for a freshly dropped button. */
 export function createDefaultButtonConfig(): ButtonConfig {
-  return { label: 'Button', icon: '' }
+  return { label: 'Button', icon: '', variant: 'contained' }
 }
 
 /**
@@ -1159,7 +1376,7 @@ export function createDefaultPopoverConfig(): PopoverConfig {
     offset: '',
     triggerKind: 'button',
     triggerButton: { label: 'Open popover', icon: '' },
-    triggerText: { text: 'Open popover', isLabel: false },
+    triggerText: { text: 'Open popover', isLabel: false, binding: null },
   }
 }
 
@@ -1225,6 +1442,8 @@ export type GridItemData = {
     | UploadFileConfig
     | DataTableConfig
     | DataTableEditableConfig
+    | FormListConfig
+    | RepeaterConfig
     | TextConfig
     | TypographyConfig
     | AvatarConfig
@@ -1264,6 +1483,10 @@ export function childCanvasCount(type: ComponentType, config?: GridItemData['con
   if (type === 'container' || type === 'paper' || type === 'modal' || type === 'popover') return 1
   // A data table's canvas is its edit modal's content (engine `modalContainer`).
   if (type === 'datatable') return 1
+  // A form list's canvas is its row template (engine `rowContainer`).
+  if (type === 'formlist') return 1
+  // A repeater's canvas is its item template (engine `itemContainer`).
+  if (type === 'repeater') return 1
   if (type === 'tab') return (config as TabConfig | undefined)?.tabs.length ?? 0
   return 0
 }
@@ -1272,8 +1495,8 @@ export function childCanvasCount(type: ComponentType, config?: GridItemData['con
 export type ButtonRefTargets = {
   /** Modal items: grid-item id → the authored engine registry key (`ModalConfig.id`). */
   modals: { itemId: string; modalId: string }[]
-  /** (Editable) data tables: grid-item id → the authored binding `name` (the
-   * `fnCtxs` key both table components register their refetch under). */
+  /** (Editable) data tables and form lists: grid-item id → the authored
+   * binding `name` (the `fnCtxs` key they register their refetch under). */
   tables: { itemId: string; name: string }[]
 }
 
@@ -1313,7 +1536,11 @@ export function collectButtonTargets(items: GridItemData[]): ButtonRefTargets {
       if (item.type === 'modal' && item.config) {
         modals.push({ itemId: item.id, modalId: (item.config as ModalConfig).id })
       } else if (
-        (item.type === 'datatable' || item.type === 'datatableeditable') &&
+        (item.type === 'datatable' ||
+          item.type === 'datatableeditable' ||
+          item.type === 'formlist' ||
+          (item.type === 'repeater' &&
+            (item.config as RepeaterConfig | undefined)?.source === 'endpoint')) &&
         item.config
       ) {
         tables.push({ itemId: item.id, name: (item.config as { name: string }).name })

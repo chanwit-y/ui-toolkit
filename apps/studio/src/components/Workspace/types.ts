@@ -153,7 +153,7 @@ export type ActivityEntry = {
 
 /** The persisted shape (one localStorage key, versioned). */
 export type WorkspaceData = {
-  version: 9
+  version: 19
   /** The portal's own appearance; inside a project the project theme wins. */
   appearance: ThemeAppearance
   /** The mock identity stamped on activity and templates (see `MOCK_USERS`). */

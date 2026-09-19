@@ -40,6 +40,8 @@ export type LivePreviewWiring = {
 const API_PLACEHOLDER_LABEL: Record<string, string> = {
   datatable: 'Data Table',
   datatableeditable: 'Editable Table',
+  formlist: 'Form List',
+  repeater: 'Repeater',
   autocomplete: 'Autocomplete',
   multiAutocomplete: 'Multi Autocomplete',
 }
@@ -120,6 +122,8 @@ export function collectPreviewNavigation(bins: ParsedBin[]): Map<string, Preview
         visit((bin.container as Record<string, unknown>).bins)
       if (el?.container && typeof el.container === 'object')
         visit((el.container as Record<string, unknown>).bins)
+      if (el?.rowContainer && typeof el.rowContainer === 'object')
+        visit((el.rowContainer as Record<string, unknown>).bins)
       if (Array.isArray(el?.tabs))
         for (const tab of el.tabs as Record<string, unknown>[])
           if (tab.container && typeof tab.container === 'object')
@@ -156,9 +160,13 @@ function toPreviewBin(bin: ParsedBin, wiring: LivePreviewWiring): ParsedBin {
   if (type === 'datatable') {
     const gap = wiringGap((el?.api as Record<string, unknown> | undefined)?.name, wiring)
     if (gap) return placeholderBin(bin, `[ ${label} "${displayName}" — ${gap} ]`)
-  } else if (type === 'datatableeditable') {
+  } else if (type === 'datatableeditable' || type === 'formlist') {
     const read = (el?.apiCrud as Record<string, Record<string, unknown>> | undefined)?.read
     const gap = wiringGap(read?.name, wiring)
+    if (gap) return placeholderBin(bin, `[ ${label} "${displayName}" — ${gap} ]`)
+  } else if (type === 'repeater' && el !== undefined && 'api' in el) {
+    // Only an endpoint-sourced repeater fetches; an `items` one reads its parent item.
+    const gap = wiringGap((el.api as Record<string, unknown>)?.name, wiring)
     if (gap) return placeholderBin(bin, `[ ${label} "${displayName}" — ${gap} ]`)
   } else if (
     (type === 'autocomplete' || type === 'multiAutocomplete') &&
@@ -187,6 +195,24 @@ function toPreviewBin(bin: ParsedBin, wiring: LivePreviewWiring): ParsedBin {
       element: {
         ...el,
         container: toPreviewContainer(el.container as Record<string, unknown>, wiring),
+      },
+    }
+  }
+  if (el?.rowContainer && typeof el.rowContainer === 'object') {
+    bin = {
+      ...bin,
+      element: {
+        ...(bin.element as Record<string, unknown>),
+        rowContainer: toPreviewContainer(el.rowContainer as Record<string, unknown>, wiring),
+      },
+    }
+  }
+  if (el?.itemContainer && typeof el.itemContainer === 'object') {
+    bin = {
+      ...bin,
+      element: {
+        ...(bin.element as Record<string, unknown>),
+        itemContainer: toPreviewContainer(el.itemContainer as Record<string, unknown>, wiring),
       },
     }
   }

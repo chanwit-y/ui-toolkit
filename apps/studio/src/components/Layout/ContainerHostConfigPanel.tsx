@@ -1,10 +1,11 @@
 import type { ReactNode } from 'react'
 import { Expand, Plus, Trash2 } from 'lucide-react'
-import { IconButton, Input, Select, SegmentedControl } from '../common'
-import { IconPicker } from './ButtonConfigPanel'
+import { IconButton, IconPicker, Input, Select, SegmentedControl } from '../common'
 import { useGridStore } from './gridStore'
+import { BUTTON_VARIANT_OPTIONS } from './types'
 import type {
   ButtonConfig,
+  ButtonVariant,
   ModalConfig,
   PaperConfig,
   PopoverConfig,
@@ -306,6 +307,14 @@ export function ModalConfigPanel({
           onChange={(v) => patchTrigger({ icon: v })}
         />
       </Field>
+      <Field label="Variant">
+        <SegmentedControl
+          options={BUTTON_VARIANT_OPTIONS}
+          value={config.trigger.variant}
+          onChange={(v) => patchTrigger({ variant: v as ButtonVariant })}
+          aria-label="Variant"
+        />
+      </Field>
     </div>
   )
 }
@@ -405,6 +414,16 @@ export function PopoverConfigPanel({
             <IconPicker
               value={config.triggerButton.icon}
               onChange={(v) => set('triggerButton', { ...config.triggerButton, icon: v })}
+            />
+          </Field>
+          <Field label="Variant">
+            <SegmentedControl
+              options={BUTTON_VARIANT_OPTIONS}
+              value={config.triggerButton.variant}
+              onChange={(v) =>
+                set('triggerButton', { ...config.triggerButton, variant: v as ButtonVariant })
+              }
+              aria-label="Variant"
             />
           </Field>
         </>

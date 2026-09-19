@@ -4,6 +4,7 @@ import type { IElement, TextElement } from "../@types";
 import type { TApiMaster } from "../../api/APIMaster";
 import type { ElementContext } from "./elementBuilder";
 import type { TModelMaster } from "../../model/master";
+import { BoundText } from "./bound";
 
 export class Text<M extends TModelMaster, A extends TApiMaster<M>>
   implements IElement
@@ -12,6 +13,7 @@ export class Text<M extends TModelMaster, A extends TApiMaster<M>>
 
   create(): JSX.Element {
     const props = this._context.props as TextElement;
+    if (props.value) return createElement(BoundText, props);
     return createElement(TextComponent, {
       ...props,
       text: props.text,

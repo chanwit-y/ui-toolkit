@@ -8,8 +8,12 @@ export type DataValueScope = {
   params?: Record<string, string | undefined>;
   /** Query-string params (react-router `useSearchParams()[0]`). */
   searchParams?: URLSearchParams;
-  /** The clicked data-table row, for `type:"row"` (only `rowNavigate` supplies it). */
-  row?: Record<string, unknown>;
+  /**
+   * The current row, for `type:"row"`: the clicked data-table row
+   * (`rowNavigate`) or the item a `repeater` is rendering. An item of a
+   * primitive array is the primitive itself.
+   */
+  row?: unknown;
 };
 
 /**
@@ -19,7 +23,8 @@ export type DataValueScope = {
  * - `url`    → a route param (`source:"param"`, default) or query param
  *              (`source:"query"`) named by `key`.
  * - `state`  → the global-state slice named `key`, drilled by `path`.
- * - `row`    → `scope.row[key]` (drilled by `path` when given).
+ * - `row`    → `scope.row[key]` (drilled by `path` when given); `key:"none"`
+ *              takes the row itself (an item of a primitive array, say).
  * - others   → `undefined` (not resolvable from this scope).
  */
 export function resolveDataValue(
@@ -41,8 +46,11 @@ export function resolveDataValue(
       return dv.path ? get(data, dv.path) : data;
     }
     case "row": {
-      if (!scope.row) return undefined;
-      const v = scope.row[dv.key];
+      if (scope.row === undefined || scope.row === null) return undefined;
+      const v =
+        dv.key === "none"
+          ? scope.row
+          : (scope.row as Record<string, unknown>)[dv.key];
       return dv.path ? get(v, dv.path) : v;
     }
     default:

@@ -302,6 +302,47 @@ export const countryDetail: Bin[] = [
   },
   {
     sm: "12",
+    md: "12",
+    lg: "12",
+    xl: "12",
+    type: "multiAutocomplete",
+    justifySelf: "stretch",
+    alignSelf: "stretch",
+    element: {
+      name: "neighbourIds",
+      label: "Neighbouring Countries",
+      subtitle: "Pick up to five countries that share a border",
+      placeholder: "Choose countries...",
+      dataType: "array",
+      isRequired: false,
+      errorMessage: "",
+      canObserve: false,
+      observeTo: "",
+      isSingleLoad: false,
+      inputIcon: "globe",
+      itemIcon: "mapPin",
+      itemSubtitle: "code",
+      itemAvatar: "avatar",
+      maxSelections: 5,
+      showSelectedCount: true,
+      keys: {
+        id: "_id",
+        search: "name",
+        display: "name",
+      },
+      defaultData: {},
+      options: [],
+      api: {
+        name: "searchCountries",
+        paths: ["data"],
+        query: {
+          search: { type: "value", key: "search" },
+        },
+      },
+    },
+  },
+  {
+    sm: "12",
     md: "6",
     lg: "6",
     xl: "6",
@@ -1232,7 +1273,9 @@ const countryOverviewBins: Bin[] = [
       multiple: true,
       maxFiles: 5,
       maxSizeMB: 10,
-      helperText: "Up to 5 files, 10 MB each, sent as byte arrays",
+      accept: ["image", "pdf", "document", "spreadsheet", "text", ".dwg"],
+      previewLayout: "grid",
+      helperText: "Up to 5 files, 10 MB each — grid preview, click a card to open it",
       isFullWidth: true,
     },
   },
@@ -1248,9 +1291,9 @@ const countryOverviewBins: Bin[] = [
       label: "Single PDF Report",
       dataType: "array",
       valueFormat: "bytes",
-      accept: ".pdf",
+      accept: "pdf",
       maxSizeMB: 5,
-      helperText: "PDF only, max 5 MB, sent as byte array",
+      helperText: "Single file: PDF only, max 5 MB — the file replaces the dropzone",
       isFullWidth: true,
     },
   },
@@ -1335,7 +1378,8 @@ const countryOverviewBins: Bin[] = [
       multiple: true,
       maxFiles: 3,
       maxSizeMB: 5,
-      helperText: "Up to 3 files via API, stores URLs",
+      accept: ["image", "pdf", "audio", "video"],
+      helperText: "Up to 3 files via API, stores URLs — list preview",
       isFullWidth: true,
     },
   },
@@ -2376,6 +2420,7 @@ export const groupList: Bin[] = [
         type: "button",
         element: {
           label: "Filter",
+          variant: "outlined",
           // No button action — the popover wrapper handles open/close on click.
           actions: [],
         },
@@ -2719,6 +2764,8 @@ const countryStateDetailBins: Bin[] = [
     alignSelf: "center",
     element: {
       label: "Back to list",
+      // The quiet way out: a bare label next to the outlined "Next country".
+      variant: "text",
       actions: ["Navigate"],
       navigate: { page: "countryList" },
     },
@@ -2730,6 +2777,7 @@ const countryStateDetailBins: Bin[] = [
     alignSelf: "center",
     element: {
       label: "Next country",
+      variant: "outlined",
       actions: ["Navigate"],
       // `replace` keeps the browser Back button pointing at the list, not at
       // every country stepped through. `:id` comes from the `?next=` query.
@@ -2741,6 +2789,88 @@ const countryStateDetailBins: Bin[] = [
     },
   },
 ];
+
+/**
+ * FormList demo: the languages of the country on the detail page. Each row is
+ * its own form (`rowContainer`), Save creates/updates through the CRUD refs,
+ * Remove confirms then deletes; `:country` on every call reads the route's
+ * `:id` (a `url` DataValue) so the list is scoped to the record shown.
+ */
+const languageRowContainer: Container = {
+  id: "language-row",
+  name: "LanguageRow",
+  isArray: false,
+  bins: [
+    {
+      sm: "12", md: "6", lg: "5", xl: "5",
+      type: "textfield",
+      element: {
+        name: "country",
+        label: "Country",
+        dataType: "string",
+        isRequired: false,
+        errorMessage: "",
+      },
+    },
+    {
+      sm: "12", md: "6", lg: "7", xl: "7",
+      type: "textfield",
+      element: {
+        name: "name",
+        label: "Name *",
+        dataType: "string",
+        isRequired: true,
+        errorMessage: "Name is required",
+      },
+    },
+  ],
+  ...DEFAULT_CONTAINER_GRID,
+  gap: "3",
+};
+
+const countryLanguagesBin: Bin = {
+  sm: "12", md: "12", lg: "12", xl: "12",
+  type: "formlist",
+  element: {
+    name: "countryLanguages",
+    title: "Languages",
+    idKey: "_id",
+    rowContainer: languageRowContainer,
+    addLabel: "Add new language",
+    emptyText: "No languages yet — add the first one.",
+    apiCrud: {
+      read: {
+        name: "countryLanguages",
+        paths: ["data"],
+        params: { country: { type: "url", key: "id" } },
+      },
+      create: {
+        name: "createLanguage",
+        extraParams: { country: { type: "url", key: "id" } },
+        snackbarSuccess: { type: "success", message: "Language added" },
+        snackbarError: "$exception",
+      },
+      update: {
+        name: "updateLanguage",
+        params: { id: "_id" },
+        extraParams: { country: { type: "url", key: "id" } },
+        snackbarSuccess: { type: "success", message: "Language updated" },
+        snackbarError: "$exception",
+      },
+      delete: {
+        name: "deleteLanguage",
+        params: { id: "_id" },
+        extraParams: { country: { type: "url", key: "id" } },
+        confirmBox: {
+          title: "Remove language",
+          description: "Remove this language from the country?",
+        },
+        snackbarSuccess: { type: "success", message: "Language removed" },
+        snackbarError: "$exception",
+      },
+    },
+  },
+};
 
 export const containerCountryStateDetail: Container[] = [
   {
@@ -2757,7 +2887,7 @@ export const containerCountryStateDetail: Container[] = [
         params: { id: { type: "url", key: "id" } },
       },
     },
-    bins: countryStateDetailBins,
+    bins: [...countryStateDetailBins, countryLanguagesBin],
     ...DEFAULT_CONTAINER_GRID,
     gap: "4",
     justifyItems: "stretch",

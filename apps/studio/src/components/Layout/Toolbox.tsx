@@ -7,6 +7,7 @@ import { COMPONENT_GROUPS, type ComponentDef } from './componentCatalog'
 import { useGridStore } from './gridStore'
 import { LayersPanel } from './LayersPanel'
 import { PagesPanel } from './PagesPanel'
+import { ancestorRepeaters, BLOCKED_IN_REPEATER_HINT, isBlockedInRepeater } from './repeaterRules'
 import { TemplatesPanel } from './TemplatesPanel'
 
 /** dnd-kit id prefix for toolbox draggables — distinguishes them from grid item ids. */
@@ -26,17 +27,25 @@ type ToolboxItemProps = {
 function ToolboxItem({ def }: ToolboxItemProps) {
   const Icon = def.icon
   const addItem = useGridStore((s) => s.addItem)
+  // Inside a repeater's item template the form-bound types can't be placed.
+  const blocked = useGridStore(
+    (s) => isBlockedInRepeater(def.type) && ancestorRepeaters(s.items, s.activePath).length > 0,
+  )
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `${TOOLBOX_DRAG_PREFIX}${def.type}`,
     data: { from: 'toolbox', def } satisfies ToolboxDragData,
+    disabled: blocked,
   })
   const isContainer = childCanvasCount(def.type, undefined) > 0 || def.type === 'tab'
   return (
     <button
       ref={setNodeRef}
       type="button"
+      disabled={blocked}
       title={
-        def.designOnly
+        blocked
+          ? BLOCKED_IN_REPEATER_HINT
+          : def.designOnly
           ? `${def.label} — design only (no library component yet). Drag onto the canvas, or click to append it`
           : `Drag ${def.label} onto the canvas, or click to append it`
       }
@@ -48,6 +57,7 @@ function ToolboxItem({ def }: ToolboxItemProps) {
         'cursor-grab transition-[border-color,color,transform] duration-100 hover:border-line-strong hover:text-ink active:scale-[0.97] active:cursor-grabbing',
         isContainer && 'border-dashed',
         isDragging && 'opacity-40',
+        blocked && 'cursor-not-allowed opacity-40 hover:border-line hover:text-ink-2 active:scale-100',
       )}
     >
       {def.designOnly && (

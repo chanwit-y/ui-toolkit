@@ -19,6 +19,8 @@ import {
   Link2,
   ListChecks,
   ListFilter,
+  ListPlus,
+  Repeat2,
   Megaphone,
   MessageSquare,
   MessageSquareWarning,
@@ -54,6 +56,8 @@ export type ComponentType =
   | 'button'
   | 'datatable'
   | 'datatableeditable'
+  | 'formlist'
+  | 'repeater'
   | 'autocomplete'
   | 'textfield'
   | 'select'
@@ -129,6 +133,8 @@ export const COMPONENT_GROUPS: ComponentGroup[] = [
     items: [
       { type: 'datatable', label: 'Data Table', icon: Table },
       { type: 'datatableeditable', label: 'Editable Table', icon: FileSpreadsheet },
+      { type: 'formlist', label: 'Form List', icon: ListPlus },
+      { type: 'repeater', label: 'Repeater', icon: Repeat2 },
       { type: 'stat', label: 'Stat', icon: Hash, designOnly: true },
       { type: 'barchart', label: 'Bar chart', icon: BarChart3, designOnly: true },
       { type: 'linechart', label: 'Line chart', icon: ChartLine, designOnly: true },

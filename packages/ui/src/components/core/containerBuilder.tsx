@@ -120,6 +120,67 @@ const ContainerLoader = ({ load, apis }: ContainerLoaderProps) => {
 	return null;
 };
 
+type ContainerGridProps = {
+	container: Container;
+	builder: ContainerBuilder<TModelMaster, TApiMaster<TModelMaster>>;
+	/** The form object elements bind to (anything `withForm` accepts). */
+	form: any;
+	theme: ThemeContextType | undefined;
+	/** `contextData` for bin `condition`s. */
+	ctx: Record<string, any> | undefined;
+};
+
+/**
+ * One container's 12-column grid: its bins laid out with their spans and
+ * self-alignment, conditions evaluated against `ctx`, each element built
+ * through `builder.renderElement`. Shared by the engine's container renderer
+ * and by components that host a container per row (FormList).
+ */
+export function ContainerGrid({ container: c, builder, form, theme, ctx }: ContainerGridProps) {
+	return (
+		<div className="grid grid-cols-12" style={getContainerGridStyle(c)}>
+			{c.bins.map((b, binIndex) => {
+				if (b.condition)
+					if (!(new ConditionExpression(ctx ?? {}).expression(b.condition))) return null;
+
+				const api = b.element && 'api' in b.element && b.element.api && 'name' in b.element.api ? builder.apis.api[b.element.api.name] as APIFunction : undefined;
+				const colClasses = `sm-col-span-${b.sm} md-col-span-${b.md} lg-col-span-${b.lg} xl-col-span-${b.xl} `;
+				const alignClass =
+					b.align === "start"
+						? "text-left"
+						: b.align === "end"
+							? "text-right"
+							: b.align === "center"
+								? "text-center"
+								: "";
+
+				return (
+					<div
+						key={`${c.id}-bin-${binIndex}`}
+						className={`${colClasses} ${alignClass}`}
+						style={getBinGridItemStyle(b)}
+					>
+						{builder.renderElement(b, form, api, theme)}
+					</div>
+				);
+			})}
+		</div>
+	);
+}
+
+/** A container's grid inside its optional themed surface. */
+function ContainerSection(props: ContainerGridProps) {
+	const surface = getContainerSurface(props.container);
+	const grid = <ContainerGrid {...props} />;
+	if (!surface) return <div>{grid}</div>;
+	return (
+		<div className={surface.wrapperClass}>
+			{surface.title && <h3 className={surface.titleClass}>{surface.title}</h3>}
+			{grid}
+		</div>
+	);
+}
+
 type ContainerRendererProps = {
 	builder: ContainerBuilder<TModelMaster, TApiMaster<TModelMaster>>;
 	isRoot: boolean;
@@ -183,54 +244,16 @@ const ContainerRenderer = ({ builder, isRoot, withAuth }: ContainerRendererProps
 								apis={builder.apis as unknown as ApiMaster<TModelMaster, TApiMaster<TModelMaster>>}
 							/>
 						))}
-						{containers.map((c) => {
-						const surface = getContainerSurface(c);
-						const grid = (
-							<div
-								className="grid grid-cols-12"
-								style={getContainerGridStyle(c)}
-							>
-								{c.bins.map((b, binIndex) => {
-								if (b.condition)
-									if (!(new ConditionExpression(ctx).expression(b.condition))) return null;
-
-								const api = b.element && 'api' in b.element && b.element.api && 'name' in b.element.api ? builder.apis.api[b.element.api.name] as APIFunction : undefined;
-								const colClasses = `sm-col-span-${b.sm} md-col-span-${b.md} lg-col-span-${b.lg} xl-col-span-${b.xl} `;
-								const alignClass =
-									b.align === "start"
-										? "text-left"
-										: b.align === "end"
-											? "text-right"
-											: b.align === "center"
-												? "text-center"
-												: "";
-
-								const gridItemStyle = getBinGridItemStyle(b);
-
-								return (
-									<div
-										key={`${c.id}-bin-${binIndex}`}
-										className={`${colClasses} ${alignClass}`}
-										style={gridItemStyle}
-									>
-										{builder.renderElement(b, f, api, theme)}
-									</div>
-								);
-							})}
-						</div>
-						);
-
-						if (!surface) return <div key={c.id}>{grid}</div>;
-
-						return (
-							<div key={c.id} className={surface.wrapperClass}>
-								{surface.title && (
-									<h3 className={surface.titleClass}>{surface.title}</h3>
-								)}
-								{grid}
-							</div>
-						);
-					})}
+						{containers.map((c) => (
+							<ContainerSection
+								key={c.id}
+								container={c}
+								builder={builder}
+								form={f}
+								theme={theme}
+								ctx={ctx}
+							/>
+						))}
 				</Provider>
 			);
 		}}

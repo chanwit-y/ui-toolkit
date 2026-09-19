@@ -1,6 +1,9 @@
 import type { ReactNode } from 'react'
 import { Input, Select, SegmentedControl } from '../common'
 import { useGridStore } from './gridStore'
+import { ItemBindingField } from './ItemBindingField'
+import { useRepeaterScope } from './repeaterScope'
+import { IMAGE_KINDS, TEXT_KINDS } from './rowFields'
 import type {
   AvatarConfig,
   DividerConfig,
@@ -59,13 +62,21 @@ export function TextConfigPanel({ itemId, config }: { itemId: string; config: Te
   const updateItemConfig = useGridStore((s) => s.updateItemConfig)
   const set = <K extends keyof TextConfig>(key: K, value: TextConfig[K]) =>
     updateItemConfig(itemId, { [key]: value } as Partial<TextConfig>)
+  const scope = useRepeaterScope()
 
   return (
     <div className="space-y-3">
       <Heading>Text</Heading>
-      <Field label="Text">
+      <Field label={config.binding ? 'Text (fallback)' : 'Text'}>
         <Input value={config.text} onChange={(e) => set('text', e.target.value)} />
       </Field>
+      <ItemBindingField
+        label="Text"
+        binding={config.binding ?? null}
+        onChange={(b) => set('binding', b)}
+        scope={scope}
+        kinds={TEXT_KINDS}
+      />
       <Toggle
         label="Label styling"
         checked={config.isLabel}
@@ -131,13 +142,21 @@ export function TypographyConfigPanel({
   const updateItemConfig = useGridStore((s) => s.updateItemConfig)
   const set = <K extends keyof TypographyConfig>(key: K, value: TypographyConfig[K]) =>
     updateItemConfig(itemId, { [key]: value } as Partial<TypographyConfig>)
+  const scope = useRepeaterScope()
 
   return (
     <div className="space-y-3">
       <Heading>Typography</Heading>
-      <Field label="Text">
+      <Field label={config.binding ? 'Text (fallback)' : 'Text'}>
         <Input value={config.text} onChange={(e) => set('text', e.target.value)} />
       </Field>
+      <ItemBindingField
+        label="Text"
+        binding={config.binding ?? null}
+        onChange={(b) => set('binding', b)}
+        scope={scope}
+        kinds={TEXT_KINDS}
+      />
       <Field label="Variant">
         <Select
           options={VARIANT_OPTIONS}
@@ -204,6 +223,7 @@ export function AvatarConfigPanel({
   const updateItemConfig = useGridStore((s) => s.updateItemConfig)
   const set = <K extends keyof AvatarConfig>(key: K, value: AvatarConfig[K]) =>
     updateItemConfig(itemId, { [key]: value } as Partial<AvatarConfig>)
+  const scope = useRepeaterScope()
 
   return (
     <div className="space-y-3">
@@ -215,22 +235,36 @@ export function AvatarConfigPanel({
           className="font-mono"
         />
       </Field>
-      <Field label="Image URL">
+      <Field label={config.srcBinding ? 'Image URL (fallback)' : 'Image URL'}>
         <Input
           value={config.src}
           onChange={(e) => set('src', e.target.value)}
           placeholder="https://…"
         />
       </Field>
+      <ItemBindingField
+        label="Image URL"
+        binding={config.srcBinding ?? null}
+        onChange={(b) => set('srcBinding', b)}
+        scope={scope}
+        kinds={IMAGE_KINDS}
+      />
       <Field label="Alt text">
         <Input value={config.alt} onChange={(e) => set('alt', e.target.value)} />
       </Field>
-      <Field label="Fallback (initials)">
+      <Field label={config.fallbackBinding ? 'Fallback (when the field is empty)' : 'Fallback (initials)'}>
         <Input
           value={config.fallback}
           onChange={(e) => set('fallback', e.target.value)}
         />
       </Field>
+      <ItemBindingField
+        label="Fallback"
+        binding={config.fallbackBinding ?? null}
+        onChange={(b) => set('fallbackBinding', b)}
+        scope={scope}
+        kinds={TEXT_KINDS}
+      />
       <Field label="Size">
         <SegmentedControl
           options={AVATAR_SIZE_OPTIONS}

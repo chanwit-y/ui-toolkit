@@ -2,7 +2,7 @@ import type { NavigateTarget } from '@gummy-ui/ui'
 import { urlParams } from '../Api/warnings'
 import { MAX_GRID_COLUMNS } from './breakpoints'
 import { MISSING_OBSERVE_TARGET, observeContext, type ObserveContext } from './observe'
-import { collectButtonTargets, createChildCanvas } from './types'
+import { collectButtonTargets, createChildCanvas, uploadAccept } from './types'
 import type {
   AvatarConfig,
   ButtonActionKey,
@@ -15,10 +15,15 @@ import type {
   DataTableEditableConfig,
   DateConfig,
   DividerConfig,
+  FormListConfig,
+  FormListCrudRef,
+  ItemBinding,
+  RepeaterConfig,
   GridContainerSettings,
   GridItemData,
   HiddenConfig,
   ModalConfig,
+  MultiAutocompleteConfig,
   NavParamSource,
   PaperConfig,
   PopoverConfig,
@@ -269,10 +274,15 @@ function autocompleteElement(
   c: SelectFieldConfig,
   observe: ObserveContext,
   resolveEndpoint: ResolveEndpoint,
+  /** Set for `multiAutocomplete` — the config is then the multi superset. */
+  isMulti = false,
 ): Record<string, unknown> {
+  const multi = isMulti ? (c as MultiAutocompleteConfig) : null
   return {
     name: c.name,
-    dataType: normalizeDataType(c.dataType),
+    // A multi's form value is the list of picked ids — the engine schema must be
+    // an array whatever the (single-value) data type select says.
+    dataType: multi ? 'array' : normalizeDataType(c.dataType),
     label: c.label,
     isRequired: c.isRequired,
     errorMessage: c.errorMessage,
@@ -281,7 +291,22 @@ function autocompleteElement(
     isSingleLoad: false,
     keys: { id: c.idKey, search: c.searchKey, display: c.displayKey },
     defaultData: {},
-    options: c.options,
+    // A source-driven field starts empty — the static starter records stay in the
+    // studio config (so switching back loses nothing) but never reach the runtime.
+    options: c.mode === 'source' ? [] : c.options,
+    ...(c.placeholder ? { placeholder: c.placeholder } : {}),
+    ...(c.helperText ? { helperText: c.helperText } : {}),
+    // Option display (see the grilled design): engine item props, only when set.
+    ...(c.inputIcon ? { inputIcon: c.inputIcon } : {}),
+    ...(c.itemIcon ? { itemIcon: c.itemIcon } : {}),
+    ...(c.subtitleKey ? { itemSubtitle: c.subtitleKey } : {}),
+    ...(c.avatarKey ? { itemAvatar: c.avatarKey } : {}),
+    ...(multi
+      ? {
+          ...(typeof multi.maxSelections === 'number' ? { maxSelections: multi.maxSelections } : {}),
+          showSelectedCount: multi.showSelectedCount,
+        }
+      : {}),
     ...(c.mode === 'source'
       ? {
           api: {
@@ -452,7 +477,9 @@ function uploadImageElement(c: UploadImageConfig): Record<string, unknown> {
 /**
  * `uploadfile` → engine `UploadFileElement`. `dataType` is fixed `any` (a file
  * upload stores an array of files). `multiple`/`valueFormat` always emit; `maxFiles`
- * only emits in multi mode, and empty `accept`/`maxSizeMB`/`helperText` drop. The
+ * only emits in multi mode, and empty `accept`/`maxSizeMB`/`helperText` drop.
+ * `accept` is the token array of presets + extra types; `preview`/`previewLayout`
+ * emit only off their engine defaults (on / list). The
  * `uploadApi` block is emitted only in `'api'` mode.
  */
 function uploadFileElement(c: UploadFileConfig): Record<string, unknown> {
@@ -464,9 +491,11 @@ function uploadFileElement(c: UploadFileConfig): Record<string, unknown> {
     errorMessage: c.errorMessage,
     multiple: c.multiple,
     valueFormat: c.valueFormat,
+    ...(c.preview ? {} : { preview: false }),
+    ...(c.preview && c.previewLayout === 'grid' ? { previewLayout: 'grid' } : {}),
     ...omitEmpty({
       helperText: c.helperText,
-      accept: c.accept,
+      accept: uploadAccept(c),
       maxFiles: c.multiple && c.maxFiles !== '' ? c.maxFiles : undefined,
       maxSizeMB: c.maxSizeMB === '' ? undefined : c.maxSizeMB,
     }),
@@ -644,9 +673,208 @@ function dataTableEditableElement(
   }
 }
 
+/**
+ * The engine call config of one form-list CRUD ref: `params` (row-field map)
+ * from the `row` sources, `values` (DataValues) from the rest, both pruned to
+ * the endpoint URL's current `:param`s; `extra` keys become DataValues too.
+ * Empty sources drop (emit authored, omit empty).
+ */
+function formListCrudCall(
+  ref: FormListCrudRef,
+  endpoints: EndpointRef[],
+): {
+  params: Record<string, string>
+  values: Record<string, unknown>
+  extra: Record<string, unknown>
+} {
+  const url = endpoints.find((e) => e.id === ref.endpointId)?.url
+  const keys = url != null ? urlParams(url) : Object.keys(ref.params)
+  const params: Record<string, string> = {}
+  const values: Record<string, unknown> = {}
+  for (const k of keys) {
+    const src = ref.params[k]
+    if (!src) continue
+    if (src.type === 'row') {
+      if (src.key) params[k] = src.key
+    } else {
+      const dv = navParamValue(src)
+      if (dv) values[k] = dv
+    }
+  }
+  const extra = Object.fromEntries(
+    Object.entries(ref.extra)
+      .filter(([k]) => k.trim() !== '')
+      .map(([k, src]) => [k, src.type === 'row' ? undefined : navParamValue(src)] as const)
+      .filter((e): e is readonly [string, Record<string, unknown>] => e[1] !== undefined),
+  )
+  return { params, values, extra }
+}
+
+/**
+ * `formlist` → engine `FormListElement` (see the grilled design). The row
+ * template is the item's child canvas; `apiCrud.read` always emits (resolved
+ * name, `paths`, URL-param DataValues, `query` extras) and `create` /
+ * `update` / `delete` per their toggles with the row-field `params`,
+ * `extraParams` and `extraBody` maps. Empty labels / icons drop so the
+ * component's defaults apply, the Add / Remove placement always emits, and
+ * the delete confirm box emits when enabled.
+ */
+function formListElement(
+  c: FormListConfig,
+  item: GridItemData,
+  endpoints: EndpointRef[],
+  resolveEndpoint: ResolveEndpoint,
+  refs: ButtonRefMaps,
+): Record<string, unknown> {
+  const nonEmpty = (o: Record<string, unknown>) => Object.keys(o).length > 0
+  const paths = c.readPaths
+    .split('.')
+    .map((s) => s.trim())
+    .filter(Boolean)
+  const read = formListCrudCall(c.read, endpoints)
+  const mutation = (ref: FormListCrudRef) => {
+    const call = formListCrudCall(ref, endpoints)
+    return {
+      name: resolveEndpoint(ref.endpointId) ?? '',
+      ...(nonEmpty(call.params) ? { params: call.params } : {}),
+      ...(nonEmpty(call.values) ? { extraParams: call.values } : {}),
+      ...(nonEmpty(call.extra) ? { extraBody: call.extra } : {}),
+    }
+  }
+  return {
+    name: c.name,
+    ...omitEmpty({
+      title: c.title,
+      addLabel: c.addLabel,
+      addIcon: c.addIcon,
+      saveLabel: c.saveLabel,
+      removeLabel: c.removeLabel,
+      removeIcon: c.removeIcon,
+      emptyText: c.emptyText,
+    }),
+    // Placement always emits (self-documenting, like `align`); icons only when picked.
+    addPosition: c.addPosition,
+    addAlign: c.addAlign,
+    addDisplay: c.addDisplay,
+    removePosition: c.removePosition,
+    removeDisplay: c.removeDisplay,
+    idKey: c.idKey,
+    rowContainer: toEngineContainer(
+      childCanvasAt(item, 0),
+      childContainerName(item, '-row'),
+      endpoints,
+      refs,
+    ),
+    apiCrud: {
+      read: {
+        name: resolveEndpoint(c.read.endpointId) ?? '',
+        ...(paths.length ? { paths } : {}),
+        ...(nonEmpty(read.values) ? { params: read.values } : {}),
+        ...(nonEmpty(read.extra) ? { query: read.extra } : {}),
+      },
+      ...(c.canCreate ? { create: mutation(c.create) } : {}),
+      ...(c.canUpdate ? { update: mutation(c.update) } : {}),
+      ...(c.canDelete
+        ? {
+            delete: {
+              ...mutation(c.delete),
+              ...(c.deleteConfirmEnabled
+                ? {
+                    confirmBox: {
+                      title: c.deleteConfirmTitle,
+                      description: c.deleteConfirmDescription,
+                    },
+                  }
+                : {}),
+            },
+          }
+        : {}),
+    },
+  }
+}
+
+/**
+ * A display prop's item binding → the engine `{ type:'row', key, path? }`
+ * DataValue (resolved against the enclosing repeater's item), or `undefined`
+ * when static / no field picked (emit authored, omit empty).
+ */
+function itemBindingValue(binding: ItemBinding | undefined): Record<string, unknown> | undefined {
+  if (!binding || !binding.key) return undefined
+  return { type: 'row', key: binding.key, ...(binding.path ? { path: binding.path } : {}) }
+}
+
+/**
+ * `repeater` → engine `RepeaterElement` (see the grilled design). The item
+ * template is the item's child canvas. An endpoint source emits `api`
+ * (resolved name, `paths`, `:param` DataValues pruned to the URL's current
+ * placeholders — a `row` source reads the *enclosing* repeater's item — and
+ * `query` extras); a parent source emits `items: { type:'row', key }`. Spans
+ * export like a bin's (xs→sm, sm→md, md→lg, lg→lg+xl); empty optionals drop
+ * so the component's defaults apply.
+ */
+function repeaterElement(
+  c: RepeaterConfig,
+  item: GridItemData,
+  endpoints: EndpointRef[],
+  resolveEndpoint: ResolveEndpoint,
+  refs: ButtonRefMaps,
+): Record<string, unknown> {
+  const dataValues = (map: Record<string, NavParamSource>, keys: string[]) =>
+    Object.fromEntries(
+      keys
+        .filter((k) => k.trim() !== '' && map[k])
+        .map((k) => [k, navParamValue(map[k])] as const)
+        .filter((e): e is readonly [string, Record<string, unknown>] => e[1] !== undefined),
+    )
+  let source: Record<string, unknown>
+  if (c.source === 'parent') {
+    source = { items: { type: 'row', key: c.parentField || 'none' } }
+  } else {
+    const url = endpoints.find((e) => e.id === c.read.endpointId)?.url
+    const params = dataValues(c.read.params, url != null ? urlParams(url) : Object.keys(c.read.params))
+    const query = dataValues(c.read.extra, Object.keys(c.read.extra))
+    const paths = c.readPaths
+      .split('.')
+      .map((s) => s.trim())
+      .filter(Boolean)
+    source = {
+      api: {
+        name: resolveEndpoint(c.read.endpointId) ?? '',
+        ...(paths.length ? { paths } : {}),
+        ...(Object.keys(params).length ? { params } : {}),
+        ...(Object.keys(query).length ? { query } : {}),
+      },
+    }
+  }
+  const itemNavigate = c.itemNavigate ? navigateTarget(c.itemNavigate, refs) : undefined
+  return {
+    name: c.name,
+    ...omitEmpty({ title: c.title, emptyText: c.emptyText, itemPadding: c.itemPadding }),
+    idKey: c.idKey,
+    ...source,
+    itemContainer: toEngineContainer(
+      childCanvasAt(item, 0),
+      childContainerName(item, '-item'),
+      endpoints,
+      refs,
+    ),
+    itemSpan: {
+      sm: String(c.itemSpan.sm),
+      md: String(c.itemSpan.md),
+      lg: String(c.itemSpan.lg),
+      // The engine has no `xs`; `xl` mirrors `lg` (studio's widest breakpoint).
+      xl: String(c.itemSpan.lg),
+    },
+    gap: c.gap === '' ? '4' : c.gap,
+    itemSurface: c.itemSurface,
+    ...(itemNavigate ? { itemNavigate } : {}),
+  }
+}
+
 /** `text` → engine `TextElement`. Content plus the label-styling flag. */
 function textElement(c: TextConfig): Record<string, unknown> {
-  return { text: c.text, isLabel: c.isLabel }
+  const value = itemBindingValue(c.binding)
+  return { text: c.text, isLabel: c.isLabel, ...(value ? { value } : {}) }
 }
 
 /**
@@ -662,6 +890,7 @@ function typographyElement(c: TypographyConfig): Record<string, unknown> {
     variant: c.variant,
     ...(c.truncate ? { truncate: true } : {}),
     ...omitEmpty({ weight: c.weight, color: c.color, align: c.align, href: c.href }),
+    ...(itemBindingValue(c.binding) ? { value: itemBindingValue(c.binding) } : {}),
   }
 }
 
@@ -673,6 +902,10 @@ function avatarElement(c: AvatarConfig): Record<string, unknown> {
     name: c.name,
     size: c.size,
     ...omitEmpty({ src: c.src, alt: c.alt, fallback: c.fallback }),
+    ...(itemBindingValue(c.srcBinding) ? { srcValue: itemBindingValue(c.srcBinding) } : {}),
+    ...(itemBindingValue(c.fallbackBinding)
+      ? { fallbackValue: itemBindingValue(c.fallbackBinding) }
+      : {}),
   }
 }
 
@@ -694,6 +927,7 @@ function buttonElement(c: ButtonConfig): Record<string, unknown> {
   return {
     label: c.label,
     ...(c.icon ? { icon: c.icon } : {}),
+    ...(c.variant !== 'contained' ? { variant: c.variant } : {}),
     actions: [],
   }
 }
@@ -733,6 +967,7 @@ function buttonItemElement(
   return {
     label: c.label,
     ...(c.icon ? { icon: c.icon } : {}),
+    ...(c.variant !== 'contained' ? { variant: c.variant } : {}),
     actions: confirm ? ['ConfirmBox'] : [...c.actions],
     ...(confirm
       ? {
@@ -927,6 +1162,7 @@ function buildElement(
             item.config as SelectFieldConfig,
             observeContext(item, items),
             resolveEndpoint,
+            item.type === 'multiAutocomplete',
           )
         : undefined
     case 'checkbox':
@@ -948,6 +1184,14 @@ function buildElement(
     case 'datatableeditable':
       return item.config
         ? dataTableEditableElement(item.config as DataTableEditableConfig, resolveEndpoint)
+        : undefined
+    case 'formlist':
+      return item.config
+        ? formListElement(item.config as FormListConfig, item, endpoints, resolveEndpoint, refs)
+        : undefined
+    case 'repeater':
+      return item.config
+        ? repeaterElement(item.config as RepeaterConfig, item, endpoints, resolveEndpoint, refs)
         : undefined
     case 'text':
       // Config-less fallback keeps the pre-config behavior (label as content).

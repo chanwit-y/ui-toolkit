@@ -1,13 +1,14 @@
-import { useMemo, useState, type ReactNode } from 'react'
-import { IconData } from '@gummy-ui/ui'
-import { Ban, X } from 'lucide-react'
+import { useMemo, type ReactNode } from 'react'
+import { X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { cn, Input, SegmentedControl, Select } from '../common'
+import { IconPicker, Input, SegmentedControl, Select } from '../common'
 import { pathParams } from '../Workspace/snapshots'
 import { useActivePages, useWorkspaceStore } from '../Workspace/workspaceStore'
 import { useGridStore } from './gridStore'
+import { useRepeaterScope } from './repeaterScope'
 import { EndpointPicker } from './SelectFieldConfigPanel'
 import {
+  BUTTON_VARIANT_OPTIONS,
   collectButtonTargets,
   collectOverlayTargets,
   createDefaultNavigate,
@@ -15,6 +16,7 @@ import {
   type ButtonActionKey,
   type ButtonItemConfig,
   type ButtonSnackbarVariant,
+  type ButtonVariant,
   type DesignNavigation,
   type NavParamSource,
   type StudioNavigate,
@@ -27,87 +29,6 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
       <span className="text-ui-sm font-medium text-ink-2">{label}</span>
       {children}
     </label>
-  )
-}
-
-const ICON_KEYS = Object.keys(IconData) as (keyof typeof IconData)[]
-
-/**
- * Searchable glyph-grid picker over the library's `IconData` map (the keys the
- * engine `ButtonElement.icon` accepts — see the grilled design: picking a glyph
- * you can see beats typing a key). A filter box narrows the ~110 keys, the grid
- * scrolls, and the leading slot clears the selection. Storing the key (not the
- * component) keeps the config JSON-serializable.
- */
-export function IconPicker({
-  value,
-  onChange,
-}: {
-  value: string
-  onChange: (key: string) => void
-}) {
-  const [filter, setFilter] = useState('')
-  const keys = useMemo(() => {
-    const q = filter.trim().toLowerCase()
-    return q ? ICON_KEYS.filter((k) => k.toLowerCase().includes(q)) : ICON_KEYS
-  }, [filter])
-
-  return (
-    <div className="space-y-2">
-      <Input
-        value={filter}
-        onChange={(e) => setFilter(e.target.value)}
-        placeholder="Filter icons…"
-      />
-      <div className="grid max-h-40 grid-cols-6 gap-1 overflow-y-auto rounded-lg border border-line bg-panel p-1.5">
-        <button
-          type="button"
-          title="No icon"
-          onClick={() => onChange('')}
-          className={cn(
-            'flex h-8 items-center justify-center rounded-md transition-colors',
-            value === ''
-              ? 'bg-panel-2 text-ink ring-1 ring-focus/30'
-              : 'text-ink-3 hover:bg-panel-2 hover:text-ink-2',
-          )}
-        >
-          <Ban className="h-4 w-4" aria-hidden="true" />
-        </button>
-        {keys.map((key) => {
-          const Glyph = IconData[key]
-          return (
-            <button
-              key={key}
-              type="button"
-              title={key}
-              onClick={() => onChange(key)}
-              className={cn(
-                'flex h-8 items-center justify-center rounded-md transition-colors',
-                value === key
-                  ? 'bg-panel-2 text-ink ring-1 ring-focus/30'
-                  : 'text-ink-3 hover:bg-panel-2 hover:text-ink-2',
-              )}
-            >
-              <Glyph size={16} aria-hidden="true" />
-            </button>
-          )
-        })}
-        {keys.length === 0 && (
-          <p className="col-span-6 py-2 text-center text-ui-sm text-ink-3">
-            No icons match “{filter}”
-          </p>
-        )}
-      </div>
-      <p className="text-ui-sm text-ink-3">
-        {value ? (
-          <>
-            Selected: <span className="font-mono text-ink-3">{value}</span>
-          </>
-        ) : (
-          'No icon'
-        )}
-      </p>
-    </div>
   )
 }
 
@@ -275,6 +196,14 @@ export function ButtonConfigPanel({
       <Field label="Icon">
         <IconPicker value={config.icon} onChange={(v) => set('icon', v)} />
       </Field>
+      <Field label="Variant">
+        <SegmentedControl
+          options={BUTTON_VARIANT_OPTIONS}
+          value={config.variant}
+          onChange={(v) => set('variant', v as ButtonVariant)}
+          aria-label="Variant"
+        />
+      </Field>
 
       <h3 className="pt-1 text-ui-sm font-semibold uppercase tracking-wide text-ink-3">
         On click
@@ -430,7 +359,7 @@ const SOURCE_OPTIONS_BASE: { value: NavParamSource['type']; label: string }[] = 
 ]
 const ROW_SOURCE_OPTION: { value: NavParamSource['type']; label: string } = {
   value: 'row',
-  label: 'From the clicked row',
+  label: 'From the row / item',
 }
 const URL_SOURCE_OPTIONS = [
   { value: 'param', label: ':param' },
@@ -438,7 +367,7 @@ const URL_SOURCE_OPTIONS = [
 ]
 
 /** A fresh source of the given type for the `:param` named `key`. */
-function defaultSource(type: NavParamSource['type'], key: string): NavParamSource {
+export function defaultSource(type: NavParamSource['type'], key: string): NavParamSource {
   switch (type) {
     case 'url':
       return { type: 'url', key, source: 'param' }
@@ -449,6 +378,100 @@ function defaultSource(type: NavParamSource['type'], key: string): NavParamSourc
     default:
       return { type: 'value', value: '' }
   }
+}
+
+/**
+ * The source controls of one value: its kind (a literal, the current URL's
+ * param / query, a global-state slice, or — when `allowRow` — a field of the
+ * row at hand) and the kind's inputs. Shared by {@link NavigateEditor} and the
+ * form-list panel's CRUD param maps.
+ */
+export function ParamSourceFields({
+  label,
+  value: src,
+  onChange,
+  allowRow = false,
+  seedKey,
+}: {
+  label: ReactNode
+  value: NavParamSource
+  onChange: (next: NavParamSource) => void
+  allowRow?: boolean
+  /** The `:param` name a freshly picked kind is seeded with. */
+  seedKey: string
+}) {
+  const sourceOptions = allowRow ? [ROW_SOURCE_OPTION, ...SOURCE_OPTIONS_BASE] : SOURCE_OPTIONS_BASE
+  return (
+    <div className="space-y-1.5 rounded-md border border-line bg-panel p-2">
+      <div className="flex items-center justify-between gap-2">
+        <span className="min-w-0 truncate font-mono text-ui-sm font-medium text-ink-2">{label}</span>
+        <div className="w-44 shrink-0">
+          <Select
+            aria-label={`Source of ${typeof label === 'string' ? label : seedKey}`}
+            options={sourceOptions}
+            value={src.type}
+            onChange={(t) => onChange(defaultSource(t as NavParamSource['type'], seedKey))}
+          />
+        </div>
+      </div>
+      {src.type === 'value' && (
+        <Input
+          value={src.value}
+          onChange={(e) => onChange({ ...src, value: e.target.value })}
+          placeholder="fixed value"
+          className="font-mono"
+        />
+      )}
+      {src.type === 'url' && (
+        <div className="flex gap-1.5">
+          <div className="flex-1">
+            <Input
+              value={src.key}
+              onChange={(e) => onChange({ ...src, key: e.target.value })}
+              placeholder="param / query name"
+              className="font-mono"
+            />
+          </div>
+          <div className="w-24">
+            <Select
+              aria-label="URL part"
+              options={URL_SOURCE_OPTIONS}
+              value={src.source}
+              onChange={(s) => onChange({ ...src, source: s as 'param' | 'query' })}
+            />
+          </div>
+        </div>
+      )}
+      {src.type === 'state' && (
+        <div className="flex gap-1.5">
+          <div className="flex-1">
+            <Input
+              value={src.key}
+              onChange={(e) => onChange({ ...src, key: e.target.value })}
+              placeholder="state key"
+              className="font-mono"
+            />
+          </div>
+          <div className="flex-1">
+            <Input
+              value={src.path}
+              onChange={(e) => onChange({ ...src, path: e.target.value })}
+              placeholder="path (optional)"
+              className="font-mono"
+            />
+          </div>
+        </div>
+      )}
+      {src.type === 'row' && (
+        <Input
+          value={src.key}
+          onChange={(e) => onChange({ ...src, key: e.target.value })}
+          placeholder="row field, e.g. _id"
+          className="font-mono"
+        />
+      )}
+    </div>
+  )
 }
 
 /**
@@ -475,7 +498,6 @@ export function NavigateEditor({
   const target = pages.find((p) => p.id === value.pageId)
   const params = target ? pathParams(target.path) : []
   const dangling = value.pageId !== '' && !target
-  const sourceOptions = allowRow ? [ROW_SOURCE_OPTION, ...SOURCE_OPTIONS_BASE] : SOURCE_OPTIONS_BASE
   const seedType: NavParamSource['type'] = allowRow ? 'row' : 'value'
   const setParam = (key: string, src: NavParamSource) =>
     onChange({ ...value, params: { ...value.params, [key]: src } })
@@ -503,80 +525,16 @@ export function NavigateEditor({
           }}
         />
       </Field>
-      {params.map((key) => {
-        const src = value.params[key] ?? defaultSource(seedType, key)
-        return (
-          <div key={key} className="space-y-1.5 rounded-md border border-line bg-panel p-2">
-            <div className="flex items-center justify-between gap-2">
-              <span className="font-mono text-ui-sm font-medium text-ink-2">:{key}</span>
-              <div className="w-44">
-                <Select
-                  aria-label={`Source of :${key}`}
-                  options={sourceOptions}
-                  value={src.type}
-                  onChange={(t) => setParam(key, defaultSource(t as NavParamSource['type'], key))}
-                />
-              </div>
-            </div>
-            {src.type === 'value' && (
-              <Input
-                value={src.value}
-                onChange={(e) => setParam(key, { ...src, value: e.target.value })}
-                placeholder="fixed value"
-                className="font-mono"
-              />
-            )}
-            {src.type === 'url' && (
-              <div className="flex gap-1.5">
-                <div className="flex-1">
-                  <Input
-                    value={src.key}
-                    onChange={(e) => setParam(key, { ...src, key: e.target.value })}
-                    placeholder="param / query name"
-                    className="font-mono"
-                  />
-                </div>
-                <div className="w-24">
-                  <Select
-                    aria-label="URL part"
-                    options={URL_SOURCE_OPTIONS}
-                    value={src.source}
-                    onChange={(s) => setParam(key, { ...src, source: s as 'param' | 'query' })}
-                  />
-                </div>
-              </div>
-            )}
-            {src.type === 'state' && (
-              <div className="flex gap-1.5">
-                <div className="flex-1">
-                  <Input
-                    value={src.key}
-                    onChange={(e) => setParam(key, { ...src, key: e.target.value })}
-                    placeholder="state key"
-                    className="font-mono"
-                  />
-                </div>
-                <div className="flex-1">
-                  <Input
-                    value={src.path}
-                    onChange={(e) => setParam(key, { ...src, path: e.target.value })}
-                    placeholder="path (optional)"
-                    className="font-mono"
-                  />
-                </div>
-              </div>
-            )}
-            {src.type === 'row' && (
-              <Input
-                value={src.key}
-                onChange={(e) => setParam(key, { ...src, key: e.target.value })}
-                placeholder="row field, e.g. _id"
-                className="font-mono"
-              />
-            )}
-          </div>
-        )
-      })}
+      {params.map((key) => (
+        <ParamSourceFields
+          key={key}
+          label={`:${key}`}
+          value={value.params[key] ?? defaultSource(seedType, key)}
+          onChange={(src) => setParam(key, src)}
+          allowRow={allowRow}
+          seedKey={key}
+        />
+      ))}
       <CheckboxRow
         label="Replace the history entry (Back skips this page)"
         checked={value.replace}
@@ -632,6 +590,7 @@ function NavigationSection({
   rootItems: ReturnType<typeof useGridStore.getState>['items']
 }) {
   const overlays = useMemo(() => collectOverlayTargets(rootItems), [rootItems])
+  const inRepeater = useRepeaterScope() !== null
   const navigation = config.navigation ?? NO_NAVIGATION
   const confirm = config.mode === 'confirm'
   const usesNavigate = (confirm ? [...config.confirmTrue, ...config.confirmFalse] : config.actions)
@@ -677,6 +636,8 @@ function NavigationSection({
         <NavigateEditor
           value={config.navigate ?? createDefaultNavigate()}
           onChange={(v) => update({ navigate: v })}
+          // Inside a repeater's item template the params can read the item.
+          allowRow={inRepeater}
         />
       )}
 
