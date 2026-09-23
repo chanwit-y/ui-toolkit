@@ -3,6 +3,7 @@ import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react'
 import { IconButton, Input, Select, SortableCardList } from '../common'
 import { useGridStore } from './gridStore'
 import { EndpointPicker } from './SelectFieldConfigPanel'
+import { ColumnSizeFields } from './ColumnSizeFields'
 import {
   createEditableTableColumn,
   type DataTableEditableColumnConfig,
@@ -157,6 +158,9 @@ function ColumnsEditor({
 
   const patch = (index: number, p: Partial<DataTableEditableColumnConfig>) =>
     onChange(columns.map((c, i) => (i === index ? { ...c, ...p } : c)))
+  // One row header per table: turning it on here turns it off elsewhere.
+  const setRowHeader = (index: number, on: boolean) =>
+    onChange(columns.map((c, i) => ({ ...c, rowHeader: i === index ? on : on ? false : c.rowHeader })))
   const remove = (index: number) => {
     const removedId = columns[index]?.id
     onChange(columns.filter((_, i) => i !== index))
@@ -297,6 +301,19 @@ function ColumnsEditor({
                       }
                     />
                   </Field>
+                  <Toggle
+                    label="Row header (the row's label: <th>)"
+                    checked={column.rowHeader}
+                    onChange={(v) => setRowHeader(index, v)}
+                  />
+                  <Field label="Group header (adjacent columns with the same label share it)">
+                    <Input
+                      value={column.group}
+                      onChange={(e) => patch(index, { group: e.target.value })}
+                      placeholder="e.g. People"
+                    />
+                  </Field>
+                  <ColumnSizeFields column={column} onChange={(sizing) => patch(index, sizing)} />
                 </div>
               )}
 
@@ -394,6 +411,11 @@ export function DataTableEditableConfigPanel({
         onChange={(columns) => set('columns', columns)}
       />
 
+      <Toggle
+        label="Resizable columns (drag header edges)"
+        checked={config.canResizeColumns}
+        onChange={(v) => set('canResizeColumns', v)}
+      />
       <Toggle
         label="Add row action"
         checked={config.canCreate}

@@ -55,3 +55,33 @@ describe("resolveDataValues", () => {
     ).toEqual({ id: "c1", tab: "info", kind: "card" });
   });
 });
+
+describe("type:\"filter\" (a data table's applied filters)", () => {
+  const filters = { name: "an", code: "", editors: [], active: false, min: 0, range: { from: "2025-01-01" } };
+
+  test("reads the applied filter by field name, drilled by path", () => {
+    expect(resolveDataValue({ type: "filter", key: "name" }, { filters })).toBe("an");
+    expect(resolveDataValue({ type: "filter", key: "range", path: "from" }, { filters })).toBe("2025-01-01");
+  });
+
+  test("a blank filter is undefined, so resolveDataValues leaves its key out", () => {
+    const map = {
+      name: { type: "filter", key: "name" },
+      code: { type: "filter", key: "code" },
+      editors: { type: "filter", key: "editors" },
+      missing: { type: "filter", key: "nope" },
+    } as const;
+    expect(resolveDataValues(map, { filters })).toEqual({ name: "an" });
+  });
+
+  test("false and 0 are real filter values", () => {
+    expect(resolveDataValue({ type: "filter", key: "active" }, { filters })).toBe(false);
+    expect(resolveDataValue({ type: "filter", key: "min" }, { filters })).toBe(0);
+  });
+
+  test("`value` is the fallback while the filter is blank (a URL :param)", () => {
+    expect(resolveDataValue({ type: "filter", key: "code", value: "all" }, { filters })).toBe("all");
+    expect(resolveDataValue({ type: "filter", key: "name", value: "all" }, { filters })).toBe("an");
+    expect(resolveDataValue({ type: "filter", key: "code", value: "all" }, {})).toBe("all");
+  });
+});

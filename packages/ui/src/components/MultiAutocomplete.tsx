@@ -11,14 +11,14 @@ import {
 import type { MultiAutocompleteProps, Obs } from "./@types";
 import { Box, Text } from "@radix-ui/themes";
 import { cn } from "../util/utils";
-import { AlertCircle, Check, ChevronDown, Search, X } from "lucide-react";
+import { AlertCircle, Check, ChevronDown, Search } from "lucide-react";
 import { useCore } from "./core/context";
 import { debounce, distinct, interval, Subject, switchMap } from "rxjs";
 import { isEmpty } from "lodash";
 import { useObservableCleanup } from "../hooks";
 import { ConditionExpression } from "./core/expression";
 import { useData } from "./context/DataProvider";
-import { OptionRow, matchesOptionQuery, resolveIcon, resolveItemAvatar, resolveItemIcon, resolveItemSubtitle } from "./OptionRow";
+import { OptionRow, SelectedChip, matchesOptionQuery, resolveIcon, resolveItemAvatar, resolveItemIcon, resolveItemSubtitle } from "./OptionRow";
 import { OptionSearch, OPTION_SEARCH_HEIGHT } from "./OptionSearch";
 
 const createMultiAutocomplete = <T extends Record<string, any>>() => {
@@ -148,7 +148,8 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 			enabledWhen ? getDataValue({ key: (enabledWhen.left as Obs).key, type: "observe" }) : null,
 			(data: unknown) => {
 				if (enabledWhen) {
-					const result = (!(new ConditionExpression(ctx).expression({ ...enabledWhen, left: { val: data } })));
+					// Enabled while the condition holds (this used to be negated, so `enabledWhen` read as "disabled when").
+					const result = new ConditionExpression(ctx).expression({ ...enabledWhen, left: { val: data } });
 					setIsObserveEnabled(result)
 				}
 			},
@@ -438,19 +439,15 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 							{selectedItems.length > 0 && (
 								<div className="flex flex-wrap gap-1 mb-1 max-h-24 overflow-y-auto">
 									{selectedItems.slice(0, maxChips).map((item) => (
-										<span
+										// The chip carries the row's leading visual (image field over
+										// option icon) so a picked option reads like its row did.
+										<SelectedChip
 											key={item[idKey]}
-											className="flex items-center justify-between gap-1 px-2 py-1 bg-[var(--accent-3,#dbeafe)] text-[var(--accent-12,#1e40af)] text-xs rounded-md max-w-[120px] border border-[var(--accent-6,#bfdbfe)]"
-										>
-											<span className="truncate">{item[displayKey]}</span>
-											<button
-												type="button"
-												onClick={(e) => handleRemoveSelected(String(item[idKey]), e)}
-												className="hover:bg-[var(--accent-4,#bfdbfe)] rounded-full p-0.5 flex-shrink-0"
-											>
-												<X className="h-3 w-3" />
-											</button>
-										</span>
+											title={String(item[displayKey] ?? "")}
+											icon={resolveItemIcon(item, itemIcon)}
+											avatar={resolveItemAvatar(item, itemAvatar, displayKey)}
+											onRemove={(e) => handleRemoveSelected(String(item[idKey]), e)}
+										/>
 									))}
 									{selectedItems.length > maxChips && (
 										<span className="text-xs text-gray-500 dark:text-gray-400 flex items-center">

@@ -8,10 +8,10 @@ export function seedActivity(): ActivityEntry[] {
     ['Nattapong V.', 'created', 'model', 'countryRes', 'initial shape for the country service', now - 96 * h],
     ['Pimchanok S.', 'created', 'api', 'searchCountries', 'GET /collection/search', now - 95 * h],
     ['Pimchanok S.', 'created', 'api', 'countriesPaged', 'POST /collection/page', now - 95 * h + 60000],
-    ['Sarawut K.', 'created', 'project', 'Country manager', 'from the countries example', now - 72 * h],
-    ['Sarawut K.', 'attached', 'api', 'searchCountries, countriesPaged', 'to Country manager', now - 71 * h],
+    ['Chanwit Y.', 'created', 'project', 'Country manager', 'from the countries example', now - 72 * h],
+    ['Chanwit Y.', 'attached', 'api', 'searchCountries, countriesPaged', 'to Country manager', now - 71 * h],
     ['Thanapat R.', 'updated', 'model', 'countryPagedRes', 'added per_page', now - 30 * h],
-    ['Sarawut K.', 'saved', 'project', 'Country manager', 'Countries · 2 element(s)', now - 2 * h],
+    ['Chanwit Y.', 'saved', 'project', 'Country manager', 'Countries · 2 element(s)', now - 2 * h],
   ]
   return rows
     .map(([user, verb, kind, name, detail, ts], i) => ({

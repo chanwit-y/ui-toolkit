@@ -1,6 +1,7 @@
 import {
   AppWindow,
   BarChart3,
+  BellRing,
   Box,
   Calendar,
   CalendarClock,
@@ -9,6 +10,8 @@ import {
   ChartPie,
   CircleDot,
   Clapperboard,
+  Code,
+  CreditCard,
   EyeOff,
   FileSpreadsheet,
   GalleryHorizontal,
@@ -20,15 +23,16 @@ import {
   ListChecks,
   ListFilter,
   ListPlus,
-  Repeat2,
   Megaphone,
   MessageSquare,
   MessageSquareWarning,
   MousePointerClick,
   Network,
+  PanelRight,
   PanelTop,
   Pilcrow,
   Presentation,
+  Repeat2,
   Search,
   SeparatorHorizontal,
   SquareCheck,
@@ -37,14 +41,14 @@ import {
   Table,
   TextCursorInput,
   TextWrap,
+  ToggleLeft,
   TriangleAlert,
   Type,
+  type LucideIcon,
   UnfoldVertical,
-  BellRing,
   Upload,
   User,
   Users,
-  type LucideIcon,
 } from 'lucide-react'
 import type { DesignOnlyType } from './designTypes'
 
@@ -53,6 +57,7 @@ export type ComponentType =
   | 'hidden'
   | 'multiAutocomplete'
   | 'modal'
+  | 'drawer'
   | 'button'
   | 'datatable'
   | 'datatableeditable'
@@ -62,6 +67,7 @@ export type ComponentType =
   | 'textfield'
   | 'select'
   | 'checkbox'
+  | 'switch'
   | 'radio'
   | 'textarea'
   | 'datepicker'
@@ -75,6 +81,8 @@ export type ComponentType =
   | 'container'
   | 'tab'
   | 'paper'
+  | 'card'
+  | 'html'
   | 'popover'
   | 'divider'
   | 'empty'
@@ -110,6 +118,7 @@ export const COMPONENT_GROUPS: ComponentGroup[] = [
       { type: 'autocomplete', label: 'Autocomplete', icon: Search },
       { type: 'multiAutocomplete', label: 'Multi Autocomplete', icon: ListChecks },
       { type: 'checkbox', label: 'Checkbox', icon: SquareCheck },
+      { type: 'switch', label: 'Switch', icon: ToggleLeft },
       { type: 'radio', label: 'Radio', icon: CircleDot },
     ],
   },
@@ -177,6 +186,7 @@ export const COMPONENT_GROUPS: ComponentGroup[] = [
       { type: 'typography', label: 'Typography', icon: Pilcrow },
       { type: 'avatar', label: 'Avatar', icon: User },
       { type: 'divider', label: 'Divider', icon: SeparatorHorizontal },
+      { type: 'html', label: 'HTML', icon: Code },
     ],
   },
   {
@@ -185,12 +195,14 @@ export const COMPONENT_GROUPS: ComponentGroup[] = [
       { type: 'container', label: 'Container', icon: Box },
       { type: 'tab', label: 'Tab', icon: PanelTop },
       { type: 'paper', label: 'Paper', icon: StickyNote },
+      { type: 'card', label: 'Card', icon: CreditCard },
     ],
   },
   {
     category: 'Overlay',
     items: [
       { type: 'modal', label: 'Modal', icon: AppWindow },
+      { type: 'drawer', label: 'Drawer', icon: PanelRight },
       { type: 'popover', label: 'Popover', icon: MessageSquare },
     ],
   },

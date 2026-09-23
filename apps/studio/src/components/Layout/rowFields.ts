@@ -53,6 +53,40 @@ export function rowFieldsFor(
   return { fields: row.fields.map((f) => ({ name: f.name, kind: f.kind })) }
 }
 
+/**
+ * Where a data table's server pagination keys go: the authored placement, or
+ * — on `'auto'` — the engine's inference off the endpoint declaration (a body
+ * model ⇒ body, else query). Unknown endpoint ⇒ query, like a GET.
+ */
+export function paginationPlacement(
+  endpoint: EndpointDef | undefined,
+  placement: 'auto' | 'query' | 'body',
+): 'query' | 'body' {
+  if (placement !== 'auto') return placement
+  return endpoint?.body != null ? 'body' : 'query'
+}
+
+/**
+ * The top-level fields of the model an endpoint declares for one request
+ * segment (or its response), for the pagination key pickers — the engine
+ * writes `offset`/`limit` straight onto that object and reads `total` off
+ * the response, so nesting is never in play.
+ */
+export function segmentFields(
+  endpoint: EndpointDef | undefined,
+  segment: 'query' | 'body' | 'response',
+  models: ModelDef[],
+): RowFields {
+  if (!endpoint) return { fields: null, reason: 'Pick the data endpoint to choose from its model fields.' }
+  const modelId = endpoint[segment]
+  const model = modelId == null ? undefined : models.find((m) => m.id === modelId)
+  if (!model) {
+    const what = segment === 'response' ? 'response' : `${segment} model`
+    return { fields: null, reason: `The endpoint declares no ${what} — type the key names.` }
+  }
+  return { fields: model.fields.map((f) => ({ name: f.name, kind: f.kind })) }
+}
+
 /** The model fields of one row, or why they can't be resolved. */
 export type RowModel = { fields: ModelField[]; reason?: undefined } | { fields: null; reason: string }
 

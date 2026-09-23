@@ -10,6 +10,7 @@ import {
   Button as RadixButton,
   Select as RadixSelect,
   Checkbox as RadixCheckbox,
+  Switch as RadixSwitch,
   RadioGroup as RadixRadioGroup,
   Text as RadixText,
 } from "@radix-ui/themes";
@@ -432,14 +433,50 @@ export type DataTableProps = {
   api?: APIFunction;
   apiDelete?: APIFunction;
   apiInfo?: DataTableApi;
+  /**
+   * The read endpoint's declared segments, so `query`/`body` maps and the
+   * pagination keys land in the caller's positional (query, param, body)
+   * slots. Omitted (hand-wired `api`) ⇒ one merged positional arg, as before.
+   */
+  apiSegments?: ApiSegments;
+  /** Initial column pinning by accessor; the action column is pinned left regardless. */
+  pinnedColumns?: DataTablePinnedColumns;
   modalContainer?: JSX.Element;
   modalMaxWidth?: string;
   modalMinWidth?: string;
   modalMaxHeight?: string;
   canEdit?: boolean;
   canDelete?: boolean;
+  /** Add button in the header (opens `modalContainer` with cleared context). */
+  canAdd?: boolean;
+  addButton?: DataTableAddButton;
+  /** Spacing between the header's title, Add button and search box. */
+  headerGap?: DataTableHeaderGap;
   /** Row click navigates; `{ type: "row", key }` params read the clicked row. */
   rowNavigate?: NavigateTarget;
+  /** Column resizing by dragging the header edges. Default true. */
+  canResizeColumns?: boolean;
+  /**
+   * Lines a plain cell may show before it is cut (CSS line clamp); a cut cell
+   * shows its whole text in a tooltip on hover. Default 2; `0` = no clamp
+   * (wrap freely). Per column: {@link ColumnDef.lines}. HTML columns and the
+   * action column never clamp.
+   */
+  cellLines?: number;
+  /**
+   * The filter form (see {@link DataTableElement.filterContainer}). The table
+   * owns the form instance; `renderFilterBins` draws the container's bins
+   * against it (the builder passes the engine's `ContainerGrid`).
+   */
+  filterContainer?: Container;
+  renderFilterBins?: (container: Container, form: unknown) => ReactNode;
+  filterDefaults?: Record<string, unknown>;
+  filterButton?: DataTableFilterButton;
+  filterDisplay?: DataTableFilterDisplay;
+  /** `:param` names of the read endpoint's URL — the call is held until each resolves. */
+  urlParams?: string[];
+  /** Column id → the field name `api.sort` sends (see {@link ColumnDef.sortField}). */
+  sortFields?: Record<string, string>;
   align?: Record<string, "start" | "center" | "end">;
   context?: Context<DataContextType>;
   // isReload?: boolean;
@@ -484,8 +521,23 @@ export type DataTableEditableColumn = {
   validation?: DataTableEditableValidation;
   enableSorting?: boolean;
   enableColumnFilter?: boolean;
+  /**
+   * Starting width in px. Declaring one on any column puts the table in
+   * exact-pixel mode from the first paint (spare width goes to a filler cell);
+   * otherwise columns share the container until the first resize.
+   */
   size?: number;
+  /** Narrowest the column can be dragged (px). Default 60. */
+  minSize?: number;
+  /** Widest the column can be dragged (px). Default: no limit. */
+  maxSize?: number;
+  /** `false` locks this column's width (no resize handle). Default true. */
+  enableResizing?: boolean;
   align?: "start" | "center" | "end";
+  /** The row's label column (`<th scope="row">`, header colours, pinned left). See {@link ColumnDef.rowHeader}. */
+  rowHeader?: boolean;
+  /** Group header label — adjacent columns with the same label share a band. See {@link ColumnDef.group}. */
+  group?: string;
   /** Initial value used when creating a new row. */
   defaultValue?: any;
 };
@@ -530,6 +582,8 @@ export type DataTableEditableProps = {
   /** CRUD API configuration. Create/update/delete actions appear only when their API is set. */
   apiCrud: DataTableEditableApiConfig;
   align?: Record<string, "start" | "center" | "end">;
+  /** Column resizing by dragging the header edges. Default true. */
+  canResizeColumns?: boolean;
 };
 
 // Config-driven (container builder) variants: APIs are referenced by the name
@@ -568,6 +622,12 @@ export type DataTableEditableElement = {
     update?: CrudMutationApiRef;
     delete?: CrudDeleteApiRef;
   };
+  /**
+   * Drag a header's right edge to resize its column (double-click resets;
+   * the handle is keyboard-focusable: ← → resize, Enter resets). Widths last
+   * for the session. Default true; lock single columns with `enableResizing`.
+   */
+  canResizeColumns?: boolean;
 };
 
 
@@ -791,10 +851,16 @@ export type IconProps = BaseComponentProps<
 export type DataValue = {
   /**
    * `row` is only meaningful inside a {@link NavigateTarget} on a data table's
-   * `rowNavigate`: it reads `key` off the clicked row.
+   * `rowNavigate`: it reads `key` off the clicked row. `filter` is only
+   * meaningful in a data table's `api.params` / `api.query` / `api.body`: it
+   * reads the field named `key` of the table's applied `filterContainer` form.
    */
-  type: "variable" | "state" | "observe" | "value" | "selectedRow" | "url" | "row";
+  type: "variable" | "state" | "observe" | "value" | "selectedRow" | "url" | "row" | "filter";
   key: "none" | string;
+  /**
+   * The literal for `type:"value"`. For `type:"filter"` it is the fallback sent
+   * while that filter is blank (a URL `:param` needs one, e.g. `"all"`).
+   */
   value?: any;
   /**
    * Lodash path into the source object. For `type:"state"` it drills into the
@@ -825,11 +891,17 @@ export type API = {
  * response. Absent ⇒ today's client-side behavior is unchanged.
  */
 export type DataTablePagination = {
-  /** Body key that receives `pageIndex * pageSize`. */
+  /**
+   * Where offset/limit/search go. Omitted ⇒ inferred from the endpoint
+   * declaration: it declares a `body` model ⇒ `"body"`, else `"query"` (so a
+   * GET endpoint pages through its query string with no extra config).
+   */
+  placement?: "query" | "body";
+  /** Key that receives `pageIndex * pageSize`. */
   offsetKey: string;
-  /** Body key that receives `pageSize`. */
+  /** Key that receives `pageSize`. */
   limitKey: string;
-  /** Body key for the global search term. Present ⇒ server-side search enabled. */
+  /** Key for the global search term. Present ⇒ server-side search enabled. */
   searchKey?: string;
   /** Path into the response for the total (unpaged) row count, e.g. ["total"]. */
   totalPath: string[];
@@ -839,8 +911,28 @@ export type DataTablePagination = {
   pageSizeOptions?: number[];
 };
 
-/** {@link API} plus the optional server-pagination block used by DataTable. */
-export type DataTableApi = API & { pagination?: DataTablePagination };
+/**
+ * Server-side sorting for a DataTable. Present ⇒ a header's sort icon sends the
+ * field and direction to the API (and refetches, back on page 1) instead of
+ * sorting the fetched rows in memory. One column at a time. The field is the
+ * column's `sortField`, else its `accessor`. Works with or without
+ * `pagination`.
+ */
+export type DataTableSort = {
+  /** Where the two keys go. Omitted ⇒ inferred like {@link DataTablePagination.placement}. */
+  placement?: "query" | "body";
+  /** Key that receives the field name. */
+  sortKey: string;
+  /** Key that receives the direction. */
+  orderKey: string;
+  /** What to send for each direction. Defaults to `"asc"` / `"desc"`. */
+  orderValues?: { asc: string | number; desc: string | number };
+  /** The sort the table opens with (`field` as sent to the API). */
+  default?: { field: string; order: "asc" | "desc" };
+};
+
+/** {@link API} plus the optional server-pagination / server-sort blocks used by DataTable. */
+export type DataTableApi = API & { pagination?: DataTablePagination; sort?: DataTableSort };
 
 /**
  * Declarative API loader for a {@link Container}. When set, the container fires
@@ -888,6 +980,48 @@ export type CheckboxElement = {
   /** Read-only initial value bound from a global-state slice. */
   value?: DataValue;
 } & CheckboxProps;
+
+/** Where a switch's label sits relative to the thumb. */
+export type SwitchLabelPosition = "start" | "end";
+
+export type SwitchProps = BaseComponentProps<
+  typeof RadixSwitch,
+  {
+    label?: string;
+    /** Label before (`start`) or after (`end`, default) the switch. */
+    labelPosition?: SwitchLabelPosition;
+    helperText?: string;
+    error?: boolean;
+    errorMessage?: string;
+    size?: "1" | "2" | "3";
+    variant?: "classic" | "surface" | "soft";
+    /** Form value (boolean) — wins over `checked` when it is a boolean. */
+    value?: boolean;
+    /** Initial form value, read by `withForm`'s Controller (the builder maps `defaultChecked` here). */
+    defaultValue?: boolean;
+    /** Publishes the value on the observe Subject keyed by `name` (for `enabledWhen`). */
+    canObserve?: boolean;
+    /** Enabled while the condition holds — `left` is `{ key, type: "observe" }` naming a `canObserve` field. */
+    enabledWhen?: CondExpression;
+    onChange?: (value: boolean) => void;
+  }
+>;
+
+/**
+ * An on / off control after MUI's Switch: one boolean field (`dataType`
+ * "boolean"; `isRequired` means it must be **on**). `defaultChecked` seeds the
+ * form value, `disabled` locks it, `enabledWhen` enables it while another
+ * `canObserve` switch / checkbox holds the given value.
+ */
+export type SwitchElement = {
+  name: string;
+  dataType: string;
+  isRequired: boolean;
+  errorMessage: string;
+  defaultChecked?: boolean;
+  /** Read-only initial value bound from a global-state slice. */
+  value?: DataValue;
+} & Omit<SwitchProps, "value" | "defaultChecked">;
 
 export type APIDelete = {
   name: string;
@@ -939,11 +1073,94 @@ export type ColumnDef = {
   accessor: string;
   header: string;
   enableSorting: boolean;
+  /** Field name sent to the API by `api.sort` when it differs from `accessor`. */
+  sortField?: string;
   enableColumnFilter: boolean;
   isEditable?: boolean;
   align?: "start" | "center" | "end";
   useDateFormat?: string;
+  /**
+   * Starting width in px. Declaring one on any column puts the table in
+   * exact-pixel mode from the first paint (spare width goes to a filler cell);
+   * otherwise columns share the container until the first resize.
+   */
+  size?: number;
+  /** Narrowest the column can be dragged (px). Default 60. */
+  minSize?: number;
+  /** Widest the column can be dragged (px). Default: no limit. */
+  maxSize?: number;
+  /** `false` locks this column's width (no resize handle). Default true. */
+  enableResizing?: boolean;
+  /**
+   * Keep the column in view while the table scrolls horizontally. The initial
+   * state only — the header's pin toggle can pin/unpin (left) for the session.
+   * The ACTION column is always pinned left.
+   */
+  pin?: "left" | "right";
+  /**
+   * Render the cell from an HTML template instead of the plain value.
+   * `{{path}}` placeholders read the row (lodash `get` paths: `{{name}}`,
+   * `{{region.name}}`), `{{value}}` is this column's own value after
+   * `useDateFormat`; every interpolated value is HTML-escaped and the result
+   * is sanitised (no scripts, handlers, `<style>` or form controls). Style with
+   * the `style` attribute + Radix vars, or the `dt-strong` / `dt-muted` /
+   * `dt-badge` / `dt-link` helper classes. Same-origin `<a href="/…">` links
+   * navigate in-app. Sorting, filtering and search keep using the accessor
+   * value; the search highlight skips HTML cells.
+   */
+  html?: string;
+  /** Lines this column's cells may show before the clamp (`0` = none); overrides {@link DataTableElement.cellLines}. */
+  lines?: number;
+  /**
+   * The row's label column: cells render as `<th scope="row">` in the header
+   * colours and the column is pinned left (after the action column). One per
+   * table.
+   */
+  rowHeader?: boolean;
+  /** Consecutive rows with the same value share one cell (`rowSpan`). Blank values never merge. */
+  mergeRows?: boolean;
+  /**
+   * Adjacent columns that both set this and hold the same value in a row
+   * share one cell (`colSpan`). A cell already merged down stays as is.
+   */
+  mergeColumns?: boolean;
+  /**
+   * Group header: adjacent columns with the same label sit under one header
+   * cell spanning them, in a header row above the column headers.
+   */
+  group?: string;
 };
+
+/** Column ids (accessors) pinned to each side, in order (see {@link ColumnDef.pin}). */
+export type DataTablePinnedColumns = { left: string[]; right: string[] };
+
+/**
+ * The table's Add button (see {@link DataTableElement.canAdd}). Defaults:
+ * "Add", the `puls` icon, `contained`. An empty `label` renders icon-only.
+ */
+export type DataTableAddButton = {
+  label?: string;
+  icon?: keyof typeof IconData;
+  variant?: ButtonVariant;
+};
+
+/**
+ * The table's Filter button (see {@link DataTableElement.filterContainer}).
+ * Defaults: "Filter", the `filter` icon, `outlined`. An empty `label` renders
+ * icon-only. It carries a badge counting the filters that differ from their
+ * default.
+ */
+export type DataTableFilterButton = {
+  label?: string;
+  icon?: keyof typeof IconData;
+  variant?: ButtonVariant;
+};
+
+/** `popover` — behind the header's Filter button; `inline` — a bar above the table. */
+export type DataTableFilterDisplay = "popover" | "inline";
+
+/** Header spacing steps (Tailwind `gap-*`), see {@link DataTableElement.headerGap}. */
+export type DataTableHeaderGap = "0" | "1" | "2" | "3" | "4" | "6" | "8";
 
 export type DataTableElement = {
   name: string;
@@ -957,8 +1174,57 @@ export type DataTableElement = {
   modalMaxHeight?: string;
   canEdit?: boolean;
   canDelete?: boolean;
+  /**
+   * The "Search all columns" box in the header (default true). In server
+   * paging it also needs `api.pagination.searchKey`; `false` hides it either
+   * way.
+   */
+  canSearch?: boolean;
+  /**
+   * Spacing between the header's title, Add button and search box, as a
+   * Tailwind gap step (`"0" | "1" | "2" | "3" | "4" | "6" | "8"`). Default "2".
+   */
+  headerGap?: DataTableHeaderGap;
+  /**
+   * An Add button in the table header. It clears `contextData[name]` and
+   * opens the same `modalContainer` as Edit; the form inside tells adding
+   * from editing with a `condition` on `<name>._id` (undefined ⇒ adding).
+   */
+  canAdd?: boolean;
+  addButton?: DataTableAddButton;
+  /**
+   * Server-side custom filters: a container of ordinary input bins (fields
+   * only) the table renders as its filter form, with its own **Apply** and
+   * **Clear**. Map the fields into the request with `{ type: "filter", key:
+   * "<field name>" }` {@link DataValue}s in `api.params` / `api.query` /
+   * `api.body`. Apply validates the form, stores the values, returns to page 1
+   * and calls the API; blank filters are left out of the request (a DataValue's
+   * `value` is the fallback — needed when the filter feeds a URL `:param`, which
+   * otherwise holds the call). Works with or without `api.pagination`.
+   */
+  filterContainer?: Container;
+  /**
+   * The filters the table opens with (field name → value): the first fetch is
+   * already filtered by them, and **Clear** returns to them.
+   */
+  filterDefaults?: Record<string, unknown>;
+  filterButton?: DataTableFilterButton;
+  /** Default `"popover"`. */
+  filterDisplay?: DataTableFilterDisplay;
   /** Clicking a row navigates; `{ type: "row", key }` params read the clicked row. */
   rowNavigate?: NavigateTarget;
+  /**
+   * Drag a header's right edge to resize its column (double-click resets;
+   * the handle is keyboard-focusable: ← → resize, Enter resets). Widths last
+   * for the session. Default true; lock single columns with `enableResizing`.
+   */
+  canResizeColumns?: boolean;
+  /**
+   * Line clamp for plain cells (see {@link DataTableElement.cellLines}):
+   * default 2, `0` = none. A column's `meta.lines` overrides it; a cut cell
+   * shows its full text in a tooltip.
+   */
+  cellLines?: number;
   // Editing: {}
 };
 
@@ -1340,6 +1606,7 @@ export type TElement =
   | TextFieldElement
   | TextareaElement
   | CheckboxElement
+  | SwitchElement
   | DataTableElement
   | DataTableEditableElement
   | FormListElement
@@ -1356,7 +1623,10 @@ export type TElement =
   | ButtonElement
   | TabElement
   | PaperElement
+  | CardElement
+  | HtmlContentElement
   | PopoverElement
+  | DrawerElement
   | DividerElement;
 
 export type BinType =
@@ -1372,6 +1642,7 @@ export type BinType =
   | "textfield"
   | "select"
   | "checkbox"
+  | "switch"
   | "radio"
   | "textarea"
   | "datepicker"
@@ -1385,7 +1656,10 @@ export type BinType =
   | "container"
   | "tab"
   | "paper"
+  | "card"
+  | "html"
   | "popover"
+  | "drawer"
   | "divider"
   | "empty";
 
@@ -1669,6 +1943,35 @@ export type PopoverElement = {
   offset?: number;
 };
 
+/** Which viewport edge a drawer slides in from. */
+export type DrawerAnchor = "left" | "right" | "top" | "bottom";
+
+/**
+ * Config-driven Drawer (MUI's *temporary* drawer): a panel that slides in
+ * over the page from `anchor` behind a scrim, holding a self-contained
+ * {@link Container} (its own form, like a modal), opened by any `trigger`
+ * element (a mini-Bin like the popover's) and closed by the scrim, Esc, its
+ * close button or a `CloseModal` button inside it whose `modalId` is this
+ * `id` (the drawer registers under `id` like a modal, so `OpenModal` works
+ * from any button too). `size` is the width of a left / right drawer or the
+ * height of a top / bottom one (any CSS length; the drawer never exceeds the
+ * viewport). The persistent / permanent variants are app chrome — that is the
+ * AppShell sidebar.
+ */
+export type DrawerElement = {
+  id: string;
+  title?: string;
+  description?: string;
+  container: Container;
+  trigger: PopoverTrigger;
+  /** Default `"right"`. */
+  anchor?: DrawerAnchor;
+  /** Default `"360px"` for left / right, `"50vh"` for top / bottom. */
+  size?: string;
+  /** Hide the title row (title, description and the close button). */
+  hideHeader?: boolean;
+};
+
 export type TabItem = {
   label: string;
   value: string;
@@ -1701,6 +2004,81 @@ export type PaperElement = {
   variant?: "elevation" | "outlined";
   /** When true, corners are not rounded. */
   square?: boolean;
+  className?: string;
+  style?: CSSProperties;
+};
+
+/** The `card` header: avatar · title / subheader · action (MUI `CardHeader`). */
+export type CardHeaderElement = {
+  title?: string;
+  /** Bound title (`row` / `state` / `url` / `value`); `title` is the fallback. */
+  titleValue?: DataValue;
+  subheader?: string;
+  /** Bound subheader; `subheader` is the fallback. */
+  subheaderValue?: DataValue;
+  /** The avatar at the header's start (the usual `avatar` element: `src`/`srcValue`, `fallback`/`fallbackValue`). */
+  avatar?: AvatarElement;
+  /** A button at the header's end — `label: ""` + `icon` for MUI's ⋮ icon button; opens a popover / modal or navigates. */
+  action?: ButtonElement;
+};
+
+/** The `card` image band (MUI `CardMedia`). */
+export type CardMediaElement = {
+  src?: string;
+  /** Bound image URL — a string, or an object with a `src`/`url` field; `src` is the fallback. */
+  srcValue?: DataValue;
+  alt?: string;
+  /** Height in px (default 180). */
+  height?: number;
+};
+
+/**
+ * A card: a `Paper` with MUI's slots in MUI's order — header, media, content,
+ * actions, expandable section. Every slot is optional; a card inside a
+ * `repeater` binds its header / media to the item with `type: "row"` values.
+ */
+export type CardElement = {
+  name?: string;
+  header?: CardHeaderElement;
+  media?: CardMediaElement;
+  /** Nested bins in the body (drawn like a repeater's item template — `row` bindings and conditions see the item). */
+  content?: Container;
+  /** The footer button row. */
+  actions?: ButtonElement[];
+  /** Where the footer buttons sit (default "start"). */
+  actionsAlign?: "start" | "end";
+  /** Bins behind an expand toggle at the footer's end (MUI's "complex interaction"). */
+  collapse?: Container;
+  /** The toggle's accessible name / tooltip (default "Show more"). */
+  collapseLabel?: string;
+  defaultExpanded?: boolean;
+  /** Makes the whole card a link (MUI `CardActionArea`); inner buttons keep their own click. */
+  navigate?: NavigateTarget;
+  /** "elevation" (default) draws a shadow; "outlined" a 1px border. */
+  variant?: "elevation" | "outlined";
+  /** Shadow depth (0–24, default 1). Ignored when outlined. */
+  elevation?: number;
+  square?: boolean;
+  className?: string;
+  style?: CSSProperties;
+};
+
+/**
+ * A block of HTML on the page (`html` Bin): a `{{path}}` template rendered
+ * against `value` — the enclosing repeater item, a `state` slice, a URL param
+ * or nothing (plain static markup) — with every placeholder escaped and the
+ * result sanitised (the data table's HTML-column profile: no scripts, no
+ * `<style>`, no form controls; `class` / `style` / links kept). Same-origin
+ * links navigate in-app; the `dt-*` helper classes are available.
+ */
+export type HtmlContentElement = {
+  name?: string;
+  /** The markup, with `{{path}}` placeholders into `value` (`{{value}}` = the value itself). */
+  html: string;
+  /** What the placeholders read (`{ type: "row" }` inside a repeater, `state`, `url`, `value`). */
+  value?: DataValue;
+  /** Typographic defaults for headings / paragraphs / lists / tables (default true). */
+  prose?: boolean;
   className?: string;
   style?: CSSProperties;
 };
@@ -1786,7 +2164,14 @@ export type ThemeComponents = {
     paginationButtonColor?: ThemeProps["accentColor"];
     paginationButtonHoverColor?: ThemeProps["accentColor"];
     rowHoverColor?: ThemeProps["accentColor"];
+    /**
+     * Row edit button (DataTable + DataTableEditable), a Radix soft IconButton.
+     * Unset → the buttons' colour (`button.color`, else the theme accent).
+     */
     editButtonColor?: ThemeProps["accentColor"];
+    /**
+     * Row delete button (both tables) and the form list's Remove. Unset → red.
+     */
     deleteButtonColor?: ThemeProps["accentColor"];
   };
   /** Sidebar (AppShell) overrides. Unset → the theme accent. */

@@ -1,10 +1,9 @@
-import { ArrowLeft, Columns3, Play } from 'lucide-react'
+import { ArrowLeft, Columns3 } from 'lucide-react'
 import { Button, cn, IconButton, SegmentedControl } from '../common'
 import { useStudioStore } from '../studioStore'
 import { BreakpointSelector } from './BreakpointSelector'
 import { PageBar } from './PageBar'
 import {
-  selectActiveItems,
   selectActiveSettings,
   useBreadcrumb,
   useGridStore,
@@ -87,12 +86,10 @@ function ColumnsSeg() {
 }
 
 export function PreviewToolbar() {
-  const canvasEmpty = useGridStore((s) => selectActiveItems(s).length === 0)
   const previewBreakpoint = useGridStore((s) => s.previewBreakpoint)
   const setPreviewBreakpoint = useGridStore((s) => s.setPreviewBreakpoint)
   const guides = useStudioStore((s) => s.guides)
   const toggleGuides = useStudioStore((s) => s.toggleGuides)
-  const setPreviewOpen = useStudioStore((s) => s.setPreviewOpen)
 
   return (
     <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-line bg-panel px-2.5 py-[7px] @container">
@@ -117,14 +114,6 @@ export function PreviewToolbar() {
       >
         <Columns3 size={14} aria-hidden="true" />
       </IconButton>
-      <Button
-        disabled={canvasEmpty}
-        title={canvasEmpty ? 'Add a component to the canvas first' : 'Run the live preview'}
-        onClick={() => setPreviewOpen(true)}
-      >
-        <Play size={14} aria-hidden="true" />
-        Run
-      </Button>
     </div>
   )
 }

@@ -5,14 +5,41 @@ import type { ModelDef } from '../Model/types'
 import type { ThemeAppearance } from '../Theme/types'
 import { seedActivity } from '../seed/activity'
 import {
+  countryCreateButtonSeedItem,
   countryLanguagesSeedItem,
+  countryTablePagination,
+  COUNTRIES_PAGED_GET_ENDPOINT_ID,
+  COUNTRY_ADD_BUTTON,
+  COUNTRY_CREATE_BUTTON_ITEM_ID,
+  COUNTRY_MODAL_ITEM_ID,
+  COUNTRY_TABLE_ITEM_ID,
+  DATA_TABLE_HTML_ITEM_ID,
+  DATA_TABLE_CLAMP_ITEM_ID,
+  dataTableClampSeedItems,
+  tableLayoutSeedModels,
+  tableLayoutSeedEndpoints,
+  REGION_RES_MODEL_ID,
+  DATA_TABLE_PAGE_ID,
+  HTML_COLUMNS_PAGE_ID,
+  COUNTRY_PAGE_BODY_MODEL_ID,
+  COUNTRY_PAGE_QUERY_MODEL_ID,
+  pageFilterFields,
+  serverFilterSeedEndpoints,
+  serverFilterSeedModels,
+  HTML_COLUMNS_RICH_ITEM_IDS,
+  htmlColumnDemoSeedItems,
+  dataTableHtmlSeedItems,
+  COUNTRY_UPDATE_BUTTON_ITEM_ID,
   formListDemoSeedEndpoints,
   formListDemoSeedModels,
+  pagedCountriesSeedEndpoints,
+  pagedCountriesSeedModels,
   repeaterDemoSeedEndpoints,
   repeaterDemoSeedModels,
   languageSeedEndpoints,
   languageSeedModels,
   LANGUAGES_ITEM_ID,
+  SEARCH_COUNTRIES_ENDPOINT_ID,
 } from '../seed/country'
 import { builtinTemplates } from '../seed/templates'
 import {
@@ -31,6 +58,19 @@ import {
   optionDemoPages,
   formListDemoPage,
   repeaterDemoPage,
+  paginationDemoPage,
+  dataTableDemoPage,
+  htmlColumnDemoPage,
+  columnResizeDemoPage,
+  serverFilterDemoPage,
+  filterApiDemoPage,
+  cellTooltipDemoPage,
+  tableLayoutDemoPage,
+  cardDemoPage,
+  htmlContentDemoPage,
+  drawerDemoPage,
+  chipsDemoPage,
+  switchDemoPage,
   uploadDemoPage,
   OPTION_DEMO_MENU_ICONS,
   type LiveLibrary,
@@ -52,7 +92,9 @@ import type {
 } from './types'
 import { walkItems } from '../Layout/pageLinks'
 import { defaultMenu } from './menu'
-import type { AvatarConfig, ButtonItemConfig, FormListConfig, GridItemData, ModalConfig, NavParamSource, PopoverConfig, SelectFieldConfig, TextConfig, TypographyConfig, UploadFileConfig } from '../Layout/types'
+import { createDefaultPaginationConfig, DEFAULT_ADD_BUTTON } from '../Layout/types'
+import { createDefaultSortConfig, DEFAULT_CELL_LINES, DEFAULT_FILTER_BUTTON, ensureDataTableCanvases } from '../Layout/types'
+import type { AvatarConfig, ButtonItemConfig, DataTableConfig, DataTableEditableConfig, FormListConfig, GridItemData, ModalConfig, NavParamSource, PopoverConfig, SelectFieldConfig, TextConfig, TypographyConfig, UploadFileConfig } from '../Layout/types'
 
 const ACTIVITY_CAP = 500
 /** Autosaves are continuous; a "saved" line is worth recording this often. */
@@ -65,7 +107,7 @@ export type SaveState = 'saved' | 'pending' | 'error'
 
 /** The mockup's four people — a mock identity with no auth behind it. */
 export const MOCK_USERS: { name: string; role: string }[] = [
-  { name: 'Sarawut K.', role: 'Product design' },
+  { name: 'Chanwit Y.', role: 'Product design' },
   { name: 'Pimchanok S.', role: 'Backend' },
   { name: 'Thanapat R.', role: 'QA' },
   { name: 'Nattapong V.', role: 'Head of Digital' },
@@ -684,6 +726,518 @@ function migrateV18(data: { projects: ProjectDef[]; library: LibraryData }): {
   return data
 }
 
+/**
+ * v19 → v20: data table server pagination. Every data table (pages and
+ * templates) gains the `pagination` block, off. The shared library gains the
+ * GET page endpoint (+ its query model), the seeded Country manager attaches
+ * it, and its seeded Countries table — only while still on the seed search
+ * endpoint, so a re-wired table is left alone — moves onto it with pagination
+ * on, demoing the query-string placement.
+ */
+function migrateDataTablePagination(items: GridItemData[]): void {
+  walkItems(items, (item) => {
+    if (item.type === 'datatable' && item.config) {
+      ;(item.config as DataTableConfig).pagination ??= createDefaultPaginationConfig()
+    }
+  })
+}
+
+function migrateV19(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  for (const p of data.projects) for (const pg of p.snapshot.pages) migrateDataTablePagination(pg.grid.items)
+  for (const t of data.library.templates) migrateDataTablePagination(t.grid.items)
+  const seeded = seedLibraryAdditions(
+    data.projects,
+    data.library,
+    pagedCountriesSeedModels(),
+    pagedCountriesSeedEndpoints(),
+  )
+  for (const p of seeded.projects) {
+    if (p.id !== 'seed-project-country') continue
+    for (const pg of p.snapshot.pages) {
+      walkItems(pg.grid.items, (item) => {
+        if (item.id !== COUNTRY_TABLE_ITEM_ID || item.type !== 'datatable' || !item.config) return
+        const config = item.config as DataTableConfig
+        if (config.endpointId !== SEARCH_COUNTRIES_ENDPOINT_ID) return
+        config.endpointId = COUNTRIES_PAGED_GET_ENDPOINT_ID
+        config.pagination = countryTablePagination()
+      })
+    }
+  }
+  return seeded
+}
+
+/**
+ * v20 → v21: the seeded Country manager gets the "Pagination" demo page (+
+ * sidebar link) unless that page id already exists. Other projects are
+ * untouched.
+ */
+function migrateV20(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  return {
+    projects: data.projects.map((p) =>
+      p.id === 'seed-project-country' ? appendDemoPages(p, [paginationDemoPage()]) : p,
+    ),
+    library: data.library,
+  }
+}
+
+/**
+ * v21 → v22: column pinning. Every data table column (pages and templates)
+ * gains `pin: ''`, and the seeded Country manager gets the "Data table" demo
+ * page (+ sidebar link) unless that page id already exists.
+ */
+function migrateColumnPins(items: GridItemData[]): void {
+  walkItems(items, (item) => {
+    if (item.type !== 'datatable' || !item.config) return
+    for (const col of (item.config as DataTableConfig).columns) col.pin ??= ''
+  })
+}
+
+function migrateV21(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  for (const p of data.projects) for (const pg of p.snapshot.pages) migrateColumnPins(pg.grid.items)
+  for (const t of data.library.templates) migrateColumnPins(t.grid.items)
+  return {
+    projects: data.projects.map((p) =>
+      p.id === 'seed-project-country' ? appendDemoPages(p, [dataTableDemoPage()]) : p,
+    ),
+    library: data.library,
+  }
+}
+
+/**
+ * v22 → v23: the data table's Add action. Every table (pages and templates)
+ * gains `canAdd: false` + the default `addButton`. The seeded Country manager
+ * moves from its standalone "Add Country" modal to the table's own Add:
+ * while both seed items are still present, the modal is removed, the table
+ * gets `canAdd` + "Add Country", its modal canvas gains the Create button
+ * (`showWhen: 'adding'`) and the Update button becomes editing-only.
+ */
+function migrateAddAction(items: GridItemData[]): void {
+  walkItems(items, (item) => {
+    if (item.type !== 'datatable' || !item.config) return
+    const config = item.config as DataTableConfig
+    config.canAdd ??= false
+    config.addButton ??= { ...DEFAULT_ADD_BUTTON }
+  })
+}
+
+/**
+ * v29 → v30: server filters + sort. Every data table (pages and templates)
+ * gains its second child canvas (the filter form — and its first, where a seed
+ * never had one), the filter / request-mapping / sort defaults and `sortField:
+ * ''` on every column. The library gains the `:region` page endpoint + params
+ * model, its page body / query models the filter + sort fields they lack, and
+ * the seeded project the "Server filter" demo page.
+ */
+function migrateV29(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  const fill = (items: GridItemData[]) => {
+    ensureDataTableCanvases(items)
+    walkItems(items, (item) => {
+      if (item.type !== 'datatable' || !item.config) return
+      const config = item.config as DataTableConfig
+      config.filtersEnabled ??= false
+      config.filterButton ??= { ...DEFAULT_FILTER_BUTTON }
+      config.filterDisplay ??= 'popover'
+      config.filterDefaults ??= []
+      config.requestMapping ??= []
+      config.sort ??= createDefaultSortConfig()
+      for (const col of config.columns) col.sortField ??= ''
+    })
+  }
+  for (const p of data.projects) for (const pg of p.snapshot.pages) fill(pg.grid.items)
+  for (const t of data.library.templates) fill(t.grid.items)
+  for (const model of data.library.models) {
+    if (model.id !== COUNTRY_PAGE_BODY_MODEL_ID && model.id !== COUNTRY_PAGE_QUERY_MODEL_ID) continue
+    const have = new Set(model.fields.map((f) => f.name))
+    model.fields.push(...pageFilterFields().filter((f) => !have.has(f.name)))
+  }
+  const seeded = seedLibraryAdditions(data.projects, data.library, serverFilterSeedModels(), serverFilterSeedEndpoints())
+  return {
+    projects: seeded.projects.map((p) =>
+      p.id === 'seed-project-country' ? appendDemoPages(p, [serverFilterDemoPage()]) : p,
+    ),
+    library: seeded.library,
+  }
+}
+
+/**
+ * v33 → v34: the data table's layout keys. Every data table column (pages and
+ * templates) gains `rowHeader` / `mergeRows` / `mergeColumns: false` and
+ * `group: ''`, every editable table column `rowHeader: false` + `group: ''`;
+ * the library gains the `regionCountries` endpoint + model and the seeded
+ * project the "Table layout" demo page.
+ */
+function migrateV33(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  const fill = (items: GridItemData[]) =>
+    walkItems(items, (item) => {
+      if (!item.config) return
+      if (item.type === 'datatable') {
+        for (const col of (item.config as DataTableConfig).columns) {
+          col.rowHeader ??= false
+          col.mergeRows ??= false
+          col.mergeColumns ??= false
+          col.group ??= ''
+        }
+      } else if (item.type === 'datatableeditable') {
+        for (const col of (item.config as DataTableEditableConfig).columns) {
+          col.rowHeader ??= false
+          col.group ??= ''
+        }
+      }
+    })
+  for (const p of data.projects) for (const pg of p.snapshot.pages) fill(pg.grid.items)
+  for (const t of data.library.templates) fill(t.grid.items)
+  const seeded = seedLibraryAdditions(data.projects, data.library, tableLayoutSeedModels(), tableLayoutSeedEndpoints())
+  return {
+    projects: seeded.projects.map((p) =>
+      p.id === 'seed-project-country' ? appendDemoPages(p, [tableLayoutDemoPage()]) : p,
+    ),
+    library: seeded.library,
+  }
+}
+
+/**
+ * v38 → v39: the "Switch" demo page on the seeded project.
+ */
+function migrateV38(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  return {
+    projects: data.projects.map((p) =>
+      p.id === 'seed-project-country' ? appendDemoPages(p, [switchDemoPage()]) : p,
+    ),
+    library: data.library,
+  }
+}
+
+/**
+ * v37 → v38: the "Chips" demo page on the seeded project.
+ */
+function migrateV37(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  return {
+    projects: data.projects.map((p) =>
+      p.id === 'seed-project-country' ? appendDemoPages(p, [chipsDemoPage()]) : p,
+    ),
+    library: data.library,
+  }
+}
+
+/**
+ * v36 → v37: the "Drawer" demo page on the seeded project.
+ */
+function migrateV36(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  return {
+    projects: data.projects.map((p) =>
+      p.id === 'seed-project-country' ? appendDemoPages(p, [drawerDemoPage()]) : p,
+    ),
+    library: data.library,
+  }
+}
+
+/**
+ * v35 → v36: the "HTML content" demo page on the seeded project.
+ */
+function migrateV35(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  return {
+    projects: data.projects.map((p) =>
+      p.id === 'seed-project-country' ? appendDemoPages(p, [htmlContentDemoPage()]) : p,
+    ),
+    library: data.library,
+  }
+}
+
+/**
+ * v34 → v35: the "Card" demo page on the seeded project, and the `image`
+ * field (the wide flag the mock API returns) on every seeded country row
+ * model, so a card's media can bind to it.
+ */
+function migrateV34(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  for (const model of data.library.models) {
+    const rows = model.fields.find((f) => f.name === 'data')
+    const children = rows?.children ?? model.fields
+    const isCountryRow = children.some((f) => f.name === 'avatar') && children.some((f) => f.name === 'code')
+    if (!isCountryRow || children.some((f) => f.name === 'image')) continue
+    const avatar = children.findIndex((f) => f.name === 'avatar')
+    children.splice(avatar + 1, 0, {
+      id: `seed-field-image-${model.id}`,
+      name: 'image',
+      kind: 'string',
+      children: [],
+      arrayOf: 'string',
+    })
+  }
+  return {
+    projects: data.projects.map((p) =>
+      p.id === 'seed-project-country' ? appendDemoPages(p, [cardDemoPage()]) : p,
+    ),
+    library: data.library,
+  }
+}
+
+/**
+ * v32 → v33: the "Cell tooltip" demo page on the seeded project.
+ */
+function migrateV32(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  return {
+    projects: data.projects.map((p) =>
+      p.id === 'seed-project-country' ? appendDemoPages(p, [cellTooltipDemoPage()]) : p,
+    ),
+    library: data.library,
+  }
+}
+
+/**
+ * v31 → v32: the data table's line clamp. Every data table (pages and
+ * templates) gains `cellLines: 2` (the engine default) and every column
+ * `lines: ''` (the table's setting); the seeded `regionRes` model gains
+ * `about` and the seeded "Data table" page the two regions tables.
+ */
+function migrateV31(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  const fill = (items: GridItemData[]) =>
+    walkItems(items, (item) => {
+      if (item.type !== 'datatable' || !item.config) return
+      const config = item.config as DataTableConfig
+      config.cellLines ??= DEFAULT_CELL_LINES
+      for (const col of config.columns) col.lines ??= ''
+    })
+  for (const p of data.projects) for (const pg of p.snapshot.pages) fill(pg.grid.items)
+  for (const t of data.library.templates) fill(t.grid.items)
+  const regionRes = data.library.models.find((m) => m.id === REGION_RES_MODEL_ID)
+  const rows = regionRes?.fields.find((f) => f.name === 'data')
+  if (rows && !rows.children.some((f) => f.name === 'about')) {
+    const description = rows.children.findIndex((f) => f.name === 'description')
+    rows.children.splice(description + 1, 0, {
+      id: 'seed-field-region-about',
+      name: 'about',
+      kind: 'string',
+      children: [],
+      arrayOf: 'string',
+    })
+  }
+  const page = data.projects
+    .find((p) => p.id === 'seed-project-country')
+    ?.snapshot.pages.find((pg) => pg.id === DATA_TABLE_PAGE_ID)
+  if (page && !page.grid.items.some((item) => item.id === DATA_TABLE_CLAMP_ITEM_ID)) {
+    page.grid.items.push(...dataTableClampSeedItems())
+  }
+  return data
+}
+
+/**
+ * v30 → v31: the "Filter via API" demo page. The seeded page body / query
+ * models gain the `codes` filter (the fields they lack, as in v29) and the
+ * seeded project the page.
+ */
+function migrateV30(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  for (const model of data.library.models) {
+    if (model.id !== COUNTRY_PAGE_BODY_MODEL_ID && model.id !== COUNTRY_PAGE_QUERY_MODEL_ID) continue
+    const have = new Set(model.fields.map((f) => f.name))
+    model.fields.push(...pageFilterFields().filter((f) => !have.has(f.name)))
+  }
+  return {
+    projects: data.projects.map((p) =>
+      p.id === 'seed-project-country' ? appendDemoPages(p, [filterApiDemoPage()]) : p,
+    ),
+    library: data.library,
+  }
+}
+
+/**
+ * v28 → v29: column resizing. Every data table and editable table (pages and
+ * templates) gains `canResizeColumns: true`, every column of both the unset
+ * sizing (`size` / `minSize` / `maxSize` = `''`, `resizable: true`), and the
+ * seeded project the "Column resize" demo page.
+ */
+function migrateV28(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  const fill = (items: GridItemData[]) =>
+    walkItems(items, (item) => {
+      if ((item.type !== 'datatable' && item.type !== 'datatableeditable') || !item.config) return
+      const config = item.config as DataTableConfig | DataTableEditableConfig
+      config.canResizeColumns ??= true
+      for (const col of config.columns) {
+        col.size ??= ''
+        col.minSize ??= ''
+        col.maxSize ??= ''
+        col.resizable ??= true
+      }
+    })
+  for (const p of data.projects) for (const pg of p.snapshot.pages) fill(pg.grid.items)
+  for (const t of data.library.templates) fill(t.grid.items)
+  return {
+    projects: data.projects.map((p) =>
+      p.id === 'seed-project-country' ? appendDemoPages(p, [columnResizeDemoPage()]) : p,
+    ),
+    library: data.library,
+  }
+}
+
+/**
+ * v27 → v28: the rich-cells table's first seed drew the profile flag as an
+ * `<img>` (a broken image where `avatar` isn't a URL) and pinned the summary
+ * to a min-width that overflowed narrow columns. Columns still carrying those
+ * exact templates take the current seed's; edited ones are left alone.
+ */
+function migrateV27(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  const stale = (html: string) =>
+    html.includes('<img src="{{avatar}}" alt="" style="width:32px') || html.includes('min-width:220px;max-width:300px')
+  const table = data.projects
+    .find((p) => p.id === 'seed-project-country')
+    ?.snapshot.pages.find((pg) => pg.id === HTML_COLUMNS_PAGE_ID)
+    ?.grid.items.find((item) => item.id === 'seed-item-html-columns-rich')
+  if (table?.type === 'datatable' && table.config) {
+    const seed = htmlColumnDemoSeedItems().find((item) => item.id === table.id)?.config as DataTableConfig
+    for (const col of (table.config as DataTableConfig).columns) {
+      const fresh = seed.columns.find((c) => c.id === col.id)
+      if (fresh && stale(col.html)) col.html = fresh.html
+    }
+  }
+  return data
+}
+
+/**
+ * v26 → v27: the seeded "HTML columns" page — while it still exists and doesn't
+ * carry it yet — gets the rich-cells table, placed after the helpers table
+ * (before the styled section's caption; at the end when that was removed).
+ */
+function migrateV26(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  const page = data.projects
+    .find((p) => p.id === 'seed-project-country')
+    ?.snapshot.pages.find((pg) => pg.id === HTML_COLUMNS_PAGE_ID)
+  if (page && !page.grid.items.some((item) => HTML_COLUMNS_RICH_ITEM_IDS.includes(item.id))) {
+    const rich = htmlColumnDemoSeedItems().filter((item) => HTML_COLUMNS_RICH_ITEM_IDS.includes(item.id))
+    const at = page.grid.items.findIndex((item) => item.id === 'seed-item-html-columns-styled-caption')
+    page.grid.items.splice(at === -1 ? page.grid.items.length : at, 0, ...rich)
+  }
+  return data
+}
+
+/**
+ * v25 → v26: the seeded project gains the dedicated "HTML columns" demo page
+ * (skipped when the page id is already there, so a deleted page stays deleted).
+ */
+function migrateV25(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  return {
+    projects: data.projects.map((p) =>
+      p.id === 'seed-project-country' ? appendDemoPages(p, [htmlColumnDemoPage()]) : p,
+    ),
+    library: data.library,
+  }
+}
+
+/**
+ * v24 → v25: HTML columns. Every data table column (pages and templates) gains
+ * `html: ''`, and the seeded "Data table" page — while it still exists and
+ * doesn't carry the item yet — gets the HTML-columns demo table appended.
+ */
+function migrateV24(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  const fill = (items: GridItemData[]) =>
+    walkItems(items, (item) => {
+      if (item.type !== 'datatable' || !item.config) return
+      for (const col of (item.config as DataTableConfig).columns) col.html ??= ''
+    })
+  for (const p of data.projects) for (const pg of p.snapshot.pages) fill(pg.grid.items)
+  for (const t of data.library.templates) fill(t.grid.items)
+  const page = data.projects
+    .find((p) => p.id === 'seed-project-country')
+    ?.snapshot.pages.find((pg) => pg.id === DATA_TABLE_PAGE_ID)
+  if (page && !page.grid.items.some((item) => item.id === DATA_TABLE_HTML_ITEM_ID)) {
+    page.grid.items.push(...dataTableHtmlSeedItems())
+  }
+  return data
+}
+
+/** v23 → v24: the data table's `headerGap` (`''` = engine default) on every table. */
+function migrateV23(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  const fill = (items: GridItemData[]) =>
+    walkItems(items, (item) => {
+      if (item.type === 'datatable' && item.config) (item.config as DataTableConfig).headerGap ??= ''
+    })
+  for (const p of data.projects) for (const pg of p.snapshot.pages) fill(pg.grid.items)
+  for (const t of data.library.templates) fill(t.grid.items)
+  return data
+}
+
+function migrateV22(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  for (const p of data.projects) for (const pg of p.snapshot.pages) migrateAddAction(pg.grid.items)
+  for (const t of data.library.templates) migrateAddAction(t.grid.items)
+  const projects = data.projects.map((p) => {
+    if (p.id !== 'seed-project-country') return p
+    const pages = p.snapshot.pages.map((pg) => {
+      const modal = pg.grid.items.find((i) => i.id === COUNTRY_MODAL_ITEM_ID)
+      const table = pg.grid.items.find((i) => i.id === COUNTRY_TABLE_ITEM_ID && i.type === 'datatable' && i.config)
+      const canvas = table?.childCanvases?.[0]
+      if (!modal || !table || !canvas) return pg
+      const config = table.config as DataTableConfig
+      config.canAdd = true
+      config.addButton = { ...COUNTRY_ADD_BUTTON }
+      if (!canvas.items.some((i) => i.id === COUNTRY_CREATE_BUTTON_ITEM_ID)) {
+        canvas.items.push(countryCreateButtonSeedItem())
+      }
+      for (const i of canvas.items) if (i.id === COUNTRY_UPDATE_BUTTON_ITEM_ID) i.showWhen = 'editing'
+      return { ...pg, grid: { ...pg.grid, items: pg.grid.items.filter((i) => i.id !== COUNTRY_MODAL_ITEM_ID) } }
+    })
+    return { ...p, snapshot: { ...p.snapshot, pages } }
+  })
+  return { projects, library: data.library }
+}
+
 function migrateV3(projects: V3Project[], library: LibraryData): { projects: V4Project[]; library: LibraryData } {
   const out: V4Project[] = projects.map((p) => {
     const taken: string[] = []
@@ -735,7 +1289,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
       const templateOf = (id: string) => get().library.templates.find((t) => t.id === id)
 
       return {
-      version: 19,
+      version: 39,
       appearance: 'light',
       user: MOCK_USERS[0].name,
       projects: seedProjects(initialLibrary),
@@ -1070,7 +1624,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
     },
     {
       name: WORKSPACE_STORAGE_KEY,
-      version: 19,
+      version: 39,
       partialize: (s) => ({
         version: s.version,
         appearance: s.appearance,
@@ -1085,13 +1639,17 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
           | undefined
         if (!data || !Array.isArray(data.projects)) return current
         const appearance = data.appearance === 'dark' ? 'dark' : 'light'
+        // A stored identity that is no longer in MOCK_USERS (a renamed entry)
+        // falls back to the first one rather than lingering as a ghost.
         const user =
-          typeof data.user === 'string' && data.user ? data.user : MOCK_USERS[0].name
+          typeof data.user === 'string' && MOCK_USERS.some((u) => u.name === data.user)
+            ? data.user
+            : MOCK_USERS[0].name
         const activity = Array.isArray(data.activity) ? data.activity : seedActivity()
         if (data.version === 1) {
           const v1 = migrateV1(data.projects as unknown as V1Project[])
           const { projects, library } = migrateV3(migrateV2(v1.projects), v1.library)
-          return { ...current, appearance, user, activity, ...migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(migrateV7(migrateV6(migrateV5(migrateV4(projects))))), library)), library))))))) }
+          return { ...current, appearance, user, activity, ...migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(migrateV7(migrateV6(migrateV5(migrateV4(projects))))), library)), library))))))))))))))))))))))))))) }
         }
         if (!data.library) return current
         // Libraries saved before templates existed get the builtin set.
@@ -1103,58 +1661,118 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
         }
         if (data.version === 2) {
           const migrated = migrateV3(migrateV2(data.projects as unknown as V2Project[]), library)
-          return { ...current, appearance, user, activity, ...migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(migrateV7(migrateV6(migrateV5(migrateV4(migrated.projects))))), migrated.library)), migrated.library))))))) }
+          return { ...current, appearance, user, activity, ...migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(migrateV7(migrateV6(migrateV5(migrateV4(migrated.projects))))), migrated.library)), migrated.library))))))))))))))))))))))))))) }
         }
         if (data.version === 3) {
           const migrated = migrateV3(data.projects as unknown as V3Project[], library)
-          return { ...current, appearance, user, activity, ...migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(migrateV7(migrateV6(migrateV5(migrateV4(migrated.projects))))), migrated.library)), migrated.library))))))) }
+          return { ...current, appearance, user, activity, ...migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(migrateV7(migrateV6(migrateV5(migrateV4(migrated.projects))))), migrated.library)), migrated.library))))))))))))))))))))))))))) }
         }
         if (data.version === 4) {
-          return { ...current, appearance, user, activity, ...migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(migrateV7(migrateV6(migrateV5(migrateV4(data.projects as unknown as V4Project[]))))), library)), library))))))) }
+          return { ...current, appearance, user, activity, ...migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(migrateV7(migrateV6(migrateV5(migrateV4(data.projects as unknown as V4Project[]))))), library)), library))))))))))))))))))))))))))) }
         }
         if (data.version === 5) {
-          return { ...current, appearance, user, activity, ...migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(migrateV7(migrateV6(migrateV5(data.projects as unknown as V5Project[])))), library)), library))))))) }
+          return { ...current, appearance, user, activity, ...migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(migrateV7(migrateV6(migrateV5(data.projects as unknown as V5Project[])))), library)), library))))))))))))))))))))))))))) }
         }
         if (data.version === 6) {
-          return { ...current, appearance, user, activity, ...migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(migrateV7(migrateV6(data.projects as unknown as V6Project[]))), library)), library))))))) }
+          return { ...current, appearance, user, activity, ...migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(migrateV7(migrateV6(data.projects as unknown as V6Project[]))), library)), library))))))))))))))))))))))))))) }
         }
         if (data.version === 7) {
-          return { ...current, appearance, user, activity, ...migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(migrateV7(data.projects as unknown as V7Project[])), library)), library))))))) }
+          return { ...current, appearance, user, activity, ...migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(migrateV7(data.projects as unknown as V7Project[])), library)), library))))))))))))))))))))))))))) }
         }
         if (data.version === 8) {
-          return { ...current, appearance, user, activity, ...migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(data.projects as unknown as V8Project[]), library)), library))))))) }
+          return { ...current, appearance, user, activity, ...migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(data.projects as unknown as V8Project[]), library)), library))))))))))))))))))))))))))) }
         }
         if (data.version === 9) {
-          return { ...current, appearance, user, activity, ...migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(data.projects, library)), library))))))) }
+          return { ...current, appearance, user, activity, ...migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(data.projects, library)), library))))))))))))))))))))))))))) }
         }
         if (data.version === 10) {
-          return { ...current, appearance, user, activity, ...migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(data.projects), library))))))) }
+          return { ...current, appearance, user, activity, ...migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(data.projects), library))))))))))))))))))))))))))) }
         }
         if (data.version === 11) {
-          return { ...current, appearance, user, activity, ...migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(data.projects, library))))))) }
+          return { ...current, appearance, user, activity, ...migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(data.projects, library))))))))))))))))))))))))))) }
         }
         if (data.version === 12) {
-          return { ...current, appearance, user, activity, ...migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12({ projects: data.projects, library })))))) }
+          return { ...current, appearance, user, activity, ...migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12({ projects: data.projects, library })))))))))))))))))))))))))) }
         }
         if (data.version === 13) {
-          return { ...current, appearance, user, activity, ...migrateV18(migrateV17(migrateV16(migrateV15(migrateV13({ projects: data.projects, library }))))) }
+          return { ...current, appearance, user, activity, ...migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13({ projects: data.projects, library }))))))))))))))))))))))))) }
         }
         if (data.version === 14) {
-          return { ...current, appearance, user, activity, ...migrateV18(migrateV17(migrateV16(migrateV15(migrateV13({ projects: data.projects, library }))))) }
+          return { ...current, appearance, user, activity, ...migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13({ projects: data.projects, library }))))))))))))))))))))))))) }
         }
         if (data.version === 15) {
-          return { ...current, appearance, user, activity, ...migrateV18(migrateV17(migrateV16(migrateV15({ projects: data.projects, library })))) }
+          return { ...current, appearance, user, activity, ...migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15({ projects: data.projects, library })))))))))))))))))))))))) }
         }
         if (data.version === 16) {
-          return { ...current, appearance, user, activity, ...migrateV18(migrateV17(migrateV16({ projects: data.projects, library }))) }
+          return { ...current, appearance, user, activity, ...migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16({ projects: data.projects, library }))))))))))))))))))))))) }
         }
         if (data.version === 17) {
-          return { ...current, appearance, user, activity, ...migrateV18(migrateV17({ projects: data.projects, library })) }
+          return { ...current, appearance, user, activity, ...migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17({ projects: data.projects, library })))))))))))))))))))))) }
         }
         if (data.version === 18) {
-          return { ...current, appearance, user, activity, ...migrateV18({ projects: data.projects, library }) }
+          return { ...current, appearance, user, activity, ...migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18({ projects: data.projects, library }))))))))))))))))))))) }
         }
-        if (data.version !== 19) return current
+        if (data.version === 19) {
+          return { ...current, appearance, user, activity, ...migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19({ projects: data.projects, library })))))))))))))))))))) }
+        }
+        if (data.version === 20) {
+          return { ...current, appearance, user, activity, ...migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20({ projects: data.projects, library }))))))))))))))))))) }
+        }
+        if (data.version === 21) {
+          return { ...current, appearance, user, activity, ...migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21({ projects: data.projects, library })))))))))))))))))) }
+        }
+        if (data.version === 22) {
+          return { ...current, appearance, user, activity, ...migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22({ projects: data.projects, library }))))))))))))))))) }
+        }
+        if (data.version === 23) {
+          return { ...current, appearance, user, activity, ...migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23({ projects: data.projects, library })))))))))))))))) }
+        }
+        if (data.version === 24) {
+          return { ...current, appearance, user, activity, ...migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24({ projects: data.projects, library }))))))))))))))) }
+        }
+        if (data.version === 25) {
+          return { ...current, appearance, user, activity, ...migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25({ projects: data.projects, library })))))))))))))) }
+        }
+        if (data.version === 26) {
+          return { ...current, appearance, user, activity, ...migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26({ projects: data.projects, library }))))))))))))) }
+        }
+        if (data.version === 27) {
+          return { ...current, appearance, user, activity, ...migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27({ projects: data.projects, library })))))))))))) }
+        }
+        if (data.version === 28) {
+          return { ...current, appearance, user, activity, ...migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28({ projects: data.projects, library }))))))))))) }
+        }
+        if (data.version === 29) {
+          return { ...current, appearance, user, activity, ...migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29({ projects: data.projects, library })))))))))) }
+        }
+        if (data.version === 30) {
+          return { ...current, appearance, user, activity, ...migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30({ projects: data.projects, library }))))))))) }
+        }
+        if (data.version === 31) {
+          return { ...current, appearance, user, activity, ...migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31({ projects: data.projects, library })))))))) }
+        }
+        if (data.version === 32) {
+          return { ...current, appearance, user, activity, ...migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32({ projects: data.projects, library }))))))) }
+        }
+        if (data.version === 33) {
+          return { ...current, appearance, user, activity, ...migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33({ projects: data.projects, library })))))) }
+        }
+        if (data.version === 34) {
+          return { ...current, appearance, user, activity, ...migrateV38(migrateV37(migrateV36(migrateV35(migrateV34({ projects: data.projects, library }))))) }
+        }
+        if (data.version === 35) {
+          return { ...current, appearance, user, activity, ...migrateV38(migrateV37(migrateV36(migrateV35({ projects: data.projects, library })))) }
+        }
+        if (data.version === 36) {
+          return { ...current, appearance, user, activity, ...migrateV38(migrateV37(migrateV36({ projects: data.projects, library }))) }
+        }
+        if (data.version === 37) {
+          return { ...current, appearance, user, activity, ...migrateV38(migrateV37({ projects: data.projects, library })) }
+        }
+        if (data.version === 38) {
+          return { ...current, appearance, user, activity, ...migrateV38({ projects: data.projects, library }) }
+        }
+        if (data.version !== 39) return current
         return { ...current, appearance, user, activity, projects: data.projects, library }
       },
       // The version bumps are handled in `merge` (it sees the raw payload);

@@ -11,6 +11,7 @@ import {
   defaultContainerSettings,
   type GridItemData,
 } from '../Layout/types'
+import { ensureDataTableCanvases } from '../Layout/types'
 import { useGroupStore } from '../Library/groupStore'
 import { useModelStore } from '../Model/modelStore'
 import type { ModelDef } from '../Model/types'
@@ -21,6 +22,32 @@ import {
   repeaterDemoSeedItems,
   UPLOAD_PAGE_ID,
   uploadDemoSeedItems,
+  PAGINATION_PAGE_ID,
+  paginationDemoSeedItems,
+  DATA_TABLE_PAGE_ID,
+  HTML_COLUMNS_PAGE_ID,
+  COLUMN_RESIZE_PAGE_ID,
+  columnResizeDemoSeedItems,
+  SERVER_FILTER_PAGE_ID,
+  serverFilterDemoSeedItems,
+  FILTER_API_PAGE_ID,
+  filterApiDemoSeedItems,
+  CELL_TOOLTIP_PAGE_ID,
+  cellTooltipDemoSeedItems,
+  TABLE_LAYOUT_PAGE_ID,
+  tableLayoutDemoSeedItems,
+  CARD_PAGE_ID,
+  cardDemoSeedItems,
+  HTML_CONTENT_PAGE_ID,
+  htmlContentDemoSeedItems,
+  DRAWER_PAGE_ID,
+  CHIPS_PAGE_ID,
+  chipsDemoSeedItems,
+  SWITCH_PAGE_ID,
+  switchDemoSeedItems,
+  drawerDemoSeedItems,
+  htmlColumnDemoSeedItems,
+  dataTableDemoSeedItems,
   FORM_LIST_PAGE_ID,
   countrySeedEndpoints,
   countrySeedEnvVars,
@@ -276,12 +303,260 @@ export function uploadDemoPage(): PageDef {
   }
 }
 
+/**
+ * The "Pagination" demo page of the seeded project (the example app's
+ * `/pagination`). Used by the fresh seed and appended to an existing seeded
+ * project by `migrateV20`.
+ */
+export function paginationDemoPage(): PageDef {
+  return {
+    id: PAGINATION_PAGE_ID,
+    key: 'pagination',
+    name: 'Pagination',
+    path: '/pagination',
+    grid: {
+      items: paginationDemoSeedItems(),
+      containerSettings: defaultContainerSettings,
+      fieldSeq: 0,
+    },
+    parentId: 'seed-page-countries',
+  }
+}
+
+/**
+ * The "Data table" demo page of the seeded project (the example app's
+ * `/data-table`): column pinning on a deliberately overflowing table. Used by
+ * the fresh seed and appended to an existing seeded project by `migrateV21`.
+ */
+export function dataTableDemoPage(): PageDef {
+  return {
+    id: DATA_TABLE_PAGE_ID,
+    key: 'dataTable',
+    name: 'Data table',
+    path: '/data-table',
+    grid: {
+      items: dataTableDemoSeedItems(),
+      containerSettings: defaultContainerSettings,
+      fieldSeq: 0,
+    },
+    parentId: 'seed-page-countries',
+  }
+}
+
+/**
+ * The "HTML columns" demo page of the seeded project (the example app's
+ * `/html-columns`): one table per aspect of a column's `html` template. Used
+ * by the fresh seed and appended to an existing seeded project by `migrateV25`.
+ */
+export function htmlColumnDemoPage(): PageDef {
+  return {
+    id: HTML_COLUMNS_PAGE_ID,
+    key: 'htmlColumns',
+    name: 'HTML columns',
+    path: '/html-columns',
+    grid: {
+      items: htmlColumnDemoSeedItems(),
+      containerSettings: defaultContainerSettings,
+      fieldSeq: 0,
+    },
+    parentId: 'seed-page-countries',
+  }
+}
+
+/**
+ * The "Column resize" demo page of the seeded project (the example app's
+ * `/column-resize`). Used by the fresh seed and appended to an existing seeded
+ * project by `migrateV28`.
+ */
+export function columnResizeDemoPage(): PageDef {
+  return {
+    id: COLUMN_RESIZE_PAGE_ID,
+    key: 'columnResize',
+    name: 'Column resize',
+    path: '/column-resize',
+    grid: {
+      items: columnResizeDemoSeedItems(),
+      containerSettings: defaultContainerSettings,
+      fieldSeq: 0,
+    },
+    parentId: 'seed-page-countries',
+  }
+}
+
+/**
+ * The "Server filter" demo page of the seeded project (the example app's
+ * `/server-filter`). Used by the fresh seed and appended to an existing seeded
+ * project by `migrateV29`.
+ */
+export function serverFilterDemoPage(): PageDef {
+  return {
+    id: SERVER_FILTER_PAGE_ID,
+    key: 'serverFilter',
+    name: 'Server filter',
+    path: '/server-filter',
+    grid: {
+      items: serverFilterDemoSeedItems(),
+      containerSettings: defaultContainerSettings,
+      fieldSeq: 0,
+    },
+    parentId: 'seed-page-countries',
+  }
+}
+
+/**
+ * The "Filter via API" demo page of the seeded project (the example app's
+ * `/filter-api`). Used by the fresh seed and appended to an existing seeded
+ * project by `migrateV30`.
+ */
+export function filterApiDemoPage(): PageDef {
+  return {
+    id: FILTER_API_PAGE_ID,
+    key: 'filterApi',
+    name: 'Filter via API',
+    path: '/filter-api',
+    grid: {
+      items: filterApiDemoSeedItems(),
+      containerSettings: defaultContainerSettings,
+      fieldSeq: 0,
+    },
+    parentId: 'seed-page-countries',
+  }
+}
+
+/**
+ * The "Cell tooltip" demo page of the seeded project (the example app's
+ * `/cell-tooltip`). Used by the fresh seed and appended to an existing seeded
+ * project by `migrateV32`.
+ */
+export function cellTooltipDemoPage(): PageDef {
+  return {
+    id: CELL_TOOLTIP_PAGE_ID,
+    key: 'cellTooltip',
+    name: 'Cell tooltip',
+    path: '/cell-tooltip',
+    grid: {
+      items: cellTooltipDemoSeedItems(),
+      containerSettings: defaultContainerSettings,
+      fieldSeq: 0,
+    },
+    parentId: 'seed-page-countries',
+  }
+}
+
+/**
+ * The "Table layout" demo page of the seeded project (the example app's
+ * `/table-layout`). Used by the fresh seed and appended to an existing seeded
+ * project by `migrateV33`.
+ */
+export function cardDemoPage(): PageDef {
+  return {
+    id: CARD_PAGE_ID,
+    key: 'card',
+    name: 'Card',
+    path: '/card',
+    grid: {
+      items: cardDemoSeedItems(),
+      containerSettings: defaultContainerSettings,
+      fieldSeq: 0,
+    },
+    parentId: 'seed-page-countries',
+  }
+}
+
+export function htmlContentDemoPage(): PageDef {
+  return {
+    id: HTML_CONTENT_PAGE_ID,
+    key: 'htmlContent',
+    name: 'HTML content',
+    path: '/html-content',
+    grid: {
+      items: htmlContentDemoSeedItems(),
+      containerSettings: defaultContainerSettings,
+      fieldSeq: 0,
+    },
+    parentId: 'seed-page-countries',
+  }
+}
+
+export function drawerDemoPage(): PageDef {
+  return {
+    id: DRAWER_PAGE_ID,
+    key: 'drawer',
+    name: 'Drawer',
+    path: '/drawer',
+    grid: {
+      items: drawerDemoSeedItems(),
+      containerSettings: defaultContainerSettings,
+      fieldSeq: 0,
+    },
+    parentId: 'seed-page-countries',
+  }
+}
+
+export function chipsDemoPage(): PageDef {
+  return {
+    id: CHIPS_PAGE_ID,
+    key: 'chips',
+    name: 'Chips',
+    path: '/chips',
+    grid: {
+      items: chipsDemoSeedItems(),
+      containerSettings: defaultContainerSettings,
+      fieldSeq: 0,
+    },
+    parentId: 'seed-page-countries',
+  }
+}
+
+export function switchDemoPage(): PageDef {
+  return {
+    id: SWITCH_PAGE_ID,
+    key: 'switch',
+    name: 'Switch',
+    path: '/switch',
+    grid: {
+      items: switchDemoSeedItems(),
+      containerSettings: defaultContainerSettings,
+      fieldSeq: 0,
+    },
+    parentId: 'seed-page-countries',
+  }
+}
+
+export function tableLayoutDemoPage(): PageDef {
+  return {
+    id: TABLE_LAYOUT_PAGE_ID,
+    key: 'tableLayout',
+    name: 'Table layout',
+    path: '/table-layout',
+    grid: {
+      items: tableLayoutDemoSeedItems(),
+      containerSettings: defaultContainerSettings,
+      fieldSeq: 0,
+    },
+    parentId: 'seed-page-countries',
+  }
+}
+
 /** Sidebar glyph per demo page id. */
 export const OPTION_DEMO_MENU_ICONS: Record<string, string> = {
   'seed-page-option-display': 'list',
   'seed-page-icons': 'star',
   [FORM_LIST_PAGE_ID]: 'listFilter',
   [REPEATER_PAGE_ID]: 'grid',
+  [PAGINATION_PAGE_ID]: 'database',
+  [DATA_TABLE_PAGE_ID]: 'list',
+  [HTML_COLUMNS_PAGE_ID]: 'code',
+  [COLUMN_RESIZE_PAGE_ID]: 'columns',
+  [SERVER_FILTER_PAGE_ID]: 'filter',
+  [FILTER_API_PAGE_ID]: 'search',
+  [CELL_TOOLTIP_PAGE_ID]: 'info',
+  [TABLE_LAYOUT_PAGE_ID]: 'table',
+  [CARD_PAGE_ID]: 'creditCard',
+  [HTML_CONTENT_PAGE_ID]: 'code',
+  [DRAWER_PAGE_ID]: 'panelRight',
+  [CHIPS_PAGE_ID]: 'tag',
+  [SWITCH_PAGE_ID]: 'toggleLeft',
   [UPLOAD_PAGE_ID]: 'upload',
 }
 
@@ -320,8 +595,23 @@ export function countryProjectSnapshot(library: LibraryData): ProjectSnapshot {
       ...optionDemoPages(),
       formListDemoPage(),
       repeaterDemoPage(),
+      paginationDemoPage(),
+      dataTableDemoPage(),
+      htmlColumnDemoPage(),
+      columnResizeDemoPage(),
+      serverFilterDemoPage(),
+      filterApiDemoPage(),
+      cellTooltipDemoPage(),
+      tableLayoutDemoPage(),
+      cardDemoPage(),
+      htmlContentDemoPage(),
+      drawerDemoPage(),
+      chipsDemoPage(),
+      switchDemoPage(),
       uploadDemoPage(),
   ]
+  // Every data table carries its two canvases (edit modal + filter form).
+  for (const page of pages) ensureDataTableCanvases(page.grid.items)
   const menu = defaultMenu(pages)
   if (menu[0]?.kind === 'page') menu[0].icon = 'globe'
   for (const item of menu) {

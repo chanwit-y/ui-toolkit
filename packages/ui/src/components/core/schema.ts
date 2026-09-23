@@ -1,4 +1,4 @@
-import type { AutocompleteElement, Bin, Container, TabElement, TextFieldElement } from "../@types";
+import type { AutocompleteElement, Bin, CardElement, Container, TabElement, TextFieldElement } from "../@types";
 import { z } from "zod";
 
 export class Schema {
@@ -52,6 +52,19 @@ export class Schema {
 					return;
 				}
 
+				// A card's content / collapse bins draw on the enclosing form, like
+				// a tab's panels: their fields belong to it.
+				if (box.type === "card") {
+					const card = box.element as CardElement;
+					[card.content, card.collapse].forEach((container) => {
+						if (!container) return;
+						const containerFields = this.processBoxes(container.bins);
+						if (container.isArray) fields[container.name] = z.array(z.object(containerFields));
+						else Object.assign(fields, containerFields);
+					});
+					return;
+				}
+
 				const elementSchema = this.createElementSchema(box.element as any);
 				if (elementSchema && 'name' in box.element && box.element.name) {
 					fields[box.element.name] = elementSchema;
@@ -83,6 +96,10 @@ export class Schema {
 			const isRequired = element.isRequired ?? element.isRequired ?? false;
 
 			// Apply required validation
+			if (isRequired && normalizedDataType === 'boolean') {
+				// A required switch / checkbox must be on ("Accept the terms").
+				schema = z.literal(true, { errorMap: () => ({ message: requiredMessage }) });
+			}
 			if (isRequired && normalizedDataType === 'array') {
 				// Required arrays (e.g. upload byte data / file lists) must not be empty
 				schema = z.array(z.unknown(), {

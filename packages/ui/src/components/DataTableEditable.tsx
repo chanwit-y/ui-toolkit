@@ -1,10 +1,10 @@
 import * as Popover from "@radix-ui/react-popover"
-import { Text, type ThemeProps } from "@radix-ui/themes"
+import { IconButton, Text, type ThemeProps } from "@radix-ui/themes"
 import { useQuery } from "@tanstack/react-query"
 import { flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable, type ColumnDef, type ColumnFiltersState, type FilterFn, type PaginationState, type Row, type SortingState } from "@tanstack/react-table"
 import { AlertCircle, ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, ListFilter } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { dtActionButtonClass, dtHeaderBgClass, dtHeaderTextClass, dtHeaderFontSizeClass, dtHeaderFontWeightClass, dtHeaderHoverClass, dtPaginationBgClass, dtPaginationHoverClass, dtRingClass, dtRowHoverClass, tableBgColors, tableHoverBgColors } from "../util/constant"
+import { dtHeaderBgClass, dtHeaderTextClass, dtHeaderFontSizeClass, dtHeaderFontWeightClass, dtHeaderHoverClass, dtPaginationBgClass, dtPaginationHoverClass, dtRingClass, dtRowHoverClass } from "../util/constant"
 import type { CrudMutationApi, DataTableEditableColumn, DataTableEditableProps, SnackbarElement } from "./@types"
 import { ConfirmBox } from "./ConfirmBox"
 import Icon from "./Icon"
@@ -13,6 +13,8 @@ import { SelectFieldBase as SelectField } from "./SelectField"
 import { TextFieldBase as TextField } from "./TextField"
 import { useLoading, useTheme } from "./context"
 import { useStord } from "./core/stord"
+import { ColumnResizeHandle, sizeStyle, sizeVars, useColumnResize } from "./dataTableResize"
+import { columnMeta, groupColumns, headerRows, headerTopStyle, useHeaderRowTops } from "./dataTableLayout"
 
 const NEW_ROW_ID = "__new__"
 
@@ -30,6 +32,7 @@ export const DataTableEditable = <T extends Record<string, any>>({
 	columns = [],
 	apiCrud,
 	align = {},
+	canResizeColumns = true,
 }: DataTableEditableProps) => {
 
 	const [openConfirmBox, setOpenConfirmBox] = useState(false)
@@ -85,9 +88,11 @@ export const DataTableEditable = <T extends Record<string, any>>({
 
 	const updateFnCtxs = useStord((state) => state.updateFnCtxs)
 
-	// Edit icon follows the theme accent by default (and flips in dark mode);
-	// set theme.components.dataTable.editButtonColor to pin a specific named color.
-	const editButtonColor = (theme.components.dataTable?.editButtonColor as ThemeProps['accentColor']) || (theme.components.button?.color as ThemeProps['accentColor']) || undefined
+	// Row actions are Radix IconButtons (soft, size 2), like DataTable2's. Edit
+	// follows the buttons' colour (dataTable.editButtonColor, else button.color,
+	// else the accent); delete is red unless pinned; save / cancel are semantic.
+	const editButtonColor = (theme.components.dataTable?.editButtonColor || theme.components.button?.color) as ThemeProps['accentColor'] | undefined
+	const deleteButtonColor = (theme.components.dataTable?.deleteButtonColor || 'red') as ThemeProps['accentColor']
 	const saveButtonColor: ThemeProps['accentColor'] = 'green'
 	const cancelButtonColor: ThemeProps['accentColor'] = 'gray'
 
@@ -336,34 +341,48 @@ export const DataTableEditable = <T extends Record<string, any>>({
 
 	const renderSaveCancelButtons = () => (
 		<div className="datatable-action-cell">
-			<button
+			<IconButton
 				type="button"
-				className={dtActionButtonClass(saveButtonColor)}
+				variant="soft"
+				size="2"
+				color={saveButtonColor}
+				className="cursor-pointer"
 				aria-label="Save row"
+				title="Save"
 				onClick={handleSave}
 			>
 				<Icon icon="check" size={14} />
-			</button>
-			<button
+			</IconButton>
+			<IconButton
 				type="button"
-				className={dtActionButtonClass(cancelButtonColor)}
+				variant="soft"
+				size="2"
+				color={cancelButtonColor}
+				className="cursor-pointer"
 				aria-label="Cancel editing"
+				title="Cancel"
 				onClick={cancelEdit}
 			>
 				<Icon icon="x" size={14} />
-			</button>
+			</IconButton>
 		</div>
 	)
 
 	const enhancedColumns = useMemo<ColumnDef<T, unknown>[]>(() => {
-		const dataColumns: ColumnDef<T, unknown>[] = columns.map((col) => ({
+		const leafColumns: ColumnDef<T, unknown>[] = columns.map((col) => ({
 			accessorKey: col.accessorKey,
 			header: col.header,
 			enableSorting: col.enableSorting ?? true,
 			enableColumnFilter: col.enableColumnFilter ?? false,
 			filterFn: multiSelectFilter,
 			...(col.size ? { size: col.size } : {}),
+			...(col.minSize !== undefined ? { minSize: col.minSize } : {}),
+			...(col.maxSize !== undefined ? { maxSize: col.maxSize } : {}),
+			...(col.enableResizing === false ? { enableResizing: false } : {}),
+			...(col.rowHeader ? { meta: { rowHeader: true } } : {}),
 		}))
+		// Adjacent columns sharing a `group` label sit under one group header.
+		const dataColumns = groupColumns(columns, leafColumns)
 
 		if (!canEdit && !canDelete && !canCreate) return dataColumns
 
@@ -380,21 +399,29 @@ export const DataTableEditable = <T extends Record<string, any>>({
 				return (
 					<div className="datatable-action-cell">
 						{canEdit && (
-							<button
+							<IconButton
 								type="button"
-								className={dtActionButtonClass(editButtonColor)}
+								variant="soft"
+								size="2"
+								color={editButtonColor}
+								className="cursor-pointer"
 								aria-label="Edit row"
+								title="Edit"
 								disabled={editingRowId !== null}
 								onClick={() => startEdit(row)}
 							>
 								<Icon icon="edit" size={14} />
-							</button>
+							</IconButton>
 						)}
 						{canDelete && (
-							<button
+							<IconButton
 								type="button"
-								className={`datatable-action-button ${tableBgColors.red} ${tableHoverBgColors.red} text-red-700 hover:ring-1 ring-red-100`}
+								variant="soft"
+								size="2"
+								color={deleteButtonColor}
+								className="cursor-pointer"
 								aria-label="Delete row"
+								title="Delete"
 								disabled={editingRowId !== null}
 								onClick={() => {
 									setRowToDelete(row.original)
@@ -402,7 +429,7 @@ export const DataTableEditable = <T extends Record<string, any>>({
 								}}
 							>
 								<Icon icon="trash" size={14} />
-							</button>
+							</IconButton>
 						)}
 					</div>
 				)
@@ -412,15 +439,22 @@ export const DataTableEditable = <T extends Record<string, any>>({
 			size: 40,
 			minSize: 80,
 			maxSize: 80,
+			enableResizing: false,
 		}
 
 		return [actionColumn, ...dataColumns]
-	}, [columns, canCreate, canEdit, canDelete, editingRowId, draft, editButtonColor, handleSave, cancelEdit, startEdit])
+	}, [columns, canCreate, canEdit, canDelete, editingRowId, draft, editButtonColor, deleteButtonColor, handleSave, cancelEdit, startEdit])
+
+	// Column resizing (see ./dataTableResize): a column that declares a `size`
+	// puts the table in exact-pixel mode from the first paint.
+	const resize = useColumnResize(canResizeColumns, columns.some((col) => typeof col.size === 'number'))
 
 	const table = useReactTable({
 		data,
 		columns: enhancedColumns,
+		...resize.tableOptions,
 		state: {
+			columnSizing: resize.columnSizing,
 			pagination,
 			sorting,
 			columnFilters,
@@ -437,6 +471,17 @@ export const DataTableEditable = <T extends Record<string, any>>({
 	})
 
 	const visibleColumns = table.getVisibleLeafColumns()
+	const isResizing = !!table.getState().columnSizingInfo.isResizingColumn
+	// The header rows (one, or two with a group band); the lower row's cells
+	// stick below the upper one (see `headerTopStyle`).
+	const headerRowList = headerRows(table.getHeaderGroups())
+	const theadRef = useHeaderRowTops(headerRowList.length)
+	const headerCellClass = `${dtHeaderBgClass(theme.components.dataTable?.headerColor)}
+		${dtHeaderTextClass(theme.components.dataTable?.headerTextColor, theme.components.dataTable?.headerColor)}
+		${dtHeaderFontSizeClass(theme.components.dataTable?.headerFontSize)}
+		${dtHeaderFontWeightClass(theme.components.dataTable?.headerFontWeight)}`
+	// Exact-pixel mode: a width-less cell per row takes the container's slack.
+	const fillerCell = resize.exact && <td aria-hidden className="datatable-body-cell datatable-filler-cell" />
 
 	// Handle page change animation
 	useEffect(() => {
@@ -492,22 +537,32 @@ export const DataTableEditable = <T extends Record<string, any>>({
 		</div>
 
 		<div className="datatable-table-wrapper">
-			<div className="datatable-scroll-x">
-				<table className="datatable-table table-fixed" style={{ width: table.getTotalSize(), minWidth: '100%' }}>
-					<thead className="datatable-thead">
+			<div className="datatable-scroll">
+				<table
+					ref={resize.tableRef}
+					className={`datatable-table table-fixed ${isResizing ? 'is-resizing' : ''}`}
+					style={{ ...sizeVars(table), width: table.getTotalSize(), minWidth: '100%' }}>
+					{/* Column widths live on <col>s: `table-layout: fixed` reads the first
+					    row otherwise, which spanning header cells would confuse. */}
+					<colgroup>
+						{visibleColumns.map(column => <col key={column.id} style={sizeStyle(column)} />)}
+						{resize.exact && <col />}
+					</colgroup>
+					<thead ref={theadRef} className="datatable-thead">
 
-					{table.getHeaderGroups().map(headerGroup => (
-						<tr key={headerGroup.id} className="datatable-header-row">
-							{headerGroup.headers.map(header => (
-								header.column.columnDef.header && <th key={header.id} className={`datatable-header-cell
-									 ${dtHeaderBgClass(theme.components.dataTable?.headerColor)}
-									 ${dtHeaderTextClass(theme.components.dataTable?.headerTextColor, theme.components.dataTable?.headerColor)}
-									 ${dtHeaderFontSizeClass(theme.components.dataTable?.headerFontSize)}
-									 ${dtHeaderFontWeightClass(theme.components.dataTable?.headerFontWeight)}
+					{headerRowList.map((headerRow, rowIndex) => (
+						<tr key={headerRow.id} className="datatable-header-row">
+							{headerRow.cells.map(({ header, kind, colSpan, rowSpan }) => (
+								kind === 'group'
+									? <th key={header.id} colSpan={colSpan} className={`datatable-header-cell datatable-group-header ${headerCellClass}`} style={headerTopStyle(rowIndex)}>
+										<div className="datatable-header-content">{flexRender(header.column.columnDef.header, header.getContext())}</div>
+									</th>
+									: header.column.columnDef.header && <th key={header.id} data-column-id={header.column.id} colSpan={colSpan} rowSpan={rowSpan} className={`datatable-header-cell
+									 ${headerCellClass}
 									 ${dtHeaderHoverClass(theme.components.dataTable?.headerHoverColor)} cursor-pointer`}
-									style={{ width: header.getSize() }}>
+									style={{ ...sizeStyle(header.column), ...headerTopStyle(rowIndex) }}>
 									<div className="datatable-header-content" >
-										{header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+										{flexRender(header.column.columnDef.header, header.getContext())}
 										{header.column.getCanSort() && (
 											<span className="datatable-sort-icon" onClick={header.column.getToggleSortingHandler()}>
 												{{
@@ -604,8 +659,10 @@ export const DataTableEditable = <T extends Record<string, any>>({
 											</Popover.Root>
 										)}
 									</div>
+									<ColumnResizeHandle header={header} table={table} resize={resize} />
 								</th>
 							))}
+							{resize.exact && <th aria-hidden className={`datatable-header-cell datatable-filler-cell ${headerCellClass}`} />}
 						</tr>
 					))}
 				</thead>
@@ -616,7 +673,7 @@ export const DataTableEditable = <T extends Record<string, any>>({
 							{visibleColumns.map((column) => {
 								if (column.id === '__actions__') {
 									return (
-										<td key={`new-${column.id}`} className="datatable-body-cell px-4" style={{ width: column.getSize() }}>
+										<td key={`new-${column.id}`} className="datatable-body-cell px-4" style={sizeStyle(column)}>
 											{renderSaveCancelButtons()}
 										</td>
 									)
@@ -624,13 +681,14 @@ export const DataTableEditable = <T extends Record<string, any>>({
 
 								const col = columnMap[column.id]
 								return (
-									<td key={`new-${column.id}`} className="datatable-body-cell px-4 py-1" style={{ width: column.getSize(), textAlign: cellAlign(column.id) }}>
+									<td key={`new-${column.id}`} className="datatable-body-cell px-4 py-1" style={{ ...sizeStyle(column), textAlign: cellAlign(column.id) }}>
 										<div className="min-h-10 flex flex-col justify-center">
 											{col && (col.editable ?? true) ? renderEditor(col) : null}
 										</div>
 									</td>
 								)
 							})}
+							{fillerCell}
 						</tr>
 					)}
 					{showSkeleton
@@ -640,11 +698,12 @@ export const DataTableEditable = <T extends Record<string, any>>({
 									<td
 										key={`skeleton-cell-${column.id}-${columnIndex}`}
 										className="datatable-body-cell px-4 py-1"
-										style={{ width: column.getSize(), textAlign: cellAlign(column.id) }}
+										style={{ ...sizeStyle(column), textAlign: cellAlign(column.id) }}
 									>
 										<div className="h-4 w-full rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
 									</td>
 								))}
+								{fillerCell}
 							</tr>
 						))
 						: table.getPaginationRowModel().rows.map(row => (
@@ -655,14 +714,17 @@ export const DataTableEditable = <T extends Record<string, any>>({
 									const col = columnMap[cell.column.id]
 									const isEditingCell = editingRowId === row.id && col && (col.editable ?? true)
 
+									const isRowHeader = !!columnMeta(cell.column).rowHeader
+									const Cell = isRowHeader ? 'th' : 'td'
 									return (
-										<td key={cell.id} className="datatable-body-cell px-4 py-1" style={{ width: cell.column.getSize(), textAlign: cellAlign(cell.column.id) }}>
+										<Cell key={cell.id} scope={isRowHeader ? 'row' : undefined} className={`datatable-body-cell px-4 py-1 ${isRowHeader ? 'datatable-row-header' : ''}`} style={{ ...sizeStyle(cell.column), textAlign: cellAlign(cell.column.id) }}>
 											<div className="min-h-10 flex flex-col justify-center">
 												{isEditingCell ? renderEditor(col) : flexRender(cell.column.columnDef.cell, cell.getContext())}
 											</div>
-										</td>
+										</Cell>
 									)
 								})}
+								{fillerCell}
 							</tr>
 						))}
 				</tbody>

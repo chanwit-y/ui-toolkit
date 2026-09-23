@@ -320,6 +320,46 @@ export function createDefaultCheckboxConfig(name: string): CheckboxConfig {
   }
 }
 
+/** Which value of the gating switch enables this one. */
+export type SwitchEnabledWhen = { itemId: string; when: 'on' | 'off' } | null
+
+/**
+ * Editable config for a `switch` item — the engine `SwitchElement`: one boolean
+ * field drawn as an on / off toggle. `isRequired` means it must be on.
+ * `enabledWhen` names another switch on the same canvas (by item id, so a
+ * rename is safe); export turns it into the engine `enabledWhen` condition on
+ * this item and `canObserve: true` on the gating one.
+ */
+export type SwitchConfig = {
+  name: string
+  label: string
+  labelPosition: 'start' | 'end'
+  helperText: string
+  isRequired: boolean
+  errorMessage: string
+  variant: 'classic' | 'surface' | 'soft'
+  size: '1' | '2' | '3'
+  defaultChecked: boolean
+  disabled: boolean
+  enabledWhen: SwitchEnabledWhen
+}
+
+export function createDefaultSwitchConfig(name: string): SwitchConfig {
+  return {
+    name,
+    label: 'Switch',
+    labelPosition: 'end',
+    helperText: '',
+    isRequired: false,
+    errorMessage: '',
+    variant: 'surface',
+    size: '2',
+    defaultChecked: false,
+    disabled: false,
+    enabledWhen: null,
+  }
+}
+
 /**
  * A single radio option. Maps onto the library `RadioButtonProps` option shape
  * (`value`/`label`/`disabled`) minus `helperText` — per-option sub-labels are out
@@ -582,6 +622,26 @@ export function createDefaultUploadFileConfig(name: string): UploadFileConfig {
 }
 
 /**
+ * Column width config shared by both tables' columns: the engine's `size` /
+ * `minSize` / `maxSize` in px (`''` = unset — engine defaults: share the
+ * container, min 60, no max) and `resizable` = the engine's `enableResizing`
+ * (exported only when off).
+ */
+export type ColumnSizingConfig = {
+  size: number | ''
+  minSize: number | ''
+  maxSize: number | ''
+  resizable: boolean
+}
+
+export const DEFAULT_COLUMN_SIZING: ColumnSizingConfig = { size: '', minSize: '', maxSize: '', resizable: true }
+
+/** Line-clamp choices for a data table cell / column: `0` = wrap freely. */
+export type CellLines = 0 | 1 | 2 | 3 | 4 | 5 | 6
+/** The engine's default `cellLines`. */
+export const DEFAULT_CELL_LINES: CellLines = 2
+
+/**
  * One column of a data table. Maps 1:1 onto the engine's `ColumnDef`
  * (`accessor`/`header`/`enableSorting`/`enableColumnFilter`/`align`/`useDateFormat`)
  * so the exported JSON is lossless. `useDateFormat` holds dayjs tokens and is `''`
@@ -589,7 +649,7 @@ export function createDefaultUploadFileConfig(name: string): UploadFileConfig {
  * studio-only stable identity for the sortable column cards (dnd-kit keys) —
  * every export path maps fields explicitly, so it never reaches engine JSON.
  */
-export type DataTableColumnConfig = {
+export type DataTableColumnConfig = ColumnSizingConfig & {
   /** Studio-only stable card identity; never exported. */
   id: string
   accessor: string
@@ -599,14 +659,29 @@ export type DataTableColumnConfig = {
   align: 'start' | 'center' | 'end'
   /** dayjs format tokens; `''` = no date formatting. */
   useDateFormat: string
+  /** Engine `ColumnDef.pin` — sticky while the table scrolls sideways; `''` = not pinned. */
+  pin: '' | 'left' | 'right'
+  /** Engine `ColumnDef.html` — the cell's HTML template (`{{field}}` placeholders); `''` = plain value. */
+  html: string
+  /** Engine `ColumnDef.sortField` — the field `api.sort` sends; `''` = the accessor. */
+  sortField: string
+  /** Engine `ColumnDef.lines` — this column's line clamp (`0` = none); `''` = the table's `cellLines`. */
+  lines: CellLines | ''
+  /** Engine `ColumnDef.rowHeader` — the row's label column (`<th scope="row">`, pinned left); one per table. */
+  rowHeader: boolean
+  /** Engine `ColumnDef.mergeRows` — consecutive equal values share one cell. */
+  mergeRows: boolean
+  /** Engine `ColumnDef.mergeColumns` — adjacent equal values (both flagged) share one cell. */
+  mergeColumns: boolean
+  /** Engine `ColumnDef.group` — adjacent columns with the same label share a group header; `''` = none. */
+  group: string
 }
 
 /**
  * Editable config for a data table. Maps onto the engine's `DataTableElement`
  * minus the pieces studio can't author yet: the `modalContainer`/sizing block is
- * omitted on export (the consumer wires it), and `canSearchAllColumns` is
- * studio-preview-only — the engine hardcodes search on (`core/dataTable.ts`),
- * so it isn't emitted either. The `delete*` group authors the engine's
+ * omitted on export (the consumer wires it). `canSearchAllColumns` is the
+ * engine's `canSearch` (emitted only when off). The `delete*` group authors the engine's
  * `apiDeleteInfo` (`APIDelete`) and exports only when `canDelete` and an
  * endpoint are set; the confirmBox True/False action arrays are baked export
  * constants (see the grilled design), and the snackbar fields mirror
@@ -617,7 +692,7 @@ export type DataTableConfig = {
   title: string
   canEdit: boolean
   canDelete: boolean
-  /** Preview-only: toggles the search box in the canvas preview, never exported. */
+  /** The header's "Search all columns" box (engine `canSearch`; exported only when off). */
   canSearchAllColumns: boolean
   columns: DataTableColumnConfig[]
   /**
@@ -659,6 +734,134 @@ export type DataTableConfig = {
   deleteSnackbarErrorException: boolean
   /** Row click → page (engine `DataTableElement.rowNavigate`); absent = off. */
   rowNavigate?: StudioNavigate
+  /** Server-side paging (engine `api.pagination`, emitted only while `enabled`). */
+  pagination: DataTablePaginationConfig
+  /**
+   * Engine `canAdd` / `addButton`: an Add button in the table header opening
+   * the edit modal canvas over an empty row. Items in that canvas pick which
+   * mode shows them with `GridItemData.showWhen`. `addButton` is exported
+   * only off its defaults.
+   */
+  canAdd: boolean
+  addButton: ButtonConfig
+  /** Engine `headerGap` — spacing between title, Add button and search box; `''` = default (2). */
+  headerGap: '' | '0' | '1' | '2' | '3' | '4' | '6' | '8'
+  /** Engine `canResizeColumns` — drag a header edge to resize; exported only when off. */
+  canResizeColumns: boolean
+  /** Engine `cellLines` — lines a plain cell shows before it is cut (a cut cell gets a tooltip); `0` = no clamp. Engine default 2. */
+  cellLines: CellLines
+  /**
+   * Server-side custom filters (engine `filterContainer`): the filter form is
+   * the item's **second** child canvas (index 1), emitted while enabled and
+   * non-empty. `filterButton` / `filterDisplay` / `filterDefaults` export only
+   * off the engine defaults.
+   */
+  filtersEnabled: boolean
+  filterButton: ButtonConfig
+  filterDisplay: 'popover' | 'inline'
+  filterDefaults: FilterDefaultRow[]
+  /** Engine `api.params` / `api.query` / `api.body` — one row per request key. */
+  requestMapping: RequestMapRow[]
+  sort: DataTableSortConfig
+}
+
+/**
+ * Where one request key of a data table's read call comes from: any
+ * {@link NavParamSource} (literal / URL / global state — `row` has no meaning
+ * here), or a **filter field** of the table's filter form, with the fallback
+ * sent while that filter is blank (required when it feeds a URL `:param`).
+ */
+export type RequestSource = NavParamSource | { type: 'filter'; key: string; fallback: string }
+
+/** One row of a data table's request mapping → a key of engine `api.params` / `api.query` / `api.body`. */
+export type RequestMapRow = {
+  /** Studio-only stable row identity; never exported. */
+  id: string
+  slot: 'params' | 'query' | 'body'
+  key: string
+  source: RequestSource
+}
+
+/** A filter's opening value (engine `filterDefaults`); `value` is text, parsed as JSON when it is a number / boolean / array. */
+export type FilterDefaultRow = { id: string; field: string; value: string }
+
+/**
+ * Engine `api.sort`. Exported only while `enabled` with both keys set;
+ * `placement: 'auto'` leaves the engine to infer it, `ascValue` / `descValue`
+ * export as `orderValues` only off `asc` / `desc` (numeric text → numbers),
+ * `defaultField` (`''` = none) as `default`.
+ */
+export type DataTableSortConfig = {
+  enabled: boolean
+  placement: 'auto' | 'query' | 'body'
+  sortKey: string
+  orderKey: string
+  ascValue: string
+  descValue: string
+  defaultField: string
+  defaultOrder: 'asc' | 'desc'
+}
+
+export function createDefaultSortConfig(): DataTableSortConfig {
+  return {
+    enabled: false,
+    placement: 'auto',
+    sortKey: '',
+    orderKey: '',
+    ascValue: 'asc',
+    descValue: 'desc',
+    defaultField: '',
+    defaultOrder: 'asc',
+  }
+}
+
+/** Engine defaults of the table's Filter button (exported only when changed). */
+export const DEFAULT_FILTER_BUTTON: ButtonConfig = { label: 'Filter', icon: 'filter', variant: 'outlined' }
+
+/** The engine's Add button defaults ("Add", the plus glyph, contained). */
+export const DEFAULT_ADD_BUTTON: ButtonConfig = { label: 'Add', icon: 'puls', variant: 'contained' }
+
+/**
+ * When an item inside a data table's modal canvas is shown: always, only
+ * while adding (no row selected) or only while editing. Exported as the
+ * engine `condition` on `<table name>._id`; absent = always.
+ */
+export type ShowWhen = 'always' | 'adding' | 'editing'
+
+/**
+ * Server pagination authoring — the engine `DataTablePagination` with the
+ * studio's `''` / `'auto'` "unset" idioms. `placement: 'auto'` follows the
+ * engine's inference (the endpoint declares a body model ⇒ body, else query)
+ * and is dropped from the export; `searchKey: ''` = no server search;
+ * `totalPath` is a dot path split at export.
+ */
+export type DataTablePaginationConfig = {
+  enabled: boolean
+  placement: 'auto' | 'query' | 'body'
+  offsetKey: string
+  limitKey: string
+  searchKey: string
+  totalPath: string
+  defaultPageSize: number
+  pageSizeOptions: number[]
+}
+
+/** Engine defaults for the page-size controls (exported only when changed). */
+export const DEFAULT_PAGE_SIZE = 10
+export const DEFAULT_PAGE_SIZE_OPTIONS = [5, 10, 20, 30, 40, 50]
+
+/** Off, with the conventional key names ready for when it's switched on. */
+export function createDefaultPaginationConfig(): DataTablePaginationConfig {
+  return {
+    enabled: false,
+    placement: 'auto',
+    offsetKey: 'offset',
+    limitKey: 'limit',
+    searchKey: '',
+    totalPath: 'total',
+    defaultPageSize: DEFAULT_PAGE_SIZE,
+    pageSizeOptions: [...DEFAULT_PAGE_SIZE_OPTIONS],
+  }
 }
 
 /**
@@ -669,6 +872,7 @@ export type DataTableConfig = {
  */
 export function createDefaultDataTableConfig(name: string): DataTableConfig {
   const column = (accessor: string, header: string): DataTableColumnConfig => ({
+    ...DEFAULT_COLUMN_SIZING,
     id: crypto.randomUUID(),
     accessor,
     header,
@@ -676,6 +880,14 @@ export function createDefaultDataTableConfig(name: string): DataTableConfig {
     enableColumnFilter: false,
     align: 'center',
     useDateFormat: '',
+    pin: '',
+    html: '',
+    sortField: '',
+    lines: '',
+    rowHeader: false,
+    mergeRows: false,
+    mergeColumns: false,
+    group: '',
   })
   return {
     name,
@@ -700,6 +912,18 @@ export function createDefaultDataTableConfig(name: string): DataTableConfig {
     deleteConfirmTitle: 'Delete record',
     deleteConfirmDescription: 'Are you sure you want to delete this record?',
     deleteIsReload: true,
+    pagination: createDefaultPaginationConfig(),
+    canAdd: false,
+    addButton: { ...DEFAULT_ADD_BUTTON },
+    headerGap: '',
+    canResizeColumns: true,
+    cellLines: DEFAULT_CELL_LINES,
+    filtersEnabled: false,
+    filterButton: { ...DEFAULT_FILTER_BUTTON },
+    filterDisplay: 'popover',
+    filterDefaults: [],
+    requestMapping: [],
+    sort: createDefaultSortConfig(),
     deleteSnackbarSuccessEnabled: false,
     deleteSnackbarSuccessType: 'success',
     deleteSnackbarSuccessMessage: '',
@@ -878,7 +1102,7 @@ export type EditableTableOption = {
  * (mirroring `width`/`maxLength` elsewhere). `id` is a studio-only stable
  * identity for the sortable column cards (dnd-kit keys); never exported.
  */
-export type DataTableEditableColumnConfig = {
+export type DataTableEditableColumnConfig = ColumnSizingConfig & {
   /** Studio-only stable card identity; never exported. */
   id: string
   accessorKey: string
@@ -897,6 +1121,10 @@ export type DataTableEditableColumnConfig = {
   enableSorting: boolean
   enableColumnFilter: boolean
   align: 'start' | 'center' | 'end'
+  /** Engine `rowHeader` — the row's label column. */
+  rowHeader: boolean
+  /** Engine `group` — group header label; `''` = none. */
+  group: string
 }
 
 /**
@@ -912,6 +1140,8 @@ export type DataTableEditableConfig = {
   name: string
   title: string
   idKey: string
+  /** Engine `canResizeColumns` — drag a header edge to resize; exported only when off. */
+  canResizeColumns: boolean
   canCreate: boolean
   canUpdate: boolean
   canDelete: boolean
@@ -937,6 +1167,7 @@ export function createEditableTableColumn(
   overrides?: Partial<DataTableEditableColumnConfig>,
 ): DataTableEditableColumnConfig {
   return {
+    ...DEFAULT_COLUMN_SIZING,
     id: crypto.randomUUID(),
     accessorKey,
     header,
@@ -954,6 +1185,8 @@ export function createEditableTableColumn(
     enableSorting: true,
     enableColumnFilter: false,
     align: 'center',
+    rowHeader: false,
+    group: '',
     ...overrides,
   }
 }
@@ -969,6 +1202,7 @@ export function createDefaultDataTableEditableConfig(name: string): DataTableEdi
     name,
     title: 'Editable Table',
     idKey: 'id',
+    canResizeColumns: true,
     canCreate: true,
     canUpdate: true,
     canDelete: true,
@@ -1283,6 +1517,119 @@ export function createDefaultPaperConfig(): PaperConfig {
   return { elevation: 1, variant: 'elevation', square: false }
 }
 
+/**
+ * The card's header slot (MUI `CardHeader`): title / subheader (static or bound
+ * to the enclosing repeater item), an optional avatar and an optional action
+ * button at the end (icon-only by default — MUI's ⋮).
+ */
+export type CardHeaderConfig = {
+  title: string
+  titleBinding: ItemBinding
+  subheader: string
+  subheaderBinding: ItemBinding
+  avatarEnabled: boolean
+  avatar: AvatarConfig
+  actionEnabled: boolean
+  action: CardActionConfig
+}
+
+/** The card's image band (MUI `CardMedia`). */
+export type CardMediaConfig = {
+  enabled: boolean
+  src: string
+  srcBinding: ItemBinding
+  alt: string
+  height: number
+}
+
+/**
+ * One footer button (or the header action). A `ButtonItemConfig` so the full
+ * button editor could take it over later; the card panel edits its label /
+ * icon / variant and a `Navigate` target (`actions` is `['Navigate']` while a
+ * target is set, else `[]`). `id` keys the sortable list.
+ */
+export type CardActionConfig = ButtonItemConfig & { id: string }
+
+export function createDefaultCardActionConfig(label: string, icon = ''): CardActionConfig {
+  return { ...createDefaultButtonItemConfig(), id: crypto.randomUUID(), label, icon, variant: 'text' }
+}
+
+/**
+ * Editable config for a card. Maps onto the engine `CardElement` minus the two
+ * nested containers — `content` is child canvas 0 and the expandable section
+ * child canvas 1 (exported only while `collapseEnabled`).
+ */
+export type CardConfig = {
+  name: string
+  header: CardHeaderConfig
+  media: CardMediaConfig
+  actions: CardActionConfig[]
+  actionsAlign: 'start' | 'end'
+  collapseEnabled: boolean
+  collapseLabel: string
+  defaultExpanded: boolean
+  /** Whole-card link (MUI `CardActionArea`). */
+  navigate: StudioNavigate | null
+  variant: 'elevation' | 'outlined'
+  elevation: number
+  square: boolean
+}
+
+export const DEFAULT_CARD_MEDIA_HEIGHT = 180
+
+export function createDefaultCardHeaderConfig(): CardHeaderConfig {
+  return {
+    title: '',
+    titleBinding: null,
+    subheader: '',
+    subheaderBinding: null,
+    avatarEnabled: false,
+    avatar: createDefaultAvatarConfig(''),
+    actionEnabled: false,
+    action: createDefaultCardActionConfig('', 'moreVertical'),
+  }
+}
+
+/** Defaults for a freshly dropped card: a title, no media, no actions. */
+export function createDefaultCardConfig(name: string): CardConfig {
+  return {
+    name,
+    header: { ...createDefaultCardHeaderConfig(), title: 'Card title' },
+    media: { enabled: false, src: '', srcBinding: null, alt: '', height: DEFAULT_CARD_MEDIA_HEIGHT },
+    actions: [],
+    actionsAlign: 'start',
+    collapseEnabled: false,
+    collapseLabel: 'Show more',
+    defaultExpanded: false,
+    navigate: null,
+    variant: 'elevation',
+    elevation: 1,
+    square: false,
+  }
+}
+
+/**
+ * Editable config for an HTML content block. Maps onto the engine
+ * `HtmlContentElement`: `html` is the `{{path}}` template, `binding` (inside a
+ * repeater's template) what the placeholders read — `key: 'none'` is the item
+ * itself — and `prose` the typographic defaults.
+ */
+export type HtmlContentConfig = {
+  name: string
+  html: string
+  binding: ItemBinding
+  prose: boolean
+}
+
+export function createDefaultHtmlContentConfig(name: string): HtmlContentConfig {
+  return {
+    name,
+    html: '<h3>Heading</h3>\n<p>Some <strong>rich</strong> text with a <a href="https://example.com" target="_blank">link</a>.</p>',
+    binding: null,
+    prose: true,
+  }
+}
+
 /** One tab header. The tab's content is the child canvas at the same index in
  * the item's `childCanvases` (kept aligned by the store's tab actions). */
 export type TabItemConfig = {
@@ -1341,6 +1688,39 @@ export function createDefaultModalConfig(id: string): ModalConfig {
     minWidth: '',
     maxHeight: '',
     trigger: { label: 'Open', icon: '' },
+  }
+}
+
+export type DrawerAnchor = 'left' | 'right' | 'top' | 'bottom'
+
+/**
+ * Editable config for a drawer (MUI's temporary drawer). Maps onto the
+ * engine's `DrawerElement` minus the nested `container` (the item's child
+ * canvas). Like the modal, the trigger is a `ButtonConfig` (the engine takes
+ * any element; studio authors a button) and `id` is the engine registry key
+ * a `CloseModal` button inside it targets. `size` is any CSS length (`''` =
+ * the engine default: 360px for left / right, 50vh for top / bottom).
+ */
+export type DrawerConfig = {
+  id: string
+  title: string
+  description: string
+  anchor: DrawerAnchor
+  size: string
+  hideHeader: boolean
+  trigger: ButtonConfig
+}
+
+/** Defaults for a freshly dropped drawer; `id` gets the unique seq name. */
+export function createDefaultDrawerConfig(id: string): DrawerConfig {
+  return {
+    id,
+    title: 'Drawer',
+    description: '',
+    anchor: 'right',
+    size: '',
+    hideHeader: false,
+    trigger: { label: 'Open', icon: 'panelRight', variant: 'contained' },
   }
 }
 
@@ -1411,6 +1791,8 @@ export type GridItemData = {
   settings: GridItemSettings
   /** Per-element colours from the Style tab — design-only (see `designTypes.ts`). */
   style?: ElementStyle
+  /** Inside a data table's modal canvas only: adding / editing visibility (see `ShowWhen`). */
+  showWhen?: ShowWhen
   /**
    * Component-specific config, discriminated by `type`: a textfield carries a
    * `TextFieldConfig`, a textarea a `TextareaConfig`, a select or autocomplete a
@@ -1436,6 +1818,7 @@ export type GridItemData = {
     | SelectFieldConfig
     | MultiAutocompleteConfig
     | CheckboxConfig
+    | SwitchConfig
     | RadioConfig
     | DateConfig
     | UploadImageConfig
@@ -1451,8 +1834,11 @@ export type GridItemData = {
     | ButtonItemConfig
     | HiddenConfig
     | PaperConfig
+    | CardConfig
+    | HtmlContentConfig
     | TabConfig
     | ModalConfig
+    | DrawerConfig
     | PopoverConfig
     | DesignConfig
   /**
@@ -1478,11 +1864,30 @@ export function createChildCanvas(): ChildCanvas {
   return { items: [], settings: defaultContainerSettings }
 }
 
+/**
+ * Give every data table (at any depth) its two child canvases — [0] the edit
+ * modal, [1] the filter form. Seeds and older workspaces carry tables with
+ * none or one; drill-in silently no-ops on a canvas that isn't there.
+ * Mutates `items` (callers own a fresh or persisted tree).
+ */
+export function ensureDataTableCanvases(items: GridItemData[]): void {
+  for (const item of items) {
+    if (item.type === 'datatable') {
+      const canvases = item.childCanvases ?? []
+      item.childCanvases = [canvases[0] ?? createChildCanvas(), canvases[1] ?? createChildCanvas()]
+    }
+    for (const canvas of item.childCanvases ?? []) ensureDataTableCanvases(canvas.items)
+  }
+}
+
 /** Which palette types host child canvases, and how many they start with. */
 export function childCanvasCount(type: ComponentType, config?: GridItemData['config']): number {
-  if (type === 'container' || type === 'paper' || type === 'modal' || type === 'popover') return 1
-  // A data table's canvas is its edit modal's content (engine `modalContainer`).
-  if (type === 'datatable') return 1
+  if (type === 'container' || type === 'paper' || type === 'modal' || type === 'drawer' || type === 'popover') return 1
+  // Content + the expandable section (the second is exported only while enabled).
+  if (type === 'card') return 2
+  // A data table's canvases: [0] its edit modal's content (engine
+  // `modalContainer`), [1] its filter form (engine `filterContainer`).
+  if (type === 'datatable') return 2
   // A form list's canvas is its row template (engine `rowContainer`).
   if (type === 'formlist') return 1
   // A repeater's canvas is its item template (engine `itemContainer`).
@@ -1493,7 +1898,7 @@ export function childCanvasCount(type: ComponentType, config?: GridItemData['con
 
 /** What a button's stable refs can point at, gathered across the whole tree. */
 export type ButtonRefTargets = {
-  /** Modal items: grid-item id → the authored engine registry key (`ModalConfig.id`). */
+  /** Modal and drawer items: grid-item id → the authored engine registry key (`ModalConfig.id` / `DrawerConfig.id`). */
   modals: { itemId: string; modalId: string }[]
   /** (Editable) data tables and form lists: grid-item id → the authored
    * binding `name` (the `fnCtxs` key they register their refetch under). */
@@ -1533,8 +1938,8 @@ export function collectButtonTargets(items: GridItemData[]): ButtonRefTargets {
   const tables: ButtonRefTargets['tables'] = []
   const walk = (list: GridItemData[]) => {
     for (const item of list) {
-      if (item.type === 'modal' && item.config) {
-        modals.push({ itemId: item.id, modalId: (item.config as ModalConfig).id })
+      if ((item.type === 'modal' || item.type === 'drawer') && item.config) {
+        modals.push({ itemId: item.id, modalId: (item.config as ModalConfig | DrawerConfig).id })
       } else if (
         (item.type === 'datatable' ||
           item.type === 'datatableeditable' ||

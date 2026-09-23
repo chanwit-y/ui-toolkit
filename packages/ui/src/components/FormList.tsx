@@ -110,6 +110,8 @@ type RowFormProps = {
 	removeDisplay: ButtonDisplay;
 	controlsPosition: "start" | "end" | "below";
 	color: ThemeProps["accentColor"] | undefined;
+	/** Remove's colour: the theme's dataTable.deleteButtonColor, else red. */
+	removeColor: ThemeProps["accentColor"];
 	onSave: (values: Row) => Promise<boolean>;
 	onRemove: () => void;
 };
@@ -134,6 +136,7 @@ function RowForm({
 	removeDisplay,
 	controlsPosition,
 	color,
+	removeColor,
 	onSave,
 	onRemove,
 }: RowFormProps) {
@@ -192,7 +195,7 @@ function RowForm({
 			{canRemove && (
 				<ChromeButton
 					variant="ghost"
-					color="gray"
+					color={removeColor}
 					label={removeLabel}
 					icon={removeIcon}
 					display={removeDisplay}
@@ -256,6 +259,9 @@ export const FormList = ({
 	const canUpdate = !!update;
 	const canDelete = !!remove;
 	const color = (theme.components.button?.color as ThemeProps["accentColor"]) || undefined;
+	// Remove shares the tables' delete colour so one theme key governs every
+	// row-delete affordance; it stays ghost to sit quieter than Save.
+	const removeColor = (theme.components.dataTable?.deleteButtonColor || "red") as ThemeProps["accentColor"];
 
 	const scope = useMemo<DataValueScope>(() => ({ params, searchParams }), [params, searchParams]);
 	const stateVersion = useStateVersion(
@@ -411,6 +417,7 @@ export const FormList = ({
 					removeDisplay={removeDisplay}
 					controlsPosition={removePosition}
 					color={color}
+					removeColor={removeColor}
 					onSave={(values) => saveRow(row, values)}
 					onRemove={() => setRowToDelete(row)}
 				/>
@@ -432,6 +439,7 @@ export const FormList = ({
 					removeDisplay={removeDisplay}
 					controlsPosition={removePosition}
 					color={color}
+					removeColor={removeColor}
 					onSave={(values) => saveDraft(draft, values)}
 					onRemove={() => setDrafts((prev) => prev.filter((d) => d.key !== draft.key))}
 				/>

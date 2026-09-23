@@ -5,6 +5,7 @@ import { Autocomplete, MultiAutocomplete } from "../autocomplete";
 import { Avatar } from "../avatar";
 import { Button } from "../button";
 import { Checkbox } from "../checkbox";
+import { Switch } from "../switch";
 import { DataTable } from "../dataTable";
 import { DataTableEditable } from "../dataTableEditable";
 import { FormList } from "../formList";
@@ -21,7 +22,10 @@ import { Text } from "../text";
 import { Typography } from "../typography";
 import { Tab } from "../tab";
 import { Paper } from "../paper";
+import { Card } from "../card";
+import { HtmlContent } from "../htmlContent";
 import { Popover } from "../popover";
+import { Drawer } from "../drawer";
 import { Divider } from "../divider";
 import { UploadImage } from "../uploadImage";
 import { UploadFile } from "../uploadFile";
@@ -49,6 +53,7 @@ export const ElementData = {
 	textfield: TextField,
 	textarea: Textarea,
 	checkbox: Checkbox,
+	switch: Switch,
 	hidden: Hidden,
 	radio: Radio,
 	datepicker: DatePicker,
@@ -58,7 +63,10 @@ export const ElementData = {
 	typography: Typography,
 	tab: Tab,
 	paper: Paper,
+	card: Card,
+	html: HtmlContent,
 	popover: Popover,
+	drawer: Drawer,
 	divider: Divider,
 	uploadimage: UploadImage,
 	uploadfile: UploadFile,

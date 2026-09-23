@@ -16,7 +16,7 @@ import {
 } from 'lucide-react'
 import { Link, NavLink } from 'react-router-dom'
 import { useProjectEndpoints } from './Library/scope'
-import { Button, cn, IconButton } from './common'
+import { cn, IconButton, Tooltip, TooltipProvider } from './common'
 import { useGridStore } from './Layout/gridStore'
 import { LivePreviewModal } from './Layout/LivePreviewModal'
 import { useStudioStore } from './studioStore'
@@ -38,12 +38,18 @@ const TABS = [
   { to: 'menu', label: 'Menu', icon: PanelLeft },
 ]
 
+// Icon-only like the topbar's action buttons; the label is a hover tooltip +
+// aria-label (the APIs tab keeps its endpoint count beside the glyph). The
+// link spans the header so the underline sits on its edge; the tooltip
+// anchors to the 28px glyph box inside it, so the chip hangs right under the
+// icon instead of 30px below it in the canvas bar.
 const TAB_CLASS = ({ isActive }: { isActive: boolean }) =>
   cn(
-    'relative flex items-center gap-1.5 px-[11px] text-ui font-medium text-ink-2 transition-colors hover:text-ink',
-    'after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:rounded-t-sm after:bg-accent after:opacity-0 after:content-[""]',
-    isActive && 'font-semibold text-ink after:opacity-100',
+    'relative flex items-center gap-1 px-1.5 text-ui font-medium text-ink-2 transition-colors hover:text-ink',
+    'after:absolute after:inset-x-1.5 after:bottom-0 after:h-0.5 after:rounded-t-sm after:bg-accent after:opacity-0 after:content-[""]',
+    isActive && 'text-ink after:opacity-100',
   )
+const TAB_GLYPH = 'grid h-7 w-7 place-items-center rounded-md'
 
 const SAVE_LABEL = { saved: 'saved locally', pending: 'saving…', error: 'not saved' } as const
 
@@ -102,19 +108,27 @@ export function AppShell({ project }: { project: ProjectDef }) {
           <b className="truncate font-semibold text-ink">{project.name}</b>
         </div>
 
-        <nav className="flex h-full items-stretch gap-0.5" aria-label="Studio tabs">
-          <NavLink to={pageId ? `pages/${pageId}` : '.'} className={TAB_CLASS}>
-            <LayoutGrid size={15} aria-hidden="true" />
-            Layout
-          </NavLink>
-          {TABS.map(({ to, label, icon: Icon }) => (
-            <NavLink key={to} to={to} className={TAB_CLASS}>
-              <Icon size={15} aria-hidden="true" />
-              {label}
-              {to === 'api' && <span className="tag">{endpointCount}</span>}
+        <TooltipProvider>
+          <nav className="flex h-full items-stretch gap-0.5" aria-label="Studio tabs">
+            <NavLink to={pageId ? `pages/${pageId}` : '.'} className={TAB_CLASS} aria-label="Layout">
+              <Tooltip label="Layout">
+                <span className={TAB_GLYPH}>
+                  <LayoutGrid size={15} aria-hidden="true" />
+                </span>
+              </Tooltip>
             </NavLink>
-          ))}
-        </nav>
+            {TABS.map(({ to, label, icon: Icon }) => (
+              <NavLink key={to} to={to} className={TAB_CLASS} aria-label={label}>
+                <Tooltip label={label}>
+                  <span className={TAB_GLYPH}>
+                    <Icon size={15} aria-hidden="true" />
+                  </span>
+                </Tooltip>
+                {to === 'api' && <span className="tag">{endpointCount}</span>}
+              </NavLink>
+            ))}
+          </nav>
+        </TooltipProvider>
 
         <div className="flex-1" />
 
@@ -143,22 +157,20 @@ export function AppShell({ project }: { project: ProjectDef }) {
         >
           {isDark ? <Sun size={15} aria-hidden="true" /> : <Moon size={15} aria-hidden="true" />}
         </IconButton>
-        <Button title="See the whole project" onClick={() => setOverviewOpen(true)}>
+        {/* Icon-only, like the rest of the topbar; the label lives in the tooltip / aria-label. */}
+        <IconButton label="Overview — see the whole project" onClick={() => setOverviewOpen(true)}>
           <Network size={15} aria-hidden="true" />
-          Overview
-        </Button>
-        <Button title="Hand this project to a developer" onClick={() => setExportOpen(true)}>
+        </IconButton>
+        <IconButton label="Export — hand this project to a developer" onClick={() => setExportOpen(true)}>
           <Download size={15} aria-hidden="true" />
-          Export
-        </Button>
-        <Button
+        </IconButton>
+        <IconButton
           disabled={canvasEmpty}
-          title={canvasEmpty ? 'Add a component to the canvas first' : 'Open the live preview'}
+          label={canvasEmpty ? 'Preview — add a component to the canvas first' : 'Preview — open the live preview'}
           onClick={() => setPreviewOpen(true)}
         >
           <Eye size={15} aria-hidden="true" />
-          Preview
-        </Button>
+        </IconButton>
       </header>
 
       {/* Mount fresh on every open so the engine form state resets. */}

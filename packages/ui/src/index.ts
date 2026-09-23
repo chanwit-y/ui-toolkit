@@ -9,6 +9,7 @@ export { TextareaBase } from "./components/Textarea";
 export { SelectFieldBase } from "./components/SelectField";
 // Un-form-wrapped checkbox for display-only previews (e.g. the studio canvas).
 export { CheckboxBase } from "./components/Checkbox";
+export { SwitchBase } from "./components/Switch";
 // Un-form-wrapped (static-options) radio for display-only previews (studio canvas).
 export { RadioButtonBase } from "./components/RadioButton";
 // Un-form-wrapped button visuals for display-only previews (studio canvas) —
@@ -19,6 +20,7 @@ export type { ButtonVariant } from "./components/@types";
 // The curated lucide glyph map ButtonElement.icon keys into (studio icon picker).
 export { IconData } from "./components/core/const/iconData";
 export type { CheckboxProps, CheckboxElement } from "./components/@types";
+export type { SwitchProps, SwitchElement, SwitchLabelPosition } from "./components/@types";
 export type { TextFieldProps, TextFieldElement, DataType, TextareaProps, TextareaElement, SelectFieldProps } from "./components/@types";
 export * from "./hooks";
 
@@ -29,8 +31,8 @@ export { MultiAutocompleteBase } from "./components/MultiAutocomplete";
 export type { MultiAutocompleteProps } from "./components/@types";
 // The option row (avatar/icon + title + subtitle) both autocompletes render — also
 // the studio's "Option preview" strip.
-export { OptionRow } from "./components/OptionRow";
-export type { OptionRowProps } from "./components/OptionRow";
+export { OptionRow, SelectedChip } from "./components/OptionRow";
+export type { OptionRowProps, SelectedChipProps } from "./components/OptionRow";
 // Core context provider (observe table + Data/Query/Loading/Snackbar) — required
 // by engine-aware components like Autocomplete2 when used outside the engine
 // (e.g. the studio canvas live preview).
@@ -53,6 +55,11 @@ export { getContainerSurface, resolveSurface } from "./components/core/container
 export type { ResolvedContainerSurface } from "./components/core/containerSurface";
 export * from "./api/APIMaster";
 export * from "./components/DataTable2";
+export { HtmlCell, renderHtmlCell, type HtmlCellProps } from "./components/HtmlCell";
+export { ClampedCell, DEFAULT_CELL_LINES } from "./components/ClampedCell";
+export { groupColumns, headerRows, computeSpans, columnMeta, type ColumnLayoutMeta } from "./components/dataTableLayout";
+export { renderTemplate, templateFields, escapeHtml } from "./util/template";
+export { sanitizeHtml, type SanitizedHtml } from "./util/sanitizeHtml";
 export * from "./components/DataTableEditable";
 export type {
 	DataTableEditableProps,
@@ -84,6 +91,18 @@ export type {
 } from "./components/@types";
 export * from "./components/Repeater";
 export type { RepeaterElement, RepeaterProps, RepeaterItemSpan } from "./components/@types";
+export type {
+  DataTableApi,
+  DataTablePagination,
+  DataTableSort,
+  DataTableFilterButton,
+  DataTableFilterDisplay,
+  DataTablePinnedColumns,
+  DataTableAddButton,
+  DataTableHeaderGap,
+  // The engine's column config (not TanStack's `ColumnDef`, hence the prefix).
+  ColumnDef as DataTableColumnDef,
+} from "./components/@types";
 export { RowScopeProvider, useRowScope, useDataValue } from "./components/core/rowScope";
 export type { RowScope } from "./components/core/rowScope";
 export * from "./components/Icon";
@@ -92,8 +111,11 @@ export * from "./components/Modal";
 export * from "./components/Tab";
 export * from "./components/Paper";
 export type { PaperProps } from "./components/Paper";
+export * from "./components/Card";
+export * from "./components/HtmlContent";
 export * from "./components/Popover";
 export type { PopoverProps } from "./components/Popover";
+export * from "./components/Drawer";
 export * from "./components/Divider";
 export type { DividerProps } from "./components/Divider";
 export * from "./components/ConfirmBox";
@@ -131,7 +153,7 @@ export { uploadFileToApi, deleteFileFromApi } from "./util/uploadApi";
 export * from "./components/RadioButton2"
 export * from "./components/ThemeToggle"
 export type { ThemeToggleProps } from "./components/ThemeToggle"
-export type { Bin, Container, ContainerSurface, ContainerLoad, DataValue, DataTableElement, RadioElement, NavigateTarget, PageElement, TPageMaster } from "./components/@types"
+export type { Bin, Container, ContainerSurface, ContainerLoad, DataValue, DataTableElement, DrawerAnchor, DrawerElement, RadioElement, NavigateTarget, PageElement, TPageMaster } from "./components/@types"
 export { getStateStore, stateStoreKeys } from "./components/core/stateStore"
 export type { StateSlice, StateStore } from "./components/core/stateStore"
 // Engine debug mirror — runtime state (container forms, contextData, loaders)

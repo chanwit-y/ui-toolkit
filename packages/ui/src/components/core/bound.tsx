@@ -22,7 +22,7 @@ export function BoundTypography({ value, text, ...props }: TypographyElement) {
 }
 
 /** An image URL out of a bound value: the string itself, or an object's `src` / `url`. */
-function imageSrc(value: unknown): string | undefined {
+export function imageSrc(value: unknown): string | undefined {
   if (typeof value === "string") return value || undefined;
   if (value && typeof value === "object") {
     const { src, url } = value as { src?: unknown; url?: unknown };

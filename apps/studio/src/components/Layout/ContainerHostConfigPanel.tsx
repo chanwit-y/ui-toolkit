@@ -6,6 +6,8 @@ import { BUTTON_VARIANT_OPTIONS } from './types'
 import type {
   ButtonConfig,
   ButtonVariant,
+  DrawerAnchor,
+  DrawerConfig,
   ModalConfig,
   PaperConfig,
   PopoverConfig,
@@ -293,6 +295,101 @@ export function ModalConfigPanel({
           />
         </Field>
       </div>
+
+      <Heading>Trigger button</Heading>
+      <Field label="Label">
+        <Input
+          value={config.trigger.label}
+          onChange={(e) => patchTrigger({ label: e.target.value })}
+        />
+      </Field>
+      <Field label="Icon">
+        <IconPicker
+          value={config.trigger.icon}
+          onChange={(v) => patchTrigger({ icon: v })}
+        />
+      </Field>
+      <Field label="Variant">
+        <SegmentedControl
+          options={BUTTON_VARIANT_OPTIONS}
+          value={config.trigger.variant}
+          onChange={(v) => patchTrigger({ variant: v as ButtonVariant })}
+          aria-label="Variant"
+        />
+      </Field>
+    </div>
+  )
+}
+
+const ANCHOR_OPTIONS = [
+  { value: 'left', label: 'Left' },
+  { value: 'right', label: 'Right' },
+  { value: 'top', label: 'Top' },
+  { value: 'bottom', label: 'Bottom' },
+]
+
+/**
+ * Inspector for a drawer (MUI's temporary drawer): identity, the edge it
+ * slides in from, its size on that axis and the header toggle, plus its
+ * trigger button — the same slice as the modal's. Content is authored via
+ * drill-in and exercised in the Live Preview, where the engine can open it.
+ */
+export function DrawerConfigPanel({
+  itemId,
+  config,
+}: {
+  itemId: string
+  config: DrawerConfig
+}) {
+  const updateItemConfig = useGridStore((s) => s.updateItemConfig)
+  const set = <K extends keyof DrawerConfig>(key: K, value: DrawerConfig[K]) =>
+    updateItemConfig(itemId, { [key]: value } as Partial<DrawerConfig>)
+  const patchTrigger = (patch: Partial<ButtonConfig>) =>
+    set('trigger', { ...config.trigger, ...patch })
+  const horizontal = config.anchor === 'left' || config.anchor === 'right'
+
+  return (
+    <div className="space-y-3">
+      <Heading>Drawer</Heading>
+      <EditContentsButton itemId={itemId}>Edit drawer contents</EditContentsButton>
+
+      <Field label="Id (registry key — CloseModal buttons inside target it)">
+        <Input
+          value={config.id}
+          onChange={(e) => set('id', e.target.value)}
+          className="font-mono"
+        />
+      </Field>
+      <Field label="Title">
+        <Input value={config.title} onChange={(e) => set('title', e.target.value)} />
+      </Field>
+      <Field label="Description">
+        <Input
+          value={config.description}
+          onChange={(e) => set('description', e.target.value)}
+        />
+      </Field>
+
+      <Field label="Anchor — the edge it slides in from">
+        <SegmentedControl
+          options={ANCHOR_OPTIONS}
+          value={config.anchor}
+          onChange={(v) => set('anchor', v as DrawerAnchor)}
+          aria-label="Anchor"
+        />
+      </Field>
+      <Field label={horizontal ? 'Width' : 'Height'}>
+        <Input
+          value={config.size}
+          onChange={(e) => set('size', e.target.value)}
+          placeholder={horizontal ? '360px' : '50vh'}
+        />
+      </Field>
+      <Toggle
+        label="Hide header (title, description, close button)"
+        checked={config.hideHeader}
+        onChange={(v) => set('hideHeader', v)}
+      />
 
       <Heading>Trigger button</Heading>
       <Field label="Label">

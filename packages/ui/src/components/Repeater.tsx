@@ -140,8 +140,9 @@ export const Repeater = ({
 	const list: unknown[] = api ? data ?? [] : Array.isArray(scoped) ? scoped : [];
 
 	const span = { sm: "12", md: "12", lg: "12", xl: "12", ...itemSpan };
-	// Below `sm` no span class applies: the base `col-span-12` stacks items full width.
-	const spanClass = `col-span-12 sm-col-span-${span.sm} md-col-span-${span.md} lg-col-span-${span.lg} xl-col-span-${span.xl}`;
+	// Below `sm` no span class applies: the base `xs-col-span-12` stacks items
+	// full width (a `col-span-12` utility would out-cascade the responsive rules).
+	const spanClass = `xs-col-span-12 sm-col-span-${span.sm} md-col-span-${span.md} lg-col-span-${span.lg} xl-col-span-${span.xl}`;
 	const padding = resolveContainerGap(itemPadding ?? (itemSurface === "none" ? "0" : "4"));
 
 	const pending = !!api && (isLoading || !readArgs.ready);

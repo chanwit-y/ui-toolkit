@@ -3,6 +3,8 @@ export interface Country {
   name: string;
   code: string;
   avatar: string | { src: string; alt?: string; fallback?: string };
+  /** A wide flag for image bands (card media); `avatar` stays the 40px one. */
+  image?: string;
   updated_at: string;
   updated_by_name: string;
 }
@@ -53,7 +55,31 @@ export let countries: Country[] = [
   { _id: "40", name: "Qatar", code: "QA", avatar: flagUrl("QA"), updated_at: "2024-12-07T09:30:00Z", updated_by_name: "Admin" },
 ];
 
+// Spread the rows over a few editors so "Updated by" is worth filtering on.
+const EDITORS = ["Admin", "Somchai", "Yuki", "Maria"];
+countries.forEach((country, index) => {
+  country.updated_by_name = EDITORS[index % EDITORS.length];
+  country.image = `https://flagcdn.com/w640/${country.code.toLowerCase()}.png`;
+});
+
 let nextId = 41;
+
+export type CountryPageInput = {
+  offset?: number;
+  /** Omitted ⇒ every matching row (a table that pages in memory). */
+  limit?: number;
+  search?: string;
+  /** Custom filters: name contains, code equals, updated-by is one of. */
+  name?: string;
+  code?: string;
+  updatedBy?: string[];
+  /** Restrict to these country codes (the region route). */
+  codes?: string[];
+  sortBy?: string;
+  sortDir?: string;
+};
+
+const SORTABLE = ["_id", "name", "code", "updated_at", "updated_by_name"] as const;
 
 export const countryService = {
   getAll: () => countries,
@@ -70,26 +96,38 @@ export const countryService = {
   },
 
   /**
-   * Server-side pagination + search. Filters by name/code (when a search term
-   * is given), then returns one page worth of rows plus the total count of all
-   * matching rows (so the client can compute page count).
+   * Server-side pagination, search, custom filters and sort. Filters first
+   * (search term over name/code, then `name` contains / `code` equals /
+   * `updatedBy` one-of / `codes`), sorts by `sortBy` + `sortDir`, then returns
+   * one page of rows plus the total count of all matching rows (so the client
+   * can compute the page count).
    */
-  getPage: ({ offset = 0, limit = 10, search = "" }: { offset?: number; limit?: number; search?: string }) => {
-    const normalized = search.trim().toLowerCase();
-    const filtered = normalized
-      ? countries.filter(
-          (country) =>
-            country.name.toLowerCase().includes(normalized) ||
-            country.code.toLowerCase().includes(normalized)
-        )
-      : countries;
+  getPage: ({ offset = 0, limit, search = "", name = "", code = "", updatedBy = [], codes, sortBy = "", sortDir = "asc" }: CountryPageInput) => {
+    const term = search.trim().toLowerCase();
+    const nameTerm = name.trim().toLowerCase();
+    const codeTerm = code.trim().toLowerCase();
+    const filtered = countries.filter(
+      (country) =>
+        (!term || country.name.toLowerCase().includes(term) || country.code.toLowerCase().includes(term)) &&
+        (!nameTerm || country.name.toLowerCase().includes(nameTerm)) &&
+        (!codeTerm || country.code.toLowerCase() === codeTerm) &&
+        (updatedBy.length === 0 || updatedBy.includes(country.updated_by_name)) &&
+        (!codes || codes.includes(country.code))
+    );
+
+    const field = SORTABLE.find((f) => f === sortBy);
+    if (field) {
+      const dir = ["desc", "-1"].includes(sortDir.toLowerCase()) ? -1 : 1;
+      const value = (c: Country) => (field === "_id" ? Number(c._id) : String(c[field]).toLowerCase());
+      filtered.sort((a, b) => (value(a) < value(b) ? -dir : value(a) > value(b) ? dir : 0));
+    }
 
     return {
-      rows: filtered.slice(offset, offset + limit),
+      rows: limit === undefined ? filtered.slice(offset) : filtered.slice(offset, offset + limit),
       total: filtered.length,
     };
   },
-  
+
   getById: (id: string) => countries.find((c) => c._id === id) ?? null,
 
   create: (data: { name: string; code: string }) => {

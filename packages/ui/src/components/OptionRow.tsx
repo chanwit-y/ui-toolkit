@@ -1,4 +1,4 @@
-import type { LucideIcon } from "lucide-react";
+import { X, type LucideIcon } from "lucide-react";
 import { IconData } from "./core/const/iconData";
 import { Avatar } from "./Avatar";
 import { cn } from "../util/utils";
@@ -98,3 +98,47 @@ export const OptionRow = ({ title, subtitle, icon, avatar, className }: OptionRo
 	);
 };
 OptionRow.displayName = "OptionRow";
+
+export type SelectedChipProps = {
+	title: string;
+	icon?: keyof typeof IconData | LucideIcon | null;
+	/** Wins over `icon`, as on the row. */
+	avatar?: OptionAvatarProps | null;
+	/** Rendered as the trailing ✕; no button when omitted (inert previews). */
+	onRemove?: (event: React.MouseEvent<HTMLButtonElement>) => void;
+	className?: string;
+};
+
+/**
+ * One selected option as the multi autocomplete's trigger draws it: the row's
+ * leading avatar / icon, the title and a remove button — a compact token, so
+ * the subtitle stays on the row. Shared with the studio's option preview.
+ */
+export const SelectedChip = ({ title, icon, avatar, onRemove, className }: SelectedChipProps) => {
+	const IconComponent = avatar ? null : resolveIcon(icon);
+	return (
+		<span
+			className={cn(
+				"flex items-center gap-1 px-2 py-1 bg-[var(--accent-3)] text-[var(--accent-12)] text-xs rounded-md max-w-[140px] border border-[var(--accent-6)]",
+				className,
+			)}
+		>
+			{avatar && (
+				<Avatar src={avatar.src} alt={avatar.alt} size={16} fallback={avatar.fallback} className="flex-shrink-0" />
+			)}
+			{IconComponent && <IconComponent className="h-3 w-3 flex-shrink-0 opacity-80" />}
+			<span className="truncate">{title}</span>
+			{onRemove && (
+				<button
+					type="button"
+					aria-label={`Remove ${title}`}
+					onClick={onRemove}
+					className="hover:bg-[var(--accent-4)] rounded-full p-0.5 flex-shrink-0"
+				>
+					<X className="h-3 w-3" />
+				</button>
+			)}
+		</span>
+	);
+};
+SelectedChip.displayName = "SelectedChip";

@@ -29,14 +29,12 @@ const defaultComponents: ThemeComponents = {
   button: {
     color: 'blue',
   },
-  dataTable: {
-    // header / row-hover / pagination are intentionally left unset so they
-    // resolve to the Radix accent (--accent-*) and flip with light/dark.
-    // A named color here would route into the legacy static map (no dark
-    // variant). editButton follows button.color; delete stays semantic red.
-    editButtonColor: 'blue',
-    deleteButtonColor: 'red',
-  },
+  // Every dataTable role is intentionally left unset: header / row-hover /
+  // pagination resolve to the Radix accent (--accent-*), the edit button to
+  // button.color, and delete to red — all flipping with light/dark. A named
+  // color pins a role (a Radix button colour for the action buttons, the
+  // legacy static map for the rest).
+  dataTable: {},
 }
 
 const ThemeContext = createContext<ThemeContextType>({
@@ -128,8 +126,8 @@ export function ThemeProvider({
         paginationButtonColor: nextComponents.dataTable?.paginationButtonColor ?? parentComponents.dataTable?.paginationButtonColor ?? defaultComponents.dataTable?.paginationButtonColor,
         paginationButtonHoverColor: nextComponents.dataTable?.paginationButtonHoverColor ?? parentComponents.dataTable?.paginationButtonHoverColor ?? defaultComponents.dataTable?.paginationButtonHoverColor,
         rowHoverColor: nextComponents.dataTable?.rowHoverColor ?? parentComponents.dataTable?.rowHoverColor ?? defaultComponents.dataTable?.rowHoverColor,
-        editButtonColor: nextComponents.dataTable?.editButtonColor ?? parentComponents.dataTable?.editButtonColor ?? defaultComponents.dataTable?.editButtonColor ?? 'blue',
-        deleteButtonColor: nextComponents.dataTable?.deleteButtonColor ?? parentComponents.dataTable?.deleteButtonColor ?? defaultComponents.dataTable?.deleteButtonColor ?? 'red',
+        editButtonColor: nextComponents.dataTable?.editButtonColor ?? parentComponents.dataTable?.editButtonColor ?? defaultComponents.dataTable?.editButtonColor,
+        deleteButtonColor: nextComponents.dataTable?.deleteButtonColor ?? parentComponents.dataTable?.deleteButtonColor ?? defaultComponents.dataTable?.deleteButtonColor,
       },
       // textField: {
       //   ...parentComponents.textField,

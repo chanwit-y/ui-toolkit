@@ -14,6 +14,45 @@ const POPOVER_IGNORE_SELECTORS =
 /** Enter/exit transition duration (ms). Must match the `duration-150` class. */
 const TRANSITION_MS = 150;
 
+/**
+ * Where the content is portaled. Normally `document.body`; but inside an open
+ * Radix dialog (the library `Modal`, or a consumer's) the dialog's focus trap
+ * pulls focus back from anything outside its content — a text field in a
+ * body-portaled popover could be clicked but never typed into — so there the
+ * content goes inside the dialog content, where the trap allows it.
+ */
+function portalTargetFor(trigger: HTMLElement | null): HTMLElement {
+  return trigger?.closest<HTMLElement>('[role="dialog"],[role="alertdialog"]') ?? document.body;
+}
+
+/** True when `el` is the containing block of its `position: fixed` descendants. */
+function isFixedContainingBlock(el: HTMLElement): boolean {
+  const cs = getComputedStyle(el);
+  return (
+    cs.transform !== 'none' ||
+    cs.perspective !== 'none' ||
+    cs.filter !== 'none' ||
+    ((cs as CSSStyleDeclaration & { backdropFilter?: string }).backdropFilter ?? 'none') !== 'none' ||
+    /transform|perspective|filter/.test(cs.willChange) ||
+    /paint|layout|strict|content/.test(cs.contain)
+  );
+}
+
+/**
+ * The viewport offset of the box that `position: fixed` resolves against for
+ * a child of `target`: (0, 0) for the viewport itself, else the padding box of
+ * the nearest transformed ancestor (a centred modal's `translate(-50%, -50%)`).
+ */
+function fixedOrigin(target: HTMLElement): { x: number; y: number } {
+  for (let el: HTMLElement | null = target; el && el !== document.body; el = el.parentElement) {
+    if (isFixedContainingBlock(el)) {
+      const rect = el.getBoundingClientRect();
+      return { x: rect.left + el.clientLeft, y: rect.top + el.clientTop };
+    }
+  }
+  return { x: 0, y: 0 };
+}
+
 export interface PopoverProps {
   children: ReactNode;
   content: ReactNode;
@@ -45,13 +84,22 @@ export const Popover: React.FC<PopoverProps> = ({
   // `entered` is the transition target toggled a frame after mount.
   const [mounted, setMounted] = useState(false);
   const [entered, setEntered] = useState(false);
+  // `settled` — the enter transition is over, so the transform can go. A
+  // transformed box is the containing block of its `position: fixed`
+  // descendants, which would send a select's (viewport-positioned) dropdown
+  // far from its trigger for as long as `translate-*-0` stayed on.
+  const [settled, setSettled] = useState(false);
   const triggerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  // Resolved on mount (the trigger must be in the DOM): the body, or the
+  // enclosing dialog content — see `portalTargetFor`.
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
 
   // Content is portaled to document.body (so `position: fixed` resolves against
-  // the viewport, not a transformed ancestor). That moves it outside the Radix
-  // <Theme> wrapper, so re-apply the current theme to restore `--accent-*` for
-  // themed content. Mirrors Modal / the date pickers.
+  // the viewport, not a transformed ancestor — inside a dialog, `fixedOrigin`
+  // corrects for the modal box). That moves it outside the Radix <Theme>
+  // wrapper, so re-apply the current theme to restore `--accent-*` for themed
+  // content. Mirrors Modal / the date pickers.
   const { theme: currentTheme, components: currentComponents } = useTheme();
 
   const isOpen = controlledOpen !== undefined ? controlledOpen : internalOpen;
@@ -113,8 +161,10 @@ export const Popover: React.FC<PopoverProps> = ({
     if (top + contentRect.height > viewport.height) {
       top = viewport.height - contentRect.height - 8;
     }
-    
-    setPosition({ top, left });
+
+    // Viewport coordinates → the coordinate space `fixed` resolves in here.
+    const origin = portalTarget ? fixedOrigin(portalTarget) : { x: 0, y: 0 };
+    setPosition({ top: top - origin.y, left: left - origin.x });
   };
   
   const handleToggle = () => {
@@ -139,13 +189,19 @@ export const Popover: React.FC<PopoverProps> = ({
   // then unmount after the transition finishes.
   useEffect(() => {
     if (isOpen) {
+      setPortalTarget(portalTargetFor(triggerRef.current));
       setMounted(true);
       // Flip to the "entered" state a tick after mount so the browser paints
       // the "from" frame first and the transition runs. A timer (not rAF) is
       // used so it still fires when the tab is backgrounded/hidden.
       const t = setTimeout(() => setEntered(true), 20);
-      return () => clearTimeout(t);
+      const done = setTimeout(() => setSettled(true), 20 + TRANSITION_MS);
+      return () => {
+        clearTimeout(t);
+        clearTimeout(done);
+      };
     }
+    setSettled(false);
     setEntered(false);
     const t = setTimeout(() => setMounted(false), TRANSITION_MS);
     return () => clearTimeout(t);
@@ -167,7 +223,7 @@ export const Popover: React.FC<PopoverProps> = ({
       };
     }
     return undefined;
-  }, [mounted, placement, offset]);
+  }, [mounted, placement, offset, portalTarget]);
   
   useEffect(() => {
     if (isOpen) {
@@ -232,20 +288,25 @@ export const Popover: React.FC<PopoverProps> = ({
       </div>
       
       {mounted &&
+        portalTarget &&
         createPortal(
           <ThemeProvider theme={currentTheme} components={currentComponents}>
             {/* Backdrop for mobile/touch devices */}
             <div
-              className={`fixed inset-0 z-40 md:hidden transition-opacity duration-150 ease-out ${entered ? 'opacity-100' : 'opacity-0'}`}
+              className={`pointer-events-auto fixed inset-0 z-[99999] md:hidden transition-opacity duration-150 ease-out ${entered ? 'opacity-100' : 'opacity-0'}`}
               onClick={handleClose}
             />
 
             {/* Popover content — fades + slides in from the trigger's side.
                 Only opacity/translate animate (not scale) so getBoundingClientRect
-                width/height stay stable for positioning. */}
+                width/height stay stable for positioning. Same layer as the
+                autocomplete dropdown (above a Radix dialog), so a popover
+                inside a modal — a data table's filter form — stays on top;
+                `pointer-events-auto` because an open Radix dialog turns them
+                off on <body>, where this is portaled. */}
             <div
               ref={contentRef}
-              className={`fixed z-50 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg transition duration-150 ease-out ${entered ? 'opacity-100 translate-x-0 translate-y-0' : `opacity-0 ${enterOffsetClass}`} ${contentClassName}`}
+              className={`pointer-events-auto fixed z-[100000] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg transition duration-150 ease-out ${settled ? 'opacity-100' : entered ? 'opacity-100 translate-x-0 translate-y-0' : `opacity-0 ${enterOffsetClass}`} ${contentClassName}`}
               style={{
                 top: `${position.top}px`,
                 left: `${position.left}px`,
@@ -256,7 +317,7 @@ export const Popover: React.FC<PopoverProps> = ({
               {content}
             </div>
           </ThemeProvider>,
-          document.body,
+          portalTarget,
         )}
     </>
   );
