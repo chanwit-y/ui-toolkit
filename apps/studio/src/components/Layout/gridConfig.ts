@@ -19,6 +19,7 @@ import type {
   ButtonConfig,
   ButtonItemConfig,
   CheckboxConfig,
+  SwitchConfig,
   ChildCanvas,
   DataTableConfig,
   DataTablePaginationConfig,
@@ -38,6 +39,7 @@ import type {
   GridItemData,
   HiddenConfig,
   ModalConfig,
+  DrawerConfig,
   MultiAutocompleteConfig,
   NavParamSource,
   PaperConfig,
@@ -399,6 +401,47 @@ function autocompleteElement(
  * `options`/`orientation`); group mode emits `options`/`orientation` (no initial
  * selection). `indeterminate` is studio-preview-only and never emitted.
  */
+/**
+ * `switch` → engine `SwitchElement`. Like the select cascade the gate is stored
+ * by item id and resolved to the engine's name-keyed observe wiring here: the
+ * gated switch emits `enabledWhen` (`{ key: <gate name>, type: "observe" } eq
+ * true|false`) and the gate itself emits `canObserve: true` — the two halves
+ * are never authored separately, so a gate that doesn't publish isn't possible.
+ * A deleted / unnamed gate emits `MISSING_OBSERVE_TARGET` (greppable).
+ */
+function switchElement(c: SwitchConfig, item: GridItemData, items: GridItemData[]): Record<string, unknown> {
+  const isGate = items.some(
+    (o) => o.id !== item.id && o.type === 'switch' && (o.config as SwitchConfig | undefined)?.enabledWhen?.itemId === item.id,
+  )
+  const gate = c.enabledWhen
+    ? items.find((o) => o.id === c.enabledWhen?.itemId && o.type === 'switch')
+    : undefined
+  const gateName = gate ? ((gate.config as SwitchConfig | undefined)?.name.trim() ?? '') : ''
+  return {
+    name: c.name,
+    dataType: 'boolean',
+    label: c.label,
+    isRequired: c.isRequired,
+    errorMessage: c.errorMessage,
+    ...(c.labelPosition !== 'end' ? { labelPosition: c.labelPosition } : {}),
+    ...(c.variant !== 'surface' ? { variant: c.variant } : {}),
+    ...(c.size !== '2' ? { size: c.size } : {}),
+    ...(c.defaultChecked ? { defaultChecked: true } : {}),
+    ...(c.disabled ? { disabled: true } : {}),
+    ...(isGate ? { canObserve: true } : {}),
+    ...(c.enabledWhen
+      ? {
+          enabledWhen: {
+            left: { key: gateName || MISSING_OBSERVE_TARGET, type: 'observe' },
+            operator: 'eq',
+            right: { val: c.enabledWhen.when === 'on' },
+          },
+        }
+      : {}),
+    ...omitEmpty({ helperText: c.helperText }),
+  }
+}
+
 function checkboxElement(c: CheckboxConfig): Record<string, unknown> {
   const isGroup = c.mode === 'group'
   return {
@@ -1344,6 +1387,37 @@ function modalElement(
 }
 
 /**
+ * `drawer` → engine `DrawerElement`. Like the modal: the trigger is a
+ * `ButtonElement` with the authored visuals (the engine's Drawer wraps it in
+ * its own open logic; the engine takes any element, studio authors a button,
+ * emitted as the mini-Bin); anchor / size / hideHeader only off the defaults.
+ */
+function drawerElement(
+  c: DrawerConfig,
+  item: GridItemData,
+  endpoints: EndpointRef[],
+  refs: ButtonRefMaps,
+): Record<string, unknown> {
+  return {
+    id: c.id,
+    container: toEngineContainer(
+      childCanvasAt(item, 0),
+      childContainerName(item),
+      endpoints,
+      refs,
+    ),
+    trigger: { type: 'button', element: buttonElement(c.trigger) },
+    ...omitEmpty({
+      title: c.title,
+      description: c.description,
+      size: c.size,
+    }),
+    ...(c.anchor !== 'right' ? { anchor: c.anchor } : {}),
+    ...(c.hideHeader ? { hideHeader: true } : {}),
+  }
+}
+
+/**
  * `popover` → engine `PopoverElement`. The trigger is the engine's mini-Bin
  * (`{type, element}`) — studio authors the button | text subset.
  */
@@ -1398,6 +1472,8 @@ function buildElement(
         : undefined
     case 'checkbox':
       return item.config ? checkboxElement(item.config as CheckboxConfig) : undefined
+    case 'switch':
+      return item.config ? switchElement(item.config as SwitchConfig, item, items) : undefined
     case 'radio':
       return item.config ? radioElement(item.config as RadioConfig) : undefined
     case 'datepicker':
@@ -1458,6 +1534,10 @@ function buildElement(
     case 'modal':
       return item.config
         ? modalElement(item.config as ModalConfig, item, endpoints, refs)
+        : undefined
+    case 'drawer':
+      return item.config
+        ? drawerElement(item.config as DrawerConfig, item, endpoints, refs)
         : undefined
     case 'popover':
       return item.config

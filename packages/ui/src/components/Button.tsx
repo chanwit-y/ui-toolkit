@@ -125,7 +125,12 @@ const Button = forwardRef<ElementRef<typeof RadixButton>, ButtonProps>(({
 								variant: "error",
 								message: errorMessages || "Please check the form for errors",
 							})
-							break
+							// An invalid form ends the chain: the actions after the
+							// submit (StopLoading, CloseModal, …) assume it went through,
+							// and closing the modal / drawer over a failed validation
+							// would throw the user's input away.
+							loaderId && stopLoading(loaderId)
+							return
 						}
 
 						await handleSubmit(async (data) => {
@@ -153,6 +158,11 @@ const Button = forwardRef<ElementRef<typeof RadixButton>, ButtonProps>(({
 						break;
 					case 'StopLoading':
 						loaderId && stopLoading(loaderId);
+						break;
+					case 'OpenModal':
+						// Modals and drawers register `(open: boolean) => void` under their id.
+						if (modalId) fnCtxs?.[modalId]?.bind(fnCtxs)?.(true)
+						else console.warn("[Button] OpenModal needs `modalId` (the modal's or drawer's id)")
 						break;
 					case 'CloseModal':
 						fnCtxs?.[modalId ?? "modal"]?.bind(fnCtxs)?.(false)

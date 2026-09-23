@@ -20,6 +20,8 @@ export const menu: TMenu = [
   { label: "Table layout", icon: "table", navigate: { page: "tableLayoutDemo" } },
   { label: "Card", icon: "creditCard", navigate: { page: "cardDemo" } },
   { label: "HTML content", icon: "code", navigate: { page: "htmlContentDemo" } },
+  { label: "Drawer", icon: "panelRight", navigate: { page: "drawerDemo" } },
+  { label: "Switch", icon: "toggleLeft", navigate: { page: "switchDemo" } },
   { label: "Upload", icon: "upload", navigate: { page: "uploadDemo" } },
   {
     label: "Shortcuts",

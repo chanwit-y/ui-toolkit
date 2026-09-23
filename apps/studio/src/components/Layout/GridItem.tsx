@@ -5,6 +5,7 @@ import {
   ButtonBase,
   CardView,
   CheckboxBase,
+  SwitchBase,
   DataTable2,
   HtmlCell,
   DataTableEditable,
@@ -43,6 +44,7 @@ import {
   Mail,
   MessageSquare,
   MousePointerClick,
+  PanelRight,
   PanelTop,
   Phone,
   Pilcrow,
@@ -50,6 +52,7 @@ import {
   Search,
   SeparatorHorizontal,
   SquareCheck,
+  ToggleLeft,
   StickyNote,
   CreditCard,
   Code,
@@ -75,6 +78,7 @@ import type {
   AvatarConfig,
   ButtonConfig,
   CheckboxConfig,
+  SwitchConfig,
   ChildCanvas,
   ColumnSizingConfig,
   DataTableColumnConfig,
@@ -87,6 +91,7 @@ import type {
   RepeaterConfig,
   GridItemData,
   ModalConfig,
+  DrawerConfig,
   MultiAutocompleteConfig,
   PaperConfig,
   CardConfig,
@@ -157,8 +162,11 @@ function thresholdsForType(type: GridItemData['type']): LiveThresholds {
     type === 'typography' ||
     type === 'avatar' ||
     type === 'button' ||
+    // A switch is a thumb and a label — legible in the narrowest cell.
+    type === 'switch' ||
     // Overlays render only their trigger on the canvas — as cheap as a button.
     type === 'modal' ||
+    type === 'drawer' ||
     type === 'popover' ||
     // A repeater previews its item template like the other container hosts.
     type === 'repeater' ||
@@ -230,6 +238,9 @@ function CellContent({ item }: { item: GridItemData }) {
   if (item.type === 'checkbox' && item.config) {
     return <GlyphChip Icon={SquareCheck} />
   }
+  if (item.type === 'switch' && item.config) {
+    return <GlyphChip Icon={ToggleLeft} />
+  }
   if (item.type === 'uploadimage' && item.config) {
     return <GlyphChip Icon={ImagePlus} />
   }
@@ -275,6 +286,9 @@ function CellContent({ item }: { item: GridItemData }) {
   if (item.type === 'modal' && item.config) {
     return <GlyphChip Icon={AppWindow} />
   }
+  if (item.type === 'drawer' && item.config) {
+    return <GlyphChip Icon={PanelRight} />
+  }
   if (item.type === 'popover' && item.config) {
     return <GlyphChip Icon={MessageSquare} />
   }
@@ -312,6 +326,8 @@ function ActiveBody({ item }: { item: GridItemData }) {
               ? ListChecks
               : item.type === 'checkbox' && item.config
                 ? SquareCheck
+                : item.type === 'switch' && item.config
+                ? ToggleLeft
                 : item.type === 'uploadimage' && item.config
                   ? ImagePlus
                   : item.type === 'uploadfile' && item.config
@@ -342,6 +358,8 @@ function ActiveBody({ item }: { item: GridItemData }) {
                                         ? PanelTop
                                         : item.type === 'modal'
                                           ? AppWindow
+                                          : item.type === 'drawer'
+                                            ? PanelRight
                                           : item.type === 'popover'
                                             ? MessageSquare
                                             : isDesignOnly(item.type)
@@ -568,6 +586,32 @@ function MultiAutocompleteLivePreview({ config }: { config: MultiAutocompleteCon
  * pre-selection. The required marker is baked into the label (CheckboxBase has no
  * `isRequired` prop). Per-option `disabled` flows straight through.
  */
+/**
+ * The live, real `<SwitchBase>` from the library, inert in-cell. Shows the
+ * authored default state, label side and disabled flag; a gated switch draws
+ * disabled (the gate never publishes on the canvas), which is how it starts
+ * at runtime too. The required marker is baked into the label.
+ */
+function SwitchLivePreview({ config }: { config: SwitchConfig }) {
+  const label = config.isRequired ? `${config.label} *` : config.label
+  return (
+    <div
+      data-grid-item-content
+      className="pointer-events-none flex h-full w-full items-center px-3"
+    >
+      <SwitchBase
+        label={label}
+        labelPosition={config.labelPosition}
+        helperText={config.helperText}
+        variant={config.variant}
+        size={config.size}
+        checked={config.defaultChecked}
+        disabled={config.disabled || !!config.enabledWhen}
+      />
+    </div>
+  )
+}
+
 function CheckboxLivePreview({ config }: { config: CheckboxConfig }) {
   const label = config.isRequired ? `${config.label} *` : config.label
   const isGroup = config.mode === 'group'
@@ -1457,6 +1501,22 @@ function ModalLivePreview({ config }: { config: ModalConfig }) {
   )
 }
 
+/** The live render of a `drawer` cell: its trigger button, like the modal's. */
+function DrawerLivePreview({ config }: { config: DrawerConfig }) {
+  return (
+    <div
+      data-grid-item-content
+      className="pointer-events-none flex h-full w-full items-center justify-center px-3"
+    >
+      <ButtonBase
+        label={config.trigger.label}
+        icon={(config.trigger.icon || undefined) as keyof typeof IconData | undefined}
+        variant={config.trigger.variant}
+      />
+    </div>
+  )
+}
+
 /**
  * The live render of a `popover` cell: its trigger (button or text — the studio
  * subset of the engine's mini-Bin trigger). Content is authored via drill-in
@@ -1517,6 +1577,9 @@ function renderLive(item: GridItemData, isLive: boolean) {
   }
   if (item.type === 'checkbox' && item.config) {
     return <CheckboxLivePreview config={item.config as CheckboxConfig} />
+  }
+  if (item.type === 'switch' && item.config) {
+    return <SwitchLivePreview config={item.config as SwitchConfig} />
   }
   if (item.type === 'radio' && item.config) {
     return <RadioLivePreview config={item.config as RadioConfig} />
@@ -1603,6 +1666,9 @@ function renderLive(item: GridItemData, isLive: boolean) {
   }
   if (item.type === 'modal' && item.config) {
     return <ModalLivePreview config={item.config as ModalConfig} />
+  }
+  if (item.type === 'drawer' && item.config) {
+    return <DrawerLivePreview config={item.config as DrawerConfig} />
   }
   if (item.type === 'popover' && item.config) {
     return <PopoverLivePreview config={item.config as PopoverConfig} />

@@ -21,6 +21,7 @@ import {
   createDefaultAvatarConfig,
   createDefaultButtonItemConfig,
   createDefaultCheckboxConfig,
+  createDefaultSwitchConfig,
   createDefaultDataTableConfig,
   createDefaultDataTableEditableConfig,
   createDefaultFormListConfig,
@@ -30,6 +31,7 @@ import {
   createDefaultHiddenConfig,
   createDefaultItemSettings,
   createDefaultModalConfig,
+  createDefaultDrawerConfig,
   createDefaultMultiAutocompleteConfig,
   createDefaultPaperConfig,
   createDefaultCardConfig,
@@ -48,6 +50,7 @@ import {
   type AvatarConfig,
   type ButtonItemConfig,
   type CheckboxConfig,
+  type SwitchConfig,
   type ChildCanvas,
   type DataTableConfig,
   type DataTableEditableConfig,
@@ -59,6 +62,7 @@ import {
   type GridItemData,
   type HiddenConfig,
   type ModalConfig,
+  type DrawerConfig,
   type MultiAutocompleteConfig,
   type PaperConfig,
   type CardConfig,
@@ -219,6 +223,7 @@ type GridState = {
       | SelectFieldConfig
       | MultiAutocompleteConfig
       | CheckboxConfig
+      | SwitchConfig
       | RadioConfig
       | DateConfig
       | UploadImageConfig
@@ -236,6 +241,7 @@ type GridState = {
       | PaperConfig
       | TabConfig
       | ModalConfig
+      | DrawerConfig
       | PopoverConfig
       | DesignConfig
     >,
@@ -514,6 +520,7 @@ export const useGridStore = create<GridState>((set, get) => {
           | SelectFieldConfig
           | MultiAutocompleteConfig
           | CheckboxConfig
+          | SwitchConfig
           | RadioConfig
           | DateConfig
           | UploadImageConfig
@@ -533,6 +540,7 @@ export const useGridStore = create<GridState>((set, get) => {
           | HtmlContentConfig
           | TabConfig
           | ModalConfig
+          | DrawerConfig
           | PopoverConfig
           | DesignConfig
           | undefined
@@ -555,6 +563,9 @@ export const useGridStore = create<GridState>((set, get) => {
         } else if (type === 'checkbox') {
           nextSeq = fieldSeq + 1
           config = createDefaultCheckboxConfig(`checkbox_${nextSeq}`)
+        } else if (type === 'switch') {
+          nextSeq = fieldSeq + 1
+          config = createDefaultSwitchConfig(`switch_${nextSeq}`)
         } else if (type === 'radio') {
           nextSeq = fieldSeq + 1
           config = createDefaultRadioConfig(`radio_${nextSeq}`)
@@ -612,6 +623,9 @@ export const useGridStore = create<GridState>((set, get) => {
         } else if (type === 'modal') {
           nextSeq = fieldSeq + 1
           config = createDefaultModalConfig(`modal_${nextSeq}`)
+        } else if (type === 'drawer') {
+          nextSeq = fieldSeq + 1
+          config = createDefaultDrawerConfig(`drawer_${nextSeq}`)
         } else if (type === 'popover') {
           config = createDefaultPopoverConfig()
         } else if (isDesignOnly(type)) {
@@ -652,6 +666,7 @@ export const useGridStore = create<GridState>((set, get) => {
           type === 'autocomplete' ||
           type === 'multiAutocomplete' ||
           type === 'checkbox' ||
+          type === 'switch' ||
           type === 'radio' ||
           type === 'text' ||
           type === 'typography'

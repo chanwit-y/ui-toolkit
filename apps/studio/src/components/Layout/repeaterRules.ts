@@ -16,6 +16,7 @@ const BLOCKED_IN_REPEATER: ReadonlySet<ComponentType> = new Set<ComponentType>([
   'autocomplete',
   'multiAutocomplete',
   'checkbox',
+  'switch',
   'radio',
   'datepicker',
   'daterangepicker',

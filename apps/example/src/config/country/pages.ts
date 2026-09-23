@@ -15,6 +15,8 @@ import { containerCellTooltipDemo } from "./cellTooltipDemo";
 import { containerTableLayoutDemo } from "./tableLayoutDemo";
 import { containerCardDemo } from "./cardDemo";
 import { containerHtmlContentDemo } from "./htmlContentDemo";
+import { containerDrawerDemo } from "./drawerDemo";
+import { containerSwitchDemo } from "./switchDemo";
 import { containerUploadDemo } from "./uploadDemo";
 
 /**
@@ -141,6 +143,24 @@ export const pages = {
     parent: "countryList",
     title: "HTML content",
     containers: containerHtmlContentDemo,
+  },
+  drawerDemo: {
+    // The `drawer` element after MUI's temporary Drawer: the four anchors, a
+    // form drawer, a header-less nav drawer, a card trigger and OpenModal by
+    // id (see ./drawerDemo.ts).
+    path: "/drawer",
+    parent: "countryList",
+    title: "Drawer",
+    containers: containerDrawerDemo,
+  },
+  switchDemo: {
+    // The `switch` element after MUI's Switch: basics, label position, sizes /
+    // variants, disabled + enabledWhen gating, and a required switch that a
+    // Save button validates (see ./switchDemo.ts).
+    path: "/switch",
+    parent: "countryList",
+    title: "Switch",
+    containers: containerSwitchDemo,
   },
   uploadDemo: {
     // The `uploadfile` config on its own: single / multiple, accept presets

@@ -320,6 +320,46 @@ export function createDefaultCheckboxConfig(name: string): CheckboxConfig {
   }
 }
 
+/** Which value of the gating switch enables this one. */
+export type SwitchEnabledWhen = { itemId: string; when: 'on' | 'off' } | null
+
+/**
+ * Editable config for a `switch` item — the engine `SwitchElement`: one boolean
+ * field drawn as an on / off toggle. `isRequired` means it must be on.
+ * `enabledWhen` names another switch on the same canvas (by item id, so a
+ * rename is safe); export turns it into the engine `enabledWhen` condition on
+ * this item and `canObserve: true` on the gating one.
+ */
+export type SwitchConfig = {
+  name: string
+  label: string
+  labelPosition: 'start' | 'end'
+  helperText: string
+  isRequired: boolean
+  errorMessage: string
+  variant: 'classic' | 'surface' | 'soft'
+  size: '1' | '2' | '3'
+  defaultChecked: boolean
+  disabled: boolean
+  enabledWhen: SwitchEnabledWhen
+}
+
+export function createDefaultSwitchConfig(name: string): SwitchConfig {
+  return {
+    name,
+    label: 'Switch',
+    labelPosition: 'end',
+    helperText: '',
+    isRequired: false,
+    errorMessage: '',
+    variant: 'surface',
+    size: '2',
+    defaultChecked: false,
+    disabled: false,
+    enabledWhen: null,
+  }
+}
+
 /**
  * A single radio option. Maps onto the library `RadioButtonProps` option shape
  * (`value`/`label`/`disabled`) minus `helperText` — per-option sub-labels are out
@@ -1651,6 +1691,39 @@ export function createDefaultModalConfig(id: string): ModalConfig {
   }
 }
 
+export type DrawerAnchor = 'left' | 'right' | 'top' | 'bottom'
+
+/**
+ * Editable config for a drawer (MUI's temporary drawer). Maps onto the
+ * engine's `DrawerElement` minus the nested `container` (the item's child
+ * canvas). Like the modal, the trigger is a `ButtonConfig` (the engine takes
+ * any element; studio authors a button) and `id` is the engine registry key
+ * a `CloseModal` button inside it targets. `size` is any CSS length (`''` =
+ * the engine default: 360px for left / right, 50vh for top / bottom).
+ */
+export type DrawerConfig = {
+  id: string
+  title: string
+  description: string
+  anchor: DrawerAnchor
+  size: string
+  hideHeader: boolean
+  trigger: ButtonConfig
+}
+
+/** Defaults for a freshly dropped drawer; `id` gets the unique seq name. */
+export function createDefaultDrawerConfig(id: string): DrawerConfig {
+  return {
+    id,
+    title: 'Drawer',
+    description: '',
+    anchor: 'right',
+    size: '',
+    hideHeader: false,
+    trigger: { label: 'Open', icon: 'panelRight', variant: 'contained' },
+  }
+}
+
 /**
  * Editable config for a popover. Maps onto the engine's `PopoverElement` minus
  * the nested `container` (the item's child canvas). The trigger is a mini-Bin;
@@ -1745,6 +1818,7 @@ export type GridItemData = {
     | SelectFieldConfig
     | MultiAutocompleteConfig
     | CheckboxConfig
+    | SwitchConfig
     | RadioConfig
     | DateConfig
     | UploadImageConfig
@@ -1764,6 +1838,7 @@ export type GridItemData = {
     | HtmlContentConfig
     | TabConfig
     | ModalConfig
+    | DrawerConfig
     | PopoverConfig
     | DesignConfig
   /**
@@ -1807,7 +1882,7 @@ export function ensureDataTableCanvases(items: GridItemData[]): void {
 
 /** Which palette types host child canvases, and how many they start with. */
 export function childCanvasCount(type: ComponentType, config?: GridItemData['config']): number {
-  if (type === 'container' || type === 'paper' || type === 'modal' || type === 'popover') return 1
+  if (type === 'container' || type === 'paper' || type === 'modal' || type === 'drawer' || type === 'popover') return 1
   // Content + the expandable section (the second is exported only while enabled).
   if (type === 'card') return 2
   // A data table's canvases: [0] its edit modal's content (engine
@@ -1823,7 +1898,7 @@ export function childCanvasCount(type: ComponentType, config?: GridItemData['con
 
 /** What a button's stable refs can point at, gathered across the whole tree. */
 export type ButtonRefTargets = {
-  /** Modal items: grid-item id → the authored engine registry key (`ModalConfig.id`). */
+  /** Modal and drawer items: grid-item id → the authored engine registry key (`ModalConfig.id` / `DrawerConfig.id`). */
   modals: { itemId: string; modalId: string }[]
   /** (Editable) data tables and form lists: grid-item id → the authored
    * binding `name` (the `fnCtxs` key they register their refetch under). */
@@ -1863,8 +1938,8 @@ export function collectButtonTargets(items: GridItemData[]): ButtonRefTargets {
   const tables: ButtonRefTargets['tables'] = []
   const walk = (list: GridItemData[]) => {
     for (const item of list) {
-      if (item.type === 'modal' && item.config) {
-        modals.push({ itemId: item.id, modalId: (item.config as ModalConfig).id })
+      if ((item.type === 'modal' || item.type === 'drawer') && item.config) {
+        modals.push({ itemId: item.id, modalId: (item.config as ModalConfig | DrawerConfig).id })
       } else if (
         (item.type === 'datatable' ||
           item.type === 'datatableeditable' ||

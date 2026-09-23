@@ -96,6 +96,10 @@ export class Schema {
 			const isRequired = element.isRequired ?? element.isRequired ?? false;
 
 			// Apply required validation
+			if (isRequired && normalizedDataType === 'boolean') {
+				// A required switch / checkbox must be on ("Accept the terms").
+				schema = z.literal(true, { errorMap: () => ({ message: requiredMessage }) });
+			}
 			if (isRequired && normalizedDataType === 'array') {
 				// Required arrays (e.g. upload byte data / file lists) must not be empty
 				schema = z.array(z.unknown(), {

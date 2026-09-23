@@ -135,7 +135,8 @@ const RadioButtonBase2 = forwardRef<
 		enabledWhen ? getDataValue({ key: (enabledWhen.left as Obs).key, type: "observe" }) : null,
 		(d: unknown) => {
 			if (enabledWhen) {
-				const result = !(new ConditionExpression(ctx).expression({ ...enabledWhen, left: { val: d } }))
+				// Enabled while the condition holds (this used to be negated, so `enabledWhen` read as "disabled when").
+				const result = new ConditionExpression(ctx).expression({ ...enabledWhen, left: { val: d } })
 				setIsObserveEnabled(result)
 			}
 		},

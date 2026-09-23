@@ -1,6 +1,6 @@
 import { AlertTriangle } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
-import { OptionRow } from '@gummy-ui/ui'
+import { OptionRow, SelectedChip } from '@gummy-ui/ui'
 import { useProjectEndpoints, useProjectModels } from '../Library/scope'
 import { FieldPicker, IconField, Input, Select, SegmentedControl } from '../common'
 import { useActiveItems, useGridStore } from './gridStore'
@@ -244,8 +244,10 @@ function previewAvatar(value: unknown, alt: string) {
  * One option as the dropdown will draw it — the library's own `OptionRow`, so the
  * strip can't drift from the runtime. Static mode shows the first record; source
  * mode has no rows on the canvas, so it shows the picked field names in ‹guillemets›.
+ * A multi also shows the same option as a selected chip (`SelectedChip`): the
+ * row's avatar / icon carries over, the subtitle doesn't.
  */
-function OptionPreview({ config }: { config: SelectFieldConfig }) {
+function OptionPreview({ config, multi }: { config: SelectFieldConfig; multi: boolean }) {
   const first = config.mode === 'static' ? config.options[0] : undefined
   const text = (key: string) =>
     !key ? '' : first ? String(first[key] ?? '') : `‹${key}›`
@@ -257,13 +259,19 @@ function OptionPreview({ config }: { config: SelectFieldConfig }) {
       : // No rows on the canvas: the runtime's own fallback, the title's initial.
         { src: '', alt: config.displayKey || '?' }
   return (
-    <div className="pointer-events-none rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink">
+    <div className="pointer-events-none space-y-2 rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink">
       <OptionRow
         title={title}
         subtitle={text(config.subtitleKey) || null}
         icon={(config.itemIcon || null) as never}
         avatar={avatar}
       />
+      {multi && (
+        <div className="flex items-center gap-2 border-t border-line pt-2">
+          <span className="text-ui-xs text-ink-3">Selected</span>
+          <SelectedChip title={title} icon={(config.itemIcon || null) as never} avatar={avatar} onRemove={() => {}} />
+        </div>
+      )}
     </div>
   )
 }
@@ -277,9 +285,11 @@ function OptionPreview({ config }: { config: SelectFieldConfig }) {
 function OptionDisplaySection({
   config,
   set,
+  multi,
 }: {
   config: SelectFieldConfig
   set: <K extends keyof SelectFieldConfig>(key: K, value: SelectFieldConfig[K]) => void
+  multi: boolean
 }) {
   const endpoints = useProjectEndpoints()
   const models = useProjectModels()
@@ -334,7 +344,7 @@ function OptionDisplaySection({
       />
       <div className="space-y-1">
         <span className="text-ui-sm font-medium text-ink-2">Option preview</span>
-        <OptionPreview config={config} />
+        <OptionPreview config={config} multi={multi} />
       </div>
     </div>
   )
@@ -475,7 +485,7 @@ export function SelectFieldConfigPanel({
         </div>
       )}
 
-      <OptionDisplaySection config={config} set={set} />
+      <OptionDisplaySection config={config} set={set} multi={multi} />
 
       {multi && (
         <div className="space-y-3 rounded-lg border border-line bg-panel p-3">

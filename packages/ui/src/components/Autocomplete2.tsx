@@ -201,7 +201,8 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 			enabledWhen ? getDataValue({ key: (enabledWhen.left as Obs).key, type: "observe" }) : null,
 			(data: unknown) => {
 				if (enabledWhen) {
-					const result = (!(new ConditionExpression(ctx).expression({ ...enabledWhen, left: { val: data } })));
+					// Enabled while the condition holds (this used to be negated, so `enabledWhen` read as "disabled when").
+					const result = new ConditionExpression(ctx).expression({ ...enabledWhen, left: { val: data } });
 					setIsObserveEnabled(result)
 				}
 			},

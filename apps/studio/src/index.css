@@ -19,6 +19,7 @@
    in a component CSS file that only ships inside dist/index.css — which studio
    doesn't import. It's plain portable CSS, so pull it in directly. */
 @import "../../../packages/ui/src/components/Modal.css";
+@import "../../../packages/ui/src/components/Drawer.css";
 
 /* Gate `dark:` on a `.dark` ancestor (the library's `darkMode: 'class'`
    convention) instead of Tailwind 4's default `prefers-color-scheme` media

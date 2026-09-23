@@ -19,12 +19,16 @@ import {
   createDefaultCardConfig,
   createDefaultCardActionConfig,
   createDefaultHtmlContentConfig,
+  createDefaultDrawerConfig,
+  createDefaultDividerConfig,
   createDefaultMultiAutocompleteConfig,
   createDefaultAutocompleteConfig,
   createDefaultSelectFieldConfig,
   createDefaultTextConfig,
+  createDefaultSwitchConfig,
   createDefaultUploadFileConfig,
   createDefaultTextFieldConfig,
+  type DrawerAnchor,
   type GridItemData,
 } from '../Layout/types'
 import type { ModelDef, ModelField } from '../Model/types'
@@ -2978,6 +2982,351 @@ export function htmlContentDemoSeedItems(): GridItemData[] {
         },
         createChildCanvas(),
       ],
+    },
+  ]
+}
+
+export const DRAWER_PAGE_ID = 'seed-page-drawer'
+
+/**
+ * The Drawer demo page: the `drawer` element after MUI's temporary Drawer —
+ * one drawer per anchor with a mail-list content, a form drawer whose Save
+ * posts to `createContact` and whose Cancel closes it, and a header-less
+ * 240px navigation drawer (the example app's `/drawer` minus the card trigger
+ * and the OpenModal-by-id demo, which the studio can't author).
+ */
+export function drawerDemoSeedItems(): GridItemData[] {
+  const full = { xs: 4, sm: 6, md: 8, lg: 12 }
+  const typography = (id: string, text: string, extra: Record<string, unknown> = {}, colSpan = full): GridItemData => ({
+    id,
+    label: 'Typography',
+    type: 'typography',
+    settings: createDefaultItemSettings({ colSpan }),
+    config: { ...createDefaultTypographyConfig(), text, variant: 'body2', ...extra },
+  })
+  const heading = (id: string, text: string, caption: string): GridItemData[] => [
+    typography(`${id}-title`, text, { variant: 'subtitle1', weight: 'medium' }),
+    typography(`${id}-caption`, caption, { color: 'gray' }),
+  ]
+  const divider = (id: string): GridItemData => ({
+    id,
+    label: 'Divider',
+    type: 'divider',
+    settings: createDefaultItemSettings({ colSpan: full }),
+    config: { ...createDefaultDividerConfig(), spacing: 4 },
+  })
+  const mailList = (prefix: string): GridItemData[] => [
+    ...['Inbox', 'Starred', 'Send email', 'Drafts'].map((t, i) => typography(`${prefix}-a${i}`, t, { variant: 'body1' })),
+    divider(`${prefix}-divider`),
+    ...['All mail', 'Trash', 'Spam'].map((t, i) => typography(`${prefix}-b${i}`, t, { variant: 'body1' })),
+  ]
+  const anchorDrawer = (anchor: DrawerAnchor, icon: string): GridItemData => {
+    const label = anchor[0].toUpperCase() + anchor.slice(1)
+    return {
+      id: `seed-item-drawer-${anchor}`,
+      label: 'Drawer',
+      type: 'drawer',
+      settings: createDefaultItemSettings({ colSpan: { xs: 2, sm: 3, md: 2, lg: 3 } }),
+      config: {
+        ...createDefaultDrawerConfig(`drawer-${anchor}`),
+        title: label,
+        description: `anchor: "${anchor}"`,
+        anchor,
+        trigger: { label, icon, variant: 'outlined' },
+      },
+      childCanvases: [{ ...createChildCanvas(), items: mailList(`seed-item-drawer-${anchor}`) }],
+    }
+  }
+  return [
+    typography(
+      'seed-item-drawer-heading',
+      'Drawer — MUI\'s temporary drawer: a panel sliding in over the page from one edge behind a scrim. It holds its own container (its own form, like a modal), opens from its trigger and closes on the scrim, Esc, its close button or a CloseModal button inside it. Open the Live Preview to try them.',
+      { color: 'gray' },
+    ),
+    ...heading('seed-item-drawer-anchors', 'Anchor', 'One drawer per edge — left / right / top / bottom. Left / right drawers are 360px wide, top / bottom ones 50vh tall unless the size says otherwise.'),
+    anchorDrawer('left', 'panelLeft'),
+    anchorDrawer('right', 'panelRight'),
+    anchorDrawer('top', 'panelTop'),
+    anchorDrawer('bottom', 'panelBottom'),
+    ...heading('seed-item-drawer-form-h', 'A form in a drawer', 'The content is its own form: validation, a Cancel button closing it (CloseModal targeting the drawer) and a Save button posting to createContact with a snackbar.'),
+    {
+      id: 'seed-item-drawer-form',
+      label: 'Drawer',
+      type: 'drawer',
+      settings: createDefaultItemSettings({ colSpan: { xs: 4, sm: 3, md: 3, lg: 3 } }),
+      config: {
+        ...createDefaultDrawerConfig('drawer-form'),
+        title: 'New contact',
+        description: "Saved to the Form list page's contacts",
+        size: '420px',
+        trigger: { label: 'New contact', icon: 'puls', variant: 'contained' },
+      },
+      childCanvases: [
+        {
+          ...createChildCanvas(),
+          items: [
+            {
+              id: 'seed-item-drawer-form-name',
+              label: 'Text Field',
+              type: 'textfield',
+              settings: createDefaultItemSettings({ colSpan: full }),
+              config: { ...createDefaultTextFieldConfig('name'), label: 'Name', isRequired: true, errorMessage: 'Name is required', size: '2' },
+            },
+            {
+              id: 'seed-item-drawer-form-email',
+              label: 'Text Field',
+              type: 'textfield',
+              settings: createDefaultItemSettings({ colSpan: full }),
+              config: { ...createDefaultTextFieldConfig('email'), label: 'Email', dataType: 'email', placeholder: 'name@example.com', size: '2' },
+            },
+            {
+              id: 'seed-item-drawer-form-role',
+              label: 'Select',
+              type: 'select',
+              settings: createDefaultItemSettings({ colSpan: full }),
+              config: {
+                ...createDefaultSelectFieldConfig('role'),
+                label: 'Role',
+                placeholder: 'Pick a role',
+                options: [
+                  { id: 'Engineering', name: 'Engineering' },
+                  { id: 'Design', name: 'Design' },
+                  { id: 'Sales', name: 'Sales' },
+                ],
+              },
+            },
+            {
+              id: 'seed-item-drawer-form-cancel',
+              label: 'Button',
+              type: 'button',
+              settings: createDefaultItemSettings({ colSpan: { xs: 2, sm: 3, md: 4, lg: 6 }, justifySelf: { xs: 'start', sm: 'start', md: 'start', lg: 'start' } }),
+              config: {
+                ...createDefaultButtonItemConfig(),
+                label: 'Cancel',
+                variant: 'text',
+                actions: ['CloseModal'],
+                modalItemId: 'seed-item-drawer-form',
+              },
+            },
+            {
+              id: 'seed-item-drawer-form-save',
+              label: 'Button',
+              type: 'button',
+              settings: createDefaultItemSettings({ colSpan: { xs: 2, sm: 3, md: 4, lg: 6 }, justifySelf: { xs: 'end', sm: 'end', md: 'end', lg: 'end' } }),
+              config: {
+                ...createDefaultButtonItemConfig(),
+                label: 'Save',
+                icon: 'save',
+                actions: ['StartLoading', 'SubmitFormToPostAPI', 'StopLoading', 'CloseModal'],
+                modalItemId: 'seed-item-drawer-form',
+                endpointId: CREATE_CONTACT_ENDPOINT_ID,
+                snackbarSuccessEnabled: true,
+                snackbarSuccessMessage: 'Contact saved',
+                snackbarErrorException: true,
+              },
+            },
+          ],
+        },
+      ],
+    },
+    ...heading('seed-item-drawer-nav-h', 'Header-less, custom size', 'Hide header drops the title row (the content brings its own heading; Esc and the scrim still close it) and the width is 240px — a navigation drawer.'),
+    {
+      id: 'seed-item-drawer-nav',
+      label: 'Drawer',
+      type: 'drawer',
+      settings: createDefaultItemSettings({ colSpan: { xs: 2, sm: 3, md: 2, lg: 2 } }),
+      config: {
+        ...createDefaultDrawerConfig('drawer-nav'),
+        title: 'Mail',
+        anchor: 'left',
+        size: '240px',
+        hideHeader: true,
+        trigger: { label: '', icon: 'menu', variant: 'outlined' },
+      },
+      childCanvases: [
+        {
+          ...createChildCanvas(),
+          items: [
+            typography('seed-item-drawer-nav-title', 'Mail', { variant: 'h6' }),
+            typography('seed-item-drawer-nav-caption', 'Hide header · width 240px', { variant: 'caption', color: 'gray' }),
+            divider('seed-item-drawer-nav-divider0'),
+            ...mailList('seed-item-drawer-nav'),
+          ],
+        },
+      ],
+    },
+  ]
+}
+
+export const CHIPS_PAGE_ID = 'seed-page-chips'
+
+/**
+ * The "Chips" demo page: what a multi autocomplete's selected chips carry. A
+ * chip takes the option row's leading visual on its own — the Image field
+ * over the Option icon — so the three multis differ only in Props → Option
+ * display: flag chips (source mode over `searchCountries` with an Image
+ * field), icon chips (a static list with an Option icon) and plain title
+ * chips (neither). Pick a few in the Live Preview to compare them.
+ */
+export function chipsDemoSeedItems(): GridItemData[] {
+  const third = { xs: 4, sm: 6, md: 4, lg: 4 }
+  return [
+    {
+      id: 'seed-item-chips-heading',
+      label: 'Text',
+      type: 'text',
+      settings: createDefaultItemSettings({ colSpan: { xs: 4, sm: 6, md: 8, lg: 12 } }),
+      config: {
+        ...createDefaultTextConfig(),
+        text: 'Chips — a selected option keeps the visual of its row: the Image field wins over the Option icon, and the subtitle stays on the row. Nothing to switch on; pick a few in the Preview.',
+      },
+    },
+    {
+      // Image field → each chip leads with the country's flag.
+      id: 'seed-item-chips-flags',
+      label: 'Multi Autocomplete',
+      type: 'multiAutocomplete',
+      settings: createDefaultItemSettings({ colSpan: third }),
+      config: {
+        ...createDefaultMultiAutocompleteConfig('flagCountryIds'),
+        mode: 'source',
+        options: [{ _id: '1', name: 'Thailand', code: 'TH', avatar: 'https://flagcdn.com/w40/th.png' }],
+        dataSource: { endpointId: SEARCH_COUNTRIES_ENDPOINT_ID, paths: 'data' },
+        idKey: '_id',
+        displayKey: 'name',
+        searchKey: 'name',
+        subtitleKey: 'code',
+        avatarKey: 'avatar',
+        label: 'Flag chips',
+        placeholder: 'Image field',
+        helperText: 'Chips lead with the row image',
+        inputIcon: 'globe',
+      },
+    },
+    {
+      // Option icon, no image → the same glyph on every chip.
+      id: 'seed-item-chips-icons',
+      label: 'Multi Autocomplete',
+      type: 'multiAutocomplete',
+      settings: createDefaultItemSettings({ colSpan: third }),
+      config: {
+        ...createDefaultMultiAutocompleteConfig('labels'),
+        mode: 'static',
+        label: 'Icon chips',
+        placeholder: 'Option icon',
+        helperText: 'Chips lead with the option icon',
+        options: [
+          { id: 'bug', name: 'Bug', note: 'Something is broken' },
+          { id: 'feature', name: 'Feature', note: 'Something new' },
+          { id: 'chore', name: 'Chore', note: 'Housekeeping' },
+          { id: 'docs', name: 'Documentation', note: 'Words, not code' },
+        ],
+        subtitleKey: 'note',
+        itemIcon: 'tag',
+        inputIcon: 'bookmark',
+      },
+    },
+    {
+      // Neither → title-only chips, the look before this page existed.
+      id: 'seed-item-chips-plain',
+      label: 'Multi Autocomplete',
+      type: 'multiAutocomplete',
+      settings: createDefaultItemSettings({ colSpan: third }),
+      config: {
+        ...createDefaultMultiAutocompleteConfig('weekdays'),
+        mode: 'static',
+        label: 'Plain chips',
+        placeholder: 'No image, no icon',
+        helperText: 'Title only',
+        options: [
+          { id: 'mon', name: 'Monday' },
+          { id: 'tue', name: 'Tuesday' },
+          { id: 'wed', name: 'Wednesday' },
+          { id: 'thu', name: 'Thursday' },
+          { id: 'fri', name: 'Friday' },
+        ],
+      },
+    },
+  ]
+}
+
+export const SWITCH_PAGE_ID = 'seed-page-switch'
+
+/**
+ * The "Switch" demo page (the example app's `/switch`): the `switch` element —
+ * basics, the label on either side, sizes / variants, a disabled one, a pair
+ * where one switch gates the other (Enabled when), and a required "accept the
+ * terms" switch in front of a Save that validates (no endpoint: the action
+ * only validates and reports).
+ */
+export function switchDemoSeedItems(): GridItemData[] {
+  const full = { xs: 4, sm: 6, md: 8, lg: 12 }
+  const quarter = { xs: 2, sm: 3, md: 2, lg: 3 }
+  const typography = (id: string, text: string, extra: Record<string, unknown> = {}, colSpan = full): GridItemData => ({
+    id,
+    label: 'Typography',
+    type: 'typography',
+    settings: createDefaultItemSettings({ colSpan }),
+    config: { ...createDefaultTypographyConfig(), text, variant: 'body2', ...extra },
+  })
+  const heading = (id: string, text: string, caption: string): GridItemData[] => [
+    typography(`${id}-title`, text, { variant: 'subtitle1', weight: 'medium' }),
+    typography(`${id}-caption`, caption, { color: 'gray' }),
+  ]
+  const sw = (id: string, name: string, label: string, extra: Record<string, unknown> = {}, colSpan = quarter): GridItemData => ({
+    id,
+    label: 'Switch',
+    type: 'switch',
+    settings: createDefaultItemSettings({ colSpan }),
+    config: { ...createDefaultSwitchConfig(name), label, ...extra },
+  })
+  return [
+    typography('seed-item-switch-h', 'Switch', { variant: 'h3' }),
+    typography(
+      'seed-item-switch-intro',
+      'One boolean field drawn as an on / off toggle. Select a switch, then Props: label side, default, required (must be on), disabled, and Enabled when — another switch on this canvas that unlocks it.',
+      { color: 'gray' },
+    ),
+    ...heading('seed-item-switch-basic-h', 'Basic', 'Label, Default on and helper text.'),
+    sw('seed-item-switch-notifications', 'notifications', 'Email notifications'),
+    sw('seed-item-switch-darkmode', 'darkMode', 'Dark mode', { defaultChecked: true }),
+    sw('seed-item-switch-digest', 'newsletter', 'Weekly digest', { helperText: 'Sent every Monday' }),
+    sw('seed-item-switch-before', 'labelStart', 'Label before', { labelPosition: 'start' }),
+    ...heading('seed-item-switch-look-h', 'Sizes and variants', 'Radix sizes 1 · 2 · 3 and the surface · classic · soft variants.'),
+    sw('seed-item-switch-size1', 'size1', 'Size 1', { size: '1', defaultChecked: true }),
+    sw('seed-item-switch-size3', 'size3', 'Size 3', { size: '3', defaultChecked: true }),
+    sw('seed-item-switch-classic', 'variantClassic', 'classic', { variant: 'classic', defaultChecked: true }),
+    sw('seed-item-switch-soft', 'variantSoft', 'soft', { variant: 'soft', defaultChecked: true }),
+    ...heading('seed-item-switch-gate-h', 'Disabled and gated', 'Disabled locks a switch. "Send telemetry" is enabled only while "Advanced settings" is on — its Enabled when points at it (Preview to try).'),
+    sw('seed-item-switch-locked', 'locked', 'Locked on', { disabled: true, defaultChecked: true }),
+    sw('seed-item-switch-advanced', 'advanced', 'Advanced settings'),
+    sw('seed-item-switch-telemetry', 'telemetry', 'Send telemetry', {
+      helperText: 'Needs Advanced settings',
+      enabledWhen: { itemId: 'seed-item-switch-advanced', when: 'on' },
+    }),
+    sw('seed-item-switch-beta', 'beta', 'Beta features', {
+      helperText: 'Needs Advanced settings',
+      enabledWhen: { itemId: 'seed-item-switch-advanced', when: 'on' },
+    }),
+    ...heading('seed-item-switch-required-h', 'Required', 'Required means the switch must be on: Save validates and shows the error message until "Accept the terms" is on.'),
+    sw('seed-item-switch-terms', 'terms', 'Accept the terms', {
+      isRequired: true,
+      errorMessage: 'You must accept the terms to continue',
+      helperText: 'Required',
+    }, { xs: 4, sm: 6, md: 4, lg: 6 }),
+    {
+      id: 'seed-item-switch-save',
+      label: 'Button',
+      type: 'button',
+      settings: createDefaultItemSettings({ colSpan: { xs: 4, sm: 6, md: 4, lg: 6 }, justifySelf: { xs: 'start', sm: 'start', md: 'start', lg: 'start' } }),
+      config: {
+        ...createDefaultButtonItemConfig(),
+        label: 'Save',
+        icon: 'save',
+        actions: ['SubmitFormToPostAPI'],
+        snackbarSuccessEnabled: true,
+        snackbarSuccessMessage: 'Saved — the terms are accepted',
+      },
     },
   ]
 }

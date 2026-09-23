@@ -3,8 +3,10 @@ import { ButtonConfigPanel } from './ButtonConfigPanel'
 import { CardConfigPanel } from './CardConfigPanel'
 import { HtmlContentConfigPanel } from './HtmlContentConfigPanel'
 import { CheckboxConfigPanel } from './CheckboxConfigPanel'
+import { SwitchConfigPanel } from './SwitchConfigPanel'
 import {
   ContainerConfigPanel,
+  DrawerConfigPanel,
   ModalConfigPanel,
   PaperConfigPanel,
   PopoverConfigPanel,
@@ -37,6 +39,7 @@ import type {
   AvatarConfig,
   ButtonItemConfig,
   CheckboxConfig,
+  SwitchConfig,
   DataTableConfig,
   DataTableEditableConfig,
   DateConfig,
@@ -44,6 +47,7 @@ import type {
   FormListConfig,
   RepeaterConfig,
   HiddenConfig,
+  DrawerConfig,
   ModalConfig,
   PaperConfig,
   CardConfig,
@@ -197,6 +201,11 @@ export function Sidebar({ gridConfigJson, fullGridCss }: SidebarProps) {
               itemId={selectedItem.id}
               config={selectedItem.config as CheckboxConfig}
             />
+          ) : selectedItem.type === 'switch' && selectedItem.config ? (
+            <SwitchConfigPanel
+              itemId={selectedItem.id}
+              config={selectedItem.config as SwitchConfig}
+            />
           ) : selectedItem.type === 'radio' && selectedItem.config ? (
             <RadioConfigPanel
               itemId={selectedItem.id}
@@ -290,6 +299,11 @@ export function Sidebar({ gridConfigJson, fullGridCss }: SidebarProps) {
             <ModalConfigPanel
               itemId={selectedItem.id}
               config={selectedItem.config as ModalConfig}
+            />
+          ) : selectedItem.type === 'drawer' && selectedItem.config ? (
+            <DrawerConfigPanel
+              itemId={selectedItem.id}
+              config={selectedItem.config as DrawerConfig}
             />
           ) : selectedItem.type === 'popover' && selectedItem.config ? (
             <PopoverConfigPanel

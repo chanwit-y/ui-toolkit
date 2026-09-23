@@ -40,6 +40,12 @@ import {
   cardDemoSeedItems,
   HTML_CONTENT_PAGE_ID,
   htmlContentDemoSeedItems,
+  DRAWER_PAGE_ID,
+  CHIPS_PAGE_ID,
+  chipsDemoSeedItems,
+  SWITCH_PAGE_ID,
+  switchDemoSeedItems,
+  drawerDemoSeedItems,
   htmlColumnDemoSeedItems,
   dataTableDemoSeedItems,
   FORM_LIST_PAGE_ID,
@@ -472,6 +478,51 @@ export function htmlContentDemoPage(): PageDef {
   }
 }
 
+export function drawerDemoPage(): PageDef {
+  return {
+    id: DRAWER_PAGE_ID,
+    key: 'drawer',
+    name: 'Drawer',
+    path: '/drawer',
+    grid: {
+      items: drawerDemoSeedItems(),
+      containerSettings: defaultContainerSettings,
+      fieldSeq: 0,
+    },
+    parentId: 'seed-page-countries',
+  }
+}
+
+export function chipsDemoPage(): PageDef {
+  return {
+    id: CHIPS_PAGE_ID,
+    key: 'chips',
+    name: 'Chips',
+    path: '/chips',
+    grid: {
+      items: chipsDemoSeedItems(),
+      containerSettings: defaultContainerSettings,
+      fieldSeq: 0,
+    },
+    parentId: 'seed-page-countries',
+  }
+}
+
+export function switchDemoPage(): PageDef {
+  return {
+    id: SWITCH_PAGE_ID,
+    key: 'switch',
+    name: 'Switch',
+    path: '/switch',
+    grid: {
+      items: switchDemoSeedItems(),
+      containerSettings: defaultContainerSettings,
+      fieldSeq: 0,
+    },
+    parentId: 'seed-page-countries',
+  }
+}
+
 export function tableLayoutDemoPage(): PageDef {
   return {
     id: TABLE_LAYOUT_PAGE_ID,
@@ -503,6 +554,9 @@ export const OPTION_DEMO_MENU_ICONS: Record<string, string> = {
   [TABLE_LAYOUT_PAGE_ID]: 'table',
   [CARD_PAGE_ID]: 'creditCard',
   [HTML_CONTENT_PAGE_ID]: 'code',
+  [DRAWER_PAGE_ID]: 'panelRight',
+  [CHIPS_PAGE_ID]: 'tag',
+  [SWITCH_PAGE_ID]: 'toggleLeft',
   [UPLOAD_PAGE_ID]: 'upload',
 }
 
@@ -551,6 +605,9 @@ export function countryProjectSnapshot(library: LibraryData): ProjectSnapshot {
       tableLayoutDemoPage(),
       cardDemoPage(),
       htmlContentDemoPage(),
+      drawerDemoPage(),
+      chipsDemoPage(),
+      switchDemoPage(),
       uploadDemoPage(),
   ]
   // Every data table carries its two canvases (edit modal + filter form).

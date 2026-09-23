@@ -10,6 +10,7 @@ import {
   Button as RadixButton,
   Select as RadixSelect,
   Checkbox as RadixCheckbox,
+  Switch as RadixSwitch,
   RadioGroup as RadixRadioGroup,
   Text as RadixText,
 } from "@radix-ui/themes";
@@ -980,6 +981,48 @@ export type CheckboxElement = {
   value?: DataValue;
 } & CheckboxProps;
 
+/** Where a switch's label sits relative to the thumb. */
+export type SwitchLabelPosition = "start" | "end";
+
+export type SwitchProps = BaseComponentProps<
+  typeof RadixSwitch,
+  {
+    label?: string;
+    /** Label before (`start`) or after (`end`, default) the switch. */
+    labelPosition?: SwitchLabelPosition;
+    helperText?: string;
+    error?: boolean;
+    errorMessage?: string;
+    size?: "1" | "2" | "3";
+    variant?: "classic" | "surface" | "soft";
+    /** Form value (boolean) — wins over `checked` when it is a boolean. */
+    value?: boolean;
+    /** Initial form value, read by `withForm`'s Controller (the builder maps `defaultChecked` here). */
+    defaultValue?: boolean;
+    /** Publishes the value on the observe Subject keyed by `name` (for `enabledWhen`). */
+    canObserve?: boolean;
+    /** Enabled while the condition holds — `left` is `{ key, type: "observe" }` naming a `canObserve` field. */
+    enabledWhen?: CondExpression;
+    onChange?: (value: boolean) => void;
+  }
+>;
+
+/**
+ * An on / off control after MUI's Switch: one boolean field (`dataType`
+ * "boolean"; `isRequired` means it must be **on**). `defaultChecked` seeds the
+ * form value, `disabled` locks it, `enabledWhen` enables it while another
+ * `canObserve` switch / checkbox holds the given value.
+ */
+export type SwitchElement = {
+  name: string;
+  dataType: string;
+  isRequired: boolean;
+  errorMessage: string;
+  defaultChecked?: boolean;
+  /** Read-only initial value bound from a global-state slice. */
+  value?: DataValue;
+} & Omit<SwitchProps, "value" | "defaultChecked">;
+
 export type APIDelete = {
   name: string;
   params?: Record<string, string>;
@@ -1563,6 +1606,7 @@ export type TElement =
   | TextFieldElement
   | TextareaElement
   | CheckboxElement
+  | SwitchElement
   | DataTableElement
   | DataTableEditableElement
   | FormListElement
@@ -1582,6 +1626,7 @@ export type TElement =
   | CardElement
   | HtmlContentElement
   | PopoverElement
+  | DrawerElement
   | DividerElement;
 
 export type BinType =
@@ -1597,6 +1642,7 @@ export type BinType =
   | "textfield"
   | "select"
   | "checkbox"
+  | "switch"
   | "radio"
   | "textarea"
   | "datepicker"
@@ -1613,6 +1659,7 @@ export type BinType =
   | "card"
   | "html"
   | "popover"
+  | "drawer"
   | "divider"
   | "empty";
 
@@ -1894,6 +1941,35 @@ export type PopoverElement = {
   triggerMode?: "click" | "hover";
   /** Gap in px between trigger and content. Default: 8. */
   offset?: number;
+};
+
+/** Which viewport edge a drawer slides in from. */
+export type DrawerAnchor = "left" | "right" | "top" | "bottom";
+
+/**
+ * Config-driven Drawer (MUI's *temporary* drawer): a panel that slides in
+ * over the page from `anchor` behind a scrim, holding a self-contained
+ * {@link Container} (its own form, like a modal), opened by any `trigger`
+ * element (a mini-Bin like the popover's) and closed by the scrim, Esc, its
+ * close button or a `CloseModal` button inside it whose `modalId` is this
+ * `id` (the drawer registers under `id` like a modal, so `OpenModal` works
+ * from any button too). `size` is the width of a left / right drawer or the
+ * height of a top / bottom one (any CSS length; the drawer never exceeds the
+ * viewport). The persistent / permanent variants are app chrome — that is the
+ * AppShell sidebar.
+ */
+export type DrawerElement = {
+  id: string;
+  title?: string;
+  description?: string;
+  container: Container;
+  trigger: PopoverTrigger;
+  /** Default `"right"`. */
+  anchor?: DrawerAnchor;
+  /** Default `"360px"` for left / right, `"50vh"` for top / bottom. */
+  size?: string;
+  /** Hide the title row (title, description and the close button). */
+  hideHeader?: boolean;
 };
 
 export type TabItem = {
