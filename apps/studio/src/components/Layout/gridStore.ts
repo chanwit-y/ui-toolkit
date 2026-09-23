@@ -32,6 +32,8 @@ import {
   createDefaultModalConfig,
   createDefaultMultiAutocompleteConfig,
   createDefaultPaperConfig,
+  createDefaultCardConfig,
+  createDefaultHtmlContentConfig,
   createDefaultPopoverConfig,
   createDefaultRadioConfig,
   createDefaultSelectFieldConfig,
@@ -59,9 +61,12 @@ import {
   type ModalConfig,
   type MultiAutocompleteConfig,
   type PaperConfig,
+  type CardConfig,
+  type HtmlContentConfig,
   type PopoverConfig,
   type RadioConfig,
   type SelectFieldConfig,
+  type ShowWhen,
   type TabConfig,
   type TextareaConfig,
   type TextConfig,
@@ -204,6 +209,8 @@ type GridState = {
     animate?: boolean,
   ) => void
   updateItemLabel: (id: string, label: string) => void
+  /** Adding / editing visibility for an item in a data table's modal canvas. */
+  updateItemShowWhen: (id: string, showWhen: ShowWhen) => void
   updateItemConfig: (
     id: string,
     patch: Partial<
@@ -522,6 +529,8 @@ export const useGridStore = create<GridState>((set, get) => {
           | ButtonItemConfig
           | HiddenConfig
           | PaperConfig
+          | CardConfig
+          | HtmlContentConfig
           | TabConfig
           | ModalConfig
           | PopoverConfig
@@ -592,6 +601,12 @@ export const useGridStore = create<GridState>((set, get) => {
           config = createDefaultHiddenConfig(`hidden_${nextSeq}`)
         } else if (type === 'paper') {
           config = createDefaultPaperConfig()
+        } else if (type === 'card') {
+          nextSeq = fieldSeq + 1
+          config = createDefaultCardConfig(`card_${nextSeq}`)
+        } else if (type === 'html') {
+          nextSeq = fieldSeq + 1
+          config = createDefaultHtmlContentConfig(`html_${nextSeq}`)
         } else if (type === 'tab') {
           config = createDefaultTabConfig()
         } else if (type === 'modal') {
@@ -626,6 +641,8 @@ export const useGridStore = create<GridState>((set, get) => {
           type === 'divider' ||
           type === 'container' ||
           type === 'paper' ||
+          type === 'card' ||
+          type === 'html' ||
           type === 'tab'
         const isUpload = type === 'uploadimage' || type === 'uploadfile'
         const isWideInput =
@@ -746,6 +763,17 @@ export const useGridStore = create<GridState>((set, get) => {
         items: canvas.items.map((item) =>
           item.id === id ? { ...item, label } : item,
         ),
+      })),
+
+    // `always` is the absent default, so it is stored as absence.
+    updateItemShowWhen: (id, showWhen) =>
+      setActiveCanvas((canvas) => ({
+        ...canvas,
+        items: canvas.items.map((item) => {
+          if (item.id !== id) return item
+          const { showWhen: _prev, ...rest } = item
+          return showWhen === 'always' ? rest : { ...rest, showWhen }
+        }),
       })),
 
     // Config edits change the cell's preview but never the grid layout, so they

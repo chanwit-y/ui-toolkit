@@ -3,7 +3,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { OptionRow } from '@gummy-ui/ui'
 import { useProjectEndpoints, useProjectModels } from '../Library/scope'
 import { FieldPicker, IconField, Input, Select, SegmentedControl } from '../common'
-import { useGridStore } from './gridStore'
+import { useActiveItems, useGridStore } from './gridStore'
 import { isSelectFamily, observeWarnings } from './observe'
 import { IMAGE_KINDS, rowFieldsFor, TEXT_KINDS } from './rowFields'
 import type { MultiAutocompleteConfig, SelectFieldConfig, SelectOption } from './types'
@@ -180,7 +180,8 @@ function OptionsEditor({
  * The `observeTo` dropdown — makes this field a cascading child of another
  * select-family item (the engine clears + refetches it whenever the observed
  * field's value changes). Targets are every other select/autocomplete/multi
- * on the canvas, listed by binding name (the engine-level contract) with the
+ * on the same canvas (the one being edited — a filter form or modal is its own
+ * canvas, and the export resolves the trio per canvas), listed by binding name (the engine-level contract) with the
  * canvas label for recognition. Stored by item id; the export derives the
  * name-based trio (`observeTo`, `api.params`, target `canObserve`) from it.
  * All checks surface as non-blocking amber warnings.
@@ -194,7 +195,7 @@ function ObserveToField({
   value: string
   onChange: (value: string) => void
 }) {
-  const items = useGridStore((s) => s.items)
+  const items = useActiveItems()
   const item = items.find((i) => i.id === itemId)
 
   const options = [

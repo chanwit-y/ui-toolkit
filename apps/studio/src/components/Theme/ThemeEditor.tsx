@@ -1,6 +1,6 @@
 import { X } from 'lucide-react'
-import { useMemo, useState, type ReactNode } from 'react'
-import { Button, CodeViewer, IconButton, Input, Select, SegmentedControl, cn } from '../common'
+import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react'
+import { Button, CodeViewer, IconButton, Input, Popover, Select, SegmentedControl, cn } from '../common'
 import { useWorkspaceStore } from '../Workspace/workspaceStore'
 import { accentInk, resolvedSurfaces } from './designTheme'
 import { useThemeStore } from './themeStore'
@@ -67,17 +67,20 @@ function SwatchGrid({
   value,
   onChange,
   allowNone = false,
+  noneTitle = 'No override',
 }: {
   value: string
   onChange: (color: string) => void
   allowNone?: boolean
+  /** Tooltip of the "off" swatch — what unset resolves to. */
+  noneTitle?: string
 }) {
   return (
     <div className="grid grid-cols-9 gap-1">
       {allowNone && (
         <button
           type="button"
-          title="No override"
+          title={noneTitle}
           onClick={() => onChange('')}
           className={cn(
             'flex h-7 items-center justify-center rounded-md border text-ui-xs font-medium transition-shadow',
@@ -110,6 +113,87 @@ function SwatchGrid({
   )
 }
 
+/**
+ * A colour role as a compact field: a swatch dot + the colour name (or what
+ * "unset" resolves to), opening the `SwatchGrid` in the studio popover — the
+ * `IconField` precedent: pick a colour you can see, not a name from a list.
+ */
+function ColorField({
+  label,
+  value,
+  onChange,
+  unsetLabel,
+}: {
+  label: string
+  value: string
+  onChange: (color: string) => void
+  unsetLabel: string
+}) {
+  const [anchor, setAnchor] = useState<DOMRect | null>(null)
+  const close = useCallback(() => setAnchor(null), [])
+  // The popover closes itself on any outside pointerdown — including one on
+  // this trigger — so the click that follows must not reopen it.
+  const wasOpen = useRef(false)
+  return (
+    <Field label={label}>
+      <div className="flex items-center gap-1.5">
+        <button
+          type="button"
+          aria-label={`Choose ${label.toLowerCase()} color`}
+          aria-haspopup="dialog"
+          aria-expanded={anchor !== null}
+          onPointerDown={() => {
+            wasOpen.current = anchor !== null
+          }}
+          onClick={(e) => {
+            if (!wasOpen.current) setAnchor(e.currentTarget.getBoundingClientRect())
+          }}
+          className="field flex min-w-0 flex-1 items-center gap-2 text-left hover:bg-panel-2"
+        >
+          <span
+            aria-hidden="true"
+            style={value ? { backgroundColor: `var(--${value}-9)` } : undefined}
+            className={cn(
+              'h-4 w-4 shrink-0 rounded-full',
+              !value && 'border border-dashed border-line-strong',
+            )}
+          />
+          {value ? (
+            <span className="truncate font-mono text-ink">{value}</span>
+          ) : (
+            <span className="truncate text-ink-3">{unsetLabel}</span>
+          )}
+        </button>
+        {value && (
+          <IconButton label={`Clear ${label.toLowerCase()} color`} className="btn-icon-sm" onClick={() => onChange('')}>
+            <X size={13} aria-hidden="true" />
+          </IconButton>
+        )}
+      </div>
+      <Popover anchor={anchor} title={label} onClose={close}>
+        <SwatchGrid
+          allowNone
+          noneTitle={unsetLabel}
+          value={value}
+          onChange={(color) => {
+            onChange(color)
+            close()
+          }}
+        />
+        <p className="mt-2 text-ui-sm text-ink-3">
+          {value ? (
+            <>
+              Selected: <span className="font-mono text-ink-2">{value}</span>
+            </>
+          ) : (
+            unsetLabel
+          )}
+        </p>
+      </Popover>
+    </Field>
+  )
+}
+
 const APPEARANCE_OPTIONS = [
   { value: 'light', label: 'Light mode' },
   { value: 'dark', label: 'Dark mode' },
@@ -120,15 +204,14 @@ const PANEL_OPTIONS = [
 ]
 const RADIUS_OPTIONS = RADIUS_VALUES.map((v) => ({ value: v, label: v }))
 
-const FOLLOWS_ACCENT = { value: '', label: '— follows accent —' }
-const COLOR_ROLE_OPTIONS = [
-  FOLLOWS_ACCENT,
-  ...ACCENT_COLORS.map((c) => ({ value: c, label: c })),
-]
-const DEFAULT_ROLE_OPTIONS = [
-  { value: '', label: '— default —' },
-  ...ACCENT_COLORS.map((c) => ({ value: c, label: c })),
-]
+/** What an unset dataTable colour role resolves to (the `ColorField` placeholder). */
+function unsetRoleLabel(key: keyof DataTableThemeConfig, legacy: boolean): string {
+  if (legacy) return 'follows accent'
+  // The action buttons are Radix buttons, so a pinned color stays dark-safe.
+  if (key === 'editButtonColor') return 'same as buttons'
+  if (key === 'deleteButtonColor') return 'default (red)'
+  return 'default'
+}
 const FONT_SIZE_OPTIONS = [
   { value: '', label: '— default (xs) —' },
   ...['xs', 'sm', 'base', 'lg', 'xl'].map((v) => ({ value: v, label: v })),
@@ -530,13 +613,13 @@ export function ThemeEditor() {
               />
             </Field>
             {DATA_TABLE_COLOR_ROLES.map(([key, label, legacy]) => (
-              <Field key={key} label={label}>
-                <Select
-                  options={legacy ? COLOR_ROLE_OPTIONS : DEFAULT_ROLE_OPTIONS}
-                  value={config.dataTable[key]}
-                  onChange={(v) => updateDataTable({ [key]: v })}
-                />
-              </Field>
+              <ColorField
+                key={key}
+                label={label}
+                value={config.dataTable[key]}
+                onChange={(v) => updateDataTable({ [key]: v })}
+                unsetLabel={unsetRoleLabel(key, legacy)}
+              />
             ))}
           </div>
           {pinnedLegacyRoles.length > 0 && (
@@ -545,7 +628,7 @@ export function ThemeEditor() {
                 .map((role) => LEGACY_ROLE_LABELS.get(role) ?? role)
                 .join(', ')}{' '}
               pin a named color, which uses the legacy light-only style map and won’t
-              flip in dark mode. Leave “— follows accent —” for dark-safe theming.
+              flip in dark mode. Leave them unset (“follows accent”) for dark-safe theming.
             </p>
           )}
         </Section>

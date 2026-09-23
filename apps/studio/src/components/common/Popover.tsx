@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { cn } from './cn'
 
 type PopoverProps = {
@@ -43,11 +43,22 @@ function PopoverPanel({ anchor, title, onClose, children }: PopoverPanelProps) {
   const margin = 12
   const panelWidth = 320
   const maxHeight = Math.min(480, window.innerHeight - margin * 2)
+  // Position by the panel's real height, not the cap: a short panel (a swatch
+  // grid) placed by `maxHeight` would be flipped above and pinned to the top
+  // of the window, far from its trigger. Measured before paint.
+  const [height, setHeight] = useState<number | null>(null)
+  useLayoutEffect(() => {
+    setHeight(panelRef.current?.offsetHeight ?? null)
+  })
+  const h = height ?? maxHeight
+
   let top = anchor.bottom + margin
   let left = anchor.left
 
-  if (top + maxHeight > window.innerHeight - margin) {
-    top = Math.max(margin, anchor.top - maxHeight - margin)
+  if (top + h > window.innerHeight - margin) {
+    // Flip above when there is room; otherwise slide up just enough to fit.
+    const above = anchor.top - h - margin
+    top = above >= margin ? above : Math.max(margin, window.innerHeight - margin - h)
   }
   if (left + panelWidth > window.innerWidth - margin) {
     left = window.innerWidth - panelWidth - margin

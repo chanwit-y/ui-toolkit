@@ -63,6 +63,8 @@ export const IconData = {
 	filter: i.Filter,
 	sort: i.ArrowUpDown,
 	grid: i.Grid,
+	table: i.Table2,
+	columns: i.Columns3,
 	list: i.List,
 	bookmark: i.Bookmark,
 	tag: i.Tag,

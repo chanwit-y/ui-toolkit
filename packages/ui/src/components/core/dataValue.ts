@@ -14,7 +14,25 @@ export type DataValueScope = {
    * primitive array is the primitive itself.
    */
   row?: unknown;
+  /**
+   * A data table's applied filter values, for `type:"filter"`: field name →
+   * value of the table's `filterContainer` form (see `DataTableElement`).
+   */
+  filters?: Record<string, unknown>;
 };
+
+/**
+ * A filter left blank: `""`, `null`, `undefined` or an empty array. `false`
+ * and `0` are real values (a checkbox filter, a numeric one).
+ */
+export function isEmptyFilterValue(value: unknown): boolean {
+  return (
+    value === undefined ||
+    value === null ||
+    value === "" ||
+    (Array.isArray(value) && value.length === 0)
+  );
+}
 
 /**
  * Resolve a single {@link DataValue} to a concrete value.
@@ -25,6 +43,9 @@ export type DataValueScope = {
  * - `state`  → the global-state slice named `key`, drilled by `path`.
  * - `row`    → `scope.row[key]` (drilled by `path` when given); `key:"none"`
  *              takes the row itself (an item of a primitive array, say).
+ * - `filter` → `scope.filters[key]` (drilled by `path` when given). A blank
+ *              filter falls back to the DataValue's `value`; without one it is
+ *              `undefined`, so the key is left out of the request.
  * - others   → `undefined` (not resolvable from this scope).
  */
 export function resolveDataValue(
@@ -52,6 +73,11 @@ export function resolveDataValue(
           ? scope.row
           : (scope.row as Record<string, unknown>)[dv.key];
       return dv.path ? get(v, dv.path) : v;
+    }
+    case "filter": {
+      const raw = scope.filters?.[dv.key];
+      const v = dv.path ? get(raw, dv.path) : raw;
+      return isEmptyFilterValue(v) ? dv.value : v;
     }
     default:
       return undefined;

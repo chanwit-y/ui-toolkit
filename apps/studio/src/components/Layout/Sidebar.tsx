@@ -1,5 +1,7 @@
 import { CodeViewer, cn } from '../common'
 import { ButtonConfigPanel } from './ButtonConfigPanel'
+import { CardConfigPanel } from './CardConfigPanel'
+import { HtmlContentConfigPanel } from './HtmlContentConfigPanel'
 import { CheckboxConfigPanel } from './CheckboxConfigPanel'
 import {
   ContainerConfigPanel,
@@ -27,6 +29,7 @@ import { useBreadcrumb, useGridStore, useSelectedItem, type SidebarView } from '
 import { RadioConfigPanel } from './RadioConfigPanel'
 import { SelectFieldConfigPanel } from './SelectFieldConfigPanel'
 import { ContainerSettingsPanel, ItemSettingsPanel } from './SettingsPanel'
+import { ShowWhenPanel } from './ShowWhenPanel'
 import { StylePanel } from './StylePanel'
 import { TextareaConfigPanel } from './TextareaConfigPanel'
 import { UploadFileConfigPanel, UploadImageConfigPanel } from './UploadConfigPanel'
@@ -43,6 +46,8 @@ import type {
   HiddenConfig,
   ModalConfig,
   PaperConfig,
+  CardConfig,
+  HtmlContentConfig,
   PopoverConfig,
   RadioConfig,
   SelectFieldConfig,
@@ -134,6 +139,7 @@ export function Sidebar({ gridConfigJson, fullGridCss }: SidebarProps) {
 
       <div className={cn('min-h-0 flex-1 overflow-y-auto p-3', sidebarView === 'code' && 'p-2')}>
         {sidebarView !== 'code' && selectedItem && <PathCrumb label={selectedItem.label} />}
+        {sidebarView === 'inspector' && selectedItem && <ShowWhenPanel item={selectedItem} />}
         {sidebarView === 'code' ? (
           <CodeViewer
             maxHeightClassName="max-h-[calc(100vh-9rem)]"
@@ -271,6 +277,10 @@ export function Sidebar({ gridConfigJson, fullGridCss }: SidebarProps) {
               itemId={selectedItem.id}
               config={selectedItem.config as PaperConfig}
             />
+          ) : selectedItem.type === 'card' && selectedItem.config ? (
+            <CardConfigPanel itemId={selectedItem.id} config={selectedItem.config as CardConfig} />
+          ) : selectedItem.type === 'html' && selectedItem.config ? (
+            <HtmlContentConfigPanel itemId={selectedItem.id} config={selectedItem.config as HtmlContentConfig} />
           ) : selectedItem.type === 'tab' && selectedItem.config ? (
             <TabConfigPanel
               itemId={selectedItem.id}

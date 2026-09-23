@@ -28,12 +28,10 @@
   @apply flex flex-row gap-0.5 items-center justify-center space-x-2;
 } */
 
+/* The row-action buttons themselves are Radix IconButtons (soft, size 2), so
+   radius / hover / dark mode follow the theme; only the cell is styled here. */
 .datatable-action-cell {
   @apply flex items-center justify-center gap-1.5;
-}
-
-.datatable-action-button {
-  @apply inline-flex items-center justify-center h-7 w-7 min-w-7 p-0 rounded-md border-0 cursor-pointer transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 hover:scale-105 active:scale-95;
 }
 
 .datatable-row-count {
@@ -44,23 +42,28 @@
   @apply shadow-lg rounded-lg overflow-hidden;
 }
 
-.datatable-scroll-x {
-  @apply overflow-x-auto;
+/* ONE scroller for both axes. The header sticks to its top and pinned columns
+   to its sides — `position: sticky` needs the cells and the scrolling to share
+   a container, which the old block-table layout (thead/tbody as blocks, body
+   scrolling on its own) never did. */
+.datatable-scroll {
+  @apply overflow-auto max-h-[460px];
 }
 
 .datatable-table {
-  @apply w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 table-fixed;
+  /* Separate borders: collapsed ones don't travel with sticky cells. */
+  @apply w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 table-fixed border-separate border-spacing-0;
 }
 
 .datatable-thead {
   /* Transparent so the solid accent header cells (bg-[var(--accent-9)]) read as
      a clean primary bar in both light and dark, with no gray peeking through
      gaps (e.g. columns that render no <th>). */
-  @apply bg-transparent border-b-2 border-gray-200 dark:border-gray-700 block overflow-hidden;
+  @apply bg-transparent;
 }
 
 .datatable-header-row {
-  @apply text-center text-xs font-bold text-gray-700 dark:text-gray-300 tracking-widest table w-full table-fixed;
+  @apply text-center text-xs font-bold text-gray-700 dark:text-gray-300 tracking-widest;
 }
 
 .datatable-header-cell-icon {
@@ -68,11 +71,149 @@
 }
 
 .datatable-header-cell {
-  @apply py-4 border-r border-gray-200 dark:border-gray-700 last:border-r-0 transition-colors duration-200 select-none;
+  @apply sticky top-0 z-20 py-4 border-r border-b-2 border-gray-200 dark:border-gray-700 last:border-r-0 transition-colors duration-200 select-none;
 }
 
 .datatable-header-content {
   @apply flex flex-row gap-2 items-center justify-center;
+}
+
+/* Pinned columns: sticky on their side, above the scrolling cells (header
+   corners above everything). Body cells paint the row surface so scrolled
+   content can't show through, and inherit the row's hover tint. */
+.datatable-cell-pinned {
+  @apply sticky z-10;
+}
+
+.datatable-header-cell.datatable-cell-pinned {
+  @apply z-30;
+}
+
+.datatable-body-cell.datatable-cell-pinned {
+  @apply bg-white dark:bg-gray-900;
+}
+
+.datatable-body-row:hover > .datatable-body-cell.datatable-cell-pinned {
+  background-color: inherit;
+}
+
+.datatable-cell-pinned-left-last {
+  box-shadow: 4px 0 8px -4px rgb(0 0 0 / 0.18);
+}
+
+.datatable-cell-pinned-right-first {
+  box-shadow: -4px 0 8px -4px rgb(0 0 0 / 0.18);
+}
+
+/* Custom filters (see components/DataTableFilter.tsx). Surfaces read Radix
+   vars, so the popover (portaled to <body>) follows the appearance too. */
+.datatable-filter-trigger {
+  position: relative;
+  display: inline-flex;
+}
+
+.datatable-filter-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+  text-align: center;
+  pointer-events: none;
+  color: var(--accent-contrast);
+  background-color: var(--accent-9);
+  box-shadow: 0 0 0 2px var(--color-panel-solid);
+}
+
+.datatable-filter-popover {
+  background-color: var(--color-panel-solid) !important;
+  border-color: var(--gray-a6) !important;
+}
+
+.datatable-filter-popover-body {
+  width: min(360px, calc(100vw - 32px));
+  padding: 16px;
+}
+
+.datatable-filter-inline {
+  margin-bottom: 12px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--gray-a5);
+  background-color: var(--color-panel-solid);
+}
+
+.datatable-filter-note {
+  padding: 24px 16px !important;
+  text-align: center;
+  color: var(--gray-10);
+}
+
+/* Column resize grip (see components/dataTableResize.tsx): a hit strip on the
+   header cell's right edge — the sticky cell is its containing block. Nothing
+   shows at rest; hover, keyboard focus and the drag draw a line in the
+   header's own text colour, so it reads on any header colour and appearance. */
+.datatable-resize-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 9px;
+  cursor: col-resize;
+  touch-action: none;
+  user-select: none;
+  outline: none;
+}
+
+.datatable-resize-handle::after {
+  content: "";
+  position: absolute;
+  top: 20%;
+  bottom: 20%;
+  right: 0;
+  width: 2px;
+  border-radius: 1px;
+  background-color: currentColor;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.datatable-resize-handle:hover::after,
+.datatable-resize-handle:focus-visible::after {
+  opacity: 0.7;
+}
+
+.datatable-resize-handle.is-resizing::after {
+  top: 0;
+  bottom: 0;
+  opacity: 1;
+}
+
+/* While a drag lasts: no text selection, one cursor over the whole table. */
+.datatable-table.is-resizing,
+.datatable-table.is-resizing * {
+  cursor: col-resize !important;
+  user-select: none;
+}
+
+/* Exact-pixel mode: the width-less cell that takes the container's slack. */
+.datatable-filler-cell {
+  padding: 0 !important;
+  border-right-width: 0 !important;
+}
+
+/* The header's pin toggle: quiet until hovered, solid once pinned. */
+.datatable-pin-icon {
+  @apply inline-flex items-center opacity-50 hover:opacity-100 transition-opacity duration-200 cursor-pointer border-0 bg-transparent p-0 text-inherit;
+}
+
+.datatable-pin-icon.is-pinned {
+  @apply opacity-100;
 }
 
 .datatable-sort-icon {
@@ -243,7 +384,7 @@
 }
 
 .datatable-tbody {
-  @apply bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700 block h-[460px] overflow-y-auto overflow-x-hidden;
+  @apply bg-white dark:bg-gray-900;
 }
 
 .datatable-footer {
@@ -251,7 +392,7 @@
 }
 
 .datatable-body-row {
-  @apply text-center text-xs font-bold text-gray-700 dark:text-gray-300 tracking-widest table w-full table-fixed;
+  @apply text-center text-xs font-bold text-gray-700 dark:text-gray-300 tracking-widest;
 }
 
 .datatable-body-cell {
@@ -323,8 +464,10 @@
 }
 
 /* Smooth transition for highlighting appearance */
+/* Colours only: `all` would also ease the pinned cells' sticky `left` / `right`
+   (and the widths) while a column is resized, trailing behind the header. */
 .datatable-body-cell {
-  transition: all 0.2s ease-in-out;
+  transition: color 0.2s ease-in-out, background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
 }
 
 /* Enhanced cell content wrapper */
@@ -410,3 +553,118 @@
 .datatable-tbody.filtering .datatable-body-row:nth-child(8) { animation-delay: 0.14s; }
 .datatable-tbody.filtering .datatable-body-row:nth-child(9) { animation-delay: 0.16s; }
 .datatable-tbody.filtering .datatable-body-row:nth-child(10) { animation-delay: 0.18s; }
+
+/* HTML cells (`ColumnDef.html`). The helper classes are always shipped, so a
+   template authored where Tailwind never scans (the studio) still has
+   theme-aware building blocks; everything reads Radix vars, so it follows the
+   accent and flips with the appearance. */
+.datatable-html-cell {
+  line-height: 1.35;
+}
+
+.datatable-html-cell a,
+.datatable-html-cell .dt-link {
+  color: var(--accent-11);
+  text-decoration: underline;
+  text-decoration-color: var(--accent-7);
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.datatable-html-cell a:hover,
+.datatable-html-cell .dt-link:hover {
+  text-decoration-color: var(--accent-11);
+}
+
+.datatable-html-cell img {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.datatable-html-cell .dt-strong {
+  font-weight: 600;
+  color: var(--gray-12);
+}
+
+.datatable-html-cell .dt-muted {
+  font-size: 0.85em;
+  color: var(--gray-10);
+}
+
+.datatable-html-cell .dt-badge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 9999px;
+  font-size: 0.8em;
+  font-weight: 500;
+  white-space: nowrap;
+  color: var(--accent-11);
+  background-color: var(--accent-3);
+}
+
+.datatable-html-cell .dt-badge-gray {
+  color: var(--gray-11);
+  background-color: var(--gray-3);
+}
+
+/* Line clamp (`cellLines` / `ColumnDef.lines`): a plain cell shows at most N
+   lines — the count itself is the inline `-webkit-line-clamp` set by
+   `ClampedCell` — and a cut cell shows its whole text in the tooltip below. */
+.datatable-clamp {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+.datatable-cell-tooltip {
+  z-index: 100000; /* above a modal hosting the table */
+  max-width: 24rem;
+  padding: 0.375rem 0.625rem;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  line-height: 1.25rem;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  color: var(--gray-1);
+  background-color: var(--gray-12);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
+
+.datatable-cell-tooltip-arrow {
+  fill: var(--gray-12);
+}
+
+/* Row header column (`ColumnDef.rowHeader`): the row's label as a <th>, in a
+   soft accent tint so it reads as a header without out-shouting the data.
+   Declared after the pinned rules — the column is pinned left, and this
+   background must win over the pinned cell's row surface. */
+.datatable-body-cell.datatable-row-header {
+  font-weight: 600;
+  color: var(--accent-12);
+  background-color: var(--accent-2);
+}
+
+.datatable-body-row:hover > .datatable-body-cell.datatable-row-header {
+  background-color: var(--accent-3);
+}
+
+/* A cell merged down over several rows (`mergeRows`) keeps its text at the top. */
+.datatable-body-cell.datatable-cell-merged {
+  vertical-align: top;
+}
+
+.datatable-body-cell.datatable-cell-merged > div {
+  justify-content: flex-start;
+}
+
+/* Group header (`ColumnDef.group`): the band over its columns, centred, with
+   a slightly stronger bottom rule than the column headers under it. */
+.datatable-header-cell.datatable-group-header {
+  text-align: center;
+  cursor: default;
+}
+
+.datatable-header-cell.datatable-group-header .datatable-header-content {
+  justify-content: center;
+}

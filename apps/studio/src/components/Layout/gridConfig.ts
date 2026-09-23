@@ -2,7 +2,17 @@ import type { NavigateTarget } from '@gummy-ui/ui'
 import { urlParams } from '../Api/warnings'
 import { MAX_GRID_COLUMNS } from './breakpoints'
 import { MISSING_OBSERVE_TARGET, observeContext, type ObserveContext } from './observe'
-import { collectButtonTargets, createChildCanvas, uploadAccept } from './types'
+import {
+  collectButtonTargets,
+  createChildCanvas,
+  DEFAULT_ADD_BUTTON,
+  DEFAULT_CARD_MEDIA_HEIGHT,
+  DEFAULT_CELL_LINES,
+  DEFAULT_FILTER_BUTTON,
+  DEFAULT_PAGE_SIZE,
+  DEFAULT_PAGE_SIZE_OPTIONS,
+  uploadAccept,
+} from './types'
 import type {
   AvatarConfig,
   ButtonActionKey,
@@ -11,6 +21,11 @@ import type {
   CheckboxConfig,
   ChildCanvas,
   DataTableConfig,
+  DataTablePaginationConfig,
+  ColumnSizingConfig,
+  DataTableSortConfig,
+  RequestMapRow,
+  RequestSource,
   DataTableEditableColumnConfig,
   DataTableEditableConfig,
   DateConfig,
@@ -26,6 +41,9 @@ import type {
   MultiAutocompleteConfig,
   NavParamSource,
   PaperConfig,
+  CardConfig,
+  CardActionConfig,
+  HtmlContentConfig,
   PopoverConfig,
   RadioConfig,
   SelectFieldConfig,
@@ -59,8 +77,7 @@ import { hasElementStyle, isDesignOnly } from './designTypes'
  * resolved id → current name; trigger buttons stay a visual `actions: []`
  * slice), and `hidden`, and omitted for every other type. The multi
  * field's `maxSelections`/`showSelectedCount` are studio-preview-only and not emitted
- * (the engine's `AutocompleteElement` has no home for them), as is the datatable's
- * `canSearchAllColumns` (the engine hardcodes search on). The studio `xs`
+ * (the engine's `AutocompleteElement` has no home for them). The studio `xs`
  * breakpoint is dropped (the engine starts at `sm`) and `xl` mirrors `lg`.
  */
 
@@ -137,6 +154,47 @@ export function navParamValue(src: NavParamSource): Record<string, unknown> | un
       return src.key ? { type: 'row', key: src.key } : undefined
     default:
       return undefined
+  }
+}
+
+/** A studio request source → the engine `DataValue` (a filter carries its fallback as `value`). */
+export function requestSourceValue(src: RequestSource): Record<string, unknown> | undefined {
+  if (src.type !== 'filter') return navParamValue(src)
+  if (!src.key) return undefined
+  return { type: 'filter', key: src.key, ...(src.fallback !== '' ? { value: parseLoose(src.fallback) } : {}) }
+}
+
+/** Text authored in a panel → the JSON value it spells (number / boolean / array / object), else the text. */
+function parseLoose(text: string): unknown {
+  const trimmed = text.trim()
+  if (!/^(-?\d|true$|false$|null$|\[|\{)/.test(trimmed)) return text
+  try {
+    return JSON.parse(trimmed)
+  } catch {
+    return text
+  }
+}
+
+/** The request mapping rows → engine `params` / `query` / `body` DataValue maps (empty rows and maps dropped). */
+function requestMaps(rows: RequestMapRow[]): Record<string, unknown> {
+  const maps: Record<'params' | 'query' | 'body', Record<string, unknown>> = { params: {}, query: {}, body: {} }
+  for (const row of rows) {
+    const value = row.key ? requestSourceValue(row.source) : undefined
+    if (value) maps[row.slot][row.key] = value
+  }
+  return Object.fromEntries(Object.entries(maps).filter(([, map]) => Object.keys(map).length > 0))
+}
+
+/** Engine `api.sort`, or `undefined` until both keys are set. */
+function dataTableSort(c: DataTableSortConfig): Record<string, unknown> | undefined {
+  if (!c.enabled || !c.sortKey || !c.orderKey) return undefined
+  const custom = c.ascValue !== 'asc' || c.descValue !== 'desc'
+  return {
+    ...(c.placement !== 'auto' ? { placement: c.placement } : {}),
+    sortKey: c.sortKey,
+    orderKey: c.orderKey,
+    ...(custom ? { orderValues: { asc: parseLoose(c.ascValue), desc: parseLoose(c.descValue) } } : {}),
+    ...(c.defaultField ? { default: { field: c.defaultField, order: c.defaultOrder } } : {}),
   }
 }
 
@@ -521,9 +579,28 @@ const DELETE_CONFIRM_TRUE = ['StartLoading', 'SubmitFormToDeleteAPI', 'StopLoadi
  * item's child canvas: `modalContainer` (+ the `modal*` sizing) emits when the
  * Edit action is on AND the canvas has items, with `contextData` set to the
  * table's binding name so the engine prefills the form from the selected row.
- * `canSearchAllColumns` is studio-preview-only (the engine hardcodes search on)
- * and isn't emitted.
+ * `canSearchAllColumns` is the engine's `canSearch`, emitted only when off.
  */
+/**
+ * Studio pagination → engine `DataTablePagination`: `'auto'` placement and the
+ * engine-default page sizes are left implicit, `searchKey` only when set,
+ * `totalPath` split into the engine's path segments.
+ */
+function dataTablePagination(p: DataTablePaginationConfig): Record<string, unknown> {
+  const sameOptions =
+    p.pageSizeOptions.length === DEFAULT_PAGE_SIZE_OPTIONS.length &&
+    p.pageSizeOptions.every((n, i) => n === DEFAULT_PAGE_SIZE_OPTIONS[i])
+  return {
+    ...(p.placement !== 'auto' ? { placement: p.placement } : {}),
+    offsetKey: p.offsetKey,
+    limitKey: p.limitKey,
+    ...(p.searchKey ? { searchKey: p.searchKey } : {}),
+    totalPath: p.totalPath.split('.').map((s) => s.trim()).filter(Boolean),
+    ...(p.defaultPageSize !== DEFAULT_PAGE_SIZE ? { defaultPageSize: p.defaultPageSize } : {}),
+    ...(sameOptions ? {} : { pageSizeOptions: p.pageSizeOptions }),
+  }
+}
+
 function dataTableElement(
   c: DataTableConfig,
   item: GridItemData,
@@ -544,8 +621,30 @@ function dataTableElement(
       .map((p) => [p, c.deleteParams[p]]),
   )
   const editCanvas = childCanvasAt(item, 0)
-  const emitEditModal = c.canEdit && editCanvas.items.length > 0
+  // Server filters: the filter form is the second child canvas.
+  const filterCanvas = childCanvasAt(item, 1)
+  const emitFilters = c.filtersEnabled && filterCanvas.items.length > 0
+  const filterButton = omitEmpty({
+    label: c.filterButton.label !== DEFAULT_FILTER_BUTTON.label ? c.filterButton.label : '',
+    icon: c.filterButton.icon !== DEFAULT_FILTER_BUTTON.icon ? c.filterButton.icon : '',
+    variant: c.filterButton.variant !== DEFAULT_FILTER_BUTTON.variant ? c.filterButton.variant : '',
+  })
+  if (c.filterButton.label === '') filterButton.label = ''
+  const filterDefaults = Object.fromEntries(
+    c.filterDefaults.filter((d) => d.field && d.value !== '').map((d) => [d.field, parseLoose(d.value)]),
+  )
+  const sort = dataTableSort(c.sort)
+  // Add reuses the edit modal, so either action emits it.
+  const emitEditModal = (c.canEdit || c.canAdd) && editCanvas.items.length > 0
   const rowNavigate = c.rowNavigate ? navigateTarget(c.rowNavigate, refs) : undefined
+  const pagination = c.pagination.enabled ? dataTablePagination(c.pagination) : undefined
+  const addButton = omitEmpty({
+    label: c.addButton.label !== DEFAULT_ADD_BUTTON.label ? c.addButton.label : '',
+    icon: c.addButton.icon !== DEFAULT_ADD_BUTTON.icon ? c.addButton.icon : '',
+    variant: c.addButton.variant !== DEFAULT_ADD_BUTTON.variant ? c.addButton.variant : '',
+  })
+  // An emptied label is icon-only, not the default — keep it explicit.
+  if (c.addButton.label === '') addButton.label = ''
   return {
     name: c.name,
     title: c.title,
@@ -557,12 +656,50 @@ function dataTableElement(
       enableColumnFilter: col.enableColumnFilter,
       align: col.align,
       ...(col.useDateFormat ? { useDateFormat: col.useDateFormat } : {}),
+      ...(col.pin ? { pin: col.pin } : {}),
+      ...(col.html.trim() ? { html: col.html } : {}),
+      ...(col.sortField ? { sortField: col.sortField } : {}),
+      ...(col.lines !== '' ? { lines: col.lines } : {}),
+      // Layout keys (row header, merged cells, group header), only when set.
+      ...(col.rowHeader ? { rowHeader: true } : {}),
+      ...(col.mergeRows ? { mergeRows: true } : {}),
+      ...(col.mergeColumns ? { mergeColumns: true } : {}),
+      ...(col.group.trim() ? { group: col.group.trim() } : {}),
+      ...columnSizing(col),
     })),
-    ...(apiName ? { api: { name: apiName, ...(paths.length ? { paths } : {}) } } : {}),
+    ...(apiName
+      ? {
+          api: {
+            name: apiName,
+            ...(paths.length ? { paths } : {}),
+            ...requestMaps(c.requestMapping),
+            ...(pagination ? { pagination } : {}),
+            ...(sort ? { sort } : {}),
+          },
+        }
+      : {}),
+    ...(c.canSearchAllColumns ? {} : { canSearch: false }),
+    ...(c.headerGap ? { headerGap: c.headerGap } : {}),
+    ...(c.canResizeColumns ? {} : { canResizeColumns: false }),
+    // Engine default 2; only a change is written.
+    ...(c.cellLines !== DEFAULT_CELL_LINES ? { cellLines: c.cellLines } : {}),
+    ...(c.canAdd
+      ? { canAdd: true, ...(Object.keys(addButton).length ? { addButton } : {}) }
+      : {}),
+    ...(emitFilters
+      ? {
+          filterContainer: toEngineContainer(filterCanvas, childContainerName(item, '-filter'), endpoints, refs),
+          ...(Object.keys(filterButton).length ? { filterButton } : {}),
+          ...(c.filterDisplay !== 'popover' ? { filterDisplay: c.filterDisplay } : {}),
+          ...(Object.keys(filterDefaults).length ? { filterDefaults } : {}),
+        }
+      : {}),
     ...(emitEditModal
       ? {
           modalContainer: {
-            ...toEngineContainer(editCanvas, childContainerName(item), endpoints, refs),
+            ...toEngineContainer(editCanvas, childContainerName(item), endpoints, refs, {
+              tableName: c.name,
+            }),
             // Row → form prefill: the engine reads defaults from
             // contextData[<this name>], which DataTable2 writes on Edit click.
             contextData: c.name,
@@ -607,6 +744,16 @@ function dataTableElement(
   }
 }
 
+/** Engine column sizing keys — each only when set (`enableResizing` only when locked). */
+function columnSizing(col: ColumnSizingConfig): Record<string, unknown> {
+  return {
+    ...(col.size !== '' ? { size: col.size } : {}),
+    ...(col.minSize !== '' ? { minSize: col.minSize } : {}),
+    ...(col.maxSize !== '' ? { maxSize: col.maxSize } : {}),
+    ...(col.resizable ? {} : { enableResizing: false }),
+  }
+}
+
 /**
  * One editable-table column → engine `DataTableEditableColumn`. `editor` and
  * `editable` are always explicit (like `align` — the JSON self-documents without
@@ -614,7 +761,7 @@ function dataTableElement(
  * `select`, a `validation` block built from `min`/`max` (number),
  * `minLength`/`maxLength`/`pattern`/`patternMessage` (text), and
  * `requiredMessage` (when required) — everything else is carried in studio but
- * dropped here. The `validate` fn, `size`, and `defaultValue` aren't authorable.
+ * dropped here. The `validate` fn and `defaultValue` aren't authorable.
  */
 function editableTableColumn(col: DataTableEditableColumnConfig): Record<string, unknown> {
   const validation: Record<string, unknown> = {}
@@ -641,6 +788,9 @@ function editableTableColumn(col: DataTableEditableColumnConfig): Record<string,
     enableSorting: col.enableSorting,
     enableColumnFilter: col.enableColumnFilter,
     align: col.align,
+    ...(col.rowHeader ? { rowHeader: true } : {}),
+    ...(col.group.trim() ? { group: col.group.trim() } : {}),
+    ...columnSizing(col),
     ...(Object.keys(validation).length > 0 ? { validation } : {}),
   }
 }
@@ -663,6 +813,7 @@ function dataTableEditableElement(
     name: c.name,
     title: c.title,
     idKey: c.idKey,
+    ...(c.canResizeColumns ? {} : { canResizeColumns: false }),
     columns: c.columns.map(editableTableColumn),
     apiCrud: {
       read: ref(c.readEndpointId),
@@ -909,6 +1060,16 @@ function avatarElement(c: AvatarConfig): Record<string, unknown> {
   }
 }
 
+/** `html` → engine `HtmlContentElement`: the template, the binding as a `type:"row"` value, `prose` only when off. */
+function htmlContentElement(c: HtmlContentConfig): Record<string, unknown> {
+  return {
+    name: c.name,
+    html: c.html,
+    ...(itemBindingValue(c.binding) ? { value: itemBindingValue(c.binding) } : {}),
+    ...(c.prose ? {} : { prose: false }),
+  }
+}
+
 /** `divider` → engine `DividerElement`. `variant` always emits; `spacing` drops
  * when unset (component default 8px). */
 function dividerElement(c: DividerConfig): Record<string, unknown> {
@@ -1007,18 +1168,25 @@ function hiddenElement(c: HiddenConfig): Record<string, unknown> {
  * mirroring how the live-preview wrapper collapses onto lg). `name` doubles as
  * `id` — derived from the host item so it's stable and unique.
  */
+/**
+ * Where a canvas sits: inside a data table's modal, its items' `showWhen`
+ * becomes an engine `condition` on `<tableName>._id`.
+ */
+type CanvasScope = { tableName: string }
+
 function toEngineContainer(
   canvas: ChildCanvas,
   name: string,
   endpoints: EndpointRef[],
   refs: ButtonRefMaps,
+  scope?: CanvasScope,
 ): Record<string, unknown> {
   const s = canvas.settings
   return {
     id: name,
     name,
     isArray: false,
-    bins: buildBins(canvas.settings, canvas.items, endpoints, [], refs),
+    bins: buildBins(canvas.settings, canvas.items, endpoints, [], refs, scope),
     ...(s.gap.lg !== '' ? { gap: s.gap.lg } : {}),
     ...(s.justifyItems.lg !== '' ? { justifyItems: s.justifyItems.lg } : {}),
     ...(s.alignItems.lg !== '' ? { alignItems: s.alignItems.lg } : {}),
@@ -1055,6 +1223,69 @@ function paperElement(
     ),
     elevation: c.elevation,
     variant: c.variant,
+    ...(c.square ? { square: true } : {}),
+  }
+}
+
+/** A card button: its `ButtonItemConfig` export without the studio-only `id`. */
+function cardActionElement(
+  c: CardActionConfig,
+  refs: ButtonRefMaps,
+  resolveEndpoint: ResolveEndpoint,
+): Record<string, unknown> {
+  const { id: _id, ...button } = c
+  return buttonItemElement(button, refs, resolveEndpoint)
+}
+
+/**
+ * `card` → engine `CardElement`: the header / media slots (bindings as
+ * `type:"row"` values, avatar and action through their own exports), `content`
+ * from child canvas 0, `collapse` from child canvas 1 while enabled, the footer
+ * buttons, the whole-card `navigate`, and the Paper surface off its defaults.
+ */
+function cardElement(
+  c: CardConfig,
+  item: GridItemData,
+  endpoints: EndpointRef[],
+  refs: ButtonRefMaps,
+  resolveEndpoint: ResolveEndpoint,
+): Record<string, unknown> {
+  const h = c.header
+  const header = {
+    ...omitEmpty({ title: h.title, subheader: h.subheader }),
+    ...(itemBindingValue(h.titleBinding) ? { titleValue: itemBindingValue(h.titleBinding) } : {}),
+    ...(itemBindingValue(h.subheaderBinding) ? { subheaderValue: itemBindingValue(h.subheaderBinding) } : {}),
+    ...(h.avatarEnabled ? { avatar: avatarElement(h.avatar) } : {}),
+    ...(h.actionEnabled ? { action: cardActionElement(h.action, refs, resolveEndpoint) } : {}),
+  }
+  const navigate = c.navigate ? navigateTarget(c.navigate, refs) : undefined
+  return {
+    name: c.name,
+    ...(Object.keys(header).length ? { header } : {}),
+    ...(c.media.enabled
+      ? {
+          media: {
+            ...omitEmpty({ src: c.media.src, alt: c.media.alt }),
+            ...(itemBindingValue(c.media.srcBinding) ? { srcValue: itemBindingValue(c.media.srcBinding) } : {}),
+            ...(c.media.height !== DEFAULT_CARD_MEDIA_HEIGHT ? { height: c.media.height } : {}),
+          },
+        }
+      : {}),
+    content: toEngineContainer(childCanvasAt(item, 0), childContainerName(item), endpoints, refs),
+    ...(c.actions.length
+      ? { actions: c.actions.map((a) => cardActionElement(a, refs, resolveEndpoint)) }
+      : {}),
+    ...(c.actionsAlign === 'end' ? { actionsAlign: 'end' } : {}),
+    ...(c.collapseEnabled
+      ? {
+          collapse: toEngineContainer(childCanvasAt(item, 1), childContainerName(item, '-collapse'), endpoints, refs),
+          ...(c.collapseLabel && c.collapseLabel !== 'Show more' ? { collapseLabel: c.collapseLabel } : {}),
+          ...(c.defaultExpanded ? { defaultExpanded: true } : {}),
+        }
+      : {}),
+    ...(navigate ? { navigate } : {}),
+    ...(c.variant !== 'elevation' ? { variant: c.variant } : {}),
+    ...(c.variant === 'elevation' && c.elevation !== 1 ? { elevation: c.elevation } : {}),
     ...(c.square ? { square: true } : {}),
   }
 }
@@ -1200,6 +1431,8 @@ function buildElement(
         : { text: item.label, isLabel: true }
     case 'typography':
       return item.config ? typographyElement(item.config as TypographyConfig) : undefined
+    case 'html':
+      return item.config ? htmlContentElement(item.config as HtmlContentConfig) : undefined
     case 'avatar':
       return item.config ? avatarElement(item.config as AvatarConfig) : undefined
     case 'divider':
@@ -1213,6 +1446,10 @@ function buildElement(
     case 'paper':
       return item.config
         ? paperElement(item.config as PaperConfig, item, endpoints, refs)
+        : undefined
+    case 'card':
+      return item.config
+        ? cardElement(item.config as CardConfig, item, endpoints, refs, resolveEndpoint)
         : undefined
     case 'tab':
       return item.config
@@ -1241,6 +1478,7 @@ export function buildBins(
   endpoints: EndpointRef[],
   pages: PageRef[] = [],
   refs?: ButtonRefMaps,
+  scope?: CanvasScope,
 ): Record<string, unknown>[] {
   const cols = container.columns
   const resolveEndpoint = makeEndpointResolver(endpoints)
@@ -1249,6 +1487,18 @@ export function buildBins(
     const span = item.settings.colSpan
     const lg = toBoxRange(span.lg, cols.lg)
     const element = buildElement(item, items, endpoints, resolveEndpoint, buttonRefs)
+    // Adding / editing visibility inside a data table's modal: the engine
+    // condition the example's country form uses (`<table>._id` undefined ⇒
+    // the Add button opened it). `val: undefined` is dropped by JSON, which
+    // the engine reads the same way.
+    const condition =
+      scope && item.showWhen && item.showWhen !== 'always'
+        ? {
+            right: { key: scope.tableName, path: '_id' },
+            operator: item.showWhen === 'adding' ? 'eq' : 'neq',
+            left: { val: undefined },
+          }
+        : undefined
     // A plain `container` Bin nests via the Bin-level `container` key (not an
     // element) — the engine renders it as a nested grid. Style-tab background /
     // border (design-only otherwise) turn on the engine's themed surface.
@@ -1281,6 +1531,7 @@ export function buildBins(
       type: designOnly ? 'empty' : item.type === 'select' ? 'autocomplete' : item.type,
       justifySelf: item.settings.justifySelf.lg,
       alignSelf: item.settings.alignSelf.lg,
+      ...(condition ? { condition } : {}),
       ...(element ? { element } : {}),
       ...(nested ? { container: nested } : {}),
       ...(designOnly

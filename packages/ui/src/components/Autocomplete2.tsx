@@ -164,11 +164,13 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 		const [isSearching, setIsSearching] = useState(false);
 
 		const { data, isFetching } = useQuery({
-			queryKey: [`${name}-${apiInfo?.name}`],
+			// A load-once field that observes another refetches per observed
+			// value (a studio-authored cascade has `params` but no `query`).
+			queryKey: [`${name}-${apiInfo?.name}`, observeTo ? observeApiData ?? null : null],
 			queryFn: () => fetchData(""),
 			staleTime: Infinity,
 			gcTime: Infinity,
-			enabled: !!api && !hasApiSearch,
+			enabled: !!api && !hasApiSearch && (!observeTo || !isEmpty(observeApiData)),
 		})
 
 		const apiSearch = useMemo(() => {
@@ -394,6 +396,8 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 				onChange?.(null as any)
 				onValueChange?.(null as any)
 				setObserveApiData(data)
+				// The parent was cleared: no request will replace the old options.
+				if (isEmpty(data)) setItems([])
 			},
 			[observeTo, onChange, onValueChange]
 		)
@@ -409,8 +413,12 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 		useEffect(() => {
 			if (!hasApiSearch) return;
 
+			// No request while an observed parent is still blank (`fetchData`
+			// returns nothing) — the list stays empty rather than "loading".
+			const request = fetchData("");
+			if (!request) return;
 			setIsSearching(true);
-			fetchData("")?.then((res) => {
+			request.then((res) => {
 				setItems(getItems(res));
 			}).finally(() => {
 				setIsSearching(false);

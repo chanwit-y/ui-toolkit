@@ -1,9 +1,11 @@
 import { useEffect, useReducer } from "react";
+import { useInRouterContext, useParams, useSearchParams } from "react-router-dom";
 import type { ApiSegments, APIFunction, DataValue } from "../@types";
 import type { TApiMaster } from "../../api/APIMaster";
 import type { TModelMaster } from "../../model/master";
 import type { ElementContext } from "./elementBuilder";
 import { getStateStore } from "./stateStore";
+import type { DataValueScope } from "./dataValue";
 
 type Row = Record<string, any>;
 
@@ -24,6 +26,25 @@ export function useStateVersion(keys: string[]): number {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sig]);
   return version;
+}
+
+const NO_ROUTE: Pick<DataValueScope, "params" | "searchParams"> = {};
+
+function useRoutedScope(): Pick<DataValueScope, "params" | "searchParams"> {
+  const params = useParams();
+  const [searchParams] = useSearchParams();
+  return { params, searchParams };
+}
+
+/**
+ * The route half of a {@link DataValueScope}, for components that may also be
+ * mounted outside a router (a hand-wired `DataTable2`): there `type:"url"`
+ * values simply don't resolve. Whether a router is above is fixed for the life
+ * of a mount, so the branch keeps hook order stable.
+ */
+export function useRouteScope(): Pick<DataValueScope, "params" | "searchParams"> {
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  return useInRouterContext() ? useRoutedScope() : NO_ROUTE;
 }
 
 /**

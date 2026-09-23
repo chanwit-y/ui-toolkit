@@ -2372,9 +2372,8 @@ const containerPopoverFilter: Container = {
   name: "popoverFilter",
   isArray: false,
   bins: popoverFilterBins,
-  // No card/border here — the popover supplies the floating card; this only
-  // adds inner padding so fields don't touch the popover edges.
-  surface: { background: false, border: false, shadow: "none", padding: "4" },
+  // No card/border/padding here — the table's filter popover supplies them.
+  surface: { background: false, border: false, shadow: "none", padding: "0" },
 };
 
 export const groupList: Bin[] = [
@@ -2394,63 +2393,6 @@ export const groupList: Bin[] = [
     },
   },
   {
-    type: "empty",
-    sm: "10",
-    md: "10",
-    lg: "10",
-    xl: "10",
-    justifySelf: "stretch",
-    alignSelf: "center",
-  },
-  {
-    type: "popover",
-    sm: "1",
-    md: "1",
-    lg: "1",
-    xl: "1",
-    align: "end",
-    justifySelf: "end",
-    alignSelf: "center",
-    element: {
-      id: "popoverFilter",
-      container: containerPopoverFilter,
-      placement: "bottom-end",
-      triggerMode: "click",
-      trigger: {
-        type: "button",
-        element: {
-          label: "Filter",
-          variant: "outlined",
-          // No button action — the popover wrapper handles open/close on click.
-          actions: [],
-        },
-      },
-    },
-  },
-  {
-    type: "modal",
-    sm: "1",
-    md: "1",
-    lg: "1",
-    xl: "1",
-    align: "end",
-    justifySelf: "end",
-    alignSelf: "center",
-    element: {
-      id: "modalGroup",
-      title: "Create Country",
-      description: "modal",
-      container: containerCountryDetail,
-      maxWidth: "800px",
-      minWidth: "700px",
-      trigger: {
-        label: "",
-        actions: ["ClearCurrentFormSelected"],
-        icon: "puls",
-      },
-    },
-  },
-  {
     sm: "12",
     md: "12",
     lg: "12",
@@ -2466,9 +2408,14 @@ export const groupList: Bin[] = [
         page: "countryDetail",
         params: { id: { type: "row", key: "_id" } },
       },
+      // One form for both modes: Add opens it over an empty context, Edit
+      // over the clicked row; the form's Create / Update buttons are gated
+      // by a condition on `dtCountry._id`.
       modalContainer: containerCountryDetail,
       modalMaxWidth: "800px",
       modalMinWidth: "700px",
+      canAdd: true,
+      addButton: { label: "Add Country", icon: "puls" },
       canEdit: true,
       canDelete: true,
       columns: [
@@ -2572,6 +2519,10 @@ export const groupList: Bin[] = [
       // it sends offset/limit/search to /collection/page and reads `total`
       // from the response. The static body values below are placeholders the
       // table overwrites each fetch.
+      // The Quick filter form: the table renders it behind a Filter button in
+      // its header and sends the applied values with the page request — see
+      // the `type: "filter"` entries of `api.body` (and ./serverFilterDemo.ts).
+      filterContainer: containerPopoverFilter,
       api: {
         name: "countriesPaged",
         paths: ["data"],
@@ -2579,6 +2530,8 @@ export const groupList: Bin[] = [
           offset: { type: "value", key: "offset", value: 0 },
           limit: { type: "value", key: "limit", value: 10 },
           search: { type: "value", key: "search", value: "" },
+          name: { type: "filter", key: "filterName" },
+          code: { type: "filter", key: "filterCode" },
         },
         pagination: {
           offsetKey: "offset",

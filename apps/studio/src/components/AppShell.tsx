@@ -16,7 +16,7 @@ import {
 } from 'lucide-react'
 import { Link, NavLink } from 'react-router-dom'
 import { useProjectEndpoints } from './Library/scope'
-import { Button, cn, IconButton } from './common'
+import { cn, IconButton } from './common'
 import { useGridStore } from './Layout/gridStore'
 import { LivePreviewModal } from './Layout/LivePreviewModal'
 import { useStudioStore } from './studioStore'
@@ -143,22 +143,20 @@ export function AppShell({ project }: { project: ProjectDef }) {
         >
           {isDark ? <Sun size={15} aria-hidden="true" /> : <Moon size={15} aria-hidden="true" />}
         </IconButton>
-        <Button title="See the whole project" onClick={() => setOverviewOpen(true)}>
+        {/* Icon-only, like the rest of the topbar; the label lives in the tooltip / aria-label. */}
+        <IconButton label="Overview — see the whole project" onClick={() => setOverviewOpen(true)}>
           <Network size={15} aria-hidden="true" />
-          Overview
-        </Button>
-        <Button title="Hand this project to a developer" onClick={() => setExportOpen(true)}>
+        </IconButton>
+        <IconButton label="Export — hand this project to a developer" onClick={() => setExportOpen(true)}>
           <Download size={15} aria-hidden="true" />
-          Export
-        </Button>
-        <Button
+        </IconButton>
+        <IconButton
           disabled={canvasEmpty}
-          title={canvasEmpty ? 'Add a component to the canvas first' : 'Open the live preview'}
+          label={canvasEmpty ? 'Preview — add a component to the canvas first' : 'Preview — open the live preview'}
           onClick={() => setPreviewOpen(true)}
         >
           <Eye size={15} aria-hidden="true" />
-          Preview
-        </Button>
+        </IconButton>
       </header>
 
       {/* Mount fresh on every open so the engine form state resets. */}

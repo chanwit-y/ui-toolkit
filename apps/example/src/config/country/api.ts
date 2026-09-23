@@ -23,6 +23,25 @@ export const api = {
     body: "countryPageBody",
     withOptions: false,
   },
+  countriesPagedGet: {
+    url: "/collection/page",
+    description: "Get a page of countries via the query string (the data table's query placement)",
+    methods: "GET" as const,
+    response: "countryPagedRes",
+    query: "countryPageQuery",
+    withOptions: false,
+  },
+  // One region's countries: the Server filter & sort demo maps a filter into
+  // the `:region` URL param.
+  regionCountriesPaged: {
+    url: "/collection/region/:region/page",
+    description: "Get a page of one region's countries (`:region` = region id or \"all\")",
+    methods: "GET" as const,
+    response: "countryPagedRes",
+    query: "countryPageQuery",
+    parameter: "regionPageParams",
+    withOptions: false,
+  },
   countryDetail: {
     url: "/collection/detail/:id",
     description: "Get a single country by id (state-loader demo)",
@@ -153,6 +172,14 @@ export const api = {
     description: "List regions with their countries",
     methods: "GET" as const,
     response: "regionRes",
+    withOptions: false,
+  },
+  // Flat country rows with their region (Table layout demo).
+  regionCountries: {
+    url: "/collection/region-countries",
+    description: "List countries with their region, one row each",
+    methods: "GET" as const,
+    response: "regionCountryRes",
     withOptions: false,
   },
 };

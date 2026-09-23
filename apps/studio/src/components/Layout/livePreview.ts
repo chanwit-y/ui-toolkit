@@ -124,6 +124,12 @@ export function collectPreviewNavigation(bins: ParsedBin[]): Map<string, Preview
         visit((el.container as Record<string, unknown>).bins)
       if (el?.rowContainer && typeof el.rowContainer === 'object')
         visit((el.rowContainer as Record<string, unknown>).bins)
+      if (el?.itemContainer && typeof el.itemContainer === 'object')
+        visit((el.itemContainer as Record<string, unknown>).bins)
+      // A card's two slots of bins.
+      for (const key of ['content', 'collapse'] as const)
+        if (el?.[key] && typeof el[key] === 'object')
+          visit((el[key] as Record<string, unknown>).bins)
       if (Array.isArray(el?.tabs))
         for (const tab of el.tabs as Record<string, unknown>[])
           if (tab.container && typeof tab.container === 'object')
@@ -214,6 +220,18 @@ function toPreviewBin(bin: ParsedBin, wiring: LivePreviewWiring): ParsedBin {
         ...(bin.element as Record<string, unknown>),
         itemContainer: toPreviewContainer(el.itemContainer as Record<string, unknown>, wiring),
       },
+    }
+  }
+  // A card's `content` / `collapse` slots are containers of bins too.
+  for (const key of ['content', 'collapse'] as const) {
+    if (el?.[key] && typeof el[key] === 'object') {
+      bin = {
+        ...bin,
+        element: {
+          ...(bin.element as Record<string, unknown>),
+          [key]: toPreviewContainer(el[key] as Record<string, unknown>, wiring),
+        },
+      }
     }
   }
   if (Array.isArray(el?.tabs)) {

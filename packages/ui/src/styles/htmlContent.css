@@ -1,0 +1,105 @@
+/* HTML content blocks (the `html` element) — a TW3/TW4-portable partial like
+   datatable.css. `.gummy-html-prose` gives config-authored markup typographic
+   defaults for headings, paragraphs, lists, quotes, code and tables; every
+   colour is a Radix var so it follows the accent and flips with the
+   appearance. The `dt-*` helpers apply too (the block is a `.datatable-html-cell`). */
+
+.gummy-html-content {
+  min-width: 0;
+}
+
+.gummy-html-prose {
+  line-height: 1.6;
+  color: var(--gray-12);
+  overflow-wrap: anywhere;
+}
+
+.gummy-html-prose > :first-child { margin-top: 0; }
+.gummy-html-prose > :last-child { margin-bottom: 0; }
+
+.gummy-html-prose h1,
+.gummy-html-prose h2,
+.gummy-html-prose h3,
+.gummy-html-prose h4 {
+  margin: 1.25em 0 0.5em;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--gray-12);
+}
+.gummy-html-prose h1 { font-size: 1.75em; }
+.gummy-html-prose h2 { font-size: 1.375em; }
+.gummy-html-prose h3 { font-size: 1.125em; }
+.gummy-html-prose h4 { font-size: 1em; }
+
+.gummy-html-prose p,
+.gummy-html-prose ul,
+.gummy-html-prose ol,
+.gummy-html-prose blockquote,
+.gummy-html-prose pre,
+.gummy-html-prose table,
+.gummy-html-prose figure {
+  margin: 0.75em 0;
+}
+
+.gummy-html-prose ul { list-style: disc; padding-left: 1.5em; }
+.gummy-html-prose ol { list-style: decimal; padding-left: 1.5em; }
+.gummy-html-prose li { margin: 0.25em 0; }
+
+.gummy-html-prose blockquote {
+  padding: 0.25em 1em;
+  border-left: 3px solid var(--accent-7);
+  color: var(--gray-11);
+}
+
+.gummy-html-prose code {
+  padding: 0.1em 0.35em;
+  border-radius: 0.25em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9em;
+  background: var(--gray-3);
+  color: var(--gray-12);
+}
+
+.gummy-html-prose pre {
+  padding: 0.75em 1em;
+  border-radius: 0.5em;
+  overflow-x: auto;
+  background: var(--gray-3);
+}
+.gummy-html-prose pre code { padding: 0; background: none; }
+
+.gummy-html-prose hr {
+  margin: 1.25em 0;
+  border: 0;
+  border-top: 1px solid var(--gray-a6);
+}
+
+.gummy-html-prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95em;
+}
+.gummy-html-prose th,
+.gummy-html-prose td {
+  padding: 0.4em 0.75em;
+  border: 1px solid var(--gray-a6);
+  text-align: left;
+  vertical-align: top;
+}
+.gummy-html-prose th {
+  font-weight: 600;
+  background: var(--gray-2);
+}
+
+.gummy-html-prose img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5em;
+}
+
+.gummy-html-prose mark {
+  padding: 0 0.2em;
+  background: var(--accent-4);
+  color: var(--gray-12);
+}

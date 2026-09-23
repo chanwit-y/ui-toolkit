@@ -34,6 +34,8 @@ import {
   SquareCheck,
   SquareDashed,
   StickyNote,
+  CreditCard,
+  Code,
   Table,
   TextCursorInput,
   TextWrap,
@@ -75,6 +77,8 @@ export type ComponentType =
   | 'container'
   | 'tab'
   | 'paper'
+  | 'card'
+  | 'html'
   | 'popover'
   | 'divider'
   | 'empty'
@@ -177,6 +181,7 @@ export const COMPONENT_GROUPS: ComponentGroup[] = [
       { type: 'typography', label: 'Typography', icon: Pilcrow },
       { type: 'avatar', label: 'Avatar', icon: User },
       { type: 'divider', label: 'Divider', icon: SeparatorHorizontal },
+      { type: 'html', label: 'HTML', icon: Code },
     ],
   },
   {
@@ -185,6 +190,7 @@ export const COMPONENT_GROUPS: ComponentGroup[] = [
       { type: 'container', label: 'Container', icon: Box },
       { type: 'tab', label: 'Tab', icon: PanelTop },
       { type: 'paper', label: 'Paper', icon: StickyNote },
+      { type: 'card', label: 'Card', icon: CreditCard },
     ],
   },
   {

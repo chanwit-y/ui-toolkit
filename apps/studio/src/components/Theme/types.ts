@@ -49,7 +49,10 @@ export type HeaderFontSize = '' | 'xs' | 'sm' | 'base' | 'lg' | 'xl'
 export type HeaderFontWeight = '' | 'normal' | 'medium' | 'semibold' | 'bold'
 
 /** Per-role DataTable overrides — mirrors `ThemeComponents['dataTable']` with
- * `''` = unset (follows accent / component default). */
+ * `''` = unset (follows accent / component default; edit = the button colour,
+ * delete = red). The two action-button roles are Radix buttons, so a pinned
+ * color is dark-safe; the rest route into the legacy light-only map when
+ * pinned. */
 export type DataTableThemeConfig = {
   headerColor: string
   headerTextColor: string

@@ -1,4 +1,4 @@
-import type { AutocompleteElement, Bin, Container, TabElement, TextFieldElement } from "../@types";
+import type { AutocompleteElement, Bin, CardElement, Container, TabElement, TextFieldElement } from "../@types";
 import { z } from "zod";
 
 export class Schema {
@@ -48,6 +48,19 @@ export class Schema {
 						} else {
 							Object.assign(fields, containerFields);
 						}
+					});
+					return;
+				}
+
+				// A card's content / collapse bins draw on the enclosing form, like
+				// a tab's panels: their fields belong to it.
+				if (box.type === "card") {
+					const card = box.element as CardElement;
+					[card.content, card.collapse].forEach((container) => {
+						if (!container) return;
+						const containerFields = this.processBoxes(container.bins);
+						if (container.isArray) fields[container.name] = z.array(z.object(containerFields));
+						else Object.assign(fields, containerFields);
 					});
 					return;
 				}

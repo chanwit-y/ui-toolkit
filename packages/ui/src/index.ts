@@ -53,6 +53,11 @@ export { getContainerSurface, resolveSurface } from "./components/core/container
 export type { ResolvedContainerSurface } from "./components/core/containerSurface";
 export * from "./api/APIMaster";
 export * from "./components/DataTable2";
+export { HtmlCell, renderHtmlCell, type HtmlCellProps } from "./components/HtmlCell";
+export { ClampedCell, DEFAULT_CELL_LINES } from "./components/ClampedCell";
+export { groupColumns, headerRows, computeSpans, columnMeta, type ColumnLayoutMeta } from "./components/dataTableLayout";
+export { renderTemplate, templateFields, escapeHtml } from "./util/template";
+export { sanitizeHtml, type SanitizedHtml } from "./util/sanitizeHtml";
 export * from "./components/DataTableEditable";
 export type {
 	DataTableEditableProps,
@@ -84,6 +89,18 @@ export type {
 } from "./components/@types";
 export * from "./components/Repeater";
 export type { RepeaterElement, RepeaterProps, RepeaterItemSpan } from "./components/@types";
+export type {
+  DataTableApi,
+  DataTablePagination,
+  DataTableSort,
+  DataTableFilterButton,
+  DataTableFilterDisplay,
+  DataTablePinnedColumns,
+  DataTableAddButton,
+  DataTableHeaderGap,
+  // The engine's column config (not TanStack's `ColumnDef`, hence the prefix).
+  ColumnDef as DataTableColumnDef,
+} from "./components/@types";
 export { RowScopeProvider, useRowScope, useDataValue } from "./components/core/rowScope";
 export type { RowScope } from "./components/core/rowScope";
 export * from "./components/Icon";
@@ -92,6 +109,8 @@ export * from "./components/Modal";
 export * from "./components/Tab";
 export * from "./components/Paper";
 export type { PaperProps } from "./components/Paper";
+export * from "./components/Card";
+export * from "./components/HtmlContent";
 export * from "./components/Popover";
 export type { PopoverProps } from "./components/Popover";
 export * from "./components/Divider";

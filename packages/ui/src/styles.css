@@ -12,6 +12,8 @@
 /* Engine grid col-span classes — same portable-partial treatment as datatable.css;
    the class names are composed at runtime so they must exist as real rules. */
 @import "./styles/colspan.css";
+/* HTML content blocks (the `html` element) — same portable-partial treatment. */
+@import "./styles/htmlContent.css";
 
 @tailwind base;
 @tailwind components;

@@ -1,10 +1,12 @@
-import type { DataType } from '@gummy-ui/ui'
+import type { DataTableAddButton, DataType } from '@gummy-ui/ui'
 import {
   AutocompleteBase2,
   Avatar,
   ButtonBase,
+  CardView,
   CheckboxBase,
   DataTable2,
+  HtmlCell,
   DataTableEditable,
   DatePickerBase,
   DateRangePickerBase,
@@ -21,7 +23,7 @@ import {
   UploadFileBase,
   UploadImageBase,
 } from '@gummy-ui/ui'
-import { IconData } from '@gummy-ui/ui'
+import { IconData, groupColumns } from '@gummy-ui/ui'
 import type { TypographyProps, UploadedFile } from '@gummy-ui/ui'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -49,6 +51,8 @@ import {
   SeparatorHorizontal,
   SquareCheck,
   StickyNote,
+  CreditCard,
+  Code,
   Table,
   TextWrap,
   Trash2,
@@ -65,12 +69,14 @@ import { renderDesignPreview } from './DesignPreviews'
 import { elementStyleVars, hasElementStyle, isDesignOnly } from './designTypes'
 import { ENTER_DURATION_MS, prefersReducedMotion, UPGRADE_FADE_MS } from './gridAnimation'
 import { useGridStore, useIsEntering } from './gridStore'
+import { buildDataTablePreviewRows, buildHtmlPreviewValue, DATATABLE_PREVIEW_ROW_COUNT } from './dataTablePreview'
 import { bindingToken } from './ItemBindingField'
 import type {
   AvatarConfig,
   ButtonConfig,
   CheckboxConfig,
   ChildCanvas,
+  ColumnSizingConfig,
   DataTableColumnConfig,
   DataTableConfig,
   DataTableEditableColumnConfig,
@@ -83,6 +89,9 @@ import type {
   ModalConfig,
   MultiAutocompleteConfig,
   PaperConfig,
+  CardConfig,
+  CardActionConfig,
+  HtmlContentConfig,
   PopoverConfig,
   RadioConfig,
   SelectFieldConfig,
@@ -153,6 +162,10 @@ function thresholdsForType(type: GridItemData['type']): LiveThresholds {
     type === 'popover' ||
     // A repeater previews its item template like the other container hosts.
     type === 'repeater' ||
+    // A card's slots are display parts; the real component lays them out at any width.
+    type === 'card' ||
+    // An HTML block is markup — legible at any width.
+    type === 'html' ||
     // Design-only kinds are the design itself — nothing heavier to gate.
     isDesignOnly(type)
   ) {
@@ -250,6 +263,12 @@ function CellContent({ item }: { item: GridItemData }) {
   if (item.type === 'paper' && item.config) {
     return <GlyphChip Icon={StickyNote} />
   }
+  if (item.type === 'card' && item.config) {
+    return <GlyphChip Icon={CreditCard} />
+  }
+  if (item.type === 'html' && item.config) {
+    return <GlyphChip Icon={Code} />
+  }
   if (item.type === 'tab' && item.config) {
     return <GlyphChip Icon={PanelTop} />
   }
@@ -315,6 +334,10 @@ function ActiveBody({ item }: { item: GridItemData }) {
                                     ? Box
                                     : item.type === 'paper'
                                       ? StickyNote
+                                    : item.type === 'card'
+                                      ? CreditCard
+                                    : item.type === 'html'
+                                      ? Code
                                       : item.type === 'tab'
                                         ? PanelTop
                                         : item.type === 'modal'
@@ -752,33 +775,16 @@ function UploadFileLivePreview({ config }: { config: UploadFileConfig }) {
   )
 }
 
-/**
- * Synthesize mock preview rows from the authored columns, so the table body
- * always matches the inspector. Type-aware per column: an id-ish accessor
- * (`id`, `userId`, `user_id`) counts 1..N, a date-format column renders real
- * consecutive dates through dayjs with that format, everything else is
- * "<Header> N". The base date is fixed so re-renders are deterministic. Rows fit
- * on a single client-mode page (size 10), so the pagination footer renders
- * "Page 1 of 1" without making the cell tall.
- */
-const DATATABLE_PREVIEW_ROW_COUNT = 5
-function buildDataTablePreviewRows(
-  columns: DataTableColumnConfig[],
-): Record<string, unknown>[] {
-  return Array.from({ length: DATATABLE_PREVIEW_ROW_COUNT }, (_, i) => {
-    const row: Record<string, unknown> = {}
-    for (const column of columns) {
-      if (!column.accessor) continue
-      if (column.useDateFormat) {
-        row[column.accessor] = dayjs('2026-01-05').add(i, 'day').format(column.useDateFormat)
-      } else if (/^id$|Id$|_id$/.test(column.accessor)) {
-        row[column.accessor] = i + 1
-      } else {
-        row[column.accessor] = `${column.header || column.accessor} ${i + 1}`
-      }
-    }
-    return row
-  })
+/** Stand-in for the engine `filterContainer` on the canvas: the table only needs one to exist — its bins are drawn by `ChildCanvasPreview`. */
+const CANVAS_FILTER_CONTAINER = { id: '__canvas_filter__', name: '__canvas_filter__', isArray: false, bins: [] } as never
+
+/** A column's authored widths as the engine / TanStack keys (the canvas is inert, so the lock is moot). */
+function previewColumnSizing(c: ColumnSizingConfig) {
+  return {
+    ...(c.size !== '' ? { size: c.size } : {}),
+    ...(c.minSize !== '' ? { minSize: c.minSize } : {}),
+    ...(c.maxSize !== '' ? { maxSize: c.maxSize } : {}),
+  }
 }
 
 /**
@@ -796,25 +802,59 @@ function buildDataTablePreviewRows(
  * DataTable2 needs (Data/Loading/Snackbar/Query) come from `CoreProvider` in
  * `App.tsx`.
  */
-function DataTableLivePreview({ config }: { config: DataTableConfig }) {
+function DataTableLivePreview({ config, filterCanvas }: { config: DataTableConfig; filterCanvas?: ChildCanvas }) {
+  // Server filters on the canvas: the real Filter button (or inline bar), whose
+  // form body is the read-only preview of the table's filter canvas.
+  const showFilters = config.filtersEnabled && !!filterCanvas && filterCanvas.items.length > 0
   const rows = useMemo(() => buildDataTablePreviewRows(config.columns), [config.columns])
   const api = useMemo(() => async () => rows, [rows])
-  const columns = config.columns.map((c) => ({
+  // Layout flags DataTable2 reads off `meta`, set like the engine's builder
+  // does: the column's own clamp, row header, merged cells, HTML.
+  const layoutMeta = (c: DataTableColumnConfig) => ({
+    ...(c.lines !== '' ? { lines: c.lines } : {}),
+    ...(c.rowHeader ? { rowHeader: true } : {}),
+    ...(c.mergeRows ? { mergeRows: true } : {}),
+    ...(c.mergeColumns ? { mergeColumns: true } : {}),
+    ...(c.html.trim() ? { html: true } : {}),
+  })
+  const leafColumns = config.columns.map((c) => ({
     accessorKey: c.accessor,
     header: c.header,
     enableSorting: c.enableSorting,
     enableColumnFilter: c.enableColumnFilter,
+    ...previewColumnSizing(c),
+    ...(Object.keys(layoutMeta(c)).length ? { meta: layoutMeta(c) } : {}),
+    // An HTML column renders through the engine's own cell (mock rows already
+    // hold the formatted date, so `{{value}}` is the row value as is).
+    ...(c.html.trim()
+      ? {
+          cell: (props: { row: { original: Record<string, unknown> } }) => (
+            <HtmlCell template={c.html} row={props.row.original} value={props.row.original[c.accessor]} />
+          ),
+        }
+      : {}),
   }))
+  // Adjacent equal `group` labels become group headers, as in the engine.
+  const columns = groupColumns(config.columns, leafColumns)
   const align = config.columns.reduce<Record<string, 'start' | 'center' | 'end'>>(
     (acc, c) => ({ ...acc, [c.accessor]: c.align }),
     {},
   )
+  const pinnedColumns = {
+    // The row header leads (after the action column), then the config pins.
+    left: [
+      ...config.columns.filter((c) => c.rowHeader).map((c) => c.accessor),
+      ...config.columns.filter((c) => c.pin === 'left' && !c.rowHeader).map((c) => c.accessor),
+    ],
+    right: config.columns.filter((c) => c.pin === 'right').map((c) => c.accessor),
+  }
   return (
     <div
       data-grid-item-content
       className="pointer-events-none w-full px-3 py-2"
     >
       <DataTable2
+        pinnedColumns={pinnedColumns}
         // Namespaced so the canvas's mock-row cache never collides with the
         // Live Preview modal's real fetch (react-query keys by name+title, and
         // the query client is shared app-wide).
@@ -826,6 +866,23 @@ function DataTableLivePreview({ config }: { config: DataTableConfig }) {
         canSearchAllColumns={config.canSearchAllColumns}
         canEdit={config.canEdit}
         canDelete={config.canDelete}
+        canAdd={config.canAdd}
+        headerGap={config.headerGap || undefined}
+        canResizeColumns={config.canResizeColumns}
+        cellLines={config.cellLines}
+        filterContainer={showFilters ? CANVAS_FILTER_CONTAINER : undefined}
+        renderFilterBins={showFilters ? () => <ChildCanvasPreview canvas={filterCanvas} /> : undefined}
+        filterDisplay={config.filterDisplay}
+        filterButton={{
+          label: config.filterButton.label,
+          icon: (config.filterButton.icon || 'filter') as DataTableAddButton['icon'],
+          variant: config.filterButton.variant,
+        }}
+        addButton={{
+          label: config.addButton.label,
+          icon: (config.addButton.icon || 'puls') as DataTableAddButton['icon'],
+          variant: config.addButton.variant,
+        }}
       />
     </div>
   )
@@ -834,7 +891,7 @@ function DataTableLivePreview({ config }: { config: DataTableConfig }) {
 /** The part of a datatable config that changes the *fetched* rows (not just the
  * column chrome) — used as the preview's remount key so edits refetch. */
 function dataTableRowsKey(config: DataTableConfig): string {
-  return JSON.stringify(config.columns.map((c) => [c.accessor, c.header, c.useDateFormat]))
+  return JSON.stringify(config.columns.map((c) => [c.accessor, c.header, c.useDateFormat, c.html]))
 }
 
 /**
@@ -901,6 +958,9 @@ function EditableTableLivePreview({ config }: { config: DataTableEditableConfig 
     enableSorting: c.enableSorting,
     enableColumnFilter: c.enableColumnFilter,
     align: c.align,
+    ...(c.rowHeader ? { rowHeader: true } : {}),
+    ...(c.group.trim() ? { group: c.group.trim() } : {}),
+    ...previewColumnSizing(c),
   }))
   return (
     <div
@@ -914,6 +974,7 @@ function EditableTableLivePreview({ config }: { config: DataTableEditableConfig 
         idKey={config.idKey}
         columns={columns}
         apiCrud={apiCrud}
+        canResizeColumns={config.canResizeColumns}
       />
     </div>
   )
@@ -1050,15 +1111,23 @@ function ChildCanvasPreview({ canvas }: { canvas: ChildCanvas }) {
   }
   const s = canvas.settings
   const cols = s.columns.lg
+  // In a narrow host cell (a card a third of a narrow canvas wide) the fixed
+  // column gaps alone can exceed the width, and a full-span child then
+  // overflows and gets clipped. Cap the column gap so the gaps take at most a
+  // quarter of the width and the content wraps instead.
+  const columnGap = s.columnGap.lg || s.gap.lg
+  const cappedColumnGap = columnGap
+    ? `min(${columnGap}, ${(25 / Math.max(cols - 1, 1)).toFixed(2)}%)`
+    : undefined
   return (
     <div
       className="w-full"
       style={{
         display: 'grid',
         gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
-        ...(s.gap.lg ? { gap: s.gap.lg } : {}),
+        ...(s.gap.lg ? { rowGap: s.gap.lg } : {}),
         ...(s.rowGap.lg ? { rowGap: s.rowGap.lg } : {}),
-        ...(s.columnGap.lg ? { columnGap: s.columnGap.lg } : {}),
+        ...(cappedColumnGap ? { columnGap: cappedColumnGap } : {}),
         ...(s.gridAutoRows.lg ? { gridAutoRows: s.gridAutoRows.lg } : {}),
       }}
     >
@@ -1213,6 +1282,86 @@ function RepeaterLivePreview({ config, canvas }: { config: RepeaterConfig; canva
             </div>
           ))}
         </div>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * The live, real `HtmlCell` from the library (the `html` element's renderer)
+ * over a mock value where every placeholder shows its `{path}` token, so a
+ * bound block previews its shape; the sanitiser runs for real. Inert.
+ */
+function HtmlContentLivePreview({ config }: { config: HtmlContentConfig }) {
+  const value = useMemo(() => buildHtmlPreviewValue(config.html), [config.html])
+  return (
+    <div data-grid-item-content className="pointer-events-none h-full w-full px-3 py-2">
+      <div className="gummy-html-content">
+        <HtmlCell template={config.html} row={value} value={value.value} className={config.prose ? 'gummy-html-prose' : ''} />
+      </div>
+    </div>
+  )
+}
+
+/** One card button on the canvas: the library's visual layer, like `ButtonLivePreview`. */
+function CardActionPreview({ action }: { action: CardActionConfig }) {
+  return (
+    <ButtonBase
+      label={action.label}
+      icon={(action.icon || undefined) as keyof typeof IconData | undefined}
+      variant={action.variant}
+    />
+  )
+}
+
+/**
+ * The live, real `CardView` from the library — the same component the engine
+ * renders — with the slots filled from the config: a bound title / subheader /
+ * image shows its `{field}` token (`bindingToken`) in place of the static
+ * text, the avatar and buttons are the library visuals, `content` is child
+ * canvas 0 and the expandable section child canvas 1, drawn open when
+ * `defaultExpanded` (the toggle is inert on the canvas — exercise it in the
+ * Live Preview). Inert like every preview.
+ */
+function CardLivePreview({ config, canvases }: { config: CardConfig; canvases: ChildCanvas[] }) {
+  const h = config.header
+  const title = h.titleBinding ? bindingToken(h.titleBinding) : h.title
+  const subheader = h.subheaderBinding ? bindingToken(h.subheaderBinding) : h.subheader
+  const avatar = h.avatarEnabled ? (
+    <Avatar
+      src={h.avatar.srcBinding ? undefined : h.avatar.src || undefined}
+      alt={h.avatar.alt || undefined}
+      size={h.avatar.size}
+      fallback={h.avatar.srcBinding || h.avatar.fallbackBinding ? '{ }' : h.avatar.fallback || undefined}
+    />
+  ) : undefined
+  const media = config.media.enabled
+    ? {
+        src: config.media.srcBinding ? undefined : config.media.src || undefined,
+        alt: config.media.srcBinding ? bindingToken(config.media.srcBinding) : config.media.alt || undefined,
+        height: config.media.height,
+      }
+    : undefined
+  return (
+    <div data-grid-item-content className="pointer-events-none flex h-full w-full items-start px-3 py-2">
+      <div className="w-full">
+        <CardView
+          key={String(config.defaultExpanded)}
+          title={title}
+          subheader={subheader}
+          avatar={avatar}
+          headerAction={h.actionEnabled ? <CardActionPreview action={h.action} /> : undefined}
+          media={media}
+          content={canvases[0] ? <ChildCanvasPreview canvas={canvases[0]} /> : undefined}
+          actions={config.actions.map((a) => <CardActionPreview key={a.id} action={a} />)}
+          actionsAlign={config.actionsAlign}
+          collapse={config.collapseEnabled && canvases[1] ? <ChildCanvasPreview canvas={canvases[1]} /> : undefined}
+          collapseLabel={config.collapseLabel || undefined}
+          defaultExpanded={config.defaultExpanded}
+          variant={config.variant}
+          elevation={config.elevation}
+          square={config.square}
+        />
       </div>
     </div>
   )
@@ -1390,7 +1539,7 @@ function renderLive(item: GridItemData, isLive: boolean) {
     const config = item.config as DataTableConfig
     // Keyed on the row-affecting column fields: DataTable2's react-query cache
     // ignores the api function, so a remount is what refetches the mock rows.
-    return <DataTableLivePreview key={dataTableRowsKey(config)} config={config} />
+    return <DataTableLivePreview key={dataTableRowsKey(config)} config={config} filterCanvas={item.childCanvases?.[1]} />
   }
   if (item.type === 'datatableeditable' && item.config) {
     const config = item.config as DataTableEditableConfig
@@ -1429,6 +1578,12 @@ function renderLive(item: GridItemData, isLive: boolean) {
   }
   if (item.type === 'container' && item.childCanvases?.[0]) {
     return <ContainerLivePreview canvas={item.childCanvases[0]} />
+  }
+  if (item.type === 'card' && item.config && item.childCanvases?.[0]) {
+    return <CardLivePreview config={item.config as CardConfig} canvases={item.childCanvases} />
+  }
+  if (item.type === 'html' && item.config) {
+    return <HtmlContentLivePreview config={item.config as HtmlContentConfig} />
   }
   if (item.type === 'paper' && item.config && item.childCanvases?.[0]) {
     return (

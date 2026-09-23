@@ -21,6 +21,8 @@ import { Text } from "../text";
 import { Typography } from "../typography";
 import { Tab } from "../tab";
 import { Paper } from "../paper";
+import { Card } from "../card";
+import { HtmlContent } from "../htmlContent";
 import { Popover } from "../popover";
 import { Divider } from "../divider";
 import { UploadImage } from "../uploadImage";
@@ -58,6 +60,8 @@ export const ElementData = {
 	typography: Typography,
 	tab: Tab,
 	paper: Paper,
+	card: Card,
+	html: HtmlContent,
 	popover: Popover,
 	divider: Divider,
 	uploadimage: UploadImage,

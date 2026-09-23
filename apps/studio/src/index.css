@@ -11,6 +11,8 @@
    cells use runtime-composed `sm-col-span-N` classes — invisible to the `@source`
    scan below, so pull in the library's portable col-span partial directly. */
 @import "../../../packages/ui/src/styles/colspan.css";
+/* HTML content blocks (the `html` element): prose defaults for the canvas + Live Preview. */
+@import "../../../packages/ui/src/styles/htmlContent.css";
 
 /* The library `<Modal>` (Live Preview chrome + engine modal bins) styles its
    backdrop, fade animations, and close button via semantic `.modal-*` classes

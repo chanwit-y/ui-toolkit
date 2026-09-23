@@ -77,7 +77,7 @@ export function StylePanel({ item }: { item: GridItemData }) {
     updateItemStyle(item.id, { [key]: value } as Partial<ElementStyle>)
   const def = COMPONENT_BY_TYPE[item.type]
   const isContainer =
-    item.type === 'container' || item.type === 'paper' || item.type === 'tab' || item.type === 'modal'
+    item.type === 'container' || item.type === 'paper' || item.type === 'card' || item.type === 'tab' || item.type === 'modal'
   const isTable = item.type === 'datatable' || item.type === 'datatableeditable'
 
   return (

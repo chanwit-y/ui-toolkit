@@ -21,6 +21,7 @@ function blockHeight(item: GridItemData): number {
       return 34
     case 'container':
     case 'paper':
+    case 'card':
     case 'tab':
       return 30
     case 'typography':

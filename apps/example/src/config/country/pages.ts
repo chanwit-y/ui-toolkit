@@ -3,8 +3,18 @@ import {
   containerCountryList,
   containerCountryStateDetail,
 } from "./container";
+import { containerColumnResizeDemo } from "./columnResizeDemo";
+import { containerDataTableDemo } from "./dataTableDemo";
 import { containerFormListDemo } from "./formListDemo";
+import { containerHtmlColumnDemo } from "./htmlColumnDemo";
+import { containerPaginationDemo } from "./paginationDemo";
 import { containerRepeaterDemo } from "./repeaterDemo";
+import { containerServerFilterDemo } from "./serverFilterDemo";
+import { containerFilterApiDemo } from "./filterApiDemo";
+import { containerCellTooltipDemo } from "./cellTooltipDemo";
+import { containerTableLayoutDemo } from "./tableLayoutDemo";
+import { containerCardDemo } from "./cardDemo";
+import { containerHtmlContentDemo } from "./htmlContentDemo";
 import { containerUploadDemo } from "./uploadDemo";
 
 /**
@@ -52,6 +62,85 @@ export const pages = {
     parent: "countryList",
     title: "Repeater",
     containers: containerRepeaterDemo,
+  },
+  dataTableDemo: {
+    // Column pinning on a deliberately overflowing table (see ./dataTableDemo.ts).
+    path: "/data-table",
+    parent: "countryList",
+    title: "Data table",
+    containers: containerDataTableDemo,
+  },
+  columnResizeDemo: {
+    // Drag-to-resize columns on both tables: default, configured sizes and
+    // limits with pins, editable, and switched off (see ./columnResizeDemo.ts).
+    path: "/column-resize",
+    parent: "countryList",
+    title: "Column resize",
+    containers: containerColumnResizeDemo,
+  },
+  htmlColumnDemo: {
+    // `html` column templates: helpers, images + inline style, nested paths
+    // and what the sanitiser drops (see ./htmlColumnDemo.ts).
+    path: "/html-columns",
+    parent: "countryList",
+    title: "HTML columns",
+    containers: containerHtmlColumnDemo,
+  },
+  paginationDemo: {
+    // The data table's server paging: offset/limit in the query string (GET)
+    // or the body (POST), beside the in-memory default (see ./paginationDemo.ts).
+    path: "/pagination",
+    parent: "countryList",
+    title: "Pagination",
+    containers: containerPaginationDemo,
+  },
+  serverFilterDemo: {
+    // Custom filters (`filterContainer` + `type:"filter"` DataValues in the
+    // query, body or URL params) and `api.sort`, all through the API (see
+    // ./serverFilterDemo.ts).
+    path: "/server-filter",
+    parent: "countryList",
+    title: "Server filter & sort",
+    containers: containerServerFilterDemo,
+  },
+  filterApiDemo: {
+    // Filter fields whose options come from the API: loaded once, searched as
+    // you type, or dependent on another filter (see ./filterApiDemo.ts).
+    path: "/filter-api",
+    parent: "countryList",
+    title: "Filter via API",
+    containers: containerFilterApiDemo,
+  },
+  cellTooltipDemo: {
+    // The line clamp's tooltip: a cut cell shows its whole text on hover
+    // (see ./cellTooltipDemo.ts).
+    path: "/cell-tooltip",
+    parent: "countryList",
+    title: "Cell tooltip",
+    containers: containerCellTooltipDemo,
+  },
+  tableLayoutDemo: {
+    // Row header, group headers and merged cells (see ./tableLayoutDemo.ts).
+    path: "/table-layout",
+    parent: "countryList",
+    title: "Table layout",
+    containers: containerTableLayoutDemo,
+  },
+  cardDemo: {
+    // The `card` element after MUI's Card: slots, media, expand, action area
+    // and cards in a repeater (see ./cardDemo.ts).
+    path: "/card",
+    parent: "countryList",
+    title: "Card",
+    containers: containerCardDemo,
+  },
+  htmlContentDemo: {
+    // The `html` element: static markup, a template bound to a repeater
+    // item, inside a card, and what the sanitiser strips (see ./htmlContentDemo.ts).
+    path: "/html-content",
+    parent: "countryList",
+    title: "HTML content",
+    containers: containerHtmlContentDemo,
   },
   uploadDemo: {
     // The `uploadfile` config on its own: single / multiple, accept presets

@@ -75,6 +75,7 @@ export class DataTableEditable<
       columns: props.columns,
       align: this.align(props.columns ?? []),
       apiCrud,
+      canResizeColumns: props.canResizeColumns,
     });
   }
 }
