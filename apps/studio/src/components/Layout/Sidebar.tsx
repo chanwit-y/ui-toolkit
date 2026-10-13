@@ -3,6 +3,7 @@ import { ButtonConfigPanel } from './ButtonConfigPanel'
 import { CardConfigPanel } from './CardConfigPanel'
 import { HtmlContentConfigPanel } from './HtmlContentConfigPanel'
 import { ApprovalLineConfigPanel } from './ApprovalLineConfigPanel'
+import { WorkflowEditorConfigPanel } from './WorkflowEditorConfigPanel'
 import { CheckboxConfigPanel } from './CheckboxConfigPanel'
 import { SwitchConfigPanel } from './SwitchConfigPanel'
 import {
@@ -55,6 +56,7 @@ import type {
   CardConfig,
   HtmlContentConfig,
   ApprovalLineConfig,
+  WorkflowEditorConfig,
   PopoverConfig,
   RadioConfig,
   SelectFieldConfig,
@@ -296,6 +298,8 @@ export function Sidebar({ gridConfigJson, fullGridCss }: SidebarProps) {
             <HtmlContentConfigPanel itemId={selectedItem.id} config={selectedItem.config as HtmlContentConfig} />
           ) : selectedItem.type === 'approvalline' && selectedItem.config ? (
             <ApprovalLineConfigPanel itemId={selectedItem.id} config={selectedItem.config as ApprovalLineConfig} />
+          ) : selectedItem.type === 'workfloweditor' && selectedItem.config ? (
+            <WorkflowEditorConfigPanel itemId={selectedItem.id} config={selectedItem.config as WorkflowEditorConfig} />
           ) : selectedItem.type === 'tab' && selectedItem.config ? (
             <TabConfigPanel
               itemId={selectedItem.id}

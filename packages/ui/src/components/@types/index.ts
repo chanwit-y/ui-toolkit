@@ -1663,6 +1663,7 @@ export type TElement =
   | CardElement
   | HtmlContentElement
   | ApprovalLineElement
+  | WorkflowEditorElement
   | PopoverElement
   | DrawerElement
   | DividerElement;
@@ -1697,6 +1698,7 @@ export type BinType =
   | "card"
   | "html"
   | "approvalline"
+  | "workfloweditor"
   | "popover"
   | "drawer"
   | "divider"
@@ -2247,6 +2249,104 @@ export type ApprovalLineElement = {
   verticalBelow?: "sm" | "md";
   emptyText?: string;
   className?: string;
+};
+
+/** One role a workflow step can have (see {@link WorkflowEditorElement.roles}). */
+export type WorkflowRole = {
+  /** What is stored in the step's role field. */
+  value: string;
+  label: string;
+  /** At most this many steps of the role per line (the Inputter: 1 — "(Already assigned.)"). */
+  max?: number;
+  /** Pin the role's steps to the start or the end of the line (no "+" across it). */
+  position?: "first" | "last";
+};
+
+/** Field names of one saved step (the backend's shape; defaults are camelCase). */
+export type WorkflowStepKeys = {
+  role: string;
+  sequence: string;
+  incharge: string;
+  cc: string;
+};
+
+/** How the dialog's user pickers read an option row. */
+export type WorkflowUserKeys = {
+  id: string;
+  display: string;
+  subtitle?: string;
+  avatar?: string;
+  search?: string;
+};
+
+export type WorkflowEditorLabels = Partial<{
+  add: string;
+  save: string;
+  remove: string;
+  cancel: string;
+  dialogTitle: string;
+  editTitle: string;
+  roleField: string;
+  incharge: string;
+  cc: string;
+  userPlaceholder: string;
+  alreadyAssigned: string;
+  confirmTitle: string;
+  confirmDescription: string;
+  empty: string;
+}>;
+
+export type WorkflowEditorProps = {
+  name?: string;
+  label?: string;
+  helperText?: string;
+  error?: boolean;
+  errorMessage?: string;
+  /** The line (the field value); each step holds `stepKeys` fields plus whatever the backend sent. */
+  value?: Record<string, unknown>[];
+  /** Seeded into the form by `withForm` (the builder passes `[]`). */
+  defaultValue?: Record<string, unknown>[];
+  onChange?: (value: Record<string, unknown>[]) => void;
+  onBlur?: () => void;
+  roles: WorkflowRole[];
+  stepKeys?: Partial<WorkflowStepKeys>;
+  /** The user options of the dialog's pickers — loaded once when it opens (resolved `api` + row keys). */
+  users: { api?: FormListReadApi; options?: Record<string, unknown>[]; keys: WorkflowUserKeys };
+  /** Default 1 — Add / Save disabled until this many people are in charge. */
+  minInchargeUsers?: number;
+  /** Default false — a person in charge of one step is hidden from the others' pickers. */
+  allowDuplicateUsers?: boolean;
+  labels?: WorkflowEditorLabels;
+  /** Cards and connectors only: no "+", no dialog. */
+  disabled?: boolean;
+  className?: string;
+};
+
+/**
+ * A form-bound editor for one approval line (see the grilled design): a
+ * vertical chain of step cards — role + the people in charge — with a "+"
+ * on every connector to insert a step there, an add button at the end, and
+ * a dialog (role radios, in-charge and CC user pickers) to add / edit /
+ * remove one. The field value is the step array, saved with the page's form;
+ * only the dialog's user list is fetched (`users.api`, the select family's
+ * `api` block, loaded once).
+ */
+export type WorkflowEditorElement = {
+  name: string;
+  dataType: "array" | string;
+  isRequired?: boolean;
+  errorMessage?: string;
+  label?: string;
+  helperText?: string;
+  roles: WorkflowRole[];
+  stepKeys?: Partial<WorkflowStepKeys>;
+  users: { api?: API; options?: Record<string, unknown>[]; keys: WorkflowUserKeys };
+  minInchargeUsers?: number;
+  allowDuplicateUsers?: boolean;
+  labels?: WorkflowEditorLabels;
+  disabled?: boolean;
+  /** Read-only initial value bound from a global-state slice. */
+  value?: DataValue;
 };
 
 export type HtmlContentElement = {

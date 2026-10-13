@@ -14,6 +14,7 @@
 /* HTML content blocks (the `html` element): prose defaults for the canvas + Live Preview. */
 @import "../../../packages/ui/src/styles/htmlContent.css";
 @import "../../../packages/ui/src/styles/approvalLine.css";
+@import "../../../packages/ui/src/styles/workflowEditor.css";
 
 /* The library `<Modal>` (Live Preview chrome + engine modal bins) styles its
    backdrop, fade animations, and close button via semantic `.modal-*` classes

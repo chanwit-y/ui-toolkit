@@ -1,6 +1,7 @@
 import type { DataTableAddButton, DataType } from '@gummy-ui/ui'
 import {
   ApprovalLineView,
+  WorkflowEditorBase,
   AutocompleteBase2,
   Avatar,
   ButtonBase,
@@ -58,6 +59,7 @@ import {
   CreditCard,
   Code,
   Workflow,
+  GitBranch,
   Table,
   TextWrap,
   Trash2,
@@ -100,6 +102,7 @@ import type {
   CardActionConfig,
   HtmlContentConfig,
   ApprovalLineConfig,
+  WorkflowEditorConfig,
   PopoverConfig,
   RadioConfig,
   SelectFieldConfig,
@@ -179,6 +182,8 @@ function thresholdsForType(type: GridItemData['type']): LiveThresholds {
     type === 'html' ||
     // An approval line is avatars on a line — it scrolls when narrow.
     type === 'approvalline' ||
+    // A workflow editor is a column of cards — it reads at any width.
+    type === 'workfloweditor' ||
     // Design-only kinds are the design itself — nothing heavier to gate.
     isDesignOnly(type)
   ) {
@@ -251,6 +256,9 @@ function CellContent({ item }: { item: GridItemData }) {
   }
   if (item.type === 'uploadfile' && item.config) {
     return <GlyphChip Icon={Upload} />
+  }
+  if (item.type === 'workfloweditor' && item.config) {
+    return <GlyphChip Icon={GitBranch} />
   }
   if (item.type === 'datatable') {
     return <GlyphChip Icon={Table} />
@@ -340,6 +348,8 @@ function ActiveBody({ item }: { item: GridItemData }) {
                   ? ImagePlus
                   : item.type === 'uploadfile' && item.config
                     ? Upload
+                  : item.type === 'workfloweditor'
+                    ? GitBranch
                     : item.type === 'datatable'
                       ? Table
                       : item.type === 'text' && item.config
@@ -1359,6 +1369,46 @@ function HtmlContentLivePreview({ config }: { config: HtmlContentConfig }) {
   )
 }
 
+/** The mock line every workflow editor previews with (the user's e-memo screen). */
+const WORKFLOW_PREVIEW_STEPS = [
+  { actionType: 'inputter', sequence: 1, inchargeUsers: [{ id: '1', name: 'Sigang Liang' }, { id: '2', name: 'Sai Cao' }], ccUsers: [] },
+  { actionType: 'approver', sequence: 2, inchargeUsers: [{ id: '3', name: 'Bing Cao' }], ccUsers: [] },
+  { actionType: 'acknowledger', sequence: 3, inchargeUsers: [{ id: '4', name: 'Wanutpong Siriwiphanan' }], ccUsers: [{ id: '5', name: 'Anna Kiewchaum' }] },
+]
+
+/**
+ * The live, real `WorkflowEditorBase` over mock steps keyed by the config's
+ * roles and step keys (the real line is a form value — exercised in the
+ * Live Preview), read-only here. Always live and inert.
+ */
+function WorkflowEditorLivePreview({ config }: { config: WorkflowEditorConfig }) {
+  const k = config.stepKeys
+  const value = useMemo(
+    () =>
+      WORKFLOW_PREVIEW_STEPS.map((s, i) => ({
+        [k.role || 'actionType']: config.roles[Math.min(i, config.roles.length - 1)]?.value ?? s.actionType,
+        [k.sequence || 'sequence']: s.sequence,
+        [k.incharge || 'inchargeUsers']: s.inchargeUsers,
+        [k.cc || 'ccUsers']: s.ccUsers,
+      })),
+    [k, config.roles],
+  )
+  return (
+    <div data-grid-item-content className="pointer-events-none h-full w-full px-3 py-2">
+      <WorkflowEditorBase
+        label={config.label || undefined}
+        helperText={config.helperText || undefined}
+        value={value}
+        roles={config.roles.map((r) => ({ value: r.value, label: r.label }))}
+        stepKeys={config.stepKeys}
+        users={{ keys: { id: 'id', display: 'name' } }}
+        labels={config.labels}
+        disabled={config.disabled}
+      />
+    </div>
+  )
+}
+
 /** The mock steps every approval line previews with: the user's sample, waiting on the last approver. */
 const APPROVAL_PREVIEW_STEPS: ApprovalStep[] = [
   { name: 'Chutima Pimthong', role: 'Reviewer', jobTitle: 'Manager - Process Governance', state: 'done', statusLabel: 'Approved' },
@@ -1646,6 +1696,9 @@ function renderLive(item: GridItemData, isLive: boolean) {
   }
   if (item.type === 'uploadfile' && item.config) {
     return <UploadFileLivePreview config={item.config as UploadFileConfig} />
+  }
+  if (item.type === 'workfloweditor' && item.config) {
+    return <WorkflowEditorLivePreview config={item.config as WorkflowEditorConfig} />
   }
   if (item.type === 'datatable' && item.config) {
     const config = item.config as DataTableConfig

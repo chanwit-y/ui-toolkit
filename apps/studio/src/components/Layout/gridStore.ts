@@ -37,6 +37,7 @@ import {
   createDefaultCardConfig,
   createDefaultHtmlContentConfig,
   createDefaultApprovalLineConfig,
+  createDefaultWorkflowEditorConfig,
   createDefaultPopoverConfig,
   createDefaultRadioConfig,
   createDefaultSelectFieldConfig,
@@ -69,6 +70,7 @@ import {
   type CardConfig,
   type HtmlContentConfig,
   type ApprovalLineConfig,
+  type WorkflowEditorConfig,
   type PopoverConfig,
   type RadioConfig,
   type SelectFieldConfig,
@@ -548,6 +550,7 @@ export const useGridStore = create<GridState>((set, get) => {
           | CardConfig
           | HtmlContentConfig
           | ApprovalLineConfig
+          | WorkflowEditorConfig
           | TabConfig
           | ModalConfig
           | DrawerConfig
@@ -631,6 +634,9 @@ export const useGridStore = create<GridState>((set, get) => {
         } else if (type === 'approvalline') {
           nextSeq = fieldSeq + 1
           config = createDefaultApprovalLineConfig(`approval_${nextSeq}`)
+        } else if (type === 'workfloweditor') {
+          nextSeq = fieldSeq + 1
+          config = createDefaultWorkflowEditorConfig(`workflow_${nextSeq}`)
         } else if (type === 'tab') {
           config = createDefaultTabConfig()
         } else if (type === 'modal') {
@@ -671,6 +677,7 @@ export const useGridStore = create<GridState>((set, get) => {
           type === 'card' ||
           type === 'html' ||
           type === 'approvalline' ||
+          type === 'workfloweditor' ||
           type === 'tab'
         const isUpload = type === 'uploadimage' || type === 'uploadfile'
         const isWideInput =

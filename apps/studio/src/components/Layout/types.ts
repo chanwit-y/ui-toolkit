@@ -1795,6 +1795,74 @@ export function createDefaultApprovalLineConfig(name: string): ApprovalLineConfi
   }
 }
 
+/** One role of a workflow editor (engine `WorkflowRole`; `max` / `position` as studio "unset" idioms). */
+export type WorkflowRoleConfig = { id: string; value: string; label: string; max: number | ''; position: '' | 'first' | 'last' }
+
+/** The dialog's user list: an endpoint walked along `paths` to the user rows, read with these keys. */
+export type WorkflowUsersConfig = {
+  endpointId: string | null
+  paths: string
+  idKey: string
+  displayKey: string
+  subtitleKey: string
+  avatarKey: string
+  searchKey: string
+}
+
+/**
+ * Editable config for a workflow editor (see the grilled design). Maps onto
+ * the engine `WorkflowEditorElement`: the field (`name`, required ⇒ at least
+ * one step), the roles with their rules, the dialog's user source, the saved
+ * step field names (`stepKeys`, the engine defaults pre-filled) and the
+ * dialog labels (exported only when changed).
+ */
+export type WorkflowEditorConfig = {
+  name: string
+  label: string
+  helperText: string
+  isRequired: boolean
+  errorMessage: string
+  roles: WorkflowRoleConfig[]
+  users: WorkflowUsersConfig
+  stepKeys: { role: string; sequence: string; incharge: string; cc: string }
+  minInchargeUsers: number | ''
+  allowDuplicateUsers: boolean
+  labels: { add: string; dialogTitle: string; editTitle: string; roleField: string; incharge: string; cc: string; userPlaceholder: string }
+  disabled: boolean
+}
+
+export const DEFAULT_WORKFLOW_LABELS: WorkflowEditorConfig['labels'] = {
+  add: 'Add Line Approval',
+  dialogTitle: 'Add Line Approval',
+  editTitle: 'Edit Line Approval',
+  roleField: 'Action Type',
+  incharge: 'Incharge Person',
+  cc: 'CC Person',
+  userPlaceholder: 'Add User',
+}
+
+/** The user's e-memo roles — Inputter once and first, then approvers and acknowledgers. */
+export function createDefaultWorkflowEditorConfig(name: string): WorkflowEditorConfig {
+  return {
+    name,
+    label: 'Line Approval',
+    helperText: '',
+    isRequired: true,
+    errorMessage: 'Add at least one step',
+    roles: [
+      { id: 'role-inputter', value: 'inputter', label: 'Inputter', max: 1, position: 'first' },
+      { id: 'role-approver', value: 'approver', label: 'Approver', max: '', position: '' },
+      { id: 'role-acknowledger', value: 'acknowledger', label: 'Acknowledger', max: '', position: '' },
+    ],
+    users: { endpointId: null, paths: 'data', idKey: '', displayKey: '', subtitleKey: '', avatarKey: '', searchKey: '' },
+    stepKeys: { role: 'actionType', sequence: 'sequence', incharge: 'inchargeUsers', cc: 'ccUsers' },
+    minInchargeUsers: '',
+    allowDuplicateUsers: false,
+    labels: { ...DEFAULT_WORKFLOW_LABELS },
+    disabled: false,
+  }
+}
+
 /** One tab header. The tab's content is the child canvas at the same index in
  * the item's `childCanvases` (kept aligned by the store's tab actions). */
 export type TabItemConfig = {
@@ -2006,6 +2074,7 @@ export type GridItemData = {
     | CardConfig
     | HtmlContentConfig
     | ApprovalLineConfig
+    | WorkflowEditorConfig
     | ApprovalLineConfig
     | TabConfig
     | ModalConfig

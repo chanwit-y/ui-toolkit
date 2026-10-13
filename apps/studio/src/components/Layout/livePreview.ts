@@ -44,6 +44,7 @@ const API_PLACEHOLDER_LABEL: Record<string, string> = {
   formlist: 'Form List',
   repeater: 'Repeater',
   approvalline: 'Approval line',
+  workfloweditor: 'Workflow editor',
   autocomplete: 'Autocomplete',
   multiAutocomplete: 'Multi Autocomplete',
 }
@@ -172,6 +173,10 @@ function toPreviewBin(bin: ParsedBin, wiring: LivePreviewWiring): ParsedBin {
   } else if (type === 'datatableeditable' || type === 'formlist') {
     const read = (el?.apiCrud as Record<string, Record<string, unknown>> | undefined)?.read
     const gap = wiringGap(read?.name, wiring)
+    if (gap) return placeholderBin(bin, `[ ${label} "${displayName}" — ${gap} ]`)
+  } else if (type === 'workfloweditor') {
+    const api = (el?.users as { api?: Record<string, unknown> } | undefined)?.api
+    const gap = wiringGap(api?.name, wiring)
     if (gap) return placeholderBin(bin, `[ ${label} "${displayName}" — ${gap} ]`)
   } else if ((type === 'repeater' || type === 'approvalline') && el !== undefined && 'api' in el) {
     // Only an endpoint-sourced repeater fetches; an `items` one reads its parent item.

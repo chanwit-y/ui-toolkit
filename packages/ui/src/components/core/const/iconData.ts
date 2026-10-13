@@ -35,6 +35,7 @@ export const IconData = {
 	download: i.Download,
 	upload: i.Upload,
 	save: i.Save,
+	gitBranch: i.GitBranch,
 	copy: i.Copy,
 	clipboard: i.Clipboard,
 	calendar: i.Calendar,

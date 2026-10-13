@@ -27,6 +27,7 @@ export type ButtonBaseProps = {
 	variant?: ButtonVariant;
 	color?: ThemeProps["accentColor"];
 	onClick?: React.MouseEventHandler<HTMLButtonElement>;
+	disabled?: boolean;
 };
 
 /**
@@ -35,11 +36,12 @@ export type ButtonBaseProps = {
  * `Button` renders through this, so the two can't drift.
  */
 const ButtonBase = forwardRef<ElementRef<typeof RadixButton>, ButtonBaseProps>(
-	({ label, icon, variant = "contained", color, onClick }, ref) => {
+	({ label, icon, variant = "contained", color, onClick, disabled }, ref) => {
 		const theme = useTheme();
 		return (
 			<RadixButton
 				ref={ref}
+				disabled={disabled}
 				variant={RADIX_VARIANTS[variant] ?? "solid"}
 				className={variant === "text" ? "cursor-pointer !m-0" : "cursor-pointer"}
 				color={

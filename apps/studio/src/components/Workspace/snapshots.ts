@@ -65,6 +65,10 @@ import {
   LOAD_APPROVAL_ID,
   approvalLineDemoSeedItems,
   approvalSeedLoads,
+  WORKFLOW_PAGE_ID,
+  LOAD_WORKFLOW_ID,
+  workflowDemoSeedItems,
+  workflowSeedLoads,
 } from '../seed/country'
 import { builtinTemplates } from '../seed/templates'
 import { useThemeStore } from '../Theme/themeStore'
@@ -572,6 +576,35 @@ export function approvalLineDemoPage(): PageDef {
   }
 }
 
+/** The "Workflow editor" example page (the example app's `/workflow/:id`). */
+export function workflowDemoPage(): PageDef {
+  return {
+    id: WORKFLOW_PAGE_ID,
+    key: 'workflow',
+    name: 'Workflow editor',
+    path: '/workflow/:id',
+    grid: {
+      items: workflowDemoSeedItems(),
+      containerSettings: defaultContainerSettings,
+      fieldSeq: 0,
+    },
+    parentId: 'seed-page-countries',
+    crumb: { type: 'state', key: LOAD_WORKFLOW_ID, path: 'name' },
+    loads: workflowSeedLoads(),
+  }
+}
+
+/** Its sidebar link: the route needs an `:id`, so the link fixes one. */
+export function workflowMenuItem(): MenuItemDef {
+  return {
+    id: crypto.randomUUID(),
+    kind: 'page',
+    label: 'Workflow editor',
+    icon: 'gitBranch',
+    navigate: { pageId: WORKFLOW_PAGE_ID, params: { id: { type: 'value', value: 'wf-1' } }, replace: false },
+  }
+}
+
 /** Its sidebar link: the route needs an `:id`, so the link fixes one. */
 export function approvalLineMenuItem(): MenuItemDef {
   return {
@@ -684,6 +717,7 @@ export function countryProjectSnapshot(library: LibraryData): ProjectSnapshot {
       uploadDemoPage(),
       pageDataDemoPage(),
       approvalLineDemoPage(),
+      workflowDemoPage(),
   ]
   // Every data table carries its two canvases (edit modal + filter form).
   for (const page of pages) ensureDataTableCanvases(page.grid.items)
@@ -695,6 +729,7 @@ export function countryProjectSnapshot(library: LibraryData): ProjectSnapshot {
   // A routed page has no default link (it needs its :code) — add one with a fixed code.
   menu.push(pageDataMenuItem())
   menu.push(approvalLineMenuItem())
+  menu.push(workflowMenuItem())
   return {
     pages,
     menu,

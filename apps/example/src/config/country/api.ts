@@ -199,6 +199,32 @@ export const api = {
     parameter: "approvalParam",
     withOptions: false,
   },
+  // Workflow editor demo.
+  users: {
+    url: "/collection/users",
+    description: "List users (the dialog's pickers)",
+    methods: "GET" as const,
+    response: "userRes",
+    query: "userSearchQuery",
+    withOptions: false,
+  },
+  workflowDetail: {
+    url: "/collection/workflows/:id",
+    description: "Get one workflow config with its steps",
+    methods: "GET" as const,
+    response: "workflowRes",
+    parameter: "workflowParam",
+    withOptions: false,
+  },
+  updateWorkflow: {
+    url: "/collection/workflows/:id",
+    description: "Save a workflow config",
+    methods: "PATCH" as const,
+    response: "workflowRes",
+    parameter: "workflowParam",
+    body: "workflowBody",
+    withOptions: false,
+  },
   // Flat country rows with their region (Table layout demo).
   regionCountries: {
     url: "/collection/region-countries",

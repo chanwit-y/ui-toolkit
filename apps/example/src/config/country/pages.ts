@@ -20,6 +20,7 @@ import { containerSwitchDemo } from "./switchDemo";
 import { containerUploadDemo } from "./uploadDemo";
 import { containerPageDataDemo, pageDataLoads } from "./pageDataDemo";
 import { approvalLineLoads, containerApprovalLineDemo } from "./approvalLineDemo";
+import { containerWorkflowDemo, workflowLoads } from "./workflowDemo";
 
 /**
  * Router demo: the pages the example app serves, keyed by name. Navigating
@@ -191,6 +192,15 @@ export const pages = {
     title: { type: "state", key: "approval", path: "title" },
     loads: approvalLineLoads,
     containers: containerApprovalLineDemo,
+  },
+  workflowDemo: {
+    // The `workfloweditor` element as a field of a form over a loaded
+    // workflow config, saved with Save (see ./workflowDemo.ts).
+    path: "/workflow/:id",
+    parent: "countryList",
+    title: { type: "state", key: "workflow", path: "name" },
+    loads: workflowLoads,
+    containers: containerWorkflowDemo,
   },
 } satisfies TPageMaster;
 

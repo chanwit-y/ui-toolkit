@@ -12,6 +12,7 @@ import {
   DEFAULT_PAGE_SIZE,
   DEFAULT_PAGE_SIZE_OPTIONS,
   DEFAULT_APPROVAL_STATUSES,
+  DEFAULT_WORKFLOW_LABELS,
   uploadAccept,
 } from './types'
 import type {
@@ -49,6 +50,7 @@ import type {
   HtmlContentConfig,
   ApprovalLineConfig,
   ApprovalLineKeyConfig,
+  WorkflowEditorConfig,
   PopoverConfig,
   RadioConfig,
   SelectFieldConfig,
@@ -1276,6 +1278,47 @@ function approvalLineElement(
   }
 }
 
+/**
+ * `workfloweditor` → engine `WorkflowEditorElement`: the field, the roles
+ * (`max` / `position` only when set), the user list as a `users.api` block
+ * (endpoint name + `paths`) with its keys, `stepKeys` always (the backend's
+ * names), labels only when changed, rules off their defaults.
+ */
+function workflowEditorElement(c: WorkflowEditorConfig, resolveEndpoint: ResolveEndpoint): Record<string, unknown> {
+  const paths = c.users.paths.split('.').map((s) => s.trim()).filter(Boolean)
+  const labels = Object.fromEntries(
+    (Object.keys(DEFAULT_WORKFLOW_LABELS) as (keyof typeof DEFAULT_WORKFLOW_LABELS)[])
+      .filter((k) => c.labels[k] !== DEFAULT_WORKFLOW_LABELS[k] && c.labels[k].trim())
+      .map((k) => [k, c.labels[k]]),
+  )
+  return {
+    name: c.name,
+    dataType: 'array',
+    isRequired: c.isRequired,
+    errorMessage: c.errorMessage,
+    ...omitEmpty({ label: c.label, helperText: c.helperText }),
+    roles: c.roles.map((r) => ({
+      value: r.value,
+      label: r.label,
+      ...(r.max !== '' ? { max: r.max } : {}),
+      ...(r.position ? { position: r.position } : {}),
+    })),
+    users: {
+      api: { name: resolveEndpoint(c.users.endpointId) ?? '', ...(paths.length ? { paths } : {}) },
+      keys: {
+        id: c.users.idKey,
+        display: c.users.displayKey,
+        ...omitEmpty({ subtitle: c.users.subtitleKey, avatar: c.users.avatarKey, search: c.users.searchKey }),
+      },
+    },
+    stepKeys: c.stepKeys,
+    ...(c.minInchargeUsers !== '' && c.minInchargeUsers !== 1 ? { minInchargeUsers: c.minInchargeUsers } : {}),
+    ...(c.allowDuplicateUsers ? { allowDuplicateUsers: true } : {}),
+    ...(Object.keys(labels).length ? { labels } : {}),
+    ...(c.disabled ? { disabled: true } : {}),
+  }
+}
+
 /** `divider` → engine `DividerElement`. `variant` always emits; `spacing` drops
  * when unset (component default 8px). */
 function dividerElement(c: DividerConfig): Record<string, unknown> {
@@ -1649,6 +1692,8 @@ function buildElement(
       return item.config ? dateElement(item.config as DateConfig) : undefined
     case 'uploadimage':
       return item.config ? uploadImageElement(item.config as UploadImageConfig) : undefined
+    case 'workfloweditor':
+      return item.config ? workflowEditorElement(item.config as WorkflowEditorConfig, resolveEndpoint) : undefined
     case 'uploadfile':
       return item.config ? uploadFileElement(item.config as UploadFileConfig) : undefined
     case 'datatable':

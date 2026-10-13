@@ -16,6 +16,7 @@
 /* HTML content blocks (the `html` element) — same portable-partial treatment. */
 @import "./styles/htmlContent.css";
 @import "./styles/approvalLine.css";
+@import "./styles/workflowEditor.css";
 
 @tailwind base;
 @tailwind components;

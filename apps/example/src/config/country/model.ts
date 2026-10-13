@@ -270,4 +270,44 @@ export const model: TModelMaster = {
   approvalParam: {
     id: "string",
   },
+  // Workflow editor demo.
+  userRes: {
+    data: { type: "array", collection: { PersonId: "string", FullNameEN: "string", JobTitle: "string", Email: "string" } },
+    status: "number",
+    success: "boolean",
+    message: "string",
+  },
+  userSearchQuery: { search: "string" },
+  workflowRes: {
+    data: {
+      type: "object",
+      collection: {
+        _id: "string",
+        name: "string",
+        status: "string",
+        businessUnit: "string",
+        site: "string",
+        steps: {
+          type: "array",
+          collection: {
+            actionType: "string",
+            sequence: "number",
+            inchargeUsers: { type: "array", collection: { PersonId: "string", FullNameEN: "string", JobTitle: "string" } },
+            ccUsers: { type: "array", collection: { PersonId: "string", FullNameEN: "string", JobTitle: "string" } },
+          },
+        },
+      },
+    },
+    status: "number",
+    success: "boolean",
+    message: "string",
+  },
+  workflowBody: {
+    name: "string",
+    status: "string",
+    businessUnit: "string",
+    site: "string",
+    steps: "any",
+  },
+  workflowParam: { id: "string" },
 };

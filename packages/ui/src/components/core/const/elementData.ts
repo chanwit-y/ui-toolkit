@@ -25,6 +25,7 @@ import { Paper } from "../paper";
 import { Card } from "../card";
 import { HtmlContent } from "../htmlContent";
 import { ApprovalLine } from "../approvalLine";
+import { WorkflowEditor } from "../workflowEditor";
 import { Popover } from "../popover";
 import { Drawer } from "../drawer";
 import { Divider } from "../divider";
@@ -67,6 +68,7 @@ export const ElementData = {
 	card: Card,
 	html: HtmlContent,
 	approvalline: ApprovalLine,
+	workfloweditor: WorkflowEditor,
 	popover: Popover,
 	drawer: Drawer,
 	divider: Divider,

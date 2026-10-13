@@ -17,6 +17,10 @@ import {
   createDefaultTypographyConfig,
   createDefaultApprovalLineConfig,
   type ApprovalLineConfig,
+  createDefaultWorkflowEditorConfig,
+  type WorkflowEditorConfig,
+  createDefaultRadioConfig,
+  createDefaultHiddenConfig,
   createDefaultAvatarConfig,
   createDefaultCardConfig,
   createDefaultCardActionConfig,
@@ -178,6 +182,7 @@ export function countrySeedModels(): ModelDef[] {
     ...tableLayoutSeedModels(),
     ...pageDataSeedModels(),
     ...approvalSeedModels(),
+    ...workflowSeedModels(),
   ]
 }
 
@@ -1540,6 +1545,7 @@ export function countrySeedEndpoints(): EndpointDef[] {
     ...tableLayoutSeedEndpoints(),
     ...pageDataSeedEndpoints(),
     ...approvalSeedEndpoints(),
+    ...workflowSeedEndpoints(),
   ]
 }
 
@@ -3787,5 +3793,248 @@ export function approvalLineDemoSeedItems(): GridItemData[] {
     line('seed-item-approval-lg', 'alLg', { size: 'lg', showJobTitle: true }, { xs: 4, sm: 6, md: 4, lg: 8 }),
     ...heading('seed-item-approval-narrow', 'Narrow cell', 'A horizontal line never wraps: below the step minimum it scrolls; this one flips vertical below md.'),
     line('seed-item-approval-narrow-line', 'alNarrow', { stepMinWidth: 120, verticalBelow: 'md' }, { xs: 4, sm: 6, md: 4, lg: 5 }),
+  ]
+}
+
+/* -------------------------------------------------------------- workflows */
+
+export const USER_RES_MODEL_ID = 'seed-model-user-res'
+export const USER_SEARCH_QUERY_MODEL_ID = 'seed-model-user-search-query'
+export const WORKFLOW_RES_MODEL_ID = 'seed-model-workflow-res'
+export const WORKFLOW_BODY_MODEL_ID = 'seed-model-workflow-body'
+export const WORKFLOW_PARAM_MODEL_ID = 'seed-model-workflow-param'
+export const USERS_ENDPOINT_ID = 'seed-endpoint-users'
+export const WORKFLOW_DETAIL_ENDPOINT_ID = 'seed-endpoint-workflow-detail'
+export const UPDATE_WORKFLOW_ENDPOINT_ID = 'seed-endpoint-update-workflow'
+export const WORKFLOW_PAGE_ID = 'seed-page-workflow'
+export const LOAD_WORKFLOW_ID = 'load-seed-workflow'
+
+/** The Workflow editor demo's models: the user rows, one workflow config, its save body. */
+export function workflowSeedModels(): ModelDef[] {
+  const userFields = () => [field('PersonId'), field('FullNameEN'), field('JobTitle'), field('Email')]
+  return [
+    {
+      id: USER_RES_MODEL_ID,
+      name: 'userRes',
+      fields: [field('data', 'array', userFields(), 'object'), field('status', 'number'), field('success', 'boolean'), field('message')],
+    },
+    { id: USER_SEARCH_QUERY_MODEL_ID, name: 'userSearchQuery', fields: [field('search')] },
+    {
+      id: WORKFLOW_RES_MODEL_ID,
+      name: 'workflowRes',
+      fields: [
+        field('data', 'object', [
+          field('_id'),
+          field('name'),
+          field('status'),
+          field('businessUnit'),
+          field('site'),
+          field(
+            'steps',
+            'array',
+            [
+              field('actionType'),
+              field('sequence', 'number'),
+              field('inchargeUsers', 'array', userFields(), 'object'),
+              field('ccUsers', 'array', userFields(), 'object'),
+            ],
+            'object',
+          ),
+        ]),
+        field('status', 'number'),
+        field('success', 'boolean'),
+        field('message'),
+      ],
+    },
+    {
+      id: WORKFLOW_BODY_MODEL_ID,
+      name: 'workflowBody',
+      fields: [field('name'), field('status'), field('businessUnit'), field('site'), field('steps', 'any')],
+    },
+    { id: WORKFLOW_PARAM_MODEL_ID, name: 'workflowParam', fields: [field('id')] },
+  ]
+}
+
+/** The mock API's `/collection/users` and `/collection/workflows/:id` (GET + PATCH). */
+export function workflowSeedEndpoints(): EndpointDef[] {
+  return [
+    {
+      withOptions: false,
+      query: USER_SEARCH_QUERY_MODEL_ID,
+      id: USERS_ENDPOINT_ID,
+      name: 'users',
+      description: "List users (the dialog's pickers)",
+      url: '/collection/users',
+      method: 'GET',
+      response: USER_RES_MODEL_ID,
+      parameter: null,
+      body: null,
+    },
+    {
+      withOptions: false,
+      query: null,
+      id: WORKFLOW_DETAIL_ENDPOINT_ID,
+      name: 'workflowDetail',
+      description: 'Get one workflow config with its steps',
+      url: '/collection/workflows/:id',
+      method: 'GET',
+      response: WORKFLOW_RES_MODEL_ID,
+      parameter: WORKFLOW_PARAM_MODEL_ID,
+      body: null,
+    },
+    {
+      withOptions: false,
+      query: null,
+      id: UPDATE_WORKFLOW_ENDPOINT_ID,
+      name: 'updateWorkflow',
+      description: 'Save a workflow config',
+      url: '/collection/workflows/:id',
+      method: 'PATCH',
+      response: WORKFLOW_RES_MODEL_ID,
+      parameter: WORKFLOW_PARAM_MODEL_ID,
+      body: WORKFLOW_BODY_MODEL_ID,
+    },
+  ]
+}
+
+/** The Workflow page's load: the config named by the route's `:id`. */
+export function workflowSeedLoads(): PageLoadDef[] {
+  return [
+    {
+      id: LOAD_WORKFLOW_ID,
+      key: 'workflow',
+      read: { endpointId: WORKFLOW_DETAIL_ENDPOINT_ID, params: { id: { type: 'url', key: 'id', source: 'param' } }, extra: {} },
+      paths: 'data',
+      blocking: true,
+      errorMessage: 'Workflow not found.',
+    },
+  ]
+}
+
+/**
+ * The "Workflow editor" example page (the example app's `/workflow/:id`): a
+ * form over the loaded config — name, status, business unit, site and the
+ * line as a `workfloweditor` field — with a Save button that PATCHes it, and
+ * a read-only copy of the line below.
+ */
+export function workflowDemoSeedItems(): GridItemData[] {
+  const full = { xs: 4, sm: 6, md: 8, lg: 12 }
+  const half = { xs: 4, sm: 6, md: 4, lg: 6 }
+  const state = (path: string) => ({ key: LOAD_WORKFLOW_ID, path, source: 'state' as const })
+  const text = (id: string, t: string, extra: Record<string, unknown> = {}, colSpan = full): GridItemData => ({
+    id,
+    label: 'Typography',
+    type: 'typography',
+    settings: createDefaultItemSettings({ colSpan }),
+    config: { ...createDefaultTypographyConfig(), text: t, variant: 'body2', ...extra },
+  })
+  const heading = (id: string, t: string, caption: string) => [
+    text(`${id}-title`, t, { variant: 'subtitle1', weight: 'medium' }),
+    text(`${id}-caption`, caption, { color: 'gray' }),
+  ]
+  const jump = (id: string, label: string, value: string): GridItemData => ({
+    id,
+    label: 'Button',
+    type: 'button',
+    settings: createDefaultItemSettings({ colSpan: { xs: 2, sm: 3, md: 2, lg: 2 } }),
+    config: {
+      ...createDefaultButtonItemConfig(),
+      label,
+      variant: 'outlined',
+      actions: ['Navigate'],
+      navigate: { pageId: WORKFLOW_PAGE_ID, params: { id: { type: 'value', value } }, replace: false },
+    },
+  })
+  const editor = (id: string, name: string, extra: Partial<WorkflowEditorConfig> = {}): GridItemData => ({
+    id,
+    label: 'Workflow editor',
+    type: 'workfloweditor',
+    settings: createDefaultItemSettings({ colSpan: full, justifySelf: { xs: 'stretch', sm: 'stretch', md: 'stretch', lg: 'stretch' } }),
+    config: {
+      ...createDefaultWorkflowEditorConfig(name),
+      users: { endpointId: USERS_ENDPOINT_ID, paths: 'data', idKey: 'PersonId', displayKey: 'FullNameEN', subtitleKey: 'JobTitle', avatarKey: '', searchKey: 'FullNameEN' },
+      ...extra,
+    },
+    initialValue: state('steps'),
+  })
+  return [
+    text('seed-item-workflow-h', 'Workflow editor', { variant: 'h3' }),
+    text(
+      'seed-item-workflow-intro',
+      'One approval line as a form field: cards for the steps, a + on every connector to insert one, Add Line Approval at the end; click a card to edit or remove it. Nothing is sent until Save, which PATCHes the whole form. Select the line, then Props: roles and their rules, the users endpoint and keys, the saved step fields.',
+      { color: 'gray' },
+    ),
+    jump('seed-item-workflow-jump-1', 'Temple II', 'wf-1'),
+    jump('seed-item-workflow-jump-2', 'Dev line', 'wf-2'),
+    jump('seed-item-workflow-jump-3', 'Empty', 'wf-3'),
+    ...heading('seed-item-workflow-form', 'The form', 'Name, status, business unit and site come from the loaded record, and so does the line.'),
+    {
+      id: 'seed-item-workflow-id',
+      label: 'Hidden',
+      type: 'hidden',
+      settings: createDefaultItemSettings({ colSpan: full }),
+      config: createDefaultHiddenConfig('_id'),
+      initialValue: state('_id'),
+    },
+    {
+      id: 'seed-item-workflow-name',
+      label: 'Text Field',
+      type: 'textfield',
+      settings: createDefaultItemSettings({ colSpan: half }),
+      config: { ...createDefaultTextFieldConfig('name'), label: 'Name', isRequired: true, errorMessage: 'Name is required' },
+      initialValue: state('name'),
+    },
+    {
+      id: 'seed-item-workflow-status',
+      label: 'Radio',
+      type: 'radio',
+      settings: createDefaultItemSettings({ colSpan: half }),
+      config: {
+        ...createDefaultRadioConfig('status'),
+        label: 'Status',
+        orientation: 'horizontal',
+        options: [
+          { value: 'active', label: 'Active', disabled: false },
+          { value: 'inactive', label: 'Inactive', disabled: false },
+        ],
+      },
+      initialValue: state('status'),
+    },
+    {
+      id: 'seed-item-workflow-bu',
+      label: 'Text Field',
+      type: 'textfield',
+      settings: createDefaultItemSettings({ colSpan: half }),
+      config: { ...createDefaultTextFieldConfig('businessUnit'), label: 'Group Business Unit' },
+      initialValue: state('businessUnit'),
+    },
+    {
+      id: 'seed-item-workflow-site',
+      label: 'Text Field',
+      type: 'textfield',
+      settings: createDefaultItemSettings({ colSpan: half }),
+      config: { ...createDefaultTextFieldConfig('site'), label: 'Site' },
+      initialValue: state('site'),
+    },
+    editor('seed-item-workflow-editor', 'steps', { label: 'Line Approval 1' }),
+    {
+      id: 'seed-item-workflow-save',
+      label: 'Button',
+      type: 'button',
+      settings: createDefaultItemSettings({ colSpan: { xs: 2, sm: 3, md: 2, lg: 2 }, justifySelf: { xs: 'start', sm: 'start', md: 'start', lg: 'start' } }),
+      config: {
+        ...createDefaultButtonItemConfig(),
+        label: 'Save',
+        icon: 'save',
+        actions: ['StartLoading', 'SubmitFormToPatchAPI', 'StopLoading'],
+        endpointId: UPDATE_WORKFLOW_ENDPOINT_ID,
+        reloadTableItemId: LOAD_WORKFLOW_ID,
+        snackbarSuccessEnabled: true,
+        snackbarSuccessMessage: 'Workflow saved',
+        snackbarErrorException: true,
+      },
+    },
+    ...heading('seed-item-workflow-readonly', 'Read-only', 'The same line with Read-only on: cards and connectors only.'),
+    editor('seed-item-workflow-editor-ro', 'stepsReadOnly', { label: '', isRequired: false, disabled: true }),
   ]
 }
