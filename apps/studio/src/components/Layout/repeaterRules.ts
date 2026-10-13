@@ -23,6 +23,7 @@ const BLOCKED_IN_REPEATER: ReadonlySet<ComponentType> = new Set<ComponentType>([
   'datetimepicker',
   'uploadimage',
   'uploadfile',
+  'workfloweditor',
   'hidden',
 ])
 

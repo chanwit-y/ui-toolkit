@@ -118,9 +118,9 @@ export function toMenuTs(menu: MenuItemDef[], pages: Pick<PageDef, 'id' | 'key'>
 /** The App.tsx wiring shown in HANDOFF.md. */
 export function appWiringSnippet(): string {
   return [
-    'import { AppShell, DataProvider, HttpClientFactory, PageRouter, ThemeProvider, ThemeToggle } from "@gummy-ui/ui";',
+    'import { AppShell, DataProvider, GlobalLoads, HttpClientFactory, PageRouter, ThemeProvider, ThemeToggle } from "@gummy-ui/ui";',
     'import { BrowserRouter } from "react-router-dom";',
-    'import { model } from "./model"; import { api } from "./api"; import { pages } from "./pages"; import { menu, shell } from "./menu"; import { theme, components } from "./theme";',
+    'import { model } from "./model"; import { api } from "./api"; import { globalLoads, pages } from "./pages"; import { menu, shell } from "./menu"; import { theme, components } from "./theme";',
     '',
     'const http = new HttpClientFactory(import.meta.env.VITE_API_URL ?? "", async () => "", "1.0.0", 30000);',
     '',
@@ -129,6 +129,7 @@ export function appWiringSnippet(): string {
     '    <BrowserRouter>',
     '      <DataProvider>',
     '        <ThemeProvider theme={theme} components={components}>',
+    '          <GlobalLoads http={http} model={model} api={api} loads={globalLoads} />',
     '          <AppShell pages={pages} menu={menu} {...shell} header={<ThemeToggle />}>',
     '            <PageRouter http={http} model={model} api={api} pages={pages} />',
     '          </AppShell>',

@@ -11,6 +11,8 @@ import {
   CircleDot,
   Clapperboard,
   Code,
+  Workflow,
+  GitBranch,
   CreditCard,
   EyeOff,
   FileSpreadsheet,
@@ -78,11 +80,13 @@ export type ComponentType =
   | 'avatar'
   | 'uploadimage'
   | 'uploadfile'
+  | 'workfloweditor'
   | 'container'
   | 'tab'
   | 'paper'
   | 'card'
   | 'html'
+  | 'approvalline'
   | 'popover'
   | 'divider'
   | 'empty'
@@ -135,6 +139,7 @@ export const COMPONENT_GROUPS: ComponentGroup[] = [
     items: [
       { type: 'uploadimage', label: 'Upload Image', icon: ImagePlus },
       { type: 'uploadfile', label: 'Upload File', icon: Upload },
+      { type: 'workfloweditor', label: 'Workflow editor', icon: GitBranch },
     ],
   },
   {
@@ -187,6 +192,7 @@ export const COMPONENT_GROUPS: ComponentGroup[] = [
       { type: 'avatar', label: 'Avatar', icon: User },
       { type: 'divider', label: 'Divider', icon: SeparatorHorizontal },
       { type: 'html', label: 'HTML', icon: Code },
+      { type: 'approvalline', label: 'Approval line', icon: Workflow },
     ],
   },
   {

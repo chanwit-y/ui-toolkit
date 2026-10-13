@@ -1,31 +1,39 @@
 import type { ApiMaster, TApiMaster } from "../../api/APIMaster";
 import type { TModelMaster } from "../../model/master";
-import type { Container, ContainerLoad, DataValue, APIFunction, Bin, TElement, ThemeContextType } from "../@types";
+import type { Container, DataValue, APIFunction, Bin, PageLoad, TElement, ThemeContextType } from "../@types";
 import { Form } from "../form";
 import { Schema } from "./schema";
 import { Provider } from "./context";
 import { ElementContext } from "./elementBuilder";
 import { useMemo, useEffect, useId, useReducer } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
 import { get } from "lodash";
 import { ConditionExpression } from "./expression";
 import { useTheme } from "../context";
 import { useData } from "../context/DataProvider";
 import { getStateStore } from "./stateStore";
 import { engineDebug } from "./engineDebug";
-import { resolveDataValues, drillPaths } from "./dataValue";
+import { StateLoader } from "./stateLoader";
+import { conditionStateKeys } from "./expression";
+import { useStateVersion } from "./readApi";
 import { getBinGridItemStyle, getContainerGridStyle } from "./containerGrid";
 import { getContainerSurface } from "./containerSurface";
 
 type StateBinding = { name: string; key: string; path?: string };
 
-/** Collect read-bindings (`element.value` of type "state") across containers. */
-function collectStateBindings(containers: Container[]): StateBinding[] {
-	const out: StateBinding[] = [];
+/**
+ * Collect read-bindings (`element.value` of type "state") across containers,
+ * including the bins drawn on the same form: a tab's panels and a card's
+ * content / collapse (the same walk as `schema.ts`).
+ */
+function collectStateBindings(containers: Container[], out: StateBinding[] = []): StateBinding[] {
 	for (const c of containers) {
 		for (const b of c.bins) {
-			const el = b.element as { name?: string; value?: DataValue } | undefined;
+			if (b.type === "formlist" || b.type === "repeater") continue;
+			const el = b.element as
+				| { name?: string; value?: DataValue; tabs?: { container: Container }[]; content?: Container; collapse?: Container }
+				| undefined;
+			if (b.type === "tab" && el?.tabs) collectStateBindings(el.tabs.map((t) => t.container), out);
+			if (b.type === "card") collectStateBindings([el?.content, el?.collapse].filter((x): x is Container => !!x), out);
 			const v = el?.value;
 			if (el?.name && v && v.type === "state") {
 				out.push({ name: el.name, key: v.key, path: v.path });
@@ -68,58 +76,6 @@ function useStateDefaults(bindings: StateBinding[]): Record<string, any> {
 	);
 }
 
-type ContainerLoaderProps = {
-	load: ContainerLoad;
-	apis: ApiMaster<TModelMaster, TApiMaster<TModelMaster>>;
-};
-
-/**
- * Renders nothing. Fires `load.api` (params/query/body resolved from the URL via
- * react-router) through the typed caller, drills `load.api.paths`, and writes
- * the result into the `load.key` global-state slice. Refetches when the resolved
- * URL params change (react-query key) and clears the slice on unmount.
- */
-const ContainerLoader = ({ load, apis }: ContainerLoaderProps) => {
-	const params = useParams();
-	const [searchParams] = useSearchParams();
-	const api = apis.api[load.api.name] as APIFunction | undefined;
-
-	// Positional args must match the built caller's order (query, param, body),
-	// skipping the segments the endpoint doesn't declare. See ApiFactory.
-	const args = useMemo(() => {
-		const scope = { params, searchParams };
-		const list: any[] = [];
-		if (load.api.query) list.push(resolveDataValues(load.api.query, scope));
-		if (load.api.params) list.push(resolveDataValues(load.api.params, scope));
-		if (load.api.body) list.push(resolveDataValues(load.api.body, scope));
-		return list;
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [load, JSON.stringify(params), searchParams.toString()]);
-
-	const { data } = useQuery({
-		queryKey: [`state-load-${load.key}`, args],
-		queryFn: async () => {
-			if (!api) return undefined;
-			const res = await (api as (...a: any[]) => Promise<unknown>)(...args);
-			return drillPaths(res, load.api.paths);
-		},
-		enabled: !!api,
-	});
-
-	useEffect(() => {
-		getStateStore(load.key).getState().setData(data);
-	}, [load.key, data]);
-
-	useEffect(
-		() => () => {
-			getStateStore(load.key).getState().clear();
-		},
-		[load.key]
-	);
-
-	return null;
-};
-
 type ContainerGridProps = {
 	container: Container;
 	builder: ContainerBuilder<TModelMaster, TApiMaster<TModelMaster>>;
@@ -137,6 +93,9 @@ type ContainerGridProps = {
  * and by components that host a container per row (FormList).
  */
 export function ContainerGrid({ container: c, builder, form, theme, ctx }: ContainerGridProps) {
+	// Conditions reading a state slice (`source: "state"`) re-evaluate when it changes.
+	const condKeys = useMemo(() => conditionStateKeys(c.bins.map((b) => b.condition)), [c.bins]);
+	useStateVersion(condKeys);
 	return (
 		<div className="grid grid-cols-12" style={getContainerGridStyle(c)}>
 			{c.bins.map((b, binIndex) => {
@@ -237,8 +196,15 @@ const ContainerRenderer = ({ builder, isRoot, withAuth }: ContainerRendererProps
 
 			return (
 				<Provider isRoot={isRoot} withAuth={withAuth}>
+					{isRoot && builder.loads.map((l) => (
+							<StateLoader
+								key={`page-load-${l.key}`}
+								load={l}
+								apis={builder.apis as unknown as ApiMaster<TModelMaster, TApiMaster<TModelMaster>>}
+							/>
+						))}
 					{containers.filter((c) => c.load).map((c) => (
-							<ContainerLoader
+							<StateLoader
 								key={`${c.id}-load`}
 								load={c.load!}
 								apis={builder.apis as unknown as ApiMaster<TModelMaster, TApiMaster<TModelMaster>>}
@@ -262,7 +228,16 @@ const ContainerRenderer = ({ builder, isRoot, withAuth }: ContainerRendererProps
 
 export class ContainerBuilder<M extends TModelMaster, A extends TApiMaster<M>> {
 
-	constructor(private _containers: Container[], private _apis: ApiMaster<M, A>) { }
+	constructor(
+		private _containers: Container[],
+		private _apis: ApiMaster<M, A>,
+		/** Page-level loads, mounted by the root renderer only (`draw(true)`). */
+		private _loads: PageLoad[] = [],
+	) { }
+
+	public get loads() {
+		return this._loads;
+	}
 
 	private _schema() {
 		const schema = new Schema(this._containers);

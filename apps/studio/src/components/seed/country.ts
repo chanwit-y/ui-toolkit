@@ -15,6 +15,12 @@ import {
   createDefaultItemSettings,
   createDefaultRepeaterConfig,
   createDefaultTypographyConfig,
+  createDefaultApprovalLineConfig,
+  type ApprovalLineConfig,
+  createDefaultWorkflowEditorConfig,
+  type WorkflowEditorConfig,
+  createDefaultRadioConfig,
+  createDefaultHiddenConfig,
   createDefaultAvatarConfig,
   createDefaultCardConfig,
   createDefaultCardActionConfig,
@@ -34,6 +40,7 @@ import {
 import type { ModelDef, ModelField } from '../Model/types'
 import type { EnvVarDef } from '../Env/types'
 import type { StudioThemeConfig } from '../Theme/types'
+import type { PageLoadDef } from '../Workspace/pageLoads'
 
 /**
  * The mock "country" config studio boots with — the same feature the example
@@ -173,6 +180,9 @@ export function countrySeedModels(): ModelDef[] {
     ...repeaterDemoSeedModels(),
     ...serverFilterSeedModels(),
     ...tableLayoutSeedModels(),
+    ...pageDataSeedModels(),
+    ...approvalSeedModels(),
+    ...workflowSeedModels(),
   ]
 }
 
@@ -1533,6 +1543,9 @@ export function countrySeedEndpoints(): EndpointDef[] {
     ...repeaterDemoSeedEndpoints(),
     ...serverFilterSeedEndpoints(),
     ...tableLayoutSeedEndpoints(),
+    ...pageDataSeedEndpoints(),
+    ...approvalSeedEndpoints(),
+    ...workflowSeedEndpoints(),
   ]
 }
 
@@ -3328,5 +3341,700 @@ export function switchDemoSeedItems(): GridItemData[] {
         snackbarSuccessMessage: 'Saved — the terms are accepted',
       },
     },
+  ]
+}
+
+/* ------------------------------------------------------------ page data */
+
+export const REGION_DETAIL_RES_MODEL_ID = 'seed-model-region-detail-res'
+export const REGION_BY_COUNTRY_PARAMS_MODEL_ID = 'seed-model-region-by-country-params'
+export const REGION_BY_COUNTRY_ENDPOINT_ID = 'seed-endpoint-region-by-country'
+export const PAGE_DATA_PAGE_ID = 'seed-page-page-data'
+export const LOAD_COUNTRY_ID = 'load-seed-country'
+export const LOAD_REGION_ID = 'load-seed-region'
+export const LOAD_REGION_COUNTRIES_ID = 'load-seed-region-countries'
+export const LOAD_LOOKUPS_ID = 'load-seed-lookups'
+
+/** The Page data demo's models: one region (no country list) and its `:code` param. */
+export function pageDataSeedModels(): ModelDef[] {
+  return [
+    {
+      id: REGION_DETAIL_RES_MODEL_ID,
+      name: 'regionDetailRes',
+      fields: [
+        field('data', 'object', [
+          field('_id'),
+          field('name'),
+          field('description'),
+          field('about'),
+          field('featured', 'boolean'),
+          field('size', 'number'),
+        ]),
+        field('status', 'number'),
+        field('success', 'boolean'),
+        field('message'),
+      ],
+    },
+    { id: REGION_BY_COUNTRY_PARAMS_MODEL_ID, name: 'regionByCountryParams', fields: [field('code')] },
+  ]
+}
+
+/** The mock API's `GET /collection/regions/by-country/:code` — the chained load. */
+export function pageDataSeedEndpoints(): EndpointDef[] {
+  return [
+    {
+      withOptions: false,
+      query: null,
+      id: REGION_BY_COUNTRY_ENDPOINT_ID,
+      name: 'regionByCountry',
+      description: 'Get the region of one country (`:code` = country code or id)',
+      url: '/collection/regions/by-country/:code',
+      method: 'GET',
+      response: REGION_DETAIL_RES_MODEL_ID,
+      parameter: REGION_BY_COUNTRY_PARAMS_MODEL_ID,
+      body: null,
+    },
+  ]
+}
+
+const seedLoad = (
+  id: string,
+  key: string,
+  endpointId: string,
+  params: PageLoadDef['read']['params'] = {},
+  extra: Partial<PageLoadDef> = {},
+): PageLoadDef => ({
+  id,
+  key,
+  read: { endpointId, params, extra: {} },
+  paths: 'data',
+  blocking: false,
+  errorMessage: '',
+  ...extra,
+})
+
+/**
+ * The Page data demo's page loads (the example app's `/page-data/:code`):
+ * `country` from the URL, `region` chained off it, `regionCountries` two deep.
+ */
+export function pageDataSeedLoads(): PageLoadDef[] {
+  return [
+    seedLoad(LOAD_COUNTRY_ID, 'country', COUNTRY_DETAIL_ENDPOINT_ID, { id: { type: 'url', key: 'code', source: 'param' } }, {
+      blocking: true,
+      errorMessage: 'Country not found.',
+    }),
+    seedLoad(LOAD_REGION_ID, 'region', REGION_BY_COUNTRY_ENDPOINT_ID, {
+      code: { type: 'state', key: LOAD_COUNTRY_ID, path: 'code' },
+    }),
+    seedLoad(LOAD_REGION_COUNTRIES_ID, 'regionCountries', REGION_COUNTRIES_PAGED_ENDPOINT_ID, {
+      region: { type: 'state', key: LOAD_REGION_ID, path: '_id' },
+    }),
+  ]
+}
+
+/** The seeded project's global loads: the regions list, fetched once for the whole app. */
+export function seedGlobalLoads(): PageLoadDef[] {
+  return [seedLoad(LOAD_LOOKUPS_ID, 'lookups', REGIONS_ENDPOINT_ID)]
+}
+
+/**
+ * The "Page data" example page: three page loads + the global `lookups`,
+ * bound by `$status` lines, a card, a table's rows, a select's options, a
+ * field's initial value and Show when conditions; Reload buttons refetch a
+ * load by its key.
+ */
+export function pageDataDemoSeedItems(): GridItemData[] {
+  const full = { xs: 4, sm: 6, md: 8, lg: 12 }
+  const half = { xs: 4, sm: 6, md: 4, lg: 6 }
+  const state = (key: string, path = '') => ({ key, path, source: 'state' as const })
+  const text = (id: string, t: string, extra: Record<string, unknown> = {}, colSpan = full): GridItemData => ({
+    id,
+    label: 'Typography',
+    type: 'typography',
+    settings: createDefaultItemSettings({ colSpan }),
+    config: { ...createDefaultTypographyConfig(), text: t, variant: 'body2', ...extra },
+  })
+  const heading = (id: string, t: string, caption: string) => [
+    text(`${id}-title`, t, { variant: 'subtitle1', weight: 'medium' }),
+    text(`${id}-caption`, caption, { color: 'gray' }),
+  ]
+  const status = (loadId: string, key: string) => [
+    text(`seed-item-page-data-status-${key}`, key, { weight: 'medium' }, { xs: 2, sm: 3, md: 2, lg: 3 }),
+    text(`seed-item-page-data-status-${key}-value`, 'idle', { color: 'gray', binding: state(loadId, '$status') }, { xs: 2, sm: 3, md: 2, lg: 3 }),
+  ]
+  const found = { loadId: LOAD_COUNTRY_ID, test: 'compare' as const, path: '$status', op: 'neq' as const, value: 'error' }
+  const reload = (label: string, target: string, variant: 'text' | 'outlined') => ({
+    ...createDefaultButtonItemConfig(),
+    label,
+    icon: 'refresh',
+    variant,
+    actions: ['ReloadDataTable' as const],
+    reloadTableItemId: target,
+  })
+  const column = (accessor: string, header: string): DataTableColumnConfig => ({
+    ...DEFAULT_COLUMN_SIZING,
+    id: `seed-page-data-col-${accessor}`,
+    accessor,
+    header,
+    enableSorting: true,
+    enableColumnFilter: false,
+    align: 'start',
+    useDateFormat: '',
+    pin: '',
+    html: '',
+    sortField: '',
+    lines: '',
+    rowHeader: false,
+    mergeRows: false,
+    mergeColumns: false,
+    group: '',
+  })
+  return [
+    text('seed-item-page-data-h', 'Page data', { variant: 'h3' }),
+    text(
+      'seed-item-page-data-intro',
+      'Loads live in the left pane’s Page data tab: three on this page (country from the URL, region chained off it, regionCountries two deep) plus the global lookups, fetched once for the whole app. Components bind to them with “Page data”.',
+      { color: 'gray' },
+    ),
+    ...heading('seed-item-page-data-status', 'Load status', '$status of each load: idle, held (waiting on a :param or another load), loading, success, error.'),
+    ...status(LOAD_COUNTRY_ID, 'country'),
+    ...status(LOAD_REGION_ID, 'region'),
+    ...status(LOAD_REGION_COUNTRIES_ID, 'regionCountries'),
+    ...status(LOAD_LOOKUPS_ID, 'lookups'),
+    {
+      ...text('seed-item-page-data-not-found', 'Country not found — open another code in the Live Preview’s page bar.', { variant: 'subtitle1', color: 'red' }),
+      dataWhen: { loadId: LOAD_COUNTRY_ID, test: 'failed', path: '', op: 'eq', value: '' },
+    },
+    ...heading('seed-item-page-data-bound', 'Bound display', 'A card whose header and media read the country, with the chained region in its content.'),
+    {
+      id: 'seed-item-page-data-card',
+      label: 'Card',
+      type: 'card',
+      settings: createDefaultItemSettings({ colSpan: { xs: 4, sm: 6, md: 4, lg: 4 } }),
+      dataWhen: found,
+      config: {
+        ...createDefaultCardConfig('pageDataCountry'),
+        variant: 'outlined',
+        header: {
+          ...createDefaultCardConfig('').header,
+          title: 'Loading…',
+          titleBinding: state(LOAD_COUNTRY_ID, 'name'),
+          subheader: '—',
+          subheaderBinding: state(LOAD_COUNTRY_ID, 'code'),
+          avatarEnabled: true,
+          avatar: {
+            ...createDefaultAvatarConfig(''),
+            fallback: '?',
+            srcBinding: state(LOAD_COUNTRY_ID, 'avatar'),
+            fallbackBinding: state(LOAD_COUNTRY_ID, 'code'),
+          },
+        },
+        media: { enabled: true, src: '', srcBinding: state(LOAD_COUNTRY_ID, 'image'), alt: 'Flag', height: 140 },
+        actions: [{ ...reload('Reload country', LOAD_COUNTRY_ID, 'text'), id: 'seed-card-action-reload-country' }],
+        actionsAlign: 'end',
+      },
+      childCanvases: [
+        {
+          ...createChildCanvas(),
+          items: [
+            text('seed-item-page-data-card-region-label', 'Region', { variant: 'caption', color: 'gray' }),
+            text('seed-item-page-data-card-region', 'No region', { variant: 'subtitle2', binding: state(LOAD_REGION_ID, 'name') }),
+            text('seed-item-page-data-card-region-desc', '', { color: 'gray', binding: state(LOAD_REGION_ID, 'description') }),
+          ],
+        },
+        createChildCanvas(),
+      ],
+    },
+    {
+      ...text('seed-item-page-data-about', '', { color: 'gray', binding: state(LOAD_REGION_ID, 'about') }, { xs: 4, sm: 6, md: 4, lg: 8 }),
+      dataWhen: found,
+    },
+    ...heading('seed-item-page-data-rows', 'Rows from a load', 'The table’s rows are the regionCountries load — in-memory paging, sorting and search. A row opens that country here.'),
+    {
+      id: 'seed-item-page-data-table',
+      label: 'Data Table',
+      type: 'datatable',
+      settings: createDefaultItemSettings({ colSpan: full }),
+      config: {
+        ...createDefaultDataTableConfig('dtPageDataRegion'),
+        title: 'Countries in the same region',
+        canEdit: false,
+        canDelete: false,
+        columns: [column('code', 'Code'), column('name', 'Name'), column('updated_by_name', 'Updated By')],
+        rowsBinding: state(LOAD_REGION_COUNTRIES_ID),
+        rowNavigate: { pageId: PAGE_DATA_PAGE_ID, params: { code: { type: 'row', key: 'code' } }, replace: false },
+      },
+    },
+    ...heading('seed-item-page-data-options', 'Options and initial values', 'The select’s options are the global lookups load; the text field starts from the country’s name.'),
+    {
+      id: 'seed-item-page-data-region-select',
+      label: 'Select',
+      type: 'select',
+      settings: createDefaultItemSettings({ colSpan: half }),
+      config: {
+        ...createDefaultSelectFieldConfig('pageDataRegion'),
+        label: 'Region (options from lookups)',
+        idKey: '_id',
+        displayKey: 'name',
+        searchKey: 'name',
+        subtitleKey: 'description',
+        optionsBinding: state(LOAD_LOOKUPS_ID),
+      },
+    },
+    {
+      id: 'seed-item-page-data-name',
+      label: 'Text Field',
+      type: 'textfield',
+      settings: createDefaultItemSettings({ colSpan: half }),
+      config: { ...createDefaultTextFieldConfig('pageDataName'), label: 'Name (initial value from country)' },
+      initialValue: state(LOAD_COUNTRY_ID, 'name'),
+    },
+    {
+      id: 'seed-item-page-data-reload',
+      label: 'Button',
+      type: 'button',
+      settings: createDefaultItemSettings({ colSpan: { xs: 4, sm: 3, md: 3, lg: 3 } }),
+      config: reload('Reload region countries', LOAD_REGION_COUNTRIES_ID, 'outlined'),
+    },
+  ]
+}
+
+/* -------------------------------------------------------------- approvals */
+
+export const APPROVAL_RES_MODEL_ID = 'seed-model-approval-res'
+export const APPROVAL_LIST_RES_MODEL_ID = 'seed-model-approval-list-res'
+export const APPROVAL_PARAM_MODEL_ID = 'seed-model-approval-param'
+export const APPROVALS_ENDPOINT_ID = 'seed-endpoint-approvals'
+export const APPROVAL_DETAIL_ENDPOINT_ID = 'seed-endpoint-approval-detail'
+export const APPROVAL_LINE_PAGE_ID = 'seed-page-approval-line'
+export const LOAD_APPROVAL_ID = 'load-seed-approval'
+
+/** The user object on a reviewer / approver row (`ReviewerUser` / `ApproverUser`). */
+export function approvalUserFields(): ModelField[] {
+  return [field('Email'), field('FirstNameEN'), field('FullNameEN'), field('JobTitle'), field('LastNameEN'), field('PersonId'), field('UserId')]
+}
+
+export const APPROVAL_OWN_ITEM_ID = 'seed-item-approval-own'
+
+/** The Endpoint-mode line of the seeded page: fetches `approvalDetail` itself, requester off the record. */
+export function approvalOwnSeedItem(): GridItemData {
+  return {
+    id: APPROVAL_OWN_ITEM_ID,
+    label: 'Approval line',
+    type: 'approvalline',
+    settings: createDefaultItemSettings({ colSpan: { xs: 4, sm: 6, md: 8, lg: 12 }, justifySelf: { xs: 'stretch', sm: 'stretch', md: 'stretch', lg: 'stretch' } }),
+    config: {
+      ...createDefaultApprovalLineConfig('alOwn'),
+      source: 'endpoint',
+      read: { endpointId: APPROVAL_DETAIL_ENDPOINT_ID, params: { id: { type: 'url', key: 'id', source: 'param' } }, extra: {} },
+      showJobTitle: true,
+    },
+  }
+}
+
+/** The Approval line demo's models: one request with its raw workflow rows, and the list. */
+export function approvalSeedModels(): ModelDef[] {
+  const steps = field(
+    'steps',
+    'array',
+    [
+      field('Id', 'number'),
+      field('Sequence', 'number'),
+      field('Status'),
+      field('Remark'),
+      field('IsRevised', 'boolean'),
+      field('ReviewerUser', 'object', approvalUserFields()),
+      field('ApproverUser', 'object', approvalUserFields()),
+      field('Model', 'object', [field('CreatedAt'), field('UpdatedAt')]),
+    ],
+    'object',
+  )
+  return [
+    {
+      id: APPROVAL_RES_MODEL_ID,
+      name: 'approvalRes',
+      fields: [
+        field('data', 'object', [
+          field('_id'),
+          field('title'),
+          field('status'),
+          field('requester', 'object', [field('FullNameEN'), field('JobTitle'), field('PersonId')]),
+          steps,
+        ]),
+        field('status', 'number'),
+        field('success', 'boolean'),
+        field('message'),
+      ],
+    },
+    {
+      id: APPROVAL_LIST_RES_MODEL_ID,
+      name: 'approvalListRes',
+      fields: [
+        field('data', 'array', [field('_id'), field('title'), field('status'), field('stepCount', 'number')], 'object'),
+        field('status', 'number'),
+        field('success', 'boolean'),
+        field('message'),
+      ],
+    },
+    { id: APPROVAL_PARAM_MODEL_ID, name: 'approvalParam', fields: [field('id')] },
+  ]
+}
+
+/** The mock API's `/collection/approvals[/:id]`. */
+export function approvalSeedEndpoints(): EndpointDef[] {
+  return [
+    {
+      withOptions: false,
+      query: null,
+      id: APPROVALS_ENDPOINT_ID,
+      name: 'approvals',
+      description: 'List approval requests',
+      url: '/collection/approvals',
+      method: 'GET',
+      response: APPROVAL_LIST_RES_MODEL_ID,
+      parameter: null,
+      body: null,
+    },
+    {
+      withOptions: false,
+      query: null,
+      id: APPROVAL_DETAIL_ENDPOINT_ID,
+      name: 'approvalDetail',
+      description: 'Get one approval request with its workflow steps',
+      url: '/collection/approvals/:id',
+      method: 'GET',
+      response: APPROVAL_RES_MODEL_ID,
+      parameter: APPROVAL_PARAM_MODEL_ID,
+      body: null,
+    },
+  ]
+}
+
+/** The Approval line page's load: the request named by the route's `:id`. */
+export function approvalSeedLoads(): PageLoadDef[] {
+  return [
+    {
+      id: LOAD_APPROVAL_ID,
+      key: 'approval',
+      read: { endpointId: APPROVAL_DETAIL_ENDPOINT_ID, params: { id: { type: 'url', key: 'id', source: 'param' } }, extra: {} },
+      paths: 'data',
+      blocking: true,
+      errorMessage: 'Approval request not found.',
+    },
+  ]
+}
+
+/**
+ * The "Approval line" example page (the example app's `/approval-line/:id`):
+ * the `approvalline` tile over the loaded request's `steps` with the default
+ * row mapping (the document system's rows), the requester from the same
+ * record, then the vertical / sizes / narrow variants.
+ */
+export function approvalLineDemoSeedItems(): GridItemData[] {
+  const full = { xs: 4, sm: 6, md: 8, lg: 12 }
+  const state = (path: string) => ({ key: LOAD_APPROVAL_ID, path, source: 'state' as const })
+  const text = (id: string, t: string, extra: Record<string, unknown> = {}, colSpan = full): GridItemData => ({
+    id,
+    label: 'Typography',
+    type: 'typography',
+    settings: createDefaultItemSettings({ colSpan }),
+    config: { ...createDefaultTypographyConfig(), text: t, variant: 'body2', ...extra },
+  })
+  const heading = (id: string, t: string, caption: string) => [
+    text(`${id}-title`, t, { variant: 'subtitle1', weight: 'medium' }),
+    text(`${id}-caption`, caption, { color: 'gray' }),
+  ]
+  const line = (id: string, name: string, extra: Partial<ApprovalLineConfig> = {}, colSpan = full): GridItemData => ({
+    id,
+    label: 'Approval line',
+    type: 'approvalline',
+    settings: createDefaultItemSettings({ colSpan, justifySelf: { xs: 'stretch', sm: 'stretch', md: 'stretch', lg: 'stretch' } }),
+    config: {
+      ...createDefaultApprovalLineConfig(name),
+      items: state('steps'),
+      requesterNameBinding: state('requester.FullNameEN'),
+      requesterJobTitleBinding: state('requester.JobTitle'),
+      ...extra,
+    },
+  })
+  const jump = (id: string, label: string, value: string): GridItemData => ({
+    id,
+    label: 'Button',
+    type: 'button',
+    settings: createDefaultItemSettings({ colSpan: { xs: 2, sm: 3, md: 2, lg: 2 } }),
+    config: {
+      ...createDefaultButtonItemConfig(),
+      label,
+      variant: 'outlined',
+      actions: ['Navigate'],
+      navigate: { pageId: APPROVAL_LINE_PAGE_ID, params: { id: { type: 'value', value } }, replace: false },
+    },
+  })
+  return [
+    text('seed-item-approval-h', 'Approval line', { variant: 'h3' }),
+    text(
+      'seed-item-approval-intro',
+      'An approval workflow tracker over the raw step rows of a document system. Select a line, then Props: the rows come from the page’s approval load, each key is a list of fallback paths (approver rows and the reviewer row differ), role rules label the steps and the status codes map to done / current / pending / rejected / revised / skipped.',
+      { color: 'gray' },
+    ),
+    jump('seed-item-approval-jump-1', 'Pending', 'req-1001'),
+    jump('seed-item-approval-jump-2', 'Rejected', 'req-1002'),
+    jump('seed-item-approval-jump-3', 'Completed', 'req-1003'),
+    jump('seed-item-approval-jump-4', 'Long line', 'req-1004'),
+    jump('seed-item-approval-jump-5', 'Revised', 'req-1005'),
+    ...heading('seed-item-approval-request', 'The request', 'Loaded for the page; the line reads its steps and requester. Hover a step for its details.'),
+    text('seed-item-approval-title', '', { variant: 'subtitle2', binding: state('title') }),
+    line('seed-item-approval-main', 'alMain'),
+    ...heading('seed-item-approval-own', 'Own endpoint', 'This line fetches the request itself (Endpoint source, :id from the URL, record path, steps field) and reads the requester off the same record — no page load needed.'),
+    approvalOwnSeedItem(),
+    ...heading('seed-item-approval-vertical', 'Vertical and sizes', 'The timeline look, then small without numbers and large with job titles.'),
+    line('seed-item-approval-vertical-line', 'alVertical', { orientation: 'vertical', showJobTitle: true }, { xs: 4, sm: 6, md: 4, lg: 4 }),
+    line('seed-item-approval-sm', 'alSm', { size: 'sm', showIndex: false }, { xs: 4, sm: 6, md: 4, lg: 8 }),
+    line('seed-item-approval-lg', 'alLg', { size: 'lg', showJobTitle: true }, { xs: 4, sm: 6, md: 4, lg: 8 }),
+    ...heading('seed-item-approval-narrow', 'Narrow cell', 'A horizontal line never wraps: below the step minimum it scrolls; this one flips vertical below md.'),
+    line('seed-item-approval-narrow-line', 'alNarrow', { stepMinWidth: 120, verticalBelow: 'md' }, { xs: 4, sm: 6, md: 4, lg: 5 }),
+  ]
+}
+
+/* -------------------------------------------------------------- workflows */
+
+export const USER_RES_MODEL_ID = 'seed-model-user-res'
+export const USER_SEARCH_QUERY_MODEL_ID = 'seed-model-user-search-query'
+export const WORKFLOW_RES_MODEL_ID = 'seed-model-workflow-res'
+export const WORKFLOW_BODY_MODEL_ID = 'seed-model-workflow-body'
+export const WORKFLOW_PARAM_MODEL_ID = 'seed-model-workflow-param'
+export const USERS_ENDPOINT_ID = 'seed-endpoint-users'
+export const WORKFLOW_DETAIL_ENDPOINT_ID = 'seed-endpoint-workflow-detail'
+export const UPDATE_WORKFLOW_ENDPOINT_ID = 'seed-endpoint-update-workflow'
+export const WORKFLOW_PAGE_ID = 'seed-page-workflow'
+export const LOAD_WORKFLOW_ID = 'load-seed-workflow'
+
+/** The Workflow editor demo's models: the user rows, one workflow config, its save body. */
+export function workflowSeedModels(): ModelDef[] {
+  const userFields = () => [field('PersonId'), field('FullNameEN'), field('JobTitle'), field('Email')]
+  return [
+    {
+      id: USER_RES_MODEL_ID,
+      name: 'userRes',
+      fields: [field('data', 'array', userFields(), 'object'), field('status', 'number'), field('success', 'boolean'), field('message')],
+    },
+    { id: USER_SEARCH_QUERY_MODEL_ID, name: 'userSearchQuery', fields: [field('search')] },
+    {
+      id: WORKFLOW_RES_MODEL_ID,
+      name: 'workflowRes',
+      fields: [
+        field('data', 'object', [
+          field('_id'),
+          field('name'),
+          field('status'),
+          field('businessUnit'),
+          field('site'),
+          field(
+            'steps',
+            'array',
+            [
+              field('actionType'),
+              field('sequence', 'number'),
+              field('inchargeUsers', 'array', userFields(), 'object'),
+              field('ccUsers', 'array', userFields(), 'object'),
+            ],
+            'object',
+          ),
+        ]),
+        field('status', 'number'),
+        field('success', 'boolean'),
+        field('message'),
+      ],
+    },
+    {
+      id: WORKFLOW_BODY_MODEL_ID,
+      name: 'workflowBody',
+      fields: [field('name'), field('status'), field('businessUnit'), field('site'), field('steps', 'any')],
+    },
+    { id: WORKFLOW_PARAM_MODEL_ID, name: 'workflowParam', fields: [field('id')] },
+  ]
+}
+
+/** The mock API's `/collection/users` and `/collection/workflows/:id` (GET + PATCH). */
+export function workflowSeedEndpoints(): EndpointDef[] {
+  return [
+    {
+      withOptions: false,
+      query: USER_SEARCH_QUERY_MODEL_ID,
+      id: USERS_ENDPOINT_ID,
+      name: 'users',
+      description: "List users (the dialog's pickers)",
+      url: '/collection/users',
+      method: 'GET',
+      response: USER_RES_MODEL_ID,
+      parameter: null,
+      body: null,
+    },
+    {
+      withOptions: false,
+      query: null,
+      id: WORKFLOW_DETAIL_ENDPOINT_ID,
+      name: 'workflowDetail',
+      description: 'Get one workflow config with its steps',
+      url: '/collection/workflows/:id',
+      method: 'GET',
+      response: WORKFLOW_RES_MODEL_ID,
+      parameter: WORKFLOW_PARAM_MODEL_ID,
+      body: null,
+    },
+    {
+      withOptions: false,
+      query: null,
+      id: UPDATE_WORKFLOW_ENDPOINT_ID,
+      name: 'updateWorkflow',
+      description: 'Save a workflow config',
+      url: '/collection/workflows/:id',
+      method: 'PATCH',
+      response: WORKFLOW_RES_MODEL_ID,
+      parameter: WORKFLOW_PARAM_MODEL_ID,
+      body: WORKFLOW_BODY_MODEL_ID,
+    },
+  ]
+}
+
+/** The Workflow page's load: the config named by the route's `:id`. */
+export function workflowSeedLoads(): PageLoadDef[] {
+  return [
+    {
+      id: LOAD_WORKFLOW_ID,
+      key: 'workflow',
+      read: { endpointId: WORKFLOW_DETAIL_ENDPOINT_ID, params: { id: { type: 'url', key: 'id', source: 'param' } }, extra: {} },
+      paths: 'data',
+      blocking: true,
+      errorMessage: 'Workflow not found.',
+    },
+  ]
+}
+
+/**
+ * The "Workflow editor" example page (the example app's `/workflow/:id`): a
+ * form over the loaded config — name, status, business unit, site and the
+ * line as a `workfloweditor` field — with a Save button that PATCHes it, and
+ * a read-only copy of the line below.
+ */
+export function workflowDemoSeedItems(): GridItemData[] {
+  const full = { xs: 4, sm: 6, md: 8, lg: 12 }
+  const half = { xs: 4, sm: 6, md: 4, lg: 6 }
+  const state = (path: string) => ({ key: LOAD_WORKFLOW_ID, path, source: 'state' as const })
+  const text = (id: string, t: string, extra: Record<string, unknown> = {}, colSpan = full): GridItemData => ({
+    id,
+    label: 'Typography',
+    type: 'typography',
+    settings: createDefaultItemSettings({ colSpan }),
+    config: { ...createDefaultTypographyConfig(), text: t, variant: 'body2', ...extra },
+  })
+  const heading = (id: string, t: string, caption: string) => [
+    text(`${id}-title`, t, { variant: 'subtitle1', weight: 'medium' }),
+    text(`${id}-caption`, caption, { color: 'gray' }),
+  ]
+  const jump = (id: string, label: string, value: string): GridItemData => ({
+    id,
+    label: 'Button',
+    type: 'button',
+    settings: createDefaultItemSettings({ colSpan: { xs: 2, sm: 3, md: 2, lg: 2 } }),
+    config: {
+      ...createDefaultButtonItemConfig(),
+      label,
+      variant: 'outlined',
+      actions: ['Navigate'],
+      navigate: { pageId: WORKFLOW_PAGE_ID, params: { id: { type: 'value', value } }, replace: false },
+    },
+  })
+  const editor = (id: string, name: string, extra: Partial<WorkflowEditorConfig> = {}): GridItemData => ({
+    id,
+    label: 'Workflow editor',
+    type: 'workfloweditor',
+    settings: createDefaultItemSettings({ colSpan: full, justifySelf: { xs: 'stretch', sm: 'stretch', md: 'stretch', lg: 'stretch' } }),
+    config: {
+      ...createDefaultWorkflowEditorConfig(name),
+      users: { endpointId: USERS_ENDPOINT_ID, paths: 'data', idKey: 'PersonId', displayKey: 'FullNameEN', subtitleKey: 'JobTitle', avatarKey: '', searchKey: 'FullNameEN' },
+      ...extra,
+    },
+    initialValue: state('steps'),
+  })
+  return [
+    text('seed-item-workflow-h', 'Workflow editor', { variant: 'h3' }),
+    text(
+      'seed-item-workflow-intro',
+      'One approval line as a form field: cards for the steps, a + on every connector to insert one, Add Line Approval at the end; click a card to edit or remove it. Nothing is sent until Save, which PATCHes the whole form. Select the line, then Props: roles and their rules, the users endpoint and keys, the saved step fields.',
+      { color: 'gray' },
+    ),
+    jump('seed-item-workflow-jump-1', 'Temple II', 'wf-1'),
+    jump('seed-item-workflow-jump-2', 'Dev line', 'wf-2'),
+    jump('seed-item-workflow-jump-3', 'Empty', 'wf-3'),
+    ...heading('seed-item-workflow-form', 'The form', 'Name, status, business unit and site come from the loaded record, and so does the line.'),
+    {
+      id: 'seed-item-workflow-id',
+      label: 'Hidden',
+      type: 'hidden',
+      settings: createDefaultItemSettings({ colSpan: full }),
+      config: createDefaultHiddenConfig('_id'),
+      initialValue: state('_id'),
+    },
+    {
+      id: 'seed-item-workflow-name',
+      label: 'Text Field',
+      type: 'textfield',
+      settings: createDefaultItemSettings({ colSpan: half }),
+      config: { ...createDefaultTextFieldConfig('name'), label: 'Name', isRequired: true, errorMessage: 'Name is required' },
+      initialValue: state('name'),
+    },
+    {
+      id: 'seed-item-workflow-status',
+      label: 'Radio',
+      type: 'radio',
+      settings: createDefaultItemSettings({ colSpan: half }),
+      config: {
+        ...createDefaultRadioConfig('status'),
+        label: 'Status',
+        orientation: 'horizontal',
+        options: [
+          { value: 'active', label: 'Active', disabled: false },
+          { value: 'inactive', label: 'Inactive', disabled: false },
+        ],
+      },
+      initialValue: state('status'),
+    },
+    {
+      id: 'seed-item-workflow-bu',
+      label: 'Text Field',
+      type: 'textfield',
+      settings: createDefaultItemSettings({ colSpan: half }),
+      config: { ...createDefaultTextFieldConfig('businessUnit'), label: 'Group Business Unit' },
+      initialValue: state('businessUnit'),
+    },
+    {
+      id: 'seed-item-workflow-site',
+      label: 'Text Field',
+      type: 'textfield',
+      settings: createDefaultItemSettings({ colSpan: half }),
+      config: { ...createDefaultTextFieldConfig('site'), label: 'Site' },
+      initialValue: state('site'),
+    },
+    editor('seed-item-workflow-editor', 'steps', { label: 'Line Approval 1' }),
+    {
+      id: 'seed-item-workflow-save',
+      label: 'Button',
+      type: 'button',
+      settings: createDefaultItemSettings({ colSpan: { xs: 2, sm: 3, md: 2, lg: 2 }, justifySelf: { xs: 'start', sm: 'start', md: 'start', lg: 'start' } }),
+      config: {
+        ...createDefaultButtonItemConfig(),
+        label: 'Save',
+        icon: 'save',
+        actions: ['StartLoading', 'SubmitFormToPatchAPI', 'StopLoading'],
+        endpointId: UPDATE_WORKFLOW_ENDPOINT_ID,
+        reloadTableItemId: LOAD_WORKFLOW_ID,
+        snackbarSuccessEnabled: true,
+        snackbarSuccessMessage: 'Workflow saved',
+        snackbarErrorException: true,
+      },
+    },
+    ...heading('seed-item-workflow-readonly', 'Read-only', 'The same line with Read-only on: cards and connectors only.'),
+    editor('seed-item-workflow-editor-ro', 'stepsReadOnly', { label: '', isRequired: false, disabled: true }),
   ]
 }

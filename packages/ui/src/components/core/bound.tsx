@@ -1,4 +1,5 @@
-import type { AvatarElement, TextElement, TypographyElement } from "../@types";
+import { createElement, useMemo, type ComponentType } from "react";
+import type { AvatarElement, DataValue, TextElement, TypographyElement } from "../@types";
 import { Avatar } from "../Avatar";
 import { Text } from "../Text";
 import { Typography } from "../Typography";
@@ -30,6 +31,27 @@ export function imageSrc(value: unknown): string | undefined {
     if (typeof url === "string" && url) return url;
   }
   return undefined;
+}
+
+const NO_OPTIONS: unknown[] = [];
+
+/**
+ * A select-family field whose `options` come from a {@link DataValue} (a page
+ * load's slice): the resolved array, memoised on its identity so the field
+ * only resets its list when the slice actually changes.
+ */
+export function BoundOptions<P extends { options?: unknown[] }>({
+  component,
+  optionsValue,
+  props,
+}: {
+  component: ComponentType<P>;
+  optionsValue: DataValue;
+  props: P;
+}) {
+  const value = useDataValue(optionsValue);
+  const options = useMemo(() => (Array.isArray(value) ? value : NO_OPTIONS), [value]);
+  return createElement(component, { ...props, options });
 }
 
 export function BoundAvatar({ srcValue, fallbackValue, src, fallback, name: _name, ...props }: AvatarElement) {

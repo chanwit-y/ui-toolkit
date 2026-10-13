@@ -6,6 +6,8 @@ import { uploadRoutes } from './routes/upload.js';
 import { languageRoutes } from './routes/languages.js';
 import { formListDemoRoutes } from './routes/formListDemo.js';
 import { regionRoutes } from './routes/regions.js';
+import { approvalRoutes } from './routes/approvals.js';
+import { workflowRoutes } from './routes/workflows.js';
 
 const app = new Hono();
 const PORT = Number(process.env.PORT) || 9000;
@@ -28,6 +30,8 @@ app.route('/', uploadRoutes);
 app.route('/', languageRoutes);
 app.route('/', formListDemoRoutes);
 app.route('/', regionRoutes);
+app.route('/', approvalRoutes);
+app.route('/', workflowRoutes);
 
 // Health check
 app.get('/health', (c) => {

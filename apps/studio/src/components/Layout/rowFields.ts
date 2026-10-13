@@ -125,3 +125,32 @@ export function rowModelFields(
   }
   return { fields: level }
 }
+
+/**
+ * A model's fields as dotted leaf paths (`ApproverUser.FullNameEN`), walking
+ * `object` fields up to `depth` levels; objects are kept as entries too (a
+ * role rule's path names one), arrays stop (a path can't cross a list). For
+ * the pickers of components that read lodash paths off one record.
+ */
+export function flattenModelFields(fields: ModelField[], depth = 3, prefix = ''): PickableField[] {
+  const out: PickableField[] = []
+  for (const f of fields) {
+    const name = prefix ? `${prefix}.${f.name}` : f.name
+    out.push({ name, kind: f.kind })
+    if (f.kind === 'object' && depth > 1) out.push(...flattenModelFields(f.children, depth - 1, name))
+  }
+  return out
+}
+
+/** The field a dotted path names, walking objects; `undefined` when it leaves the model. */
+export function walkModelPath(fields: ModelField[], path: string): ModelField | undefined {
+  let level = fields
+  let current: ModelField | undefined
+  for (const segment of path.split('.').map((s) => s.trim()).filter(Boolean)) {
+    if (current && current.kind !== 'object') return undefined
+    current = level.find((f) => f.name === segment)
+    if (!current) return undefined
+    level = current.children
+  }
+  return current
+}

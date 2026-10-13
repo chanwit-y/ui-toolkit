@@ -19,7 +19,7 @@ import { useData } from "./context/DataProvider"
 import { useStord } from "./core/stord"
 import { useNavigateTo } from "./core/pages"
 import { callArgs, stateKeys, useRouteScope, useStateVersion } from "./core/readApi"
-import { resolveDataValues } from "./core/dataValue"
+import { resolveDataValue, resolveDataValues } from "./core/dataValue"
 import { DataTableFilter } from "./DataTableFilter"
 import { ClampedCell, DEFAULT_CELL_LINES } from "./ClampedCell"
 import { columnMeta, computeSpans, headerPinStyle, headerRows, headerTopStyle, spanKey, useHeaderRowTops } from "./dataTableLayout"
@@ -138,6 +138,7 @@ export const DataTable2 = <T extends Record<string, any>>({
 	filterDisplay,
 	urlParams,
 	sortFields,
+	items,
 
 	// editModalContainer,
 }: DataTableProps) => {
@@ -157,7 +158,9 @@ export const DataTable2 = <T extends Record<string, any>>({
 	// Server-side pagination config. Present ⇒ the table sends offset/limit (and
 	// optionally a search term) to the API per page and reads the total count out
 	// of the response, instead of fetching everything and slicing in memory.
-	const pageCfg = apiInfo?.pagination
+	// `items` (rows from a DataValue — a page load's slice) is in-memory only:
+	// server paging and sort talk to an API, so they don't apply.
+	const pageCfg = items ? undefined : apiInfo?.pagination
 	const isServer = !!pageCfg
 	const pageSizeOptions = pageCfg?.pageSizeOptions ?? [5, 10, 20, 30, 40, 50]
 
@@ -169,7 +172,7 @@ export const DataTable2 = <T extends Record<string, any>>({
 	// Server-side sort (`api.sort`): the header icons drive the request instead
 	// of sorting the fetched rows. The field sent is the column's `sortField`,
 	// else its accessor; the config's `default` seeds the state.
-	const sortCfg = apiInfo?.sort
+	const sortCfg = items ? undefined : apiInfo?.sort
 	const sortFieldOf = useCallback((columnId: string) => sortFields?.[columnId] ?? columnId, [sortFields])
 	const [sorting, setSorting] = useState<SortingState>(() => {
 		const initial = apiInfo?.sort?.default
@@ -422,6 +425,14 @@ export const DataTable2 = <T extends Record<string, any>>({
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [apiInfo, appliedFilters, routeScope.params, routeScope.searchParams, stateVersion, (urlParams ?? []).join("|")])
 	const requestSig = JSON.stringify([request.q, request.p, request.b])
+	// Rows bound to a DataValue instead of fetched: re-read when the slice changes.
+	const itemsVersion = useStateVersion(items?.type === "state" ? [items.key] : [])
+	const boundRows = useMemo(() => {
+		if (!items) return undefined
+		const v = resolveDataValue(items, routeScope)
+		return (Array.isArray(v) ? v : []) as T[]
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [JSON.stringify(items), itemsVersion, routeScope.params, routeScope.searchParams])
 	const sort = sortCfg ? sorting[0] : undefined
 	const sortSig = sort ? `${sortFieldOf(sort.id)}:${sort.desc ? "desc" : "asc"}` : ""
 
@@ -494,6 +505,7 @@ export const DataTable2 = <T extends Record<string, any>>({
 			? [`table-data-${name}-${title}`, pagination.pageIndex, pagination.pageSize, serverSearch, requestSig, sortSig]
 			: [`table-data-${name}-${title}`, requestSig, sortSig],
 		queryFn: fetchData,
+		enabled: !items,
 		// Keep the current page visible while the next one loads (no empty flash).
 		placeholderData: keepPreviousData,
 	})
@@ -585,9 +597,14 @@ export const DataTable2 = <T extends Record<string, any>>({
 	), [isResizing ? 'resizing' : {}])
 
 	useEffect(() => {
+		if (boundRows) {
+			setData(boundRows)
+			setTotal(boundRows.length)
+			return
+		}
 		setData(queryResult?.rows ?? [])
 		setTotal(queryResult?.total ?? 0)
-	}, [queryResult])
+	}, [queryResult, boundRows])
 
 	// Debounce the search box into the server query and reset to the first page
 	// whenever the term changes (only when server search is configured).

@@ -24,6 +24,21 @@ export const menu: TMenu = [
   { label: "Switch", icon: "toggleLeft", navigate: { page: "switchDemo" } },
   { label: "Upload", icon: "upload", navigate: { page: "uploadDemo" } },
   {
+    label: "Approval line",
+    icon: "workflow",
+    navigate: { page: "approvalLineDemo", params: { id: { type: "value", key: "none", value: "req-1001" } } },
+  },
+  {
+    label: "Workflow editor",
+    icon: "gitBranch",
+    navigate: { page: "workflowDemo", params: { id: { type: "value", key: "none", value: "wf-1" } } },
+  },
+  {
+    label: "Page data",
+    icon: "database",
+    navigate: { page: "pageDataDemo", params: { code: { type: "value", key: "none", value: "TH" } } },
+  },
+  {
     label: "Shortcuts",
     icon: "bookmark",
     items: [

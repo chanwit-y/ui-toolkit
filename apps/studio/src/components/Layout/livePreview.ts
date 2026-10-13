@@ -2,6 +2,7 @@ import type { Bin, Container } from '@gummy-ui/ui'
 import { gridConfigToJson, MISSING_ENDPOINT, rootContainer, type EndpointRef, type PageRef } from './gridConfig'
 import { isClickOnlyOverlay } from './designTypes'
 import type { DesignNavigation, GridContainerSettings, GridItemData } from './types'
+import type { PageLoadDef } from '../Workspace/pageLoads'
 
 /**
  * Builds the `Container` the live-preview modal feeds to the real engine
@@ -42,6 +43,8 @@ const API_PLACEHOLDER_LABEL: Record<string, string> = {
   datatableeditable: 'Editable Table',
   formlist: 'Form List',
   repeater: 'Repeater',
+  approvalline: 'Approval line',
+  workfloweditor: 'Workflow editor',
   autocomplete: 'Autocomplete',
   multiAutocomplete: 'Multi Autocomplete',
 }
@@ -163,14 +166,19 @@ function toPreviewBin(bin: ParsedBin, wiring: LivePreviewWiring): ParsedBin {
   // API-dependent bins render live when their wiring resolves, else a
   // placeholder explaining the gap. Autocompletes only in `source` mode (a
   // static-options select has no `api` key and previews for real regardless).
-  if (type === 'datatable') {
+  // A table whose rows come from a page load (`items`) has no read API to check.
+  if (type === 'datatable' && !el?.items) {
     const gap = wiringGap((el?.api as Record<string, unknown> | undefined)?.name, wiring)
     if (gap) return placeholderBin(bin, `[ ${label} "${displayName}" — ${gap} ]`)
   } else if (type === 'datatableeditable' || type === 'formlist') {
     const read = (el?.apiCrud as Record<string, Record<string, unknown>> | undefined)?.read
     const gap = wiringGap(read?.name, wiring)
     if (gap) return placeholderBin(bin, `[ ${label} "${displayName}" — ${gap} ]`)
-  } else if (type === 'repeater' && el !== undefined && 'api' in el) {
+  } else if (type === 'workfloweditor') {
+    const api = (el?.users as { api?: Record<string, unknown> } | undefined)?.api
+    const gap = wiringGap(api?.name, wiring)
+    if (gap) return placeholderBin(bin, `[ ${label} "${displayName}" — ${gap} ]`)
+  } else if ((type === 'repeater' || type === 'approvalline') && el !== undefined && 'api' in el) {
     // Only an endpoint-sourced repeater fetches; an `items` one reads its parent item.
     const gap = wiringGap((el.api as Record<string, unknown>)?.name, wiring)
     if (gap) return placeholderBin(bin, `[ ${label} "${displayName}" — ${gap} ]`)
@@ -269,9 +277,10 @@ export function buildLivePreviewContainer(
   wiring: LivePreviewWiring,
   pages: PageRef[] = [],
   name = 'studio-live-preview',
+  loads: Pick<PageLoadDef, 'id' | 'key'>[] = [],
 ): Container {
   const bins = previewBins(
-    JSON.parse(gridConfigToJson(settings, items, endpoints, pages)) as ParsedBin[],
+    JSON.parse(gridConfigToJson(settings, items, endpoints, pages, loads)) as ParsedBin[],
     wiring,
   )
   return rootContainer(name, settings, bins as unknown as Bin[]) as unknown as Container

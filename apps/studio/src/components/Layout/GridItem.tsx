@@ -1,5 +1,7 @@
 import type { DataTableAddButton, DataType } from '@gummy-ui/ui'
 import {
+  ApprovalLineView,
+  WorkflowEditorBase,
   AutocompleteBase2,
   Avatar,
   ButtonBase,
@@ -25,7 +27,7 @@ import {
   UploadImageBase,
 } from '@gummy-ui/ui'
 import { IconData, groupColumns } from '@gummy-ui/ui'
-import type { TypographyProps, UploadedFile } from '@gummy-ui/ui'
+import type { ApprovalStep, TypographyProps, UploadedFile } from '@gummy-ui/ui'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import {
@@ -56,6 +58,8 @@ import {
   StickyNote,
   CreditCard,
   Code,
+  Workflow,
+  GitBranch,
   Table,
   TextWrap,
   Trash2,
@@ -73,7 +77,7 @@ import { elementStyleVars, hasElementStyle, isDesignOnly } from './designTypes'
 import { ENTER_DURATION_MS, prefersReducedMotion, UPGRADE_FADE_MS } from './gridAnimation'
 import { useGridStore, useIsEntering } from './gridStore'
 import { buildDataTablePreviewRows, buildHtmlPreviewValue, DATATABLE_PREVIEW_ROW_COUNT } from './dataTablePreview'
-import { bindingToken } from './ItemBindingField'
+import { useBindingToken } from './ItemBindingField'
 import type {
   AvatarConfig,
   ButtonConfig,
@@ -97,6 +101,8 @@ import type {
   CardConfig,
   CardActionConfig,
   HtmlContentConfig,
+  ApprovalLineConfig,
+  WorkflowEditorConfig,
   PopoverConfig,
   RadioConfig,
   SelectFieldConfig,
@@ -174,6 +180,10 @@ function thresholdsForType(type: GridItemData['type']): LiveThresholds {
     type === 'card' ||
     // An HTML block is markup — legible at any width.
     type === 'html' ||
+    // An approval line is avatars on a line — it scrolls when narrow.
+    type === 'approvalline' ||
+    // A workflow editor is a column of cards — it reads at any width.
+    type === 'workfloweditor' ||
     // Design-only kinds are the design itself — nothing heavier to gate.
     isDesignOnly(type)
   ) {
@@ -247,6 +257,9 @@ function CellContent({ item }: { item: GridItemData }) {
   if (item.type === 'uploadfile' && item.config) {
     return <GlyphChip Icon={Upload} />
   }
+  if (item.type === 'workfloweditor' && item.config) {
+    return <GlyphChip Icon={GitBranch} />
+  }
   if (item.type === 'datatable') {
     return <GlyphChip Icon={Table} />
   }
@@ -279,6 +292,9 @@ function CellContent({ item }: { item: GridItemData }) {
   }
   if (item.type === 'html' && item.config) {
     return <GlyphChip Icon={Code} />
+  }
+  if (item.type === 'approvalline' && item.config) {
+    return <GlyphChip Icon={Workflow} />
   }
   if (item.type === 'tab' && item.config) {
     return <GlyphChip Icon={PanelTop} />
@@ -332,6 +348,8 @@ function ActiveBody({ item }: { item: GridItemData }) {
                   ? ImagePlus
                   : item.type === 'uploadfile' && item.config
                     ? Upload
+                  : item.type === 'workfloweditor'
+                    ? GitBranch
                     : item.type === 'datatable'
                       ? Table
                       : item.type === 'text' && item.config
@@ -354,6 +372,8 @@ function ActiveBody({ item }: { item: GridItemData }) {
                                       ? CreditCard
                                     : item.type === 'html'
                                       ? Code
+                                    : item.type === 'approvalline'
+                                      ? Workflow
                                       : item.type === 'tab'
                                         ? PanelTop
                                         : item.type === 'modal'
@@ -1038,6 +1058,7 @@ function editableTableRowsKey(config: DataTableEditableConfig): string {
  * renders the form-label styling (block, small, medium weight).
  */
 function TextLivePreview({ config }: { config: TextConfig }) {
+  const bindingToken = useBindingToken()
   return (
     <div
       data-grid-item-content
@@ -1056,6 +1077,7 @@ function TextLivePreview({ config }: { config: TextConfig }) {
  * (the anchor is inert on the canvas like everything else).
  */
 function TypographyLivePreview({ config }: { config: TypographyConfig }) {
+  const bindingToken = useBindingToken()
   return (
     <div
       data-grid-item-content
@@ -1347,6 +1369,82 @@ function HtmlContentLivePreview({ config }: { config: HtmlContentConfig }) {
   )
 }
 
+/** The mock line every workflow editor previews with (the user's e-memo screen). */
+const WORKFLOW_PREVIEW_STEPS = [
+  { actionType: 'inputter', sequence: 1, inchargeUsers: [{ id: '1', name: 'Sigang Liang' }, { id: '2', name: 'Sai Cao' }], ccUsers: [] },
+  { actionType: 'approver', sequence: 2, inchargeUsers: [{ id: '3', name: 'Bing Cao' }], ccUsers: [] },
+  { actionType: 'acknowledger', sequence: 3, inchargeUsers: [{ id: '4', name: 'Wanutpong Siriwiphanan' }], ccUsers: [{ id: '5', name: 'Anna Kiewchaum' }] },
+]
+
+/**
+ * The live, real `WorkflowEditorBase` over mock steps keyed by the config's
+ * roles and step keys (the real line is a form value — exercised in the
+ * Live Preview), read-only here. Always live and inert.
+ */
+function WorkflowEditorLivePreview({ config }: { config: WorkflowEditorConfig }) {
+  const k = config.stepKeys
+  const value = useMemo(
+    () =>
+      WORKFLOW_PREVIEW_STEPS.map((s, i) => ({
+        [k.role || 'actionType']: config.roles[Math.min(i, config.roles.length - 1)]?.value ?? s.actionType,
+        [k.sequence || 'sequence']: s.sequence,
+        [k.incharge || 'inchargeUsers']: s.inchargeUsers,
+        [k.cc || 'ccUsers']: s.ccUsers,
+      })),
+    [k, config.roles],
+  )
+  return (
+    <div data-grid-item-content className="pointer-events-none h-full w-full px-3 py-2">
+      <WorkflowEditorBase
+        label={config.label || undefined}
+        helperText={config.helperText || undefined}
+        value={value}
+        roles={config.roles.map((r) => ({ value: r.value, label: r.label }))}
+        stepKeys={config.stepKeys}
+        users={{ keys: { id: 'id', display: 'name' } }}
+        labels={config.labels}
+        disabled={config.disabled}
+      />
+    </div>
+  )
+}
+
+/** The mock steps every approval line previews with: the user's sample, waiting on the last approver. */
+const APPROVAL_PREVIEW_STEPS: ApprovalStep[] = [
+  { name: 'Chutima Pimthong', role: 'Reviewer', jobTitle: 'Manager - Process Governance', state: 'done', statusLabel: 'Approved' },
+  { name: 'Sasikan Sonchun', role: 'Acknowledge', jobTitle: 'Senior Specialist - Geology', state: 'done', statusLabel: 'Approved' },
+  { name: 'Pitak Wuttinonchai', role: 'Approver', jobTitle: 'Vice President - Geoscience', state: 'done', statusLabel: 'Approved' },
+  { name: 'Taksawan Sabsirin', role: 'Approver', jobTitle: 'Manager - Service Delivery', state: 'current', statusLabel: 'Approving' },
+]
+
+/**
+ * The live, real `ApprovalLineView` from the library over mock steps (the
+ * raw rows only exist at runtime — the Live Preview normalizes the real
+ * ones), with the requester step from the config. Always live and inert.
+ */
+function ApprovalLineLivePreview({ config }: { config: ApprovalLineConfig }) {
+  const bindingToken = useBindingToken()
+  const steps = useMemo<ApprovalStep[]>(() => {
+    if (!config.requesterEnabled) return APPROVAL_PREVIEW_STEPS
+    const name = config.requesterNameBinding ? bindingToken(config.requesterNameBinding) : config.requesterName || 'Requester'
+    const jobTitle = config.requesterJobTitleBinding ? bindingToken(config.requesterJobTitleBinding) : config.requesterJobTitle || undefined
+    return [{ name, jobTitle, role: config.requesterRole || undefined, state: 'done' }, ...APPROVAL_PREVIEW_STEPS]
+  }, [config, bindingToken])
+  return (
+    <div data-grid-item-content className="pointer-events-none h-full w-full px-3 py-2">
+      <ApprovalLineView
+        steps={steps}
+        orientation={config.orientation}
+        size={config.size}
+        showJobTitle={config.showJobTitle}
+        showIndex={config.showIndex}
+        stepMinWidth={config.stepMinWidth === '' ? undefined : config.stepMinWidth}
+        verticalBelow={config.verticalBelow || undefined}
+      />
+    </div>
+  )
+}
+
 /** One card button on the canvas: the library's visual layer, like `ButtonLivePreview`. */
 function CardActionPreview({ action }: { action: CardActionConfig }) {
   return (
@@ -1368,6 +1466,7 @@ function CardActionPreview({ action }: { action: CardActionConfig }) {
  * Live Preview). Inert like every preview.
  */
 function CardLivePreview({ config, canvases }: { config: CardConfig; canvases: ChildCanvas[] }) {
+  const bindingToken = useBindingToken()
   const h = config.header
   const title = h.titleBinding ? bindingToken(h.titleBinding) : h.title
   const subheader = h.subheaderBinding ? bindingToken(h.subheaderBinding) : h.subheader
@@ -1598,6 +1697,9 @@ function renderLive(item: GridItemData, isLive: boolean) {
   if (item.type === 'uploadfile' && item.config) {
     return <UploadFileLivePreview config={item.config as UploadFileConfig} />
   }
+  if (item.type === 'workfloweditor' && item.config) {
+    return <WorkflowEditorLivePreview config={item.config as WorkflowEditorConfig} />
+  }
   if (item.type === 'datatable' && item.config) {
     const config = item.config as DataTableConfig
     // Keyed on the row-affecting column fields: DataTable2's react-query cache
@@ -1647,6 +1749,9 @@ function renderLive(item: GridItemData, isLive: boolean) {
   }
   if (item.type === 'html' && item.config) {
     return <HtmlContentLivePreview config={item.config as HtmlContentConfig} />
+  }
+  if (item.type === 'approvalline' && item.config) {
+    return <ApprovalLineLivePreview config={item.config as ApprovalLineConfig} />
   }
   if (item.type === 'paper' && item.config && item.childCanvases?.[0]) {
     return (

@@ -59,6 +59,20 @@ regionRoutes.get('/collection/regions', (c) => {
   return c.json({ data, status: 200, success: true, message: 'Regions retrieved successfully' });
 });
 
+// GET /collection/regions/by-country/:code — the one region a country belongs
+// to (`:code` = country code or id), without its country list: the Page data
+// demo chains it off the loaded country. 404 when the country is in none.
+regionRoutes.get('/collection/regions/by-country/:code', (c) => {
+  const key = c.req.param('code');
+  const country = countries.find((x) => x._id === key || x.code.toLowerCase() === key.toLowerCase());
+  const region = country && REGIONS.find((r) => r.codes.includes(country.code));
+  if (!region) {
+    return c.json({ data: null, status: 404, success: false, message: `No region for "${key}"` }, 404);
+  }
+  const { codes, ...data } = region;
+  return c.json({ data: { ...data, size: codes.length }, status: 200, success: true, message: 'Region retrieved successfully' });
+});
+
 // GET /collection/region/:region/page?offset&limit&name&sortBy&sortDir — the
 // countries page of one region, for a data table filter mapped to a URL param.
 // `:region` is a region id (`r-sea`, …) or `all`.

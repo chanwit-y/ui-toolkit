@@ -11,6 +11,8 @@ import {
   DEFAULT_FILTER_BUTTON,
   DEFAULT_PAGE_SIZE,
   DEFAULT_PAGE_SIZE_OPTIONS,
+  DEFAULT_APPROVAL_STATUSES,
+  DEFAULT_WORKFLOW_LABELS,
   uploadAccept,
 } from './types'
 import type {
@@ -46,6 +48,9 @@ import type {
   CardConfig,
   CardActionConfig,
   HtmlContentConfig,
+  ApprovalLineConfig,
+  ApprovalLineKeyConfig,
+  WorkflowEditorConfig,
   PopoverConfig,
   RadioConfig,
   SelectFieldConfig,
@@ -60,6 +65,16 @@ import type {
   UploadImageConfig,
 } from './types'
 import { hasElementStyle, isDesignOnly } from './designTypes'
+import { isBlockedInRepeater } from './repeaterRules'
+import type { DataCondition } from './types'
+import {
+  enginePageLoad,
+  identityLoadKey,
+  LOAD_ID_PREFIX,
+  makeLoadKeyResolver,
+  type LoadKeyResolver,
+  type PageLoadDef,
+} from '../Workspace/pageLoads'
 
 /**
  * Serializes the studio canvas into the declarative engine's `Bin[]` shape — the
@@ -131,27 +146,38 @@ type ButtonRefMaps = {
   tableNameByItem: Map<string, string>
   /** Page id → current `key` (the engine `NavigateTarget.page`). */
   pageKeyById: Map<string, string>
+  /** A `state` key as stored (a page-load id, or a raw slice key) → the slice name. */
+  loadKey: LoadKeyResolver
 }
 
-function makeButtonRefMaps(rootItems: GridItemData[], pages: PageRef[]): ButtonRefMaps {
+function makeButtonRefMaps(
+  rootItems: GridItemData[],
+  pages: PageRef[],
+  loads: Pick<PageLoadDef, 'id' | 'key'>[] = [],
+): ButtonRefMaps {
   const targets = collectButtonTargets(rootItems)
   return {
     modalIdByItem: new Map(targets.modals.map((m) => [m.itemId, m.modalId])),
     tableNameByItem: new Map(targets.tables.map((t) => [t.itemId, t.name])),
     pageKeyById: new Map(pages.map((p) => [p.id, p.key])),
+    loadKey: makeLoadKeyResolver(loads),
   }
 }
 
 /** One studio param source → the engine `DataValue` it stands for, or
- * `undefined` when it names nothing (dropped: emit authored, omit empty). */
-export function navParamValue(src: NavParamSource): Record<string, unknown> | undefined {
+ * `undefined` when it names nothing (dropped: emit authored, omit empty).
+ * A `state` key that is a page-load id resolves through `loadKey`. */
+export function navParamValue(
+  src: NavParamSource,
+  loadKey: LoadKeyResolver = identityLoadKey,
+): Record<string, unknown> | undefined {
   switch (src.type) {
     case 'value':
       return src.value === '' ? undefined : { type: 'value', key: 'none', value: src.value }
     case 'url':
       return src.key ? { type: 'url', key: src.key, source: src.source } : undefined
     case 'state':
-      return src.key ? { type: 'state', key: src.key, ...(src.path ? { path: src.path } : {}) } : undefined
+      return src.key ? { type: 'state', key: loadKey(src.key), ...(src.path ? { path: src.path } : {}) } : undefined
     case 'row':
       return src.key ? { type: 'row', key: src.key } : undefined
     default:
@@ -160,8 +186,11 @@ export function navParamValue(src: NavParamSource): Record<string, unknown> | un
 }
 
 /** A studio request source → the engine `DataValue` (a filter carries its fallback as `value`). */
-export function requestSourceValue(src: RequestSource): Record<string, unknown> | undefined {
-  if (src.type !== 'filter') return navParamValue(src)
+export function requestSourceValue(
+  src: RequestSource,
+  loadKey: LoadKeyResolver = identityLoadKey,
+): Record<string, unknown> | undefined {
+  if (src.type !== 'filter') return navParamValue(src, loadKey)
   if (!src.key) return undefined
   return { type: 'filter', key: src.key, ...(src.fallback !== '' ? { value: parseLoose(src.fallback) } : {}) }
 }
@@ -178,10 +207,10 @@ function parseLoose(text: string): unknown {
 }
 
 /** The request mapping rows → engine `params` / `query` / `body` DataValue maps (empty rows and maps dropped). */
-function requestMaps(rows: RequestMapRow[]): Record<string, unknown> {
+function requestMaps(rows: RequestMapRow[], loadKey: LoadKeyResolver): Record<string, unknown> {
   const maps: Record<'params' | 'query' | 'body', Record<string, unknown>> = { params: {}, query: {}, body: {} }
   for (const row of rows) {
-    const value = row.key ? requestSourceValue(row.source) : undefined
+    const value = row.key ? requestSourceValue(row.source, loadKey) : undefined
     if (value) maps[row.slot][row.key] = value
   }
   return Object.fromEntries(Object.entries(maps).filter(([, map]) => Object.keys(map).length > 0))
@@ -208,11 +237,12 @@ function dataTableSort(c: DataTableSortConfig): Record<string, unknown> | undefi
 export function toNavigateTarget(
   nav: StudioNavigate,
   pageKeyById: Map<string, string>,
+  loadKey: LoadKeyResolver = identityLoadKey,
 ): NavigateTarget | undefined {
   if (!nav.pageId) return undefined
   const params = Object.fromEntries(
     Object.entries(nav.params)
-      .map(([k, src]) => [k, navParamValue(src)] as const)
+      .map(([k, src]) => [k, navParamValue(src, loadKey)] as const)
       .filter((e): e is readonly [string, Record<string, unknown>] => e[1] !== undefined),
   )
   return {
@@ -223,7 +253,7 @@ export function toNavigateTarget(
 }
 
 function navigateTarget(nav: StudioNavigate, refs: ButtonRefMaps): Record<string, unknown> | undefined {
-  return toNavigateTarget(nav, refs.pageKeyById) as Record<string, unknown> | undefined
+  return toNavigateTarget(nav, refs.pageKeyById, refs.loadKey) as Record<string, unknown> | undefined
 }
 
 /** The engine root `Container` for a page: the authored (lg) grid settings —
@@ -336,8 +366,14 @@ function autocompleteElement(
   resolveEndpoint: ResolveEndpoint,
   /** Set for `multiAutocomplete` — the config is then the multi superset. */
   isMulti = false,
+  /** Options bound to a page load (engine `optionsValue`) — wins over both modes. */
+  optionsValue?: Record<string, unknown>,
 ): Record<string, unknown> {
   const multi = isMulti ? (c as MultiAutocompleteConfig) : null
+  if (optionsValue) {
+    const { api: _api, ...rest } = autocompleteElement({ ...c, mode: 'static', options: [] }, observe, resolveEndpoint, isMulti)
+    return { ...rest, optionsValue }
+  }
   return {
     name: c.name,
     // A multi's form value is the list of picked ids — the engine schema must be
@@ -651,7 +687,9 @@ function dataTableElement(
   endpoints: EndpointRef[],
   refs: ButtonRefMaps,
 ): Record<string, unknown> {
-  const apiName = resolveEndpoint(c.endpointId)
+  // Rows from a page load: `items`, and no read `api` (paging / sort / filters need one).
+  const rows = itemBindingValue(c.rowsBinding, refs)
+  const apiName = rows ? undefined : resolveEndpoint(c.endpointId)
   const paths = c.apiPaths
     .split('.')
     .map((s) => s.trim())
@@ -666,7 +704,7 @@ function dataTableElement(
   const editCanvas = childCanvasAt(item, 0)
   // Server filters: the filter form is the second child canvas.
   const filterCanvas = childCanvasAt(item, 1)
-  const emitFilters = c.filtersEnabled && filterCanvas.items.length > 0
+  const emitFilters = !rows && c.filtersEnabled && filterCanvas.items.length > 0
   const filterButton = omitEmpty({
     label: c.filterButton.label !== DEFAULT_FILTER_BUTTON.label ? c.filterButton.label : '',
     icon: c.filterButton.icon !== DEFAULT_FILTER_BUTTON.icon ? c.filterButton.icon : '',
@@ -710,12 +748,13 @@ function dataTableElement(
       ...(col.group.trim() ? { group: col.group.trim() } : {}),
       ...columnSizing(col),
     })),
+    ...(rows ? { items: rows } : {}),
     ...(apiName
       ? {
           api: {
             name: apiName,
             ...(paths.length ? { paths } : {}),
-            ...requestMaps(c.requestMapping),
+            ...requestMaps(c.requestMapping, refs.loadKey),
             ...(pagination ? { pagination } : {}),
             ...(sort ? { sort } : {}),
           },
@@ -876,6 +915,7 @@ function dataTableEditableElement(
 function formListCrudCall(
   ref: FormListCrudRef,
   endpoints: EndpointRef[],
+  loadKey: LoadKeyResolver,
 ): {
   params: Record<string, string>
   values: Record<string, unknown>
@@ -891,14 +931,14 @@ function formListCrudCall(
     if (src.type === 'row') {
       if (src.key) params[k] = src.key
     } else {
-      const dv = navParamValue(src)
+      const dv = navParamValue(src, loadKey)
       if (dv) values[k] = dv
     }
   }
   const extra = Object.fromEntries(
     Object.entries(ref.extra)
       .filter(([k]) => k.trim() !== '')
-      .map(([k, src]) => [k, src.type === 'row' ? undefined : navParamValue(src)] as const)
+      .map(([k, src]) => [k, src.type === 'row' ? undefined : navParamValue(src, loadKey)] as const)
       .filter((e): e is readonly [string, Record<string, unknown>] => e[1] !== undefined),
   )
   return { params, values, extra }
@@ -925,9 +965,9 @@ function formListElement(
     .split('.')
     .map((s) => s.trim())
     .filter(Boolean)
-  const read = formListCrudCall(c.read, endpoints)
+  const read = formListCrudCall(c.read, endpoints, refs.loadKey)
   const mutation = (ref: FormListCrudRef) => {
-    const call = formListCrudCall(ref, endpoints)
+    const call = formListCrudCall(ref, endpoints, refs.loadKey)
     return {
       name: resolveEndpoint(ref.endpointId) ?? '',
       ...(nonEmpty(call.params) ? { params: call.params } : {}),
@@ -988,13 +1028,47 @@ function formListElement(
 }
 
 /**
- * A display prop's item binding → the engine `{ type:'row', key, path? }`
- * DataValue (resolved against the enclosing repeater's item), or `undefined`
- * when static / no field picked (emit authored, omit empty).
+ * A bound value → the engine DataValue: `{ type:'row', key, path? }` for an
+ * item field (resolved against the enclosing repeater's item), `{ type:
+ * 'state', key, path? }` for a page load (its id resolved to the slice key),
+ * or `undefined` when static / nothing picked (emit authored, omit empty).
  */
-function itemBindingValue(binding: ItemBinding | undefined): Record<string, unknown> | undefined {
+function itemBindingValue(
+  binding: ItemBinding | undefined,
+  refs: Pick<ButtonRefMaps, 'loadKey'>,
+): Record<string, unknown> | undefined {
   if (!binding || !binding.key) return undefined
-  return { type: 'row', key: binding.key, ...(binding.path ? { path: binding.path } : {}) }
+  const path = binding.path ? { path: binding.path } : {}
+  if (binding.source === 'state') return { type: 'state', key: refs.loadKey(binding.key), ...path }
+  return { type: 'row', key: binding.key, ...path }
+}
+
+/** Text authored in a condition → the value it spells (number / boolean / null), else the text. */
+function conditionValue(text: string): unknown {
+  const t = text.trim()
+  if (t === 'true') return true
+  if (t === 'false') return false
+  if (t === 'null') return null
+  if (t !== '' && !Number.isNaN(Number(t))) return Number(t)
+  return text
+}
+
+/**
+ * A page-data condition → the engine `condition` (a `source: "state"` ref).
+ * Status tests read `$status`; `set` / `unset` compare against `undefined`
+ * (the `val` drops from JSON, which the engine reads the same way).
+ */
+function dataConditionValue(c: DataCondition, refs: Pick<ButtonRefMaps, 'loadKey'>): Record<string, unknown> | undefined {
+  if (!c.loadId) return undefined
+  const key = refs.loadKey(c.loadId)
+  if (c.test !== 'compare') {
+    const status = { loaded: 'success', loading: 'loading', failed: 'error' }[c.test]
+    return { left: { source: 'state', key, path: '$status' }, operator: 'eq', right: { val: status } }
+  }
+  const left = { source: 'state', key, ...(c.path ? { path: c.path } : {}) }
+  if (c.op === 'set' || c.op === 'unset')
+    return { left, operator: c.op === 'set' ? 'neq' : 'eq', right: { val: undefined } }
+  return { left, operator: c.op, right: { val: conditionValue(c.value) } }
 }
 
 /**
@@ -1017,12 +1091,15 @@ function repeaterElement(
     Object.fromEntries(
       keys
         .filter((k) => k.trim() !== '' && map[k])
-        .map((k) => [k, navParamValue(map[k])] as const)
+        .map((k) => [k, navParamValue(map[k], refs.loadKey)] as const)
         .filter((e): e is readonly [string, Record<string, unknown>] => e[1] !== undefined),
     )
   let source: Record<string, unknown>
   if (c.source === 'parent') {
     source = { items: { type: 'row', key: c.parentField || 'none' } }
+  } else if (c.source === 'state') {
+    const items = itemBindingValue(c.stateBinding, refs)
+    source = items ? { items } : {}
   } else {
     const url = endpoints.find((e) => e.id === c.read.endpointId)?.url
     const params = dataValues(c.read.params, url != null ? urlParams(url) : Object.keys(c.read.params))
@@ -1066,8 +1143,8 @@ function repeaterElement(
 }
 
 /** `text` → engine `TextElement`. Content plus the label-styling flag. */
-function textElement(c: TextConfig): Record<string, unknown> {
-  const value = itemBindingValue(c.binding)
+function textElement(c: TextConfig, refs: ButtonRefMaps): Record<string, unknown> {
+  const value = itemBindingValue(c.binding, refs)
   return { text: c.text, isLabel: c.isLabel, ...(value ? { value } : {}) }
 }
 
@@ -1078,38 +1155,167 @@ function textElement(c: TextConfig): Record<string, unknown> {
  * `truncate` emits only when on. The unauthored props (component/transform/
  * decoration/noWrap/tooltip trio) stay hand-editable in the exported JSON.
  */
-function typographyElement(c: TypographyConfig): Record<string, unknown> {
+function typographyElement(c: TypographyConfig, refs: ButtonRefMaps): Record<string, unknown> {
   return {
     text: c.text,
     variant: c.variant,
     ...(c.truncate ? { truncate: true } : {}),
     ...omitEmpty({ weight: c.weight, color: c.color, align: c.align, href: c.href }),
-    ...(itemBindingValue(c.binding) ? { value: itemBindingValue(c.binding) } : {}),
+    ...(itemBindingValue(c.binding, refs) ? { value: itemBindingValue(c.binding, refs) } : {}),
   }
 }
 
 /** `avatar` → engine `AvatarElement`. `size` always emits (self-documenting like
  * `align`); empty `src`/`alt`/`fallback` drop — an src-less avatar renders its
  * fallback at runtime exactly as in the preview. */
-function avatarElement(c: AvatarConfig): Record<string, unknown> {
+function avatarElement(c: AvatarConfig, refs: ButtonRefMaps): Record<string, unknown> {
   return {
     name: c.name,
     size: c.size,
     ...omitEmpty({ src: c.src, alt: c.alt, fallback: c.fallback }),
-    ...(itemBindingValue(c.srcBinding) ? { srcValue: itemBindingValue(c.srcBinding) } : {}),
-    ...(itemBindingValue(c.fallbackBinding)
-      ? { fallbackValue: itemBindingValue(c.fallbackBinding) }
+    ...(itemBindingValue(c.srcBinding, refs) ? { srcValue: itemBindingValue(c.srcBinding, refs) } : {}),
+    ...(itemBindingValue(c.fallbackBinding, refs)
+      ? { fallbackValue: itemBindingValue(c.fallbackBinding, refs) }
       : {}),
   }
 }
 
 /** `html` → engine `HtmlContentElement`: the template, the binding as a `type:"row"` value, `prose` only when off. */
-function htmlContentElement(c: HtmlContentConfig): Record<string, unknown> {
+function htmlContentElement(c: HtmlContentConfig, refs: ButtonRefMaps): Record<string, unknown> {
   return {
     name: c.name,
     html: c.html,
-    ...(itemBindingValue(c.binding) ? { value: itemBindingValue(c.binding) } : {}),
+    ...(itemBindingValue(c.binding, refs) ? { value: itemBindingValue(c.binding, refs) } : {}),
     ...(c.prose ? {} : { prose: false }),
+  }
+}
+
+/**
+ * `approvalline` → engine `ApprovalLineElement`: each key's path list (one
+ * path stays a string, several a list, none dropped), the role rules, the
+ * status map / labels only when they differ from the engine defaults, the
+ * requester slot with its bindings, and the layout keys off their defaults.
+ */
+function approvalLineElement(
+  c: ApprovalLineConfig,
+  endpoints: EndpointRef[],
+  resolveEndpoint: ResolveEndpoint,
+  refs: ButtonRefMaps,
+): Record<string, unknown> {
+  const keyPath = (paths: string[]) => {
+    const list = paths.map((p) => p.trim()).filter(Boolean)
+    return list.length === 0 ? undefined : list.length === 1 ? list[0] : list
+  }
+  const keys = Object.fromEntries(
+    (Object.keys(c.keys) as (keyof ApprovalLineKeyConfig)[])
+      .map((k) => [k, keyPath(c.keys[k])] as const)
+      .filter((e) => e[1] !== undefined),
+  )
+  const roleRules = c.roleRules
+    .filter((r) => r.path.trim() && r.role.trim())
+    .map((r) => ({ path: r.path.trim(), ...(r.sequence.trim() ? { sequence: parseLoose(r.sequence) } : {}), role: r.role.trim() }))
+  const statusMap = Object.fromEntries(c.statuses.filter((s) => s.code.trim()).map((s) => [s.code.trim(), s.state]))
+  const statusLabels = Object.fromEntries(c.statuses.filter((s) => s.code.trim() && s.label.trim()).map((s) => [s.code.trim(), s.label.trim()]))
+  const sameAs = (a: Record<string, string>, b: Record<string, string>) =>
+    Object.keys(a).length === Object.keys(b).length && Object.keys(a).every((k) => a[k] === b[k])
+  const defaultMap = Object.fromEntries(DEFAULT_APPROVAL_STATUSES.map((s) => [s.code, s.state]))
+  const defaultLabels = Object.fromEntries(DEFAULT_APPROVAL_STATUSES.map((s) => [s.code, s.label]))
+  const endpoint = c.source === 'endpoint'
+  const reqName = endpoint ? undefined : itemBindingValue(c.requesterNameBinding, refs)
+  const reqTitle = endpoint ? undefined : itemBindingValue(c.requesterJobTitleBinding, refs)
+  const paths = (p: string) => p.split('.').map((s) => s.trim()).filter(Boolean)
+  // Endpoint mode: the read call like a repeater's (`:param` DataValues pruned
+  // to the URL's placeholders, query extras), `paths` to the record.
+  const url = endpoints.find((e) => e.id === c.read.endpointId)?.url
+  const dataValues = (map: Record<string, NavParamSource>, ks: string[]) =>
+    Object.fromEntries(
+      ks
+        .filter((k) => k.trim() !== '' && map[k])
+        .map((k) => [k, navParamValue(map[k], refs.loadKey)] as const)
+        .filter((e): e is readonly [string, Record<string, unknown>] => e[1] !== undefined),
+    )
+  const readParams = dataValues(c.read.params, url != null ? urlParams(url) : Object.keys(c.read.params))
+  const readQuery = dataValues(c.read.extra, Object.keys(c.read.extra))
+  const api = endpoint
+    ? {
+        name: resolveEndpoint(c.read.endpointId) ?? '',
+        ...(paths(c.recordPath).length ? { paths: paths(c.recordPath) } : {}),
+        ...(Object.keys(readParams).length ? { params: readParams } : {}),
+        ...(Object.keys(readQuery).length ? { query: readQuery } : {}),
+      }
+    : undefined
+  return {
+    name: c.name,
+    ...(api
+      ? { api, ...(c.stepsPath.trim() ? { stepsPath: c.stepsPath.trim() } : {}) }
+      : // No binding ⇒ an empty literal: the line shows its empty text instead of crashing.
+        { items: itemBindingValue(c.items, refs) ?? { type: 'value', key: 'none', value: [] } }),
+    keys: { name: '', status: '', ...keys },
+    ...(roleRules.length ? { roleRules } : {}),
+    ...(sameAs(statusMap, defaultMap) ? {} : { statusMap }),
+    ...(sameAs(statusLabels, defaultLabels) ? {} : { statusLabels }),
+    ...(c.requesterEnabled
+      ? {
+          requester: {
+            ...omitEmpty({ name: c.requesterName, jobTitle: c.requesterJobTitle }),
+            ...(reqName ? { nameValue: reqName } : {}),
+            ...(reqTitle ? { jobTitleValue: reqTitle } : {}),
+            ...(endpoint && keyPath(c.requesterNamePath) ? { namePath: keyPath(c.requesterNamePath) } : {}),
+            ...(endpoint && keyPath(c.requesterJobTitlePath) ? { jobTitlePath: keyPath(c.requesterJobTitlePath) } : {}),
+            ...(endpoint && keyPath(c.requesterPersonIdPath) ? { personIdPath: keyPath(c.requesterPersonIdPath) } : {}),
+            ...(endpoint && keyPath(c.requesterAvatarPath) ? { avatarPath: keyPath(c.requesterAvatarPath) } : {}),
+            ...(c.requesterRole && c.requesterRole !== 'Requester' ? { role: c.requesterRole } : {}),
+          },
+        }
+      : {}),
+    ...omitEmpty({ avatarUrl: c.avatarUrl, emptyText: c.emptyText }),
+    ...(c.orientation !== 'horizontal' ? { orientation: c.orientation } : {}),
+    ...(c.size !== 'md' ? { size: c.size } : {}),
+    ...(c.showJobTitle ? { showJobTitle: true } : {}),
+    ...(c.showIndex ? {} : { showIndex: false }),
+    ...(c.stepMinWidth !== '' ? { stepMinWidth: c.stepMinWidth } : {}),
+    ...(c.verticalBelow ? { verticalBelow: c.verticalBelow } : {}),
+  }
+}
+
+/**
+ * `workfloweditor` → engine `WorkflowEditorElement`: the field, the roles
+ * (`max` / `position` only when set), the user list as a `users.api` block
+ * (endpoint name + `paths`) with its keys, `stepKeys` always (the backend's
+ * names), labels only when changed, rules off their defaults.
+ */
+function workflowEditorElement(c: WorkflowEditorConfig, resolveEndpoint: ResolveEndpoint): Record<string, unknown> {
+  const paths = c.users.paths.split('.').map((s) => s.trim()).filter(Boolean)
+  const labels = Object.fromEntries(
+    (Object.keys(DEFAULT_WORKFLOW_LABELS) as (keyof typeof DEFAULT_WORKFLOW_LABELS)[])
+      .filter((k) => c.labels[k] !== DEFAULT_WORKFLOW_LABELS[k] && c.labels[k].trim())
+      .map((k) => [k, c.labels[k]]),
+  )
+  return {
+    name: c.name,
+    dataType: 'array',
+    isRequired: c.isRequired,
+    errorMessage: c.errorMessage,
+    ...omitEmpty({ label: c.label, helperText: c.helperText }),
+    roles: c.roles.map((r) => ({
+      value: r.value,
+      label: r.label,
+      ...(r.max !== '' ? { max: r.max } : {}),
+      ...(r.position ? { position: r.position } : {}),
+    })),
+    users: {
+      api: { name: resolveEndpoint(c.users.endpointId) ?? '', ...(paths.length ? { paths } : {}) },
+      keys: {
+        id: c.users.idKey,
+        display: c.users.displayKey,
+        ...omitEmpty({ subtitle: c.users.subtitleKey, avatar: c.users.avatarKey, search: c.users.searchKey }),
+      },
+    },
+    stepKeys: c.stepKeys,
+    ...(c.minInchargeUsers !== '' && c.minInchargeUsers !== 1 ? { minInchargeUsers: c.minInchargeUsers } : {}),
+    ...(c.allowDuplicateUsers ? { allowDuplicateUsers: true } : {}),
+    ...(Object.keys(labels).length ? { labels } : {}),
+    ...(c.disabled ? { disabled: true } : {}),
   }
 }
 
@@ -1158,14 +1364,17 @@ function buttonItemElement(
   const usesSubmit = effective.some(isSubmitAction)
   const usesCloseModal = effective.includes('CloseModal')
   const usesNavigate = effective.includes('Navigate')
+  const usesReload = effective.includes('ReloadDataTable')
   const navigate = usesNavigate && c.navigate ? navigateTarget(c.navigate, refs) : undefined
 
   const apiName = usesSubmit ? resolveEndpoint(c.endpointId) : undefined
   const modalId = usesCloseModal && c.modalItemId
     ? refs.modalIdByItem.get(c.modalItemId)
     : undefined
-  const reload = usesSubmit && c.reloadTableItemId
-    ? refs.tableNameByItem.get(c.reloadTableItemId)
+  // A reload target is a refetchable component (by its name) or a page load (by its key).
+  const reload = (usesSubmit || usesReload) && c.reloadTableItemId
+    ? (refs.tableNameByItem.get(c.reloadTableItemId) ??
+      (c.reloadTableItemId.startsWith(LOAD_ID_PREFIX) ? refs.loadKey(c.reloadTableItemId) : undefined))
     : undefined
 
   return {
@@ -1296,9 +1505,9 @@ function cardElement(
   const h = c.header
   const header = {
     ...omitEmpty({ title: h.title, subheader: h.subheader }),
-    ...(itemBindingValue(h.titleBinding) ? { titleValue: itemBindingValue(h.titleBinding) } : {}),
-    ...(itemBindingValue(h.subheaderBinding) ? { subheaderValue: itemBindingValue(h.subheaderBinding) } : {}),
-    ...(h.avatarEnabled ? { avatar: avatarElement(h.avatar) } : {}),
+    ...(itemBindingValue(h.titleBinding, refs) ? { titleValue: itemBindingValue(h.titleBinding, refs) } : {}),
+    ...(itemBindingValue(h.subheaderBinding, refs) ? { subheaderValue: itemBindingValue(h.subheaderBinding, refs) } : {}),
+    ...(h.avatarEnabled ? { avatar: avatarElement(h.avatar, refs) } : {}),
     ...(h.actionEnabled ? { action: cardActionElement(h.action, refs, resolveEndpoint) } : {}),
   }
   const navigate = c.navigate ? navigateTarget(c.navigate, refs) : undefined
@@ -1309,7 +1518,7 @@ function cardElement(
       ? {
           media: {
             ...omitEmpty({ src: c.media.src, alt: c.media.alt }),
-            ...(itemBindingValue(c.media.srcBinding) ? { srcValue: itemBindingValue(c.media.srcBinding) } : {}),
+            ...(itemBindingValue(c.media.srcBinding, refs) ? { srcValue: itemBindingValue(c.media.srcBinding, refs) } : {}),
             ...(c.media.height !== DEFAULT_CARD_MEDIA_HEIGHT ? { height: c.media.height } : {}),
           },
         }
@@ -1437,7 +1646,7 @@ function popoverElement(
     trigger:
       c.triggerKind === 'button'
         ? { type: 'button', element: buttonElement(c.triggerButton) }
-        : { type: 'text', element: textElement(c.triggerText) },
+        : { type: 'text', element: textElement(c.triggerText, refs) },
     placement: c.placement,
     triggerMode: c.triggerMode,
     ...(c.offset === '' ? {} : { offset: c.offset }),
@@ -1468,6 +1677,7 @@ function buildElement(
             observeContext(item, items),
             resolveEndpoint,
             item.type === 'multiAutocomplete',
+            itemBindingValue((item.config as SelectFieldConfig).optionsBinding, refs),
           )
         : undefined
     case 'checkbox':
@@ -1482,6 +1692,8 @@ function buildElement(
       return item.config ? dateElement(item.config as DateConfig) : undefined
     case 'uploadimage':
       return item.config ? uploadImageElement(item.config as UploadImageConfig) : undefined
+    case 'workfloweditor':
+      return item.config ? workflowEditorElement(item.config as WorkflowEditorConfig, resolveEndpoint) : undefined
     case 'uploadfile':
       return item.config ? uploadFileElement(item.config as UploadFileConfig) : undefined
     case 'datatable':
@@ -1503,14 +1715,16 @@ function buildElement(
     case 'text':
       // Config-less fallback keeps the pre-config behavior (label as content).
       return item.config
-        ? textElement(item.config as TextConfig)
+        ? textElement(item.config as TextConfig, refs)
         : { text: item.label, isLabel: true }
     case 'typography':
-      return item.config ? typographyElement(item.config as TypographyConfig) : undefined
+      return item.config ? typographyElement(item.config as TypographyConfig, refs) : undefined
     case 'html':
-      return item.config ? htmlContentElement(item.config as HtmlContentConfig) : undefined
+      return item.config ? htmlContentElement(item.config as HtmlContentConfig, refs) : undefined
+    case 'approvalline':
+      return item.config ? approvalLineElement(item.config as ApprovalLineConfig, endpoints, resolveEndpoint, refs) : undefined
     case 'avatar':
-      return item.config ? avatarElement(item.config as AvatarConfig) : undefined
+      return item.config ? avatarElement(item.config as AvatarConfig, refs) : undefined
     case 'divider':
       return item.config ? dividerElement(item.config as DividerConfig) : undefined
     case 'button':
@@ -1559,19 +1773,24 @@ export function buildBins(
   pages: PageRef[] = [],
   refs?: ButtonRefMaps,
   scope?: CanvasScope,
+  /** The page's loads, so bindings / conditions resolve load ids → keys (top-level call only). */
+  loads: Pick<PageLoadDef, 'id' | 'key'>[] = [],
 ): Record<string, unknown>[] {
   const cols = container.columns
   const resolveEndpoint = makeEndpointResolver(endpoints)
-  const buttonRefs = refs ?? makeButtonRefMaps(items, pages)
+  const buttonRefs = refs ?? makeButtonRefMaps(items, pages, loads)
   return items.map((item) => {
     const span = item.settings.colSpan
     const lg = toBoxRange(span.lg, cols.lg)
-    const element = buildElement(item, items, endpoints, resolveEndpoint, buttonRefs)
+    const built = buildElement(item, items, endpoints, resolveEndpoint, buttonRefs)
+    // A form field's initial value from a page load (engine `element.value`).
+    const initial = isBlockedInRepeater(item.type) ? itemBindingValue(item.initialValue, buttonRefs) : undefined
+    const element = built && initial ? { ...built, value: initial } : built
     // Adding / editing visibility inside a data table's modal: the engine
     // condition the example's country form uses (`<table>._id` undefined ⇒
     // the Add button opened it). `val: undefined` is dropped by JSON, which
     // the engine reads the same way.
-    const condition =
+    const modalCondition =
       scope && item.showWhen && item.showWhen !== 'always'
         ? {
             right: { key: scope.tableName, path: '_id' },
@@ -1579,6 +1798,12 @@ export function buildBins(
             left: { val: undefined },
           }
         : undefined
+    // Page-data visibility, combined with the modal's adding / editing one.
+    const dataCondition = item.dataWhen ? dataConditionValue(item.dataWhen, buttonRefs) : undefined
+    const condition =
+      modalCondition && dataCondition
+        ? { left: modalCondition, operator: 'and', right: dataCondition }
+        : (modalCondition ?? dataCondition)
     // A plain `container` Bin nests via the Bin-level `container` key (not an
     // element) — the engine renders it as a nested grid. Style-tab background /
     // border (design-only otherwise) turn on the engine's themed surface.
@@ -1641,6 +1866,23 @@ export function gridConfigToJson(
   items: GridItemData[],
   endpoints: EndpointRef[],
   pages: PageRef[] = [],
+  loads: Pick<PageLoadDef, 'id' | 'key'>[] = [],
 ): string {
-  return JSON.stringify(buildBins(container, items, endpoints, pages), null, 2)
+  return JSON.stringify(buildBins(container, items, endpoints, pages, undefined, undefined, loads), null, 2)
+}
+
+/**
+ * A page's loads → the engine `PageElement.loads` (empty ⇒ `undefined`, so
+ * the key drops). `state` sources that name another load resolve to its key.
+ */
+export function pageLoadsToEngine(
+  loads: PageLoadDef[] | undefined,
+  endpoints: EndpointRef[],
+  /** Other loads theirs may read (a page load chained off a global one). */
+  readable: Pick<PageLoadDef, 'id' | 'key'>[] = [],
+): Record<string, unknown>[] | undefined {
+  if (!loads?.length) return undefined
+  const resolveEndpoint = makeEndpointResolver(endpoints)
+  const loadKey = makeLoadKeyResolver([...loads, ...readable])
+  return loads.map((l) => enginePageLoad(l, endpoints, resolveEndpoint, (src) => navParamValue(src, loadKey)))
 }

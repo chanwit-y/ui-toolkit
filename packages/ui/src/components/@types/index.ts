@@ -433,6 +433,8 @@ export type DataTableProps = {
   api?: APIFunction;
   apiDelete?: APIFunction;
   apiInfo?: DataTableApi;
+  /** Rows from a DataValue instead of the API (see {@link DataTableElement.items}). */
+  items?: DataValue;
   /**
    * The read endpoint's declared segments, so `query`/`body` maps and the
    * pagination keys land in the caller's positional (query, param, body)
@@ -950,6 +952,24 @@ export type ContainerLoad = {
   api: API;
 };
 
+/**
+ * A page-level data load (see {@link PageElement.loads}): fetched once per
+ * page, stored in the global-state slice `key`, read anywhere on the page
+ * through `{ type: "state", key, path }` DataValues and `source: "state"`
+ * condition refs. Its `api.params` / `query` / `body` may read other slices,
+ * which chains loads: a load is held until every `state` value it reads and
+ * every URL `:param` resolves, and refetches when they change.
+ */
+export type PageLoad = ContainerLoad & {
+  /** Cover the page with the loading overlay while this load is in flight. */
+  blocking?: boolean;
+  /**
+   * Snackbar shown when the load fails. A `blocking` load without one shows a
+   * generic message; a non-blocking one stays silent (read `$status` instead).
+   */
+  errorMessage?: string;
+};
+
 export type Term = {
   type: "observe" | "value";
   name?: string;
@@ -1057,6 +1077,13 @@ export type AutocompleteElement = {
   };
   defaultData: Record<string, unknown>;
   options: any[];
+  /**
+   * The options from a DataValue instead of `options` / `api` — typically a
+   * page load's slice (`{ type: "state", key: "lookups" }`), so several
+   * fields share one fetched list. Read with the same `keys`; re-read when
+   * the slice changes.
+   */
+  optionsValue?: DataValue;
   orientation?: "horizontal" | "vertical";
   maxHeight?: number | string;
   inputIcon?: keyof typeof IconData | LucideIcon;
@@ -1166,7 +1193,17 @@ export type DataTableElement = {
   name: string;
   title: string;
   columns: ColumnDef[];
-  api: DataTableApi;
+  /** The read endpoint. Omit it when the rows come from {@link DataTableElement.items}. */
+  api?: DataTableApi;
+  /**
+   * Rows from a DataValue instead of `api` — typically a page load's slice
+   * (`{ type: "state", key: "regionCountries" }`), re-read when it changes.
+   * In-memory only: client paging, sorting and search work; `api.pagination`,
+   * `api.sort` and `filterContainer` need an API and are ignored (warned).
+   * Edit / delete still use their own API refs; reload the rows through the
+   * load's key (`reloadDataTable: "<load key>"`).
+   */
+  items?: DataValue;
   apiDeleteInfo?: APIDelete;
   modalContainer?: Container;
   modalMaxWidth?: string;
@@ -1625,6 +1662,8 @@ export type TElement =
   | PaperElement
   | CardElement
   | HtmlContentElement
+  | ApprovalLineElement
+  | WorkflowEditorElement
   | PopoverElement
   | DrawerElement
   | DividerElement;
@@ -1658,6 +1697,8 @@ export type BinType =
   | "paper"
   | "card"
   | "html"
+  | "approvalline"
+  | "workfloweditor"
   | "popover"
   | "drawer"
   | "divider"
@@ -1792,7 +1833,12 @@ export type ButtonAction =
   | "SubmitFormToPostAPI"
   | "SubmitFormToPatchAPI"
   | "SubmitFormToDeleteAPI"
-  // | "ReloadDataTable"
+  /**
+   * Call what is registered under `reloadDataTable`: a data table's, form
+   * list's or repeater's refetch (by its `name`), or a page / container
+   * load's (by its `key`).
+   */
+  | "ReloadDataTable"
   | "ConfirmBox"
   | "CloseModal"
   /** Go to the page named by the element's `navigate` target (see {@link NavigateTarget}). */
@@ -1832,6 +1878,12 @@ export type PageElement = {
   parent?: string;
   /** `false` hides the `AppShell` breadcrumb strip on this page. */
   breadcrumb?: boolean;
+  /**
+   * Data loaded for the whole page — every container, modal and drawer on it
+   * reads the slices. Order doesn't matter: loads that read another slice wait
+   * for it, the rest fire in parallel. Cleared when the route leaves the page.
+   */
+  loads?: PageLoad[];
 };
 
 /** Pages keyed by name — the routing counterpart of `TModelMaster` / `TApiMaster`. */
@@ -2071,6 +2123,232 @@ export type CardElement = {
  * `<style>`, no form controls; `class` / `style` / links kept). Same-origin
  * links navigate in-app; the `dt-*` helper classes are available.
  */
+/** Where a step is in the workflow (see {@link ApprovalLineElement.statusMap}). */
+export type ApprovalStepState = "done" | "current" | "pending" | "rejected" | "revised" | "skipped";
+
+/** One lodash path into a raw step row, or several tried in order (reviewer rows vs approver rows). */
+export type ApprovalKeyPath = string | string[];
+
+/**
+ * Paths into one raw step row of an approval line. Every key is optional but
+ * `name` and `status`; each accepts a list of fallback paths because the rows
+ * are heterogeneous (`ReviewerUser.FullNameEN` on a reviewer row,
+ * `ApproverUser.FullNameEN` on an approver row).
+ */
+export type ApprovalLineKeys = {
+  name: ApprovalKeyPath;
+  status: ApprovalKeyPath;
+  jobTitle?: ApprovalKeyPath;
+  /** A person id, for the `avatarUrl` template. */
+  personId?: ApprovalKeyPath;
+  /** An image URL on the row (wins over `avatarUrl`). */
+  avatar?: ApprovalKeyPath;
+  /** A role label on the row (wins over `roleRules`). */
+  role?: ApprovalKeyPath;
+  remark?: ApprovalKeyPath;
+  date?: ApprovalKeyPath;
+  /** Steps are sorted by it when present (stable: rows without one keep their order, first). */
+  sequence?: ApprovalKeyPath;
+};
+
+/**
+ * How a raw row gets its role label when the data carries none: the first
+ * rule whose `path` exists on the row (and whose `sequence`, when given,
+ * matches) wins. `{ path: "ReviewerUser", role: "Reviewer" }`,
+ * `{ path: "ApproverUser", sequence: 1, role: "Acknowledge" }`,
+ * `{ path: "ApproverUser", role: "Approver" }`.
+ */
+export type ApprovalRoleRule = {
+  path: string;
+  sequence?: number | string;
+  role: string;
+};
+
+/** One normalized step of an approval line, what the view renders. */
+export type ApprovalStep = {
+  name: string;
+  role?: string;
+  jobTitle?: string;
+  avatar?: string;
+  state: ApprovalStepState;
+  /** The raw status code, and its label from `statusLabels`. */
+  status?: string;
+  statusLabel?: string;
+  remark?: string;
+  date?: string;
+  personId?: string;
+};
+
+/**
+ * An approval workflow tracker (see the grilled design): the people a request
+ * passes through, left to right (or top to bottom), each an avatar with a
+ * state badge, the connector between them solid up to the current step. Fed
+ * by a raw step array — `items` — read through `keys` with fallback paths, an
+ * optional fixed `requester` first step, `roleRules` for the labels, and a
+ * `statusMap` turning the backend's status codes into step states.
+ */
+export type ApprovalLineElement = {
+  name?: string;
+  /**
+   * The raw step rows already in scope (a page-data slice, a repeater item
+   * field, a literal array). Exactly one of `items` / `api`.
+   */
+  items?: DataValue;
+  /**
+   * Own fetch (the repeater's read plumbing): `paths` drills to the request
+   * **record**, `stepsPath` to the row array inside it, so the requester can
+   * read the same record. Held until every URL `:param` resolves; the refetch
+   * is registered under `name` for `ReloadDataTable`.
+   */
+  api?: API;
+  /** Lodash path from the fetched record to the rows (`"steps"`); empty ⇒ the record is the array. */
+  stepsPath?: string;
+  keys: ApprovalLineKeys;
+  /**
+   * A fixed first step (the person who submitted the request), bound
+   * separately: `*Value` DataValues in the bound modes, `*Path` paths into the
+   * fetched record with `api`; the static text is the fallback.
+   */
+  requester?: {
+    name?: string;
+    nameValue?: DataValue;
+    namePath?: ApprovalKeyPath;
+    jobTitle?: string;
+    jobTitleValue?: DataValue;
+    jobTitlePath?: ApprovalKeyPath;
+    avatar?: string;
+    avatarValue?: DataValue;
+    avatarPath?: ApprovalKeyPath;
+    personIdPath?: ApprovalKeyPath;
+    role?: string;
+    /** Its state; default `done` (they submitted it). */
+    state?: ApprovalStepState;
+  };
+  roleRules?: ApprovalRoleRule[];
+  /**
+   * Status code → step state. Default: the document statuses 0 Draft→pending,
+   * 1 Reviewing→current, 2 Approving→current, 3 Rejected→rejected,
+   * 4 Revised→revised, 5 Approved→done, 6 Completed→done, 7 Canceled→skipped,
+   * 8 Expired→skipped, 9 Renewed→done. Unknown codes are `pending`.
+   */
+  statusMap?: Record<string, ApprovalStepState>;
+  /** Status code → label shown in the tooltip (default: the names above). */
+  statusLabels?: Record<string, string>;
+  /** Avatar URL template over the normalized step: `"/api/profile/{{personId}}/photo"`. */
+  avatarUrl?: string;
+  orientation?: "horizontal" | "vertical";
+  /** Avatar 32 / 40 / 48 px. Default `md`. */
+  size?: "sm" | "md" | "lg";
+  /** Job title under the role. Default false. */
+  showJobTitle?: boolean;
+  /** "1." … before each name. Default true. */
+  showIndex?: boolean;
+  /** Narrowest a horizontal step gets before the line scrolls (px). Default 96. */
+  stepMinWidth?: number;
+  /** Flip a horizontal line to vertical under this breakpoint. */
+  verticalBelow?: "sm" | "md";
+  emptyText?: string;
+  className?: string;
+};
+
+/** One role a workflow step can have (see {@link WorkflowEditorElement.roles}). */
+export type WorkflowRole = {
+  /** What is stored in the step's role field. */
+  value: string;
+  label: string;
+  /** At most this many steps of the role per line (the Inputter: 1 — "(Already assigned.)"). */
+  max?: number;
+  /** Pin the role's steps to the start or the end of the line (no "+" across it). */
+  position?: "first" | "last";
+};
+
+/** Field names of one saved step (the backend's shape; defaults are camelCase). */
+export type WorkflowStepKeys = {
+  role: string;
+  sequence: string;
+  incharge: string;
+  cc: string;
+};
+
+/** How the dialog's user pickers read an option row. */
+export type WorkflowUserKeys = {
+  id: string;
+  display: string;
+  subtitle?: string;
+  avatar?: string;
+  search?: string;
+};
+
+export type WorkflowEditorLabels = Partial<{
+  add: string;
+  save: string;
+  remove: string;
+  cancel: string;
+  dialogTitle: string;
+  editTitle: string;
+  roleField: string;
+  incharge: string;
+  cc: string;
+  userPlaceholder: string;
+  alreadyAssigned: string;
+  confirmTitle: string;
+  confirmDescription: string;
+  empty: string;
+}>;
+
+export type WorkflowEditorProps = {
+  name?: string;
+  label?: string;
+  helperText?: string;
+  error?: boolean;
+  errorMessage?: string;
+  /** The line (the field value); each step holds `stepKeys` fields plus whatever the backend sent. */
+  value?: Record<string, unknown>[];
+  /** Seeded into the form by `withForm` (the builder passes `[]`). */
+  defaultValue?: Record<string, unknown>[];
+  onChange?: (value: Record<string, unknown>[]) => void;
+  onBlur?: () => void;
+  roles: WorkflowRole[];
+  stepKeys?: Partial<WorkflowStepKeys>;
+  /** The user options of the dialog's pickers — loaded once when it opens (resolved `api` + row keys). */
+  users: { api?: FormListReadApi; options?: Record<string, unknown>[]; keys: WorkflowUserKeys };
+  /** Default 1 — Add / Save disabled until this many people are in charge. */
+  minInchargeUsers?: number;
+  /** Default false — a person in charge of one step is hidden from the others' pickers. */
+  allowDuplicateUsers?: boolean;
+  labels?: WorkflowEditorLabels;
+  /** Cards and connectors only: no "+", no dialog. */
+  disabled?: boolean;
+  className?: string;
+};
+
+/**
+ * A form-bound editor for one approval line (see the grilled design): a
+ * vertical chain of step cards — role + the people in charge — with a "+"
+ * on every connector to insert a step there, an add button at the end, and
+ * a dialog (role radios, in-charge and CC user pickers) to add / edit /
+ * remove one. The field value is the step array, saved with the page's form;
+ * only the dialog's user list is fetched (`users.api`, the select family's
+ * `api` block, loaded once).
+ */
+export type WorkflowEditorElement = {
+  name: string;
+  dataType: "array" | string;
+  isRequired?: boolean;
+  errorMessage?: string;
+  label?: string;
+  helperText?: string;
+  roles: WorkflowRole[];
+  stepKeys?: Partial<WorkflowStepKeys>;
+  users: { api?: API; options?: Record<string, unknown>[]; keys: WorkflowUserKeys };
+  minInchargeUsers?: number;
+  allowDuplicateUsers?: boolean;
+  labels?: WorkflowEditorLabels;
+  disabled?: boolean;
+  /** Read-only initial value bound from a global-state slice. */
+  value?: DataValue;
+};
+
 export type HtmlContentElement = {
   name?: string;
   /** The markup, with `{{path}}` placeholders into `value` (`{{value}}` = the value itself). */
@@ -2114,6 +2392,13 @@ export type Primitive = string | number | boolean;
 export type Ref = {
   key?: string;
   path?: string;
+  /**
+   * Where `key` is looked up: `context` (default) — the container's context
+   * data (a table's edit record, a repeater's `{ row, index }`); `state` — the
+   * global-state slice `key`, where `path` drills its data, or reads
+   * `$status` / `$error` / `$error.message` off the slice itself.
+   */
+  source?: "context" | "state";
 };
 
 export type Val = {

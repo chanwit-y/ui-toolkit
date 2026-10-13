@@ -29,7 +29,8 @@ type CoreProviderProps = {
 	withAuth?: boolean;
 }
 
-const queryClient = new QueryClient()
+/** One QueryClient for every engine root (page Cores and `GlobalLoads`), so caches are shared. */
+export const queryClient = new QueryClient()
 
 export const Provider = ({ children, isRoot = false, withAuth = false }: CoreProviderProps) => {
 

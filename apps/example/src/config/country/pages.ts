@@ -18,6 +18,9 @@ import { containerHtmlContentDemo } from "./htmlContentDemo";
 import { containerDrawerDemo } from "./drawerDemo";
 import { containerSwitchDemo } from "./switchDemo";
 import { containerUploadDemo } from "./uploadDemo";
+import { containerPageDataDemo, pageDataLoads } from "./pageDataDemo";
+import { approvalLineLoads, containerApprovalLineDemo } from "./approvalLineDemo";
+import { containerWorkflowDemo, workflowLoads } from "./workflowDemo";
 
 /**
  * Router demo: the pages the example app serves, keyed by name. Navigating
@@ -170,6 +173,34 @@ export const pages = {
     parent: "countryList",
     title: "Upload",
     containers: containerUploadDemo,
+  },
+  pageDataDemo: {
+    // Page-level loads (`loads`): four slices — one chained two deep — bound
+    // by a card, a table's rows, a select's options, a field's initial value
+    // and conditions (see ./pageDataDemo.ts). The crumb is the country's name.
+    path: "/page-data/:code",
+    parent: "countryList",
+    title: { type: "state", key: "country", path: "name" },
+    loads: pageDataLoads,
+    containers: containerPageDataDemo,
+  },
+  approvalLineDemo: {
+    // The `approvalline` element over a loaded request's raw workflow rows
+    // (see ./approvalLineDemo.ts). The crumb is the request's title.
+    path: "/approval-line/:id",
+    parent: "countryList",
+    title: { type: "state", key: "approval", path: "title" },
+    loads: approvalLineLoads,
+    containers: containerApprovalLineDemo,
+  },
+  workflowDemo: {
+    // The `workfloweditor` element as a field of a form over a loaded
+    // workflow config, saved with Save (see ./workflowDemo.ts).
+    path: "/workflow/:id",
+    parent: "countryList",
+    title: { type: "state", key: "workflow", path: "name" },
+    loads: workflowLoads,
+    containers: containerWorkflowDemo,
   },
 } satisfies TPageMaster;
 

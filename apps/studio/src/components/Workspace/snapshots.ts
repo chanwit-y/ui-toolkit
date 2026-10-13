@@ -56,11 +56,24 @@ import {
   optionDisplaySeedItems,
   countrySeedModels,
   countrySeedTheme,
+  PAGE_DATA_PAGE_ID,
+  LOAD_COUNTRY_ID,
+  pageDataDemoSeedItems,
+  pageDataSeedLoads,
+  seedGlobalLoads,
+  APPROVAL_LINE_PAGE_ID,
+  LOAD_APPROVAL_ID,
+  approvalLineDemoSeedItems,
+  approvalSeedLoads,
+  WORKFLOW_PAGE_ID,
+  LOAD_WORKFLOW_ID,
+  workflowDemoSeedItems,
+  workflowSeedLoads,
 } from '../seed/country'
 import { builtinTemplates } from '../seed/templates'
 import { useThemeStore } from '../Theme/themeStore'
 import type { StudioThemeConfig } from '../Theme/types'
-import type { LibraryData, PageDef, PageGrid, ProjectSnapshot, AppBarSettings, ShellSettings } from './types'
+import type { LibraryData, MenuItemDef, PageDef, PageGrid, ProjectSnapshot, AppBarSettings, ShellSettings } from './types'
 import { defaultMenu } from './menu'
 
 export const COUNTRIES_GROUP_ID = 'seed-group-countries'
@@ -523,6 +536,99 @@ export function switchDemoPage(): PageDef {
   }
 }
 
+/**
+ * The "Page data" example page (the example app's `/page-data/:code`): three
+ * page loads — one chained two deep — the project's global `lookups`, and
+ * components bound to them. Its crumb is the loaded country's name.
+ */
+export function pageDataDemoPage(): PageDef {
+  return {
+    id: PAGE_DATA_PAGE_ID,
+    key: 'pageData',
+    name: 'Page data',
+    path: '/page-data/:code',
+    grid: {
+      items: pageDataDemoSeedItems(),
+      containerSettings: defaultContainerSettings,
+      fieldSeq: 0,
+    },
+    parentId: 'seed-page-countries',
+    crumb: { type: 'state', key: LOAD_COUNTRY_ID, path: 'name' },
+    loads: pageDataSeedLoads(),
+  }
+}
+
+/** The "Approval line" example page (the example app's `/approval-line/:id`). */
+export function approvalLineDemoPage(): PageDef {
+  return {
+    id: APPROVAL_LINE_PAGE_ID,
+    key: 'approvalLine',
+    name: 'Approval line',
+    path: '/approval-line/:id',
+    grid: {
+      items: approvalLineDemoSeedItems(),
+      containerSettings: defaultContainerSettings,
+      fieldSeq: 0,
+    },
+    parentId: 'seed-page-countries',
+    crumb: { type: 'state', key: LOAD_APPROVAL_ID, path: 'title' },
+    loads: approvalSeedLoads(),
+  }
+}
+
+/** The "Workflow editor" example page (the example app's `/workflow/:id`). */
+export function workflowDemoPage(): PageDef {
+  return {
+    id: WORKFLOW_PAGE_ID,
+    key: 'workflow',
+    name: 'Workflow editor',
+    path: '/workflow/:id',
+    grid: {
+      items: workflowDemoSeedItems(),
+      containerSettings: defaultContainerSettings,
+      fieldSeq: 0,
+    },
+    parentId: 'seed-page-countries',
+    crumb: { type: 'state', key: LOAD_WORKFLOW_ID, path: 'name' },
+    loads: workflowSeedLoads(),
+  }
+}
+
+/** Its sidebar link: the route needs an `:id`, so the link fixes one. */
+export function workflowMenuItem(): MenuItemDef {
+  return {
+    id: crypto.randomUUID(),
+    kind: 'page',
+    label: 'Workflow editor',
+    icon: 'gitBranch',
+    navigate: { pageId: WORKFLOW_PAGE_ID, params: { id: { type: 'value', value: 'wf-1' } }, replace: false },
+  }
+}
+
+/** Its sidebar link: the route needs an `:id`, so the link fixes one. */
+export function approvalLineMenuItem(): MenuItemDef {
+  return {
+    id: crypto.randomUUID(),
+    kind: 'page',
+    label: 'Approval line',
+    icon: 'workflow',
+    navigate: { pageId: APPROVAL_LINE_PAGE_ID, params: { id: { type: 'value', value: 'req-1001' } }, replace: false },
+  }
+}
+
+/** The Page data page's sidebar link: its route needs a `:code`, so the link fixes one. */
+export function pageDataMenuItem(): MenuItemDef {
+  return {
+    id: crypto.randomUUID(),
+    kind: 'page',
+    label: 'Page data',
+    icon: 'database',
+    navigate: { pageId: PAGE_DATA_PAGE_ID, params: { code: { type: 'value', value: 'TH' } }, replace: false },
+  }
+}
+
+export { seedGlobalLoads }
+
 export function tableLayoutDemoPage(): PageDef {
   return {
     id: TABLE_LAYOUT_PAGE_ID,
@@ -609,6 +715,9 @@ export function countryProjectSnapshot(library: LibraryData): ProjectSnapshot {
       chipsDemoPage(),
       switchDemoPage(),
       uploadDemoPage(),
+      pageDataDemoPage(),
+      approvalLineDemoPage(),
+      workflowDemoPage(),
   ]
   // Every data table carries its two canvases (edit modal + filter form).
   for (const page of pages) ensureDataTableCanvases(page.grid.items)
@@ -617,9 +726,14 @@ export function countryProjectSnapshot(library: LibraryData): ProjectSnapshot {
   for (const item of menu) {
     if (item.kind === 'page') item.icon ||= OPTION_DEMO_MENU_ICONS[item.navigate.pageId] ?? ''
   }
+  // A routed page has no default link (it needs its :code) — add one with a fixed code.
+  menu.push(pageDataMenuItem())
+  menu.push(approvalLineMenuItem())
+  menu.push(workflowMenuItem())
   return {
     pages,
     menu,
+    globalLoads: seedGlobalLoads(),
     shell: defaultShell('Country manager'),
     env: countrySeedEnvVars(),
     theme: countrySeedTheme(),

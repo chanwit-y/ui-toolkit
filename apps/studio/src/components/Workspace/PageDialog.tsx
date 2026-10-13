@@ -6,20 +6,22 @@ import { isValidPageKey, normalizePath, pageKey, pathParams, slugPath } from './
 import type { PageDef } from './types'
 import { useWorkspaceStore } from './workspaceStore'
 
-/** Where a page's breadcrumb label comes from (see the grilled design: no
- * global state until studio pages can author a container `load`). */
-type CrumbKind = 'name' | 'value' | 'param' | 'query'
+/** Where a page's breadcrumb label comes from; `state` (a field of one of
+ * the page's loads) only once the page has loads. */
+type CrumbKind = 'name' | 'value' | 'param' | 'query' | 'state'
 const CRUMB_OPTIONS: { value: CrumbKind; label: string }[] = [
   { value: 'name', label: 'Page name' },
   { value: 'value', label: 'Fixed text' },
   { value: 'param', label: 'URL :param' },
   { value: 'query', label: 'URL ?query' },
 ]
+const STATE_CRUMB_OPTION = { value: 'state' as const, label: 'Page data' }
 
 function crumbKind(src: NavParamSource | undefined): CrumbKind {
   if (!src) return 'name'
   if (src.type === 'value') return 'value'
   if (src.type === 'url') return src.source === 'query' ? 'query' : 'param'
+  if (src.type === 'state') return 'state'
   return 'name'
 }
 
@@ -27,13 +29,15 @@ function crumbText(src: NavParamSource | undefined): string {
   if (!src) return ''
   if (src.type === 'value') return src.value
   if (src.type === 'url') return src.key
+  if (src.type === 'state') return src.key
   return ''
 }
 
-function toCrumb(kind: CrumbKind, text: string): NavParamSource | null {
+function toCrumb(kind: CrumbKind, text: string, path = ''): NavParamSource | null {
   const t = text.trim()
   if (kind === 'name' || !t) return null
   if (kind === 'value') return { type: 'value', value: t }
+  if (kind === 'state') return { type: 'state', key: t, path: path.trim() }
   return { type: 'url', key: t, source: kind }
 }
 
@@ -84,6 +88,9 @@ export function PageDialog({
   const [parentId, setParentId] = useState(page?.parentId ?? '')
   const [kind, setKind] = useState<CrumbKind>(crumbKind(page?.crumb))
   const [crumbValue, setCrumbValue] = useState(crumbText(page?.crumb))
+  const [crumbPath, setCrumbPath] = useState(page?.crumb?.type === 'state' ? page.crumb.path : '')
+  const loads = page?.loads ?? []
+  const crumbOptions = loads.length > 0 || kind === 'state' ? [...CRUMB_OPTIONS, STATE_CRUMB_OPTION] : CRUMB_OPTIONS
   const [hideBreadcrumbs, setHideBreadcrumbs] = useState(!!page?.hideBreadcrumbs)
 
   const effectivePath = pathTouched ? path : slugPath(name || 'page')
@@ -98,7 +105,15 @@ export function PageDialog({
     { value: '', label: 'None (top level)' },
     ...siblings.filter((p) => !blockedParents.has(p.id)).map((p) => ({ value: p.id, label: p.name })),
   ]
-  const crumb = toCrumb(kind, kind === 'param' && params.length && !crumbValue ? params[0] : crumbValue)
+  const crumb = toCrumb(
+    kind,
+    kind === 'param' && params.length && !crumbValue
+      ? params[0]
+      : kind === 'state' && !crumbValue
+        ? (loads[0]?.id ?? '')
+        : crumbValue,
+    crumbPath,
+  )
   const breadcrumbPatch = {
     parentId: parentId || null,
     crumb,
@@ -197,15 +212,41 @@ export function PageDialog({
               <div className="w-32 shrink-0">
                 <Select
                   aria-label="Breadcrumb label source"
-                  options={CRUMB_OPTIONS}
+                  options={crumbOptions}
                   value={kind}
                   onChange={(v) => {
                     setKind(v as CrumbKind)
                     setCrumbValue('')
+                    setCrumbPath('')
                   }}
                 />
               </div>
-              {kind === 'param' && params.length > 0 ? (
+              {kind === 'state' ? (
+                <div className="flex flex-1 gap-1.5">
+                  <div className="flex-1">
+                    <Select
+                      aria-label="Breadcrumb load"
+                      options={[
+                        ...(crumbValue && !loads.some((l) => l.id === crumbValue)
+                          ? [{ value: crumbValue, label: '⚠ deleted load' }]
+                          : []),
+                        ...loads.map((l) => ({ value: l.id, label: l.key })),
+                      ]}
+                      value={crumbValue || loads[0]?.id || ''}
+                      onChange={setCrumbValue}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <Input
+                      aria-label="Breadcrumb field"
+                      value={crumbPath}
+                      onChange={(e) => setCrumbPath(e.target.value)}
+                      placeholder="field, e.g. name"
+                      className="font-mono"
+                    />
+                  </div>
+                </div>
+              ) : kind === 'param' && params.length > 0 ? (
                 <div className="flex-1">
                   <Select
                     aria-label="Route param"

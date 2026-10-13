@@ -1,5 +1,24 @@
 import { get } from "lodash";
 import type { CondValue, Primitive, Ref, CondExpression, Val } from "../@types";
+import { readSlice } from "./stateStore";
+
+/**
+ * Global-state keys the conditions read through `source: "state"` refs, so a
+ * renderer can subscribe and re-evaluate when a slice lands.
+ */
+export function conditionStateKeys(conditions: (CondExpression | undefined)[]): string[] {
+  const keys = new Set<string>();
+  const walk = (t: unknown) => {
+    if (!t || typeof t !== "object") return;
+    const o = t as Record<string, unknown>;
+    if ("operator" in o) {
+      walk(o.left);
+      walk(o.right);
+    } else if (o.source === "state" && typeof o.key === "string") keys.add(o.key);
+  };
+  conditions.forEach(walk);
+  return [...keys];
+}
 
 
 export class ConditionExpression {
@@ -53,8 +72,13 @@ export class ConditionExpression {
     return this._isExpression(term)
       ? this._evaluate(term)
       : this._isKey(term)
-        ? get(this?._contextData?.[(term as Ref).key!], (term as Ref).path ?? "")
+        ? this._ref(term as Ref)
         : (term as Val).val;
+  }
+
+  private _ref(ref: Ref): Primitive {
+    if (ref.source === "state") return readSlice(ref.key!, ref.path) as Primitive;
+    return get(this?._contextData?.[ref.key!], ref.path ?? "");
   }
 
   public expression(expression: CondExpression) {

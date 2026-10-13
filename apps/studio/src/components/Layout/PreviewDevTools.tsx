@@ -35,6 +35,7 @@ export type ApiLogEntry = {
 const TABS = [
   { value: 'form', label: 'Form' },
   { value: 'data', label: 'Data' },
+  { value: 'page', label: 'Page data' },
   { value: 'stores', label: 'Stores' },
   { value: 'api', label: 'API' },
   { value: 'config', label: 'Config' },
@@ -135,6 +136,69 @@ function DataTab() {
     return <EmptyHint>No context data yet — select a table row in the preview.</EmptyHint>
   }
   return <JsonBlock id="context-data" label="contextData" value={merged} />
+}
+
+/** Re-render on any state slice change, and poll for newly registered keys. */
+function useStateSlicesVersion() {
+  const [, bump] = useReducer((n: number) => n + 1, 0)
+  useEffect(() => {
+    const poll = setInterval(bump, 500)
+    const unsubs = stateStoreKeys().map((k) => getStateStore(k).subscribe(bump))
+    return () => {
+      clearInterval(poll)
+      unsubs.forEach((u) => u())
+    }
+  })
+}
+
+const STATUS_CLASS: Record<string, string> = {
+  success: 'text-ok',
+  error: 'text-danger',
+  loading: 'text-warn',
+  held: 'text-ink-3',
+  idle: 'text-ink-3',
+}
+
+/**
+ * The page's data loads as the engine holds them (see the grilled page-data
+ * design): every live state slice with its `$status` — idle / held (waiting on
+ * a :param or another load) / loading / success / error — the error, and the
+ * data. Cleared slices (a page left) are idle with no data and drop out.
+ */
+function PageDataTab() {
+  useStateSlicesVersion()
+  const slices = stateStoreKeys()
+    .map((k) => [k, getStateStore(k).getState()] as const)
+    .filter(([, s]) => s.status !== 'idle' || s.data !== undefined)
+  if (slices.length === 0) {
+    return <p className="p-2 text-ui-sm text-ink-3">No page data on this page — add loads in the Layout’s Page data tab.</p>
+  }
+  return (
+    <div className="space-y-2">
+      <ul className="space-y-0.5 font-mono text-ui-sm">
+        {slices.map(([k, s]) => (
+          <li key={k} className="flex items-center justify-between gap-2">
+            <span className="truncate text-ink">{k}</span>
+            <span className={STATUS_CLASS[s.status] ?? 'text-ink-3'}>{s.status}</span>
+          </li>
+        ))}
+      </ul>
+      <JsonBlock
+        id="page-data"
+        label="page data"
+        value={Object.fromEntries(
+          slices.map(([k, s]) => [
+            k,
+            {
+              status: s.status,
+              ...(s.error ? { error: (s.error as { message?: string })?.message ?? String(s.error) } : {}),
+              data: s.data,
+            },
+          ]),
+        )}
+      />
+    </div>
+  )
 }
 
 function StoresTab() {
@@ -265,6 +329,7 @@ export function PreviewDevTools({
       <div className="min-h-0 flex-1 overflow-auto">
         {tab === 'form' && <FormTab />}
         {tab === 'data' && <DataTab />}
+        {tab === 'page' && <PageDataTab />}
         {tab === 'stores' && <StoresTab />}
         {tab === 'api' && <ApiTab log={log} />}
         {tab === 'config' && (

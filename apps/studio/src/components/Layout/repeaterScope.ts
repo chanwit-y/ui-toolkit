@@ -4,6 +4,8 @@ import { useProjectEndpoints, useProjectModels } from '../Library/scope'
 import type { ModelDef } from '../Model/types'
 import type { PickableField } from '../common'
 import { useGridStore } from './gridStore'
+import { bindingRowModel, usePageLoads } from './pageData'
+import { loadShape, type PageLoadDef } from '../Workspace/pageLoads'
 import { ancestorRepeaters } from './repeaterRules'
 import { rowModelFields, type RowFields, type RowModel } from './rowFields'
 import type { GridItemData, RepeaterConfig } from './types'
@@ -18,6 +20,7 @@ export function repeaterItemModel(
   chain: GridItemData[],
   endpoints: EndpointDef[],
   models: ModelDef[],
+  loads: PageLoadDef[] = [],
 ): RowModel {
   const self = chain[chain.length - 1]
   if (!self) return { fields: null, reason: 'Not inside a repeater.' }
@@ -25,11 +28,15 @@ export function repeaterItemModel(
   if (config.source === 'endpoint') {
     return rowModelFields(config.read.endpointId, config.readPaths, endpoints, models)
   }
+  if (config.source === 'state') {
+    const shapes = new Map(loads.map((l) => [l.id, loadShape(l, endpoints, models)]))
+    return bindingRowModel(config.stateBinding, shapes)
+  }
   if (chain.length < 2) {
     return { fields: null, reason: 'A parent-item source needs an enclosing repeater.' }
   }
   if (!config.parentField) return { fields: null, reason: 'Pick the parent item’s array field.' }
-  const parent = repeaterItemModel(chain.slice(0, -1), endpoints, models)
+  const parent = repeaterItemModel(chain.slice(0, -1), endpoints, models, loads)
   if (parent.fields === null) return parent
   const field = parent.fields.find((f) => f.name === config.parentField)
   if (!field) return { fields: null, reason: `“${config.parentField}” is not a field of the parent item.` }
@@ -48,6 +55,8 @@ function pickable(model: RowModel): RowFields {
 export type RepeaterScope = {
   /** Item fields of the innermost enclosing repeater. */
   itemFields: RowFields
+  /** The same, as full model fields (nested objects / arrays walkable). */
+  itemModel: RowModel
 } | null
 
 /** The enclosing repeater's item fields for the item being inspected. */
@@ -56,11 +65,13 @@ export function useRepeaterScope(): RepeaterScope {
   const activePath = useGridStore((s) => s.activePath)
   const endpoints = useProjectEndpoints()
   const models = useProjectModels()
+  const loads = usePageLoads()
   return useMemo(() => {
     const chain = ancestorRepeaters(items, activePath)
     if (chain.length === 0) return null
-    return { itemFields: pickable(repeaterItemModel(chain, endpoints, models)) }
-  }, [items, activePath, endpoints, models])
+    const itemModel = repeaterItemModel(chain, endpoints, models, loads)
+    return { itemFields: pickable(itemModel), itemModel }
+  }, [items, activePath, endpoints, models, loads])
 }
 
 /**
@@ -72,10 +83,11 @@ export function useParentRepeaterArrays(): { nested: boolean; arrays: RowFields 
   const activePath = useGridStore((s) => s.activePath)
   const endpoints = useProjectEndpoints()
   const models = useProjectModels()
+  const loads = usePageLoads()
   return useMemo(() => {
     const chain = ancestorRepeaters(items, activePath)
     if (chain.length === 0) return { nested: false, arrays: { fields: null, reason: 'Not inside a repeater.' } }
-    const parent = repeaterItemModel(chain, endpoints, models)
+    const parent = repeaterItemModel(chain, endpoints, models, loads)
     if (parent.fields === null) return { nested: true, arrays: parent }
     return {
       nested: true,
@@ -85,5 +97,5 @@ export function useParentRepeaterArrays(): { nested: boolean; arrays: RowFields 
           .map((f): PickableField => ({ name: f.name, kind: f.kind })),
       },
     }
-  }, [items, activePath, endpoints, models])
+  }, [items, activePath, endpoints, models, loads])
 }
