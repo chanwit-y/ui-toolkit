@@ -3,7 +3,7 @@ import { ApiFactory, HttpClientFactory } from "../../api";
 import { ApiMaster, type TApiMaster } from "../../api/APIMaster";
 import { ContainerBuilder } from "./containerBuilder";
 
-import type { Container } from "../@types";
+import type { Container, PageLoad } from "../@types";
 import type { IAuthContext } from "../../auth/@types";
 
 export class Core {
@@ -16,7 +16,9 @@ export class Core {
     private _http: HttpClientFactory,
     private _model: TModelMaster,
     private _api: Record<string, any>,
-    private _containers: Container[]
+    private _containers: Container[],
+    /** Page-level data loads (`PageElement.loads`), mounted once above the containers. */
+    private _loads: PageLoad[] = []
   ) {
     this._apiFactory = new ApiFactory(this._http, {});
     this._modelConfig = this._model;
@@ -33,6 +35,6 @@ export class Core {
   }
 
   public run() {
-    return new ContainerBuilder(this._containers, this._apis).draw(true, false);
+    return new ContainerBuilder(this._containers, this._apis, this._loads).draw(true, false);
   }
 }

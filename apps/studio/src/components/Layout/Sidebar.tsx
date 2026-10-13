@@ -2,6 +2,7 @@ import { CodeViewer, cn } from '../common'
 import { ButtonConfigPanel } from './ButtonConfigPanel'
 import { CardConfigPanel } from './CardConfigPanel'
 import { HtmlContentConfigPanel } from './HtmlContentConfigPanel'
+import { ApprovalLineConfigPanel } from './ApprovalLineConfigPanel'
 import { CheckboxConfigPanel } from './CheckboxConfigPanel'
 import { SwitchConfigPanel } from './SwitchConfigPanel'
 import {
@@ -32,6 +33,7 @@ import { RadioConfigPanel } from './RadioConfigPanel'
 import { SelectFieldConfigPanel } from './SelectFieldConfigPanel'
 import { ContainerSettingsPanel, ItemSettingsPanel } from './SettingsPanel'
 import { ShowWhenPanel } from './ShowWhenPanel'
+import { PageDataPanel } from './PageDataPanel'
 import { StylePanel } from './StylePanel'
 import { TextareaConfigPanel } from './TextareaConfigPanel'
 import { UploadFileConfigPanel, UploadImageConfigPanel } from './UploadConfigPanel'
@@ -52,6 +54,7 @@ import type {
   PaperConfig,
   CardConfig,
   HtmlContentConfig,
+  ApprovalLineConfig,
   PopoverConfig,
   RadioConfig,
   SelectFieldConfig,
@@ -144,6 +147,7 @@ export function Sidebar({ gridConfigJson, fullGridCss }: SidebarProps) {
       <div className={cn('min-h-0 flex-1 overflow-y-auto p-3', sidebarView === 'code' && 'p-2')}>
         {sidebarView !== 'code' && selectedItem && <PathCrumb label={selectedItem.label} />}
         {sidebarView === 'inspector' && selectedItem && <ShowWhenPanel item={selectedItem} />}
+        {sidebarView === 'inspector' && selectedItem && <PageDataPanel item={selectedItem} />}
         {sidebarView === 'code' ? (
           <CodeViewer
             maxHeightClassName="max-h-[calc(100vh-9rem)]"
@@ -290,6 +294,8 @@ export function Sidebar({ gridConfigJson, fullGridCss }: SidebarProps) {
             <CardConfigPanel itemId={selectedItem.id} config={selectedItem.config as CardConfig} />
           ) : selectedItem.type === 'html' && selectedItem.config ? (
             <HtmlContentConfigPanel itemId={selectedItem.id} config={selectedItem.config as HtmlContentConfig} />
+          ) : selectedItem.type === 'approvalline' && selectedItem.config ? (
+            <ApprovalLineConfigPanel itemId={selectedItem.id} config={selectedItem.config as ApprovalLineConfig} />
           ) : selectedItem.type === 'tab' && selectedItem.config ? (
             <TabConfigPanel
               itemId={selectedItem.id}

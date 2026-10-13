@@ -130,6 +130,12 @@ export type SelectFieldConfig = {
   mode: 'static' | 'source'
   options: SelectOption[]
   /**
+   * Options from a page load instead (`source: 'state'` — engine
+   * `optionsValue`): wins over both modes while set, which keep their config
+   * so switching back loses nothing. Rows are read with the same keys.
+   */
+  optionsBinding?: ItemBinding
+  /**
    * The option-display keys below are one flat set shared by both modes: they
    * name fields of an option row, whether that row is a static record or a row of
    * the `dataSource` response. `''` = unset for the optional ones.
@@ -701,6 +707,12 @@ export type DataTableConfig = {
    * the endpoint's current name at export; also what the Live Preview fetches.
    */
   endpointId: string | null
+  /**
+   * Rows from a page load instead of the endpoint (engine `items`, in-memory
+   * only): while set the export drops the read `api` — pagination, server
+   * sort and filters with it. `null` / absent = the endpoint.
+   */
+  rowsBinding?: ItemBinding
   /** Dot-path into the response to the row array (engine `api.paths`, e.g.
    * `data`); `''` = the response is the array itself. */
   apiPaths: string
@@ -827,6 +839,25 @@ export const DEFAULT_ADD_BUTTON: ButtonConfig = { label: 'Add', icon: 'puls', va
  * engine `condition` on `<table name>._id`; absent = always.
  */
 export type ShowWhen = 'always' | 'adding' | 'editing'
+
+/**
+ * Show an item only while a page load is in a state, or while one of its
+ * fields compares to a value (see the grilled page-data design) — exported
+ * as a `source: "state"` engine condition. `set` / `unset` compare against
+ * `undefined`; the other operators against `value` (JSON-parsed when it
+ * spells a number / boolean / null, else the text).
+ */
+export type DataCondition = {
+  loadId: string
+  test: 'loaded' | 'loading' | 'failed' | 'compare'
+  path: string
+  op: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'set' | 'unset'
+  value: string
+}
+
+export function createDataCondition(loadId: string): DataCondition {
+  return { loadId, test: 'loaded', path: '', op: 'eq', value: '' }
+}
 
 /**
  * Server pagination authoring — the engine `DataTablePagination` with the
@@ -1029,7 +1060,13 @@ export function createDefaultFormListConfig(name: string): FormListConfig {
  * `{ type:'row', key, path? }` DataValue; the static prop stays as the
  * fallback shown when the value resolves empty.
  */
-export type ItemBinding = { key: string; path: string } | null
+/**
+ * A bound display value. `source` absent / `'row'`: `key` is a field of the
+ * enclosing repeater's item (`'none'` = the item itself). `'state'`: `key` is
+ * a page load's id (resolved to its key at export), `path` drills its data or
+ * reads `$status`.
+ */
+export type ItemBinding = { key: string; path: string; source?: 'row' | 'state' } | null
 
 /**
  * Editable config for a repeater. Maps onto the engine's `RepeaterElement`;
@@ -1044,8 +1081,10 @@ export type RepeaterConfig = {
   name: string
   title: string
   idKey: string
-  source: 'endpoint' | 'parent'
+  source: 'endpoint' | 'parent' | 'state'
   read: FormListCrudRef
+  /** The page load (array) the items come from (source `state`). */
+  stateBinding?: ItemBinding
   /** Dot path into the read response to the item array (`data`). */
   readPaths: string
   /** Array field of the enclosing repeater's item (source `parent`). */
@@ -1378,6 +1417,8 @@ export type ButtonActionKey =
   | 'ClearCurrentFormSelected'
   | 'CloseModal'
   | 'Navigate'
+  /** Refetch `reloadTableItemId`: a table / form list / repeater, or a page load. */
+  | 'ReloadDataTable'
 
 /** Mirrors the library's `SnackbarVariant`. */
 
@@ -1630,6 +1671,130 @@ export function createDefaultHtmlContentConfig(name: string): HtmlContentConfig 
   }
 }
 
+/** One key of an approval line's row mapping: paths tried in order (see the engine `ApprovalKeyPath`). */
+export type ApprovalLineKeyConfig = {
+  name: string[]
+  status: string[]
+  jobTitle: string[]
+  personId: string[]
+  avatar: string[]
+  role: string[]
+  remark: string[]
+  date: string[]
+  sequence: string[]
+}
+
+export type ApprovalRoleRuleConfig = { id: string; path: string; sequence: string; role: string }
+
+export type ApprovalStepStateConfig = 'done' | 'current' | 'pending' | 'rejected' | 'revised' | 'skipped'
+
+/** One row of the status map: a backend code, its step state and its tooltip label. */
+export type ApprovalStatusConfig = { code: string; state: ApprovalStepStateConfig; label: string }
+
+/** The user's document statuses — the engine's default map, shown pre-filled. */
+export const DEFAULT_APPROVAL_STATUSES: ApprovalStatusConfig[] = [
+  { code: '0', state: 'pending', label: 'Draft' },
+  { code: '1', state: 'current', label: 'Reviewing' },
+  { code: '2', state: 'current', label: 'Approving' },
+  { code: '3', state: 'rejected', label: 'Rejected' },
+  { code: '4', state: 'revised', label: 'Revised' },
+  { code: '5', state: 'done', label: 'Approved' },
+  { code: '6', state: 'done', label: 'Completed' },
+  { code: '7', state: 'skipped', label: 'Canceled' },
+  { code: '8', state: 'skipped', label: 'Expired' },
+  { code: '9', state: 'done', label: 'Renewed' },
+]
+
+/**
+ * Editable config for an approval line (see the grilled design). Maps onto
+ * the engine `ApprovalLineElement`: the raw step rows come from `items` (a
+ * page load or the enclosing repeater's item), read through `keys` — each a
+ * list of fallback paths, typed one per line — labelled by `roleRules`, and
+ * mapped by `statuses` (the defaults are the engine's; exported only when
+ * changed). The requester is a fixed first step with its own bindings.
+ */
+export type ApprovalLineConfig = {
+  name: string
+  /** `binding`: the rows are `items` (a page load / the repeater item); `endpoint`: the line fetches `read` itself. */
+  source: 'binding' | 'endpoint'
+  items: ItemBinding
+  read: FormListCrudRef
+  /** Dot path from the response to the request record (engine `api.paths`). */
+  recordPath: string
+  /** Dot path from the record to the step rows (engine `stepsPath`); empty = the record is the list. */
+  stepsPath: string
+  keys: ApprovalLineKeyConfig
+  roleRules: ApprovalRoleRuleConfig[]
+  statuses: ApprovalStatusConfig[]
+  requesterEnabled: boolean
+  requesterName: string
+  requesterNameBinding: ItemBinding
+  requesterJobTitle: string
+  requesterJobTitleBinding: ItemBinding
+  requesterRole: string
+  /** Endpoint mode: paths into the fetched record (fallbacks, like the keys). */
+  requesterNamePath: string[]
+  requesterJobTitlePath: string[]
+  requesterPersonIdPath: string[]
+  requesterAvatarPath: string[]
+  /** `{{personId}}` template; `''` = initials only. */
+  avatarUrl: string
+  orientation: 'horizontal' | 'vertical'
+  size: 'sm' | 'md' | 'lg'
+  showJobTitle: boolean
+  showIndex: boolean
+  stepMinWidth: number | ''
+  verticalBelow: '' | 'sm' | 'md'
+  emptyText: string
+}
+
+/** The user's row shape — the defaults so a dropped line already reads the document system's rows. */
+export function createDefaultApprovalLineConfig(name: string): ApprovalLineConfig {
+  return {
+    name,
+    source: 'binding',
+    items: null,
+    read: createFormListCrudRef(),
+    recordPath: 'data',
+    stepsPath: 'steps',
+    keys: {
+      name: ['ApproverUser.FullNameEN', 'ReviewerUser.FullNameEN'],
+      status: ['Status'],
+      jobTitle: ['ApproverUser.JobTitle', 'ReviewerUser.JobTitle'],
+      personId: ['ApproverUser.PersonId', 'ReviewerUser.PersonId'],
+      avatar: [],
+      role: [],
+      remark: ['Remark'],
+      date: ['Model.UpdatedAt'],
+      sequence: ['Sequence'],
+    },
+    roleRules: [
+      { id: 'rule-reviewer', path: 'ReviewerUser', sequence: '', role: 'Reviewer' },
+      { id: 'rule-acknowledge', path: 'ApproverUser', sequence: '1', role: 'Acknowledge' },
+      { id: 'rule-approver', path: 'ApproverUser', sequence: '', role: 'Approver' },
+    ],
+    statuses: DEFAULT_APPROVAL_STATUSES.map((s) => ({ ...s })),
+    requesterEnabled: true,
+    requesterName: 'Requester',
+    requesterNameBinding: null,
+    requesterJobTitle: '',
+    requesterJobTitleBinding: null,
+    requesterRole: 'Requester',
+    requesterNamePath: ['requester.FullNameEN'],
+    requesterJobTitlePath: ['requester.JobTitle'],
+    requesterPersonIdPath: ['requester.PersonId'],
+    requesterAvatarPath: [],
+    avatarUrl: '',
+    orientation: 'horizontal',
+    size: 'md',
+    showJobTitle: false,
+    showIndex: true,
+    stepMinWidth: '',
+    verticalBelow: '',
+    emptyText: '',
+  }
+}
+
 /** One tab header. The tab's content is the child canvas at the same index in
  * the item's `childCanvases` (kept aligned by the store's tab actions). */
 export type TabItemConfig = {
@@ -1793,6 +1958,10 @@ export type GridItemData = {
   style?: ElementStyle
   /** Inside a data table's modal canvas only: adding / editing visibility (see `ShowWhen`). */
   showWhen?: ShowWhen
+  /** Show only while a page-data condition holds (any canvas); `null` / absent = always. */
+  dataWhen?: DataCondition | null
+  /** Form-bound types: the field's initial value from a page load (`source: 'state'`). */
+  initialValue?: ItemBinding
   /**
    * Component-specific config, discriminated by `type`: a textfield carries a
    * `TextFieldConfig`, a textarea a `TextareaConfig`, a select or autocomplete a
@@ -1836,6 +2005,8 @@ export type GridItemData = {
     | PaperConfig
     | CardConfig
     | HtmlContentConfig
+    | ApprovalLineConfig
+    | ApprovalLineConfig
     | TabConfig
     | ModalConfig
     | DrawerConfig

@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import {
   AppShell,
   DataProvider,
+  GlobalLoads,
   HttpClientFactory,
   PageRouter,
   ThemeProvider,
@@ -12,6 +13,7 @@ import { model } from "./config/country/model";
 import { api } from "./config/country/api";
 import { pages } from "./config/country/pages";
 import { menu } from "./config/country/menu";
+import { globalLoads } from "./config/country/pageDataDemo";
 import { theme, components } from "./config/theme";
 
 const http = new HttpClientFactory(
@@ -116,6 +118,9 @@ function AppContent() {
       }
       footer={<span className="text-xs">@gummy-ui/ui · example</span>}
     >
+      {/* App-wide loads: fetched once, kept across pages — outside the
+          pathname-keyed transition, which would refetch them per navigation. */}
+      <GlobalLoads http={http as any} model={model} api={api} loads={globalLoads} />
       <div className="p-8">
         <PageTransition>
           <PageRouter

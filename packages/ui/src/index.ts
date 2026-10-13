@@ -40,6 +40,8 @@ export { Provider as CoreProvider } from "./components/core/context";
 export * from "./components/core/core";
 export * from "./components/core/containerBuilder";
 export { PageRouter } from "./components/core/PageRouter";
+export { GlobalLoads } from "./components/core/GlobalLoads";
+export type { GlobalLoadsProps } from "./components/core/GlobalLoads";
 export type { PageRouterProps } from "./components/core/PageRouter";
 export { PagesProvider, usePages, useNavigateTo, buildNavigateUrl, pathParamNames, matchPageKey, matchPage, breadcrumbTrail, usePageTitle } from "./components/core/pages";
 export { AppShell } from "./components/AppShell";
@@ -113,6 +115,9 @@ export * from "./components/Paper";
 export type { PaperProps } from "./components/Paper";
 export * from "./components/Card";
 export * from "./components/HtmlContent";
+export * from "./components/ApprovalLine";
+export { normalizeApprovalSteps, normalizeApprovalStep, initialsOf, DEFAULT_STATUS_MAP, DEFAULT_STATUS_LABELS } from "./components/core/approvalSteps";
+export type { ApprovalLineElement, ApprovalLineKeys, ApprovalRoleRule, ApprovalStep, ApprovalStepState, ApprovalKeyPath } from "./components/@types";
 export * from "./components/Popover";
 export type { PopoverProps } from "./components/Popover";
 export * from "./components/Drawer";
@@ -153,9 +158,10 @@ export { uploadFileToApi, deleteFileFromApi } from "./util/uploadApi";
 export * from "./components/RadioButton2"
 export * from "./components/ThemeToggle"
 export type { ThemeToggleProps } from "./components/ThemeToggle"
-export type { Bin, Container, ContainerSurface, ContainerLoad, DataValue, DataTableElement, DrawerAnchor, DrawerElement, RadioElement, NavigateTarget, PageElement, TPageMaster } from "./components/@types"
-export { getStateStore, stateStoreKeys } from "./components/core/stateStore"
-export type { StateSlice, StateStore } from "./components/core/stateStore"
+export type { Bin, Container, ContainerSurface, ContainerLoad, PageLoad, DataValue, DataTableElement, DrawerAnchor, DrawerElement, RadioElement, NavigateTarget, PageElement, TPageMaster } from "./components/@types"
+export { getStateStore, stateStoreKeys, readSlice } from "./components/core/stateStore"
+export type { StateSlice, StateStore, StateStatus } from "./components/core/stateStore"
+export { loadCycles, loadDependencies, resolveLoadRequest } from "./components/core/pageLoads"
 // Engine debug mirror — runtime state (container forms, contextData, loaders)
 // surfaced for external inspectors like the studio Live Preview dev tools.
 export { useEngineDebugStore } from "./components/core/engineDebug"

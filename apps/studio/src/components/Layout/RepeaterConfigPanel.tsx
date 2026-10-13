@@ -6,11 +6,13 @@ import { EditContentsButton } from './ContainerHostConfigPanel'
 import { CrudRefEditor } from './FormListConfigPanel'
 import { useGridStore } from './gridStore'
 import { useParentRepeaterArrays } from './repeaterScope'
+import { LoadFieldPicker, usePageLoads } from './pageData'
 import { createDefaultNavigate, type RepeaterConfig } from './types'
 
 const SOURCE_OPTIONS = [
   { value: 'endpoint', label: 'Endpoint' },
   { value: 'parent', label: 'Parent item field' },
+  { value: 'state', label: 'Page data' },
 ]
 const SURFACE_OPTIONS = [
   { value: 'none', label: 'None' },
@@ -80,8 +82,13 @@ export function RepeaterConfigPanel({ itemId, config }: RepeaterConfigPanelProps
   const set = <K extends keyof RepeaterConfig>(key: K, value: RepeaterConfig[K]) =>
     updateItemConfig(itemId, { [key]: value } as Partial<RepeaterConfig>)
   const { nested, arrays } = useParentRepeaterArrays()
-  // A parent source authored elsewhere (template insert, undo) stays editable.
-  const showSource = nested || config.source === 'parent'
+  const pageLoads = usePageLoads()
+  const offerState = pageLoads.length > 0 || config.source === 'state'
+  // A parent / page-data source authored elsewhere (template insert, undo) stays editable.
+  const showSource = nested || offerState || config.source === 'parent'
+  const sourceOptions = SOURCE_OPTIONS.filter(
+    (o) => o.value === 'endpoint' || (o.value === 'parent' && (nested || config.source === 'parent')) || (o.value === 'state' && offerState),
+  )
 
   return (
     <div className="space-y-3">
@@ -116,12 +123,29 @@ export function RepeaterConfigPanel({ itemId, config }: RepeaterConfigPanelProps
       {showSource && (
         <SegmentedControl
           aria-label="Item source"
-          options={SOURCE_OPTIONS}
+          options={sourceOptions}
           value={config.source}
-          onChange={(v) => set('source', v as RepeaterConfig['source'])}
+          onChange={(v) =>
+            v === 'state' && !config.stateBinding
+              ? updateItemConfig(itemId, {
+                  source: 'state',
+                  stateBinding: { key: pageLoads[0]?.id ?? '', path: '', source: 'state' },
+                })
+              : set('source', v as RepeaterConfig['source'])
+          }
         />
       )}
-      {config.source === 'endpoint' ? (
+      {config.source === 'state' ? (
+        <div className="space-y-1.5 rounded-lg border border-line bg-panel p-2">
+          <LoadFieldPicker
+            label="Items"
+            mode="rows"
+            loadId={config.stateBinding?.key ?? ''}
+            path={config.stateBinding?.path ?? ''}
+            onChange={({ loadId, path }) => set('stateBinding', { key: loadId, path, source: 'state' })}
+          />
+        </div>
+      ) : config.source === 'endpoint' ? (
         <>
           <CrudRefEditor
             value={config.read}

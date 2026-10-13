@@ -1,5 +1,6 @@
 import type { DataTableAddButton, DataType } from '@gummy-ui/ui'
 import {
+  ApprovalLineView,
   AutocompleteBase2,
   Avatar,
   ButtonBase,
@@ -25,7 +26,7 @@ import {
   UploadImageBase,
 } from '@gummy-ui/ui'
 import { IconData, groupColumns } from '@gummy-ui/ui'
-import type { TypographyProps, UploadedFile } from '@gummy-ui/ui'
+import type { ApprovalStep, TypographyProps, UploadedFile } from '@gummy-ui/ui'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import {
@@ -56,6 +57,7 @@ import {
   StickyNote,
   CreditCard,
   Code,
+  Workflow,
   Table,
   TextWrap,
   Trash2,
@@ -73,7 +75,7 @@ import { elementStyleVars, hasElementStyle, isDesignOnly } from './designTypes'
 import { ENTER_DURATION_MS, prefersReducedMotion, UPGRADE_FADE_MS } from './gridAnimation'
 import { useGridStore, useIsEntering } from './gridStore'
 import { buildDataTablePreviewRows, buildHtmlPreviewValue, DATATABLE_PREVIEW_ROW_COUNT } from './dataTablePreview'
-import { bindingToken } from './ItemBindingField'
+import { useBindingToken } from './ItemBindingField'
 import type {
   AvatarConfig,
   ButtonConfig,
@@ -97,6 +99,7 @@ import type {
   CardConfig,
   CardActionConfig,
   HtmlContentConfig,
+  ApprovalLineConfig,
   PopoverConfig,
   RadioConfig,
   SelectFieldConfig,
@@ -174,6 +177,8 @@ function thresholdsForType(type: GridItemData['type']): LiveThresholds {
     type === 'card' ||
     // An HTML block is markup — legible at any width.
     type === 'html' ||
+    // An approval line is avatars on a line — it scrolls when narrow.
+    type === 'approvalline' ||
     // Design-only kinds are the design itself — nothing heavier to gate.
     isDesignOnly(type)
   ) {
@@ -280,6 +285,9 @@ function CellContent({ item }: { item: GridItemData }) {
   if (item.type === 'html' && item.config) {
     return <GlyphChip Icon={Code} />
   }
+  if (item.type === 'approvalline' && item.config) {
+    return <GlyphChip Icon={Workflow} />
+  }
   if (item.type === 'tab' && item.config) {
     return <GlyphChip Icon={PanelTop} />
   }
@@ -354,6 +362,8 @@ function ActiveBody({ item }: { item: GridItemData }) {
                                       ? CreditCard
                                     : item.type === 'html'
                                       ? Code
+                                    : item.type === 'approvalline'
+                                      ? Workflow
                                       : item.type === 'tab'
                                         ? PanelTop
                                         : item.type === 'modal'
@@ -1038,6 +1048,7 @@ function editableTableRowsKey(config: DataTableEditableConfig): string {
  * renders the form-label styling (block, small, medium weight).
  */
 function TextLivePreview({ config }: { config: TextConfig }) {
+  const bindingToken = useBindingToken()
   return (
     <div
       data-grid-item-content
@@ -1056,6 +1067,7 @@ function TextLivePreview({ config }: { config: TextConfig }) {
  * (the anchor is inert on the canvas like everything else).
  */
 function TypographyLivePreview({ config }: { config: TypographyConfig }) {
+  const bindingToken = useBindingToken()
   return (
     <div
       data-grid-item-content
@@ -1347,6 +1359,42 @@ function HtmlContentLivePreview({ config }: { config: HtmlContentConfig }) {
   )
 }
 
+/** The mock steps every approval line previews with: the user's sample, waiting on the last approver. */
+const APPROVAL_PREVIEW_STEPS: ApprovalStep[] = [
+  { name: 'Chutima Pimthong', role: 'Reviewer', jobTitle: 'Manager - Process Governance', state: 'done', statusLabel: 'Approved' },
+  { name: 'Sasikan Sonchun', role: 'Acknowledge', jobTitle: 'Senior Specialist - Geology', state: 'done', statusLabel: 'Approved' },
+  { name: 'Pitak Wuttinonchai', role: 'Approver', jobTitle: 'Vice President - Geoscience', state: 'done', statusLabel: 'Approved' },
+  { name: 'Taksawan Sabsirin', role: 'Approver', jobTitle: 'Manager - Service Delivery', state: 'current', statusLabel: 'Approving' },
+]
+
+/**
+ * The live, real `ApprovalLineView` from the library over mock steps (the
+ * raw rows only exist at runtime — the Live Preview normalizes the real
+ * ones), with the requester step from the config. Always live and inert.
+ */
+function ApprovalLineLivePreview({ config }: { config: ApprovalLineConfig }) {
+  const bindingToken = useBindingToken()
+  const steps = useMemo<ApprovalStep[]>(() => {
+    if (!config.requesterEnabled) return APPROVAL_PREVIEW_STEPS
+    const name = config.requesterNameBinding ? bindingToken(config.requesterNameBinding) : config.requesterName || 'Requester'
+    const jobTitle = config.requesterJobTitleBinding ? bindingToken(config.requesterJobTitleBinding) : config.requesterJobTitle || undefined
+    return [{ name, jobTitle, role: config.requesterRole || undefined, state: 'done' }, ...APPROVAL_PREVIEW_STEPS]
+  }, [config, bindingToken])
+  return (
+    <div data-grid-item-content className="pointer-events-none h-full w-full px-3 py-2">
+      <ApprovalLineView
+        steps={steps}
+        orientation={config.orientation}
+        size={config.size}
+        showJobTitle={config.showJobTitle}
+        showIndex={config.showIndex}
+        stepMinWidth={config.stepMinWidth === '' ? undefined : config.stepMinWidth}
+        verticalBelow={config.verticalBelow || undefined}
+      />
+    </div>
+  )
+}
+
 /** One card button on the canvas: the library's visual layer, like `ButtonLivePreview`. */
 function CardActionPreview({ action }: { action: CardActionConfig }) {
   return (
@@ -1368,6 +1416,7 @@ function CardActionPreview({ action }: { action: CardActionConfig }) {
  * Live Preview). Inert like every preview.
  */
 function CardLivePreview({ config, canvases }: { config: CardConfig; canvases: ChildCanvas[] }) {
+  const bindingToken = useBindingToken()
   const h = config.header
   const title = h.titleBinding ? bindingToken(h.titleBinding) : h.title
   const subheader = h.subheaderBinding ? bindingToken(h.subheaderBinding) : h.subheader
@@ -1647,6 +1696,9 @@ function renderLive(item: GridItemData, isLive: boolean) {
   }
   if (item.type === 'html' && item.config) {
     return <HtmlContentLivePreview config={item.config as HtmlContentConfig} />
+  }
+  if (item.type === 'approvalline' && item.config) {
+    return <ApprovalLineLivePreview config={item.config as ApprovalLineConfig} />
   }
   if (item.type === 'paper' && item.config && item.childCanvases?.[0]) {
     return (

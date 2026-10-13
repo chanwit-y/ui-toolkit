@@ -43,6 +43,7 @@ import type { GridItemData } from './types'
 import { designThemeStyle } from '../Theme/designTheme'
 import { useThemeStore } from '../Theme/themeStore'
 import { useActivePage, useActivePages, useActiveProject } from '../Workspace/workspaceStore'
+import { usePageLoads } from './pageData'
 import { useGridFlipAnimation } from './useGridFlipAnimation'
 import { useUndoShortcuts } from './useUndoShortcuts'
 import { escapeClassName } from './utils'
@@ -440,10 +441,12 @@ export function Layout({ templateMode = false }: { templateMode?: boolean } = {}
   const endpoints = useProjectEndpoints()
   // Page refs resolve a navigation's page id → its exported key.
   const pages = useActivePages()
+  // Bindings to page data resolve a load id → its key (the page's and the global ones).
+  const loads = usePageLoads()
 
   const gridConfigJson = useMemo(
-    () => (computeCode ? gridConfigToJson(rootSettings, rootItems, endpoints, pages) : ''),
-    [computeCode, rootSettings, rootItems, endpoints, pages],
+    () => (computeCode ? gridConfigToJson(rootSettings, rootItems, endpoints, pages, loads) : ''),
+    [computeCode, rootSettings, rootItems, endpoints, pages, loads],
   )
 
   const fullGridCss = useMemo(

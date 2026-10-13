@@ -5,6 +5,7 @@ import type { HttpClientFactory } from "../../api";
 import type { DataValue, NavigateTarget, TPageMaster } from "../@types";
 import { Core } from "./core";
 import { breadcrumbTrail, PagesProvider, usePageTitle } from "./pages";
+import { loadCycles } from "./pageLoads";
 
 export type PageRouterProps = {
   http: HttpClientFactory;
@@ -67,7 +68,7 @@ export function PageRouter({ http, model, api, pages, notFound, documentTitle = 
         path: page.path,
         element: (
           <PageView key={key} title={page.title} setDocumentTitle={documentTitle}>
-            {new Core(http, model, api, page.containers).run()}
+            {new Core(http, model, api, page.containers, page.loads).run()}
           </PageView>
         ),
       })),
@@ -93,6 +94,17 @@ export function PageRouter({ http, model, api, pages, notFound, documentTitle = 
     );
     // Breadcrumb hierarchy: unknown parents and cycles warn here, once.
     Object.keys(pages).forEach((k) => breadcrumbTrail(k, pages));
+    // Page loads: cycles would hold forever; a key shared with a container
+    // `load` on the same page (or twice in `loads`) would fight over one slice.
+    for (const [k, page] of Object.entries(pages)) {
+      const loads = page.loads ?? [];
+      for (const c of loadCycles(loads))
+        console.warn(`[gummy-ui] Page "${k}": loads wait on each other and never fire: ${c.join(" → ")}.`);
+      const keys = [...loads.map((l) => l.key), ...page.containers.flatMap((c) => (c.load ? [c.load.key] : []))];
+      const dup = keys.filter((key, i) => keys.indexOf(key) !== i);
+      for (const d of new Set(dup))
+        console.warn(`[gummy-ui] Page "${k}": more than one load writes the state key "${d}".`);
+    }
   }, [pages]);
 
   const element = useRoutes(routes);

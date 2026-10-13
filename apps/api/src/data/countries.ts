@@ -128,7 +128,9 @@ export const countryService = {
     };
   },
 
-  getById: (id: string) => countries.find((c) => c._id === id) ?? null,
+  // An id or (case-insensitive) a country code — the Page data demo's routes use codes.
+  getById: (id: string) =>
+    countries.find((c) => c._id === id) ?? countries.find((c) => c.code.toLowerCase() === id.toLowerCase()) ?? null,
 
   create: (data: { name: string; code: string }) => {
     const newCountry: Country = {

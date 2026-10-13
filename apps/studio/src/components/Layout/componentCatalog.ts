@@ -11,6 +11,7 @@ import {
   CircleDot,
   Clapperboard,
   Code,
+  Workflow,
   CreditCard,
   EyeOff,
   FileSpreadsheet,
@@ -83,6 +84,7 @@ export type ComponentType =
   | 'paper'
   | 'card'
   | 'html'
+  | 'approvalline'
   | 'popover'
   | 'divider'
   | 'empty'
@@ -187,6 +189,7 @@ export const COMPONENT_GROUPS: ComponentGroup[] = [
       { type: 'avatar', label: 'Avatar', icon: User },
       { type: 'divider', label: 'Divider', icon: SeparatorHorizontal },
       { type: 'html', label: 'HTML', icon: Code },
+      { type: 'approvalline', label: 'Approval line', icon: Workflow },
     ],
   },
   {

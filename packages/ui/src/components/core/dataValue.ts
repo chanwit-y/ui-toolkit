@@ -1,6 +1,6 @@
 import { get } from "lodash";
 import type { DataValue } from "../@types";
-import { getStateStore } from "./stateStore";
+import { readSlice } from "./stateStore";
 
 /** Sources available when resolving a {@link DataValue} at render time. */
 export type DataValueScope = {
@@ -40,7 +40,8 @@ export function isEmptyFilterValue(value: unknown): boolean {
  * - `value`  → the literal `value`.
  * - `url`    → a route param (`source:"param"`, default) or query param
  *              (`source:"query"`) named by `key`.
- * - `state`  → the global-state slice named `key`, drilled by `path`.
+ * - `state`  → the global-state slice named `key`, drilled by `path`
+ *              (`$status` / `$error…` read the slice's load state instead).
  * - `row`    → `scope.row[key]` (drilled by `path` when given); `key:"none"`
  *              takes the row itself (an item of a primitive array, say).
  * - `filter` → `scope.filters[key]` (drilled by `path` when given). A blank
@@ -62,10 +63,8 @@ export function resolveDataValue(
           : scope.params?.[dv.key];
       return raw;
     }
-    case "state": {
-      const data = getStateStore(dv.key).getState().data;
-      return dv.path ? get(data, dv.path) : data;
-    }
+    case "state":
+      return readSlice(dv.key, dv.path);
     case "row": {
       if (scope.row === undefined || scope.row === null) return undefined;
       const v =

@@ -15,6 +15,7 @@
 @import "./styles/colspan.css";
 /* HTML content blocks (the `html` element) — same portable-partial treatment. */
 @import "./styles/htmlContent.css";
+@import "./styles/approvalLine.css";
 
 @tailwind base;
 @tailwind components;

@@ -42,6 +42,7 @@ export const model: TModelMaster = {
         name: "string",
         code: "string",
         avatar: "any",
+        image: "string",
         updated_at: "string",
         updated_by_name: "string",
       },
@@ -201,5 +202,72 @@ export const model: TModelMaster = {
     status: "number",
     success: "boolean",
     message: "string",
+  },
+  // One region without its country list (Page data demo — chained load).
+  regionDetailRes: {
+    data: {
+      type: "object",
+      collection: {
+        _id: "string",
+        name: "string",
+        description: "string",
+        about: "string",
+        featured: "boolean",
+        size: "number",
+      },
+    },
+    status: "number",
+    success: "boolean",
+    message: "string",
+  },
+  regionByCountryParams: {
+    code: "string",
+  },
+  // Approval line demo: one request with its raw workflow rows.
+  approvalUser: {
+    Email: "string",
+    FullNameEN: "string",
+    JobTitle: "string",
+    PersonId: "string",
+    UserId: "string",
+  },
+  approvalRes: {
+    data: {
+      type: "object",
+      collection: {
+        _id: "string",
+        title: "string",
+        status: "string",
+        requester: { type: "object", collection: { FullNameEN: "string", JobTitle: "string", PersonId: "string" } },
+        steps: {
+          type: "array",
+          collection: {
+            Id: "number",
+            Sequence: "number",
+            Status: "string",
+            Remark: "string",
+            IsRevised: "boolean",
+            ReviewerUser: "any",
+            ApproverUser: "any",
+            Model: { type: "object", collection: { CreatedAt: "string", UpdatedAt: "string" } },
+          },
+        },
+      },
+    },
+    status: "number",
+    success: "boolean",
+    message: "string",
+  },
+  approvalListRes: {
+    data: {
+      type: "array",
+      collection: { _id: "string", title: "string", status: "string", stepCount: "number" },
+    },
+    status: "number",
+    success: "boolean",
+    message: "string",
+  },
+  approvalParam: {
+    id: "string",
   },
 };

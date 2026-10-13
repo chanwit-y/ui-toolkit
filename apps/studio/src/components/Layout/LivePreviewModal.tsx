@@ -1,11 +1,13 @@
 import {
   AppShell,
+  GlobalLoads,
   HttpClientFactory,
   Modal,
   PageRouter,
   type TApiMaster,
   type TMenu,
   type TModelMaster,
+  type PageLoad,
   type TPageMaster,
 } from '@gummy-ui/ui'
 import { ArrowLeft, FileText, Maximize2, Minimize2, Undo2 } from 'lucide-react'
@@ -42,9 +44,10 @@ import type { PageDef, PageGrid, ShellSettings } from '../Workspace/types'
 import { useActivePages, useWorkspaceStore } from '../Workspace/workspaceStore'
 import { menuToEngine, shellToEngine, type EngineShellProps } from '../Workspace/menu'
 import { enginePageMeta } from '../Workspace/pageMeta'
+import type { PageLoadDef } from '../Workspace/pageLoads'
 import { DialogPreview, ToastPreview } from './DesignPreviews'
 import type { DialogConfig, OverlayAxis, ToastConfig } from './designTypes'
-import { gridConfigToJson } from './gridConfig'
+import { gridConfigToJson, pageLoadsToEngine } from './gridConfig'
 import { useGridStore } from './gridStore'
 import { buildLivePreviewContainer, collectPreviewNavigation, type LivePreviewWiring } from './livePreview'
 import { indexItems } from './pageLinks'
@@ -190,6 +193,8 @@ export function LivePreviewModal({ onClose }: { onClose: () => void }) {
   const project = useWorkspaceStore((s) =>
     s.projects.find((p) => p.id === s.activeProjectId),
   )
+  // App-wide loads: mounted once beside the router (`<GlobalLoads>`), read by every page.
+  const globalLoads = useMemo(() => project?.snapshot.globalLoads ?? [], [project?.snapshot.globalLoads])
   // The project's attached endpoints and the models they reference — exactly
   // what its model.ts / api.ts exports contain.
   const models = useProjectModels()
@@ -294,7 +299,7 @@ export function LivePreviewModal({ onClose }: { onClose: () => void }) {
           pg.key,
           {
             path: pg.path,
-            ...enginePageMeta(pg, pages),
+            ...enginePageMeta(pg, pages, globalLoads),
             containers: [
               buildLivePreviewContainer(
                 pg.grid.containerSettings,
@@ -303,12 +308,18 @@ export function LivePreviewModal({ onClose }: { onClose: () => void }) {
                 engine.wiring,
                 pages,
                 `page-${pg.key}`,
+                [...(pg.loads ?? []), ...globalLoads],
               ),
             ],
+            ...(pg.loads?.length ? { loads: pageLoadsToEngine(pg.loads, endpoints, globalLoads) as PageLoad[] } : {}),
           },
         ]),
       ),
-    [pages, endpoints, engine],
+    [pages, endpoints, engine, globalLoads],
+  )
+  const engineGlobalLoads = useMemo(
+    () => (pageLoadsToEngine(globalLoads, endpoints) ?? []) as PageLoad[],
+    [globalLoads, endpoints],
   )
 
   const projectSlug = (project?.name ?? 'project').toLowerCase().replace(/\s+/g, '-')
@@ -353,6 +364,8 @@ export function LivePreviewModal({ onClose }: { onClose: () => void }) {
             livePage={livePage}
             endpoints={endpoints}
             enginePages={enginePages}
+            globalLoads={globalLoads}
+            engineGlobalLoads={engineGlobalLoads}
             engineMenu={engineMenu}
             engineShell={engineShell}
             http={http}
@@ -394,6 +407,8 @@ const PreviewApp = memo(function PreviewApp({
   livePage,
   endpoints,
   enginePages,
+  globalLoads,
+  engineGlobalLoads,
   engineMenu,
   engineShell,
   http,
@@ -408,6 +423,8 @@ const PreviewApp = memo(function PreviewApp({
   livePage: PreviewPage
   endpoints: EndpointDef[]
   enginePages: TPageMaster
+  globalLoads: PageLoadDef[]
+  engineGlobalLoads: PageLoad[]
   engineMenu: TMenu
   engineShell: EngineShellProps
   http: HttpClientFactory
@@ -448,8 +465,14 @@ const PreviewApp = memo(function PreviewApp({
   // tools' Config tab, and the source of the design-only navigation lookup.
   const grid = current?.page.grid ?? null
   const configJson = useMemo(
-    () => (grid ? gridConfigToJson(grid.containerSettings, grid.items, endpoints, pages) : '[]'),
-    [grid, endpoints, pages],
+    () =>
+      grid
+        ? gridConfigToJson(grid.containerSettings, grid.items, endpoints, pages, [
+            ...(current?.page.loads ?? []),
+            ...globalLoads,
+          ])
+        : '[]',
+    [grid, endpoints, pages, current?.page.loads, globalLoads],
   )
   useEffect(() => onConfigJson(configJson), [configJson, onConfigJson])
   const navigation = useMemo(
@@ -595,6 +618,9 @@ const PreviewApp = memo(function PreviewApp({
             height={fullscreen ? 'calc(100vh - 11rem)' : 'calc(85vh - 11rem)'}
           >
             <div className="p-4">
+              {engineGlobalLoads.length > 0 && (
+                <GlobalLoads http={http} model={model} api={api} loads={engineGlobalLoads} />
+              )}
               <PageRouter
                 http={http}
                 model={model}

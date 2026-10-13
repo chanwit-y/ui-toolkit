@@ -150,6 +150,10 @@ const Button = forwardRef<ElementRef<typeof RadixButton>, ButtonProps>(({
 							}
 						})()
 						break;
+					case 'ReloadDataTable':
+						if (reloadDataTable && fnCtxs[reloadDataTable]) await fnCtxs[reloadDataTable]()
+						else console.warn(`[Button] ReloadDataTable: nothing registered under "${reloadDataTable}"`)
+						break;
 					case 'ClearCurrentFormSelected':
 						clearCurrentFormSelected();
 						break;

@@ -1,6 +1,6 @@
 import { toApiTs } from '../Api/serialize'
 import type { EndpointDef } from '../Api/types'
-import { buildBins, rootContainer } from '../Layout/gridConfig'
+import { buildBins, pageLoadsToEngine, rootContainer } from '../Layout/gridConfig'
 import { buttonNavigates, pageLinks, walkItems } from '../Layout/pageLinks'
 import type { ButtonItemConfig, DataTableConfig, GridItemData } from '../Layout/types'
 import { toModelTs } from '../Model/serialize'
@@ -75,6 +75,8 @@ export function buildExportFiles(
   models: ModelDef[],
 ): ExportFile[] {
   const { snapshot } = project
+  const globalLoads = snapshot.globalLoads ?? []
+  const engineGlobalLoads = pageLoadsToEngine(globalLoads, endpoints) ?? []
   const pages = snapshot.pages.map((pg) => ({
     id: pg.id,
     key: pg.key,
@@ -93,7 +95,11 @@ export function buildExportFiles(
       columns: pg.grid.containerSettings.columns,
       gap: pg.grid.containerSettings.gap,
     },
-    bins: buildBins(pg.grid.containerSettings, pg.grid.items, endpoints, snapshot.pages),
+    bins: buildBins(pg.grid.containerSettings, pg.grid.items, endpoints, snapshot.pages, undefined, undefined, [
+      ...(pg.loads ?? []),
+      ...globalLoads,
+    ]),
+    loads: pageLoadsToEngine(pg.loads, endpoints, globalLoads),
   }))
 
   const out: ExportFile[] = []
@@ -139,24 +145,28 @@ export function buildExportFiles(
     name: 'pages.ts',
     lang: 'ts',
     body:
-      'import type { TPageMaster } from "@gummy-ui/ui";\n\n' +
+      'import type { PageLoad, TPageMaster } from "@gummy-ui/ui";\n\n' +
       'export const pages = {\n' +
       snapshot.pages
         .map((pg, i) => {
           const container = rootContainer(pg.key, pg.grid.containerSettings, pages[i].bins)
-          const meta = enginePageMeta(pg, snapshot.pages)
+          const meta = enginePageMeta(pg, snapshot.pages, globalLoads)
+          const loads = pages[i].loads
           return (
             `  ${pg.key}: {\n` +
             `    path: ${JSON.stringify(pg.path)},\n` +
             `    title: ${JSON.stringify(meta.title)},\n` +
             (meta.parent !== undefined ? `    parent: ${JSON.stringify(meta.parent)},\n` : '') +
             (meta.breadcrumb === false ? `    breadcrumb: false,\n` : '') +
+            (loads ? `    loads: ${indent(JSON.stringify(loads, null, 2), 4)},\n` : '') +
             `    containers: [${indent(JSON.stringify(container, null, 2), 4)}],\n` +
             `  },`
           )
         })
         .join('\n') +
-      '\n} satisfies TPageMaster;\n',
+      '\n} satisfies TPageMaster;\n' +
+      '\n/** App-wide loads: fetched once, kept across pages — `<GlobalLoads loads={globalLoads} …/>`. */\n' +
+      `export const globalLoads: PageLoad[] = ${JSON.stringify(engineGlobalLoads, null, 2)};\n`,
   })
 
   // The sidebar menu the exported `AppShell` takes (page ids → keys).
@@ -175,10 +185,16 @@ export function buildExportFiles(
     if (pg.hideBreadcrumbs) lines.push('- breadcrumb strip hidden on this page')
     const eps = pageEndpointNames(pg, endpoints)
     if (eps.length) lines.push(`- data: ${eps.map((x) => `\`${x}\``).join(', ')}`)
+    if (pg.loads?.length) lines.push(`- page loads: ${pg.loads.map((l) => `\`${l.key}\``).join(', ')}`)
     const buttons = pageButtons(pg.grid.items, snapshot.pages)
     if (buttons.length)
       lines.push(`- actions: ${buttons.map((b) => `\`${b.label}\` → ${b.does}`).join('; ')}`)
     lines.push(`- ${pageItemCount(pg)} component(s)`, '')
+  }
+  if (globalLoads.length) {
+    lines.push('## Global loads', '', 'Fetched once by `<GlobalLoads>` and kept across pages:', '')
+    for (const l of globalLoads) lines.push(`- \`${l.key}\``)
+    lines.push('')
   }
   lines.push('## Endpoints', '')
   for (const a of endpoints) {

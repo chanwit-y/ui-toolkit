@@ -174,6 +174,31 @@ export const api = {
     response: "regionRes",
     withOptions: false,
   },
+  // The region a country belongs to (Page data demo: a load chained off the country).
+  regionByCountry: {
+    url: "/collection/regions/by-country/:code",
+    description: "Get the region of one country (`:code` = country code or id)",
+    methods: "GET" as const,
+    response: "regionDetailRes",
+    parameter: "regionByCountryParams",
+    withOptions: false,
+  },
+  // Approval line demo.
+  approvals: {
+    url: "/collection/approvals",
+    description: "List approval requests",
+    methods: "GET" as const,
+    response: "approvalListRes",
+    withOptions: false,
+  },
+  approvalDetail: {
+    url: "/collection/approvals/:id",
+    description: "Get one approval request with its workflow steps",
+    methods: "GET" as const,
+    response: "approvalRes",
+    parameter: "approvalParam",
+    withOptions: false,
+  },
   // Flat country rows with their region (Table layout demo).
   regionCountries: {
     url: "/collection/region-countries",

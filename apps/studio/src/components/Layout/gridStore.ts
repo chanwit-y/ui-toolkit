@@ -36,6 +36,7 @@ import {
   createDefaultPaperConfig,
   createDefaultCardConfig,
   createDefaultHtmlContentConfig,
+  createDefaultApprovalLineConfig,
   createDefaultPopoverConfig,
   createDefaultRadioConfig,
   createDefaultSelectFieldConfig,
@@ -67,10 +68,13 @@ import {
   type PaperConfig,
   type CardConfig,
   type HtmlContentConfig,
+  type ApprovalLineConfig,
   type PopoverConfig,
   type RadioConfig,
   type SelectFieldConfig,
   type ShowWhen,
+  type DataCondition,
+  type ItemBinding,
   type TabConfig,
   type TextareaConfig,
   type TextConfig,
@@ -215,6 +219,11 @@ type GridState = {
   updateItemLabel: (id: string, label: string) => void
   /** Adding / editing visibility for an item in a data table's modal canvas. */
   updateItemShowWhen: (id: string, showWhen: ShowWhen) => void
+  /** Page-data wiring on the item itself: its `dataWhen` condition / field `initialValue` (`null` clears). */
+  updateItemPageData: (
+    id: string,
+    patch: { dataWhen?: DataCondition | null; initialValue?: ItemBinding },
+  ) => void
   updateItemConfig: (
     id: string,
     patch: Partial<
@@ -538,6 +547,7 @@ export const useGridStore = create<GridState>((set, get) => {
           | PaperConfig
           | CardConfig
           | HtmlContentConfig
+          | ApprovalLineConfig
           | TabConfig
           | ModalConfig
           | DrawerConfig
@@ -618,6 +628,9 @@ export const useGridStore = create<GridState>((set, get) => {
         } else if (type === 'html') {
           nextSeq = fieldSeq + 1
           config = createDefaultHtmlContentConfig(`html_${nextSeq}`)
+        } else if (type === 'approvalline') {
+          nextSeq = fieldSeq + 1
+          config = createDefaultApprovalLineConfig(`approval_${nextSeq}`)
         } else if (type === 'tab') {
           config = createDefaultTabConfig()
         } else if (type === 'modal') {
@@ -657,6 +670,7 @@ export const useGridStore = create<GridState>((set, get) => {
           type === 'paper' ||
           type === 'card' ||
           type === 'html' ||
+          type === 'approvalline' ||
           type === 'tab'
         const isUpload = type === 'uploadimage' || type === 'uploadfile'
         const isWideInput =
@@ -788,6 +802,18 @@ export const useGridStore = create<GridState>((set, get) => {
           if (item.id !== id) return item
           const { showWhen: _prev, ...rest } = item
           return showWhen === 'always' ? rest : { ...rest, showWhen }
+        }),
+      })),
+
+    updateItemPageData: (id, patch) =>
+      setActiveCanvas((canvas) => ({
+        ...canvas,
+        items: canvas.items.map((item) => {
+          if (item.id !== id) return item
+          const next = { ...item, ...patch }
+          if (next.dataWhen === null) delete next.dataWhen
+          if (next.initialValue === null) delete next.initialValue
+          return next
         }),
       })),
 

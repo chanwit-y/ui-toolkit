@@ -88,6 +88,9 @@ export class DataTable<
 
 
     const read = resolveApiRef(this._context, props.api?.name);
+    const bound = !!props.items;
+    if (bound && (props.api?.pagination || props.api?.sort || props.filterContainer))
+      console.warn(`[gummy-ui] DataTable "${props.name}": rows come from \`items\`, so api.pagination / api.sort / filterContainer are ignored.`);
     const apis = this._context.apis as ApiMaster<M, A>;
     const theme = this._context.theme;
     // The filter form's fields, drawn against the table's own form instance.
@@ -116,8 +119,9 @@ export class DataTable<
       apiSegments: read?.segments,
       urlParams: urlParamNames(read?.url),
       sortFields,
-      filterContainer: props.filterContainer,
-      renderFilterBins: props.filterContainer && this._context.apis ? renderFilterBins : undefined,
+      items: props.items,
+      filterContainer: bound ? undefined : props.filterContainer,
+      renderFilterBins: !bound && props.filterContainer && this._context.apis ? renderFilterBins : undefined,
       filterDefaults: props.filterDefaults,
       filterButton: props.filterButton,
       filterDisplay: props.filterDisplay,

@@ -69,6 +69,14 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 		const { addObserveTable, getObserveTable: getDataValue } = useCore()
 
 		const [items, setItems] = useState(options ?? [])
+		// Static options that change after mount (bound to a page load via
+		// `optionsValue`) replace the list; API-backed options load their own.
+		const firstOptions = useRef(options)
+		useEffect(() => {
+			if (apiInfo || options === firstOptions.current) return
+			firstOptions.current = options
+			setItems(options ?? [])
+		}, [options, apiInfo])
 		const [listboxId] = useState(() => `listbox-${Math.random().toString(36).substr(2, 9)}`);
 		const [isOpen, setIsOpen] = useState(false)
 		const [dropdownStyles, setDropdownStyles] = useState<CSSProperties>({});

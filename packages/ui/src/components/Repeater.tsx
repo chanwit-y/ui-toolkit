@@ -1,13 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
+import { type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import type { NavigateTarget, RepeaterProps } from "./@types";
 import { resolveContainerGap } from "./core/containerGrid";
-import { drillPaths, resolveDataValues, type DataValueScope } from "./core/dataValue";
 import { useNavigateTo } from "./core/pages";
-import { callArgs, stateKeys, useStateVersion } from "./core/readApi";
-import { RowScopeProvider, useDataValue, useRowScope } from "./core/rowScope";
-import { useStord } from "./core/stord";
+import { RowScopeProvider, useDataValue } from "./core/rowScope";
+import { useReadApi } from "./core/useReadApi";
 
 // Surfaces use the Radix theme vars so they follow the active appearance and
 // accent; every class is a literal so Tailwind emits it.
@@ -99,45 +95,11 @@ export const Repeater = ({
 	emptyText = "No items",
 	renderBins,
 }: RepeaterProps) => {
-	const params = useParams();
-	const [searchParams] = useSearchParams();
-	const parent = useRowScope();
-	const updateFnCtxs = useStord((state) => state.updateFnCtxs);
-
-	const scope = useMemo<DataValueScope>(
-		() => ({ params, searchParams, row: parent?.row }),
-		[params, searchParams, parent],
-	);
-	const stateVersion = useStateVersion(stateKeys(api?.params, api?.query, api?.body));
-
-	// Resolve the read config now; the query key carries the result so a route
-	// change (or a state slice arriving) refetches with the new values.
-	const readArgs = useMemo(() => {
-		if (!api) return { args: [] as unknown[], ready: false };
-		const q = resolveDataValues(api.query, scope);
-		const p = resolveDataValues(api.params, scope);
-		const b = resolveDataValues(api.body, scope);
-		const ready = (api.urlParams ?? []).every((k) => p[k] !== undefined && p[k] !== "");
-		return { args: callArgs(api.segments, q, p, api.segments?.body || api.body ? b : undefined), ready };
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [api, scope, stateVersion]);
-
-	const { data, refetch, isLoading, error } = useQuery({
-		queryKey: [`repeater-${name}`, readArgs.args],
-		queryFn: async () => {
-			const res = await (api!.api as (...a: unknown[]) => Promise<unknown>)(...readArgs.args);
-			const rows = drillPaths(res, api!.paths);
-			return Array.isArray(rows) ? (rows as unknown[]) : [];
-		},
-		enabled: !!api && readArgs.ready,
-	});
-
-	useEffect(() => {
-		if (api) updateFnCtxs(name, refetch);
-	}, [api, name, updateFnCtxs, refetch]);
+	// The own read (`api`): resolved, held and refetched by the shared hook.
+	const { data, isLoading, error, held } = useReadApi(name, api);
 
 	const scoped = useDataValue(api ? undefined : items);
-	const list: unknown[] = api ? data ?? [] : Array.isArray(scoped) ? scoped : [];
+	const list: unknown[] = api ? (Array.isArray(data) ? (data as unknown[]) : []) : Array.isArray(scoped) ? scoped : [];
 
 	const span = { sm: "12", md: "12", lg: "12", xl: "12", ...itemSpan };
 	// Below `sm` no span class applies: the base `xs-col-span-12` stacks items
@@ -145,7 +107,7 @@ export const Repeater = ({
 	const spanClass = `xs-col-span-12 sm-col-span-${span.sm} md-col-span-${span.md} lg-col-span-${span.lg} xl-col-span-${span.xl}`;
 	const padding = resolveContainerGap(itemPadding ?? (itemSurface === "none" ? "0" : "4"));
 
-	const pending = !!api && (isLoading || !readArgs.ready);
+	const pending = !!api && (isLoading || held);
 	const isEmpty = !pending && !error && list.length === 0;
 
 	return (

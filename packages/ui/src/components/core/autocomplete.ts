@@ -7,6 +7,14 @@ import type { AutocompleteElement, IElement } from "../@types";
 import type { TApiMaster } from "../../api/APIMaster";
 import type { TModelMaster } from "../../model/master";
 import { ElementContext } from "./elementBuilder";
+import { BoundOptions } from "./bound";
+
+/** The field as is, or behind {@link BoundOptions} when `optionsValue` is set. */
+function withBoundOptions(props: AutocompleteElement, component: any, fieldProps: Record<string, unknown>): JSX.Element {
+  return props.optionsValue
+    ? createElement(BoundOptions, { component, optionsValue: props.optionsValue, props: fieldProps })
+    : createElement(component, fieldProps);
+}
 
 export class Autocomplete<M extends TModelMaster, A extends TApiMaster<M>>
   implements IElement {
@@ -14,7 +22,7 @@ export class Autocomplete<M extends TModelMaster, A extends TApiMaster<M>>
 
   public create(): JSX.Element {
     const props = this._context.props as AutocompleteElement;
-    return createElement(AutocompleteF2, {
+    return withBoundOptions(props, AutocompleteF2, {
       name: props.name,
       form: this._context.form,
       label: props.label,
@@ -52,7 +60,7 @@ export class MultiAutocomplete<M extends TModelMaster, A extends TApiMaster<M>>
 
   public create(): JSX.Element {
     const props = this._context.props as AutocompleteElement;
-    return createElement(MultiAutocompleteComponent, {
+    return withBoundOptions(props, MultiAutocompleteComponent, {
       name: props.name,
       form: this._context.form,
       label: props.label,

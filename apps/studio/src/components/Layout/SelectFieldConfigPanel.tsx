@@ -6,6 +6,7 @@ import { FieldPicker, IconField, Input, Select, SegmentedControl } from '../comm
 import { useActiveItems, useGridStore } from './gridStore'
 import { isSelectFamily, observeWarnings } from './observe'
 import { IMAGE_KINDS, rowFieldsFor, TEXT_KINDS } from './rowFields'
+import { bindingRowModel, LoadFieldPicker, useLoadShapes, usePageLoads } from './pageData'
 import type { MultiAutocompleteConfig, SelectFieldConfig, SelectOption } from './types'
 
 /**
@@ -293,7 +294,14 @@ function OptionDisplaySection({
 }) {
   const endpoints = useProjectEndpoints()
   const models = useProjectModels()
-  const row = rowFieldsFor(config, endpoints, models)
+  const shapes = useLoadShapes()
+  // Options bound to a page load read their keys off the load's row model.
+  const bound = config.optionsBinding ? bindingRowModel(config.optionsBinding, shapes) : null
+  const row = bound
+    ? bound.fields
+      ? { fields: bound.fields.map((f) => ({ name: f.name, kind: f.kind })) }
+      : { fields: null, reason: bound.reason }
+    : rowFieldsFor(config, endpoints, models)
   const picker = (
     key: 'idKey' | 'displayKey' | 'searchKey' | 'subtitleKey' | 'avatarKey',
     label: string,
@@ -388,6 +396,10 @@ export function SelectFieldConfigPanel({
     key: K,
     value: MultiAutocompleteConfig[K],
   ) => updateItemConfig(itemId, { [key]: value } as Partial<MultiAutocompleteConfig>)
+  const pageLoads = usePageLoads()
+  const fromState = !!config.optionsBinding
+  const modeOptions =
+    pageLoads.length > 0 || fromState ? [...MODE_OPTIONS, { value: 'state', label: 'Page data' }] : MODE_OPTIONS
 
   return (
     <div className="space-y-3">
@@ -444,14 +456,31 @@ export function SelectFieldConfigPanel({
 
       <Field label="Options source">
         <SegmentedControl
-          options={MODE_OPTIONS}
-          value={config.mode}
-          onChange={(v) => set('mode', v as SelectFieldConfig['mode'])}
+          options={modeOptions}
+          value={fromState ? 'state' : config.mode}
+          onChange={(v) =>
+            v === 'state'
+              ? set('optionsBinding', { key: pageLoads[0]?.id ?? '', path: '', source: 'state' })
+              : updateItemConfig(itemId, { mode: v as SelectFieldConfig['mode'], optionsBinding: null })
+          }
           aria-label="Options source"
         />
       </Field>
 
-      {config.mode === 'static' ? (
+      {fromState && config.optionsBinding ? (
+        <div className="space-y-1.5 rounded-lg border border-line bg-panel p-2">
+          <LoadFieldPicker
+            label="Options"
+            mode="rows"
+            loadId={config.optionsBinding.key}
+            path={config.optionsBinding.path}
+            onChange={({ loadId, path }) => set('optionsBinding', { key: loadId, path, source: 'state' })}
+          />
+          <p className="text-ui-xs text-ink-3">
+            One fetched list shared by every field bound to it; the keys below read its rows.
+          </p>
+        </div>
+      ) : config.mode === 'static' ? (
         <div className="space-y-3">
           <OptionsEditor
             itemId={itemId}

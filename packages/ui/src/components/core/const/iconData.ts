@@ -47,6 +47,7 @@ export const IconData = {
 	alertCircle: i.AlertCircle,
 	alertTriangle: i.AlertTriangle,
 	checkCircle: i.CheckCircle,
+	workflow: i.Workflow,
 	xCircle: i.XCircle,
 	helpCircle: i.HelpCircle,
 	eye: i.Eye,

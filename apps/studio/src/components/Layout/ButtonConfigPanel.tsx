@@ -3,6 +3,8 @@ import { X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { IconPicker, Input, SegmentedControl, Select } from '../common'
 import { pathParams } from '../Workspace/snapshots'
+import { LOAD_ID_PREFIX } from '../Workspace/pageLoads'
+import { LoadFieldPicker, usePageLoads } from './pageData'
 import { useActivePages, useWorkspaceStore } from '../Workspace/workspaceStore'
 import { useGridStore } from './gridStore'
 import { useRepeaterScope } from './repeaterScope'
@@ -42,6 +44,7 @@ const ACTION_LABELS: Record<ButtonActionKey, string> = {
   ClearCurrentFormSelected: 'Clear form selection',
   CloseModal: 'Close modal',
   Navigate: 'Go to page',
+  ReloadDataTable: 'Reload data',
 }
 const ALL_ACTIONS = Object.keys(ACTION_LABELS) as ButtonActionKey[]
 
@@ -171,6 +174,7 @@ export function ButtonConfigPanel({
     updateItemConfig(itemId, { [key]: value } as Partial<ButtonItemConfig>)
 
   const targets = useMemo(() => collectButtonTargets(rootItems), [rootItems])
+  const pageLoads = usePageLoads()
 
   const confirm = config.mode === 'confirm'
   const effectiveActions = confirm
@@ -178,12 +182,32 @@ export function ButtonConfigPanel({
     : config.actions
   const usesSubmit = effectiveActions.some(isSubmit)
   const usesCloseModal = effectiveActions.includes('CloseModal')
+  const usesReload = effectiveActions.includes('ReloadDataTable')
 
   const modalDangling =
     config.modalItemId !== '' && !targets.modals.some((m) => m.itemId === config.modalItemId)
   const tableDangling =
     config.reloadTableItemId !== '' &&
-    !targets.tables.some((t) => t.itemId === config.reloadTableItemId)
+    !targets.tables.some((t) => t.itemId === config.reloadTableItemId) &&
+    !pageLoads.some((l) => l.id === config.reloadTableItemId)
+  // What a reload can target: the refetchable components, and the page's loads.
+  const reloadField = (label: string) => (
+    <Field label={label}>
+      <Select
+        options={[
+          { value: '', label: '— none —' },
+          ...(tableDangling ? [{ value: config.reloadTableItemId, label: '⚠ missing target' }] : []),
+          ...targets.tables.map((t) => ({
+            value: t.itemId,
+            label: t.name || '(unnamed table)',
+          })),
+          ...pageLoads.map((l) => ({ value: l.id, label: `${l.key || '(unnamed)'} · page data` })),
+        ]}
+        value={config.reloadTableItemId}
+        onChange={(v) => set('reloadTableItemId', v)}
+      />
+    </Field>
+  )
 
   return (
     <div className="space-y-3">
@@ -283,6 +307,15 @@ export function ButtonConfigPanel({
         </WiringHint>
       )}
 
+      {usesReload && !usesSubmit && (
+        <>
+          {reloadField('Reload')}
+          {config.reloadTableItemId === '' && (
+            <WiringHint>Pick what to reload — a table, list or repeater, or one of the page’s loads.</WiringHint>
+          )}
+        </>
+      )}
+
       {usesSubmit && (
         <>
           <Field label="Submit endpoint (API page)">
@@ -296,22 +329,7 @@ export function ButtonConfigPanel({
               Pick an endpoint — without one, Submit form calls nothing.
             </WiringHint>
           )}
-          <Field label="Reload data table after submit">
-            <Select
-              options={[
-                { value: '', label: '— none —' },
-                ...(tableDangling
-                  ? [{ value: config.reloadTableItemId, label: '⚠ missing table' }]
-                  : []),
-                ...targets.tables.map((t) => ({
-                  value: t.itemId,
-                  label: t.name || '(unnamed table)',
-                })),
-              ]}
-              value={config.reloadTableItemId}
-              onChange={(v) => set('reloadTableItemId', v)}
-            />
-          </Field>
+          {reloadField(usesReload ? 'Reload (after submit, and the Reload action)' : 'Reload data after submit')}
           <CheckboxRow
             label="Success snackbar"
             checked={config.snackbarSuccessEnabled}
@@ -355,7 +373,7 @@ export function ButtonConfigPanel({
 const SOURCE_OPTIONS_BASE: { value: NavParamSource['type']; label: string }[] = [
   { value: 'value', label: 'Fixed value' },
   { value: 'url', label: 'From the current URL' },
-  { value: 'state', label: 'From global state' },
+  { value: 'state', label: 'From page data' },
 ]
 const ROW_SOURCE_OPTION: { value: NavParamSource['type']; label: string } = {
   value: 'row',
@@ -401,11 +419,14 @@ export function ParamSourceFields({
   seedKey: string
 }) {
   const sourceOptions = allowRow ? [ROW_SOURCE_OPTION, ...SOURCE_OPTIONS_BASE] : SOURCE_OPTIONS_BASE
+  // With page loads, a state source picks a load + field (stored by load id);
+  // a raw slice key authored before stays editable as text.
+  const pageLoads = usePageLoads()
   return (
     <div className="space-y-1.5 rounded-md border border-line bg-panel p-2">
       <div className="flex items-center justify-between gap-2">
-        <span className="min-w-0 truncate font-mono text-ui-sm font-medium text-ink-2">{label}</span>
-        <div className="w-44 shrink-0">
+        <span className="shrink-0 truncate font-mono text-ui-sm font-medium text-ink-2">{label}</span>
+        <div className="min-w-0 max-w-44 flex-1">
           <Select
             aria-label={`Source of ${typeof label === 'string' ? label : seedKey}`}
             options={sourceOptions}
@@ -442,7 +463,15 @@ export function ParamSourceFields({
           </div>
         </div>
       )}
-      {src.type === 'state' && (
+      {src.type === 'state' && pageLoads.length > 0 && (src.key === '' || src.key.startsWith(LOAD_ID_PREFIX)) && (
+        <LoadFieldPicker
+          label={typeof label === 'string' ? label : seedKey}
+          loadId={src.key}
+          path={src.path}
+          onChange={({ loadId, path }) => onChange({ ...src, key: loadId, path })}
+        />
+      )}
+      {src.type === 'state' && !(pageLoads.length > 0 && (src.key === '' || src.key.startsWith(LOAD_ID_PREFIX))) && (
         <div className="flex gap-1.5">
           <div className="flex-1">
             <Input

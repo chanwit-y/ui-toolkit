@@ -1,10 +1,11 @@
 import { useDraggable } from '@dnd-kit/core'
-import { Blocks, Files, Layers, LayoutTemplate, Search, type LucideIcon } from 'lucide-react'
+import { Blocks, Database, Files, Layers, LayoutTemplate, Search, type LucideIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { cn } from '../common'
 import { childCanvasCount } from './types'
 import { COMPONENT_GROUPS, type ComponentDef } from './componentCatalog'
 import { useGridStore } from './gridStore'
+import { DataPanel } from './DataPanel'
 import { LayersPanel } from './LayersPanel'
 import { PagesPanel } from './PagesPanel'
 import { ancestorRepeaters, BLOCKED_IN_REPEATER_HINT, isBlockedInRepeater } from './repeaterRules'
@@ -87,20 +88,21 @@ export function ToolboxDragOverlay({ def }: { def: ComponentDef }) {
   )
 }
 
-type LeftTab = 'components' | 'layers' | 'pages' | 'templates'
+type LeftTab = 'components' | 'layers' | 'pages' | 'data' | 'templates'
 
 /** Icon-only tabs: `label` is the accessible name and the hover tooltip. */
 const LEFT_TABS: { value: LeftTab; label: string; icon: LucideIcon; projectOnly?: boolean }[] = [
   { value: 'components', label: 'Components', icon: Blocks },
   { value: 'layers', label: 'Layers', icon: Layers },
   { value: 'pages', label: 'Pages', icon: Files, projectOnly: true },
+  { value: 'data', label: 'Page data', icon: Database, projectOnly: true },
   { value: 'templates', label: 'Templates', icon: LayoutTemplate, projectOnly: true },
 ]
 
 /**
  * The left pane: mini-tabs over the component palette (draggable / clickable
  * tiles, searchable), the Layers tree of the whole canvas, and — inside a
- * project — its Pages and the library's Templates. The master-layout editor
+ * project — its Pages, the current page's data loads and the library's Templates. The master-layout editor
  * (`templateMode`) hides the two project tabs.
  */
 export function Toolbox({ templateMode = false }: { templateMode?: boolean }) {
@@ -133,6 +135,8 @@ export function Toolbox({ templateMode = false }: { templateMode?: boolean }) {
         <LayersPanel />
       ) : current === 'pages' ? (
         <PagesPanel />
+      ) : current === 'data' ? (
+        <DataPanel />
       ) : (
         <TemplatesPanel />
       )}

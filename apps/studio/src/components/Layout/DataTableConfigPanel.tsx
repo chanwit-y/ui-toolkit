@@ -9,6 +9,7 @@ import { useActivePages } from '../Workspace/workspaceStore'
 import { useGridStore } from './gridStore'
 import { EditContentsButton } from './ContainerHostConfigPanel'
 import { EndpointPicker } from './SelectFieldConfigPanel'
+import { bindingRowModel, LoadFieldPicker, useLoadShapes, usePageLoads } from './pageData'
 import { NavigateEditor, SNACKBAR_VARIANT_OPTIONS, WiringHint } from './ButtonConfigPanel'
 import { ColumnHtmlField } from './ColumnHtmlField'
 import { ColumnSizeFields } from './ColumnSizeFields'
@@ -488,6 +489,8 @@ export function DataTableConfigPanel({ itemId, config }: DataTableConfigPanelPro
   const updateItemConfig = useGridStore((s) => s.updateItemConfig)
   const endpoints = useProjectEndpoints()
   const models = useProjectModels()
+  const pageLoads = usePageLoads()
+  const loadShapes = useLoadShapes()
   const set = <K extends keyof DataTableConfig>(key: K, value: DataTableConfig[K]) =>
     updateItemConfig(itemId, { [key]: value } as Partial<DataTableConfig>)
 
@@ -512,6 +515,7 @@ export function DataTableConfigPanel({ itemId, config }: DataTableConfigPanelPro
     updateItemConfig(itemId, { deleteEndpointId, deleteParams })
   }
 
+  const rowsFromState = !!config.rowsBinding
   return (
     <div className="space-y-3">
       <h3 className="text-ui-sm font-semibold uppercase tracking-wide text-ink-3">
@@ -530,11 +534,43 @@ export function DataTableConfigPanel({ itemId, config }: DataTableConfigPanelPro
         <Input value={config.title} onChange={(e) => set('title', e.target.value)} />
       </Field>
 
-      <Field label="Data endpoint (API page)">
-        <EndpointPicker value={config.endpointId} onChange={setDataEndpoint} />
-      </Field>
+      {(pageLoads.length > 0 || rowsFromState) && (
+        <Field label="Rows from">
+          <SegmentedControl
+            aria-label="Rows from"
+            options={[
+              { value: 'endpoint', label: 'Endpoint' },
+              { value: 'state', label: 'Page data' },
+            ]}
+            value={rowsFromState ? 'state' : 'endpoint'}
+            onChange={(v) =>
+              set('rowsBinding', v === 'state' ? { key: pageLoads[0]?.id ?? '', path: '', source: 'state' } : null)
+            }
+          />
+        </Field>
+      )}
+      {rowsFromState && config.rowsBinding && (
+        <div className="space-y-1.5 rounded-lg border border-line bg-panel p-2">
+          <LoadFieldPicker
+            label="Rows"
+            mode="rows"
+            loadId={config.rowsBinding.key}
+            path={config.rowsBinding.path}
+            onChange={({ loadId, path }) => set('rowsBinding', { key: loadId, path, source: 'state' })}
+          />
+          <p className="text-ui-xs text-ink-3">
+            In-memory: client paging, sorting and search. Reload the rows with a button’s Reload action on the load’s key.
+          </p>
+        </div>
+      )}
 
-      {config.endpointId != null && (
+      {!rowsFromState && (
+        <Field label="Data endpoint (API page)">
+          <EndpointPicker value={config.endpointId} onChange={setDataEndpoint} />
+        </Field>
+      )}
+
+      {!rowsFromState && config.endpointId != null && (
         <>
           <Field label="Response row path (dot path)">
             <Input
@@ -558,7 +594,11 @@ export function DataTableConfigPanel({ itemId, config }: DataTableConfigPanelPro
       <ColumnsEditor
         columns={config.columns}
         onChange={(columns) => set('columns', columns)}
-        rowModel={rowModelFields(config.endpointId, config.apiPaths, endpoints, models)}
+        rowModel={
+          rowsFromState
+            ? bindingRowModel(config.rowsBinding, loadShapes)
+            : rowModelFields(config.endpointId, config.apiPaths, endpoints, models)
+        }
       />
 
       <Toggle

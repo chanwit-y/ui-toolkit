@@ -4,6 +4,7 @@ import type { GridContainerSettings, GridItemData, NavParamSource, StudioNavigat
 import type { GroupDef } from '../Library/groupStore'
 import type { ModelDef } from '../Model/types'
 import type { StudioThemeConfig, ThemeAppearance } from '../Theme/types'
+import type { PageLoadDef } from './pageLoads'
 
 /** One canvas tree — the shape `gridStore.hydrate` takes and autosave writes. */
 export type PageGrid = {
@@ -30,11 +31,17 @@ export type PageDef = {
    * resolved to its key at export — `MISSING_PAGE` when deleted). */
   parentId?: string
   /** Where the breadcrumb label (and exported `title`) comes from; unset =
-   * the page name. Limited to literal / URL sources — studio pages can't
-   * author a container `load`, so a state slice would never be filled. */
+   * the page name. Literal / URL sources, or a field of one of the page's
+   * loads (`state`, keyed by load id — offered once the page has loads). */
   crumb?: NavParamSource
   /** Hide the shell's breadcrumb strip while this page is current. */
   hideBreadcrumbs?: boolean
+  /**
+   * Page-level data loads (the engine `PageElement.loads`), edited in the
+   * Layout's Data tab. Bindings / conditions / other loads refer to them by
+   * `id` (see `pageLoads.ts`).
+   */
+  loads?: PageLoadDef[]
 }
 
 /** The exported `AppShell`'s layout props (see the grilled breadcrumbs + top-nav design). */
@@ -91,6 +98,12 @@ export type ProjectSnapshot = {
   theme: StudioThemeConfig
   /** Attached `EndpointDef.id`s from the shared library, in attach order. */
   endpointIds: string[]
+  /**
+   * App-wide data loads (the library `<GlobalLoads>`): fetched once when the
+   * app starts, kept across pages, bindable from every page. Same shape and
+   * id space as `PageDef.loads`.
+   */
+  globalLoads?: PageLoadDef[]
 }
 
 export type ProjectDef = {
@@ -153,7 +166,7 @@ export type ActivityEntry = {
 
 /** The persisted shape (one localStorage key, versioned). */
 export type WorkspaceData = {
-  version: 39
+  version: 42
   /** The portal's own appearance; inside a project the project theme wins. */
   appearance: ThemeAppearance
   /** The mock identity stamped on activity and templates (see `MOCK_USERS`). */
