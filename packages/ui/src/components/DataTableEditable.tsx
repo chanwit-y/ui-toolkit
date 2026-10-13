@@ -14,6 +14,7 @@ import { TextFieldBase as TextField } from "./TextField"
 import { useLoading, useTheme } from "./context"
 import { useStord } from "./core/stord"
 import { ColumnResizeHandle, sizeStyle, sizeVars, useColumnResize } from "./dataTableResize"
+import { SkeletonBlock } from "./Skeleton"
 import { columnMeta, groupColumns, headerRows, headerTopStyle, useHeaderRowTops } from "./dataTableLayout"
 
 const NEW_ROW_ID = "__new__"
@@ -700,7 +701,7 @@ export const DataTableEditable = <T extends Record<string, any>>({
 										className="datatable-body-cell px-4 py-1"
 										style={{ ...sizeStyle(column), textAlign: cellAlign(column.id) }}
 									>
-										<div className="h-4 w-full rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+										<SkeletonBlock height={16} />
 									</td>
 								))}
 								{fillerCell}

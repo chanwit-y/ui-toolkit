@@ -19,7 +19,7 @@ import { DEFAULT_CONTAINER_GRID } from "@gummy-ui/ui";
 export const workflowLoads: PageLoad[] = [
   {
     key: "workflow",
-    blocking: true,
+    loading: "skeleton",
     errorMessage: "Workflow not found.",
     api: { name: "workflowDetail", paths: ["data"], params: { id: { type: "url", key: "id" } } },
   },

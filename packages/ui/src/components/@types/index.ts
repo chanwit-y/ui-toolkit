@@ -961,14 +961,27 @@ export type ContainerLoad = {
  * every URL `:param` resolves, and refetches when they change.
  */
 export type PageLoad = ContainerLoad & {
-  /** Cover the page with the loading overlay while this load is in flight. */
+  /**
+   * How the page waits for this load: `cycle` covers the page with the
+   * loading overlay (a spinner) while the request is in flight; `skeleton`
+   * shows nothing page-wide and every component bound to the slice draws a
+   * placeholder in its own shape until the data lands (first load or held —
+   * never over data it already has, a refetch keeps the previous result);
+   * `none` is silent (read `$status`). Default `none`, or `cycle` when the
+   * deprecated `blocking` is set. Resolved by `loadingMode`.
+   */
+  loading?: LoadingMode;
+  /** @deprecated Use `loading: "cycle"`. Honoured when `loading` is absent. */
   blocking?: boolean;
   /**
-   * Snackbar shown when the load fails. A `blocking` load without one shows a
-   * generic message; a non-blocking one stays silent (read `$status` instead).
+   * Snackbar shown when the load fails. A `cycle` load without one shows a
+   * generic message; the other modes stay silent (read `$status` instead).
    */
   errorMessage?: string;
 };
+
+/** See {@link PageLoad.loading}. */
+export type LoadingMode = "cycle" | "skeleton" | "none";
 
 export type Term = {
   type: "observe" | "value";

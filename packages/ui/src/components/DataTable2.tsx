@@ -22,6 +22,8 @@ import { callArgs, stateKeys, useRouteScope, useStateVersion } from "./core/read
 import { resolveDataValue, resolveDataValues } from "./core/dataValue"
 import { DataTableFilter } from "./DataTableFilter"
 import { ClampedCell, DEFAULT_CELL_LINES } from "./ClampedCell"
+import { SkeletonBlock } from "./Skeleton"
+import { useSkeleton } from "./core/rowScope"
 import { columnMeta, computeSpans, headerPinStyle, headerRows, headerTopStyle, spanKey, useHeaderRowTops } from "./dataTableLayout"
 
 // Utility function to highlight matching text
@@ -427,6 +429,8 @@ export const DataTable2 = <T extends Record<string, any>>({
 	const requestSig = JSON.stringify([request.q, request.p, request.b])
 	// Rows bound to a DataValue instead of fetched: re-read when the slice changes.
 	const itemsVersion = useStateVersion(items?.type === "state" ? [items.key] : [])
+	// Rows from a page load in `skeleton` mode: skeleton rows until it lands.
+	const itemsPending = useSkeleton(items)
 	const boundRows = useMemo(() => {
 		if (!items) return undefined
 		const v = resolveDataValue(items, routeScope)
@@ -510,7 +514,7 @@ export const DataTable2 = <T extends Record<string, any>>({
 		placeholderData: keepPreviousData,
 	})
 
-	const showSkeleton = (isLoading || isFetching) && data.length === 0
+	const showSkeleton = itemsPending || ((isLoading || isFetching) && data.length === 0)
 	// A filtered table says why it is empty: the call is held on a URL `:param`
 	// no filter feeds yet, or the filters matched nothing.
 	const filterNote = !filterContainer || data.length > 0
@@ -550,7 +554,7 @@ export const DataTable2 = <T extends Record<string, any>>({
 								style={{ ...sizeStyle(column), textAlign: align[column.id], ...pinStyle(column) }}
 							>
 								<div className="min-h-10 flex flex-col justify-center">
-									<div className="h-4 w-full rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+									<SkeletonBlock height={16} />
 								</div>
 							</td>
 						), fillerCell)}

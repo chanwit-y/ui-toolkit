@@ -7,8 +7,8 @@ import { useLoading } from "../context/LoadingProvider";
 import { useSnackbar } from "../Snackbar";
 import { drillPaths } from "./dataValue";
 import { callArgs, stateKeys, useRouteScope, useStateVersion } from "./readApi";
-import { resolveLoadRequest } from "./pageLoads";
-import { getStateStore, type StateStatus } from "./stateStore";
+import { loadingMode, resolveLoadRequest } from "./pageLoads";
+import { getStateStore, setLoadingMode, type StateStatus } from "./stateStore";
 import { useStord } from "./stord";
 
 type StateLoaderProps = {
@@ -34,6 +34,10 @@ export function StateLoader({ load, apis }: StateLoaderProps) {
 
   const name = load.api.name;
   const api = apis.api[name as keyof typeof apis.api] as APIFunction | undefined;
+  // `cycle` ⇒ the page overlay, `skeleton` ⇒ bound components draw
+  // placeholders (they ask the registry), `none` ⇒ silent.
+  const mode = loadingMode(load);
+  setLoadingMode(load.key, mode);
   const info = apis.apis[name] as { url?: string; query?: unknown; parameter?: unknown; body?: unknown } | undefined;
 
   // Nothing resolves before the first commit: when a page remounts (a
@@ -97,9 +101,9 @@ export function StateLoader({ load, apis }: StateLoaderProps) {
     updateFnCtxs(load.key, () => refetch());
   }, [load.key, refetch, updateFnCtxs]);
 
-  // Blocking: the page overlay while a request is in flight.
+  // `cycle`: the page overlay while a request is in flight.
   const loaderId = useRef<string | undefined>(undefined);
-  const busy = !!load.blocking && status === "loading";
+  const busy = mode === "cycle" && status === "loading";
   useEffect(() => {
     if (busy) loaderId.current = startLoading();
     return () => {
@@ -111,7 +115,7 @@ export function StateLoader({ load, apis }: StateLoaderProps) {
   // One snackbar per failure (errorUpdatedAt changes on each new failure).
   useEffect(() => {
     if (!query.isError) return;
-    const message = load.errorMessage ?? (load.blocking ? `Couldn't load ${load.key}.` : undefined);
+    const message = load.errorMessage ?? (mode === "cycle" ? `Couldn't load ${load.key}.` : undefined);
     if (message) showSnackbar({ variant: "error", message });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query.isError, query.errorUpdatedAt]);

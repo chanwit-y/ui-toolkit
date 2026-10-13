@@ -2,7 +2,8 @@ import { type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import type { NavigateTarget, RepeaterProps } from "./@types";
 import { resolveContainerGap } from "./core/containerGrid";
 import { useNavigateTo } from "./core/pages";
-import { RowScopeProvider, useDataValue } from "./core/rowScope";
+import { RowScopeProvider, useDataValue, useSkeleton } from "./core/rowScope";
+import { SkeletonBlock } from "./Skeleton";
 import { useReadApi } from "./core/useReadApi";
 
 // Surfaces use the Radix theme vars so they follow the active appearance and
@@ -99,6 +100,8 @@ export const Repeater = ({
 	const { data, isLoading, error, held } = useReadApi(name, api);
 
 	const scoped = useDataValue(api ? undefined : items);
+	// Items from a page load in `skeleton` mode: ghost cards until it lands.
+	const boundPending = useSkeleton(api ? undefined : items);
 	const list: unknown[] = api ? (Array.isArray(data) ? (data as unknown[]) : []) : Array.isArray(scoped) ? scoped : [];
 
 	const span = { sm: "12", md: "12", lg: "12", xl: "12", ...itemSpan };
@@ -108,11 +111,21 @@ export const Repeater = ({
 	const padding = resolveContainerGap(itemPadding ?? (itemSurface === "none" ? "0" : "4"));
 
 	const pending = !!api && (isLoading || held);
-	const isEmpty = !pending && !error && list.length === 0;
+	const isEmpty = !pending && !boundPending && !error && list.length === 0;
 
 	return (
 		<div className="flex w-full flex-col gap-3" data-repeater={name}>
 			{title && <h3 className="text-sm font-semibold text-[var(--gray-12)]">{title}</h3>}
+
+			{boundPending && list.length === 0 && (
+				<div className="grid grid-cols-12" style={{ gap: resolveContainerGap(gap) }} aria-hidden>
+					{[0, 1, 2].map((i) => (
+						<div key={i} className={spanClass}>
+							<SkeletonBlock height={96} radius={8} />
+						</div>
+					))}
+				</div>
+			)}
 
 			{list.length > 0 && (
 				<div className="grid grid-cols-12" style={{ gap: resolveContainerGap(gap) }}>

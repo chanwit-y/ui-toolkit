@@ -1,4 +1,4 @@
-import type { ContainerLoad, DataValue } from "../@types";
+import type { ContainerLoad, DataValue, LoadingMode, PageLoad } from "../@types";
 import { resolveDataValue, resolveDataValues, type DataValueScope } from "./dataValue";
 import { stateKeys, urlParamNames } from "./readApi";
 
@@ -23,6 +23,16 @@ export function resolveLoadRequest(
   );
   const missingParam = urlParamNames(url).some((k) => params[k] === undefined || params[k] === "");
   return { query, params, body, held: waitsOnState || missingParam };
+}
+
+/**
+ * How a load shows its wait (see {@link PageLoad.loading}): `loading` when
+ * set, else the deprecated `blocking` flag → `cycle`, else `none`. A plain
+ * {@link ContainerLoad} has neither and is `none`.
+ */
+export function loadingMode(load: ContainerLoad & Partial<Pick<PageLoad, "loading" | "blocking">>): LoadingMode {
+  if (load.loading) return load.loading;
+  return load.blocking ? "cycle" : "none";
 }
 
 /** Load keys each load reads through `state` DataValues. */

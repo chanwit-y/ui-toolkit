@@ -3408,7 +3408,7 @@ const seedLoad = (
   key,
   read: { endpointId, params, extra: {} },
   paths: 'data',
-  blocking: false,
+  loading: 'skeleton',
   errorMessage: '',
   ...extra,
 })
@@ -3420,7 +3420,7 @@ const seedLoad = (
 export function pageDataSeedLoads(): PageLoadDef[] {
   return [
     seedLoad(LOAD_COUNTRY_ID, 'country', COUNTRY_DETAIL_ENDPOINT_ID, { id: { type: 'url', key: 'code', source: 'param' } }, {
-      blocking: true,
+      loading: 'cycle',
       errorMessage: 'Country not found.',
     }),
     seedLoad(LOAD_REGION_ID, 'region', REGION_BY_COUNTRY_ENDPOINT_ID, {
@@ -3718,7 +3718,7 @@ export function approvalSeedLoads(): PageLoadDef[] {
       key: 'approval',
       read: { endpointId: APPROVAL_DETAIL_ENDPOINT_ID, params: { id: { type: 'url', key: 'id', source: 'param' } }, extra: {} },
       paths: 'data',
-      blocking: true,
+      loading: 'skeleton',
       errorMessage: 'Approval request not found.',
     },
   ]
@@ -3905,7 +3905,7 @@ export function workflowSeedLoads(): PageLoadDef[] {
       key: 'workflow',
       read: { endpointId: WORKFLOW_DETAIL_ENDPOINT_ID, params: { id: { type: 'url', key: 'id', source: 'param' } }, extra: {} },
       paths: 'data',
-      blocking: true,
+      loading: 'skeleton',
       errorMessage: 'Workflow not found.',
     },
   ]
@@ -4036,5 +4036,239 @@ export function workflowDemoSeedItems(): GridItemData[] {
     },
     ...heading('seed-item-workflow-readonly', 'Read-only', 'The same line with Read-only on: cards and connectors only.'),
     editor('seed-item-workflow-editor-ro', 'stepsReadOnly', { label: '', isRequired: false, disabled: true }),
+  ]
+}
+
+/* ----------------------------------------------------------- loading mode */
+
+export const LOADING_MODE_PAGE_ID = 'seed-page-loading-mode'
+export const LOAD_LM_COUNTRY_ID = 'load-seed-lm-country'
+export const LOAD_LM_REGION_ID = 'load-seed-lm-region'
+export const LOAD_LM_MEMBERS_ID = 'load-seed-lm-members'
+export const LOAD_LM_TABLE_ID = 'load-seed-lm-table'
+
+/**
+ * The Loading mode demo's page loads: the country, its chained region and
+ * the region's countries (`members`) on `skeleton` (every component bound to
+ * them draws a placeholder until the data lands), and the same countries
+ * again as `tableRows` on `cycle` (the page overlay) for the contrast. The
+ * global `lookups` (skeleton) feeds the select.
+ */
+export function loadingModeSeedLoads(): PageLoadDef[] {
+  return [
+    seedLoad(LOAD_LM_COUNTRY_ID, 'country', COUNTRY_DETAIL_ENDPOINT_ID, { id: { type: 'url', key: 'code', source: 'param' } }, {
+      loading: 'skeleton',
+      errorMessage: 'Country not found.',
+    }),
+    seedLoad(LOAD_LM_REGION_ID, 'region', REGION_BY_COUNTRY_ENDPOINT_ID, {
+      code: { type: 'state', key: LOAD_LM_COUNTRY_ID, path: 'code' },
+    }),
+    seedLoad(LOAD_LM_MEMBERS_ID, 'members', REGION_COUNTRIES_PAGED_ENDPOINT_ID, {
+      region: { type: 'state', key: LOAD_LM_REGION_ID, path: '_id' },
+    }),
+    seedLoad(
+      LOAD_LM_TABLE_ID,
+      'tableRows',
+      REGION_COUNTRIES_PAGED_ENDPOINT_ID,
+      { region: { type: 'state', key: LOAD_LM_REGION_ID, path: '_id' } },
+      { loading: 'cycle' },
+    ),
+  ]
+}
+
+/**
+ * The "Loading mode" example page: one component of every shape a skeleton
+ * takes — typography, avatar, a card's header and media, HTML content, a text
+ * field's initial value, a select's options, a repeater's items — bound to
+ * `skeleton` loads, beside a table whose rows come from a `cycle` load.
+ */
+export function loadingModeDemoSeedItems(): GridItemData[] {
+  const full = { xs: 4, sm: 6, md: 8, lg: 12 }
+  const half = { xs: 4, sm: 6, md: 4, lg: 6 }
+  const state = (key: string, path = '') => ({ key, path, source: 'state' as const })
+  const text = (id: string, t: string, extra: Record<string, unknown> = {}, colSpan = full): GridItemData => ({
+    id,
+    label: 'Typography',
+    type: 'typography',
+    settings: createDefaultItemSettings({ colSpan }),
+    config: { ...createDefaultTypographyConfig(), text: t, variant: 'body2', ...extra },
+  })
+  const heading = (id: string, t: string, caption: string) => [
+    text(`${id}-title`, t, { variant: 'subtitle1', weight: 'medium' }),
+    text(`${id}-caption`, caption, { color: 'gray' }),
+  ]
+  const status = (loadId: string, key: string, mode: string) => [
+    text(`seed-item-loading-status-${key}`, `${key} · ${mode}`, { weight: 'medium' }, { xs: 2, sm: 3, md: 2, lg: 3 }),
+    text(`seed-item-loading-status-${key}-value`, 'idle', { color: 'gray', binding: state(loadId, '$status') }, { xs: 2, sm: 3, md: 2, lg: 3 }),
+  ]
+  const column = (accessor: string, header: string): DataTableColumnConfig => ({
+    ...DEFAULT_COLUMN_SIZING,
+    id: `seed-loading-col-${accessor}`,
+    accessor,
+    header,
+    enableSorting: true,
+    enableColumnFilter: false,
+    align: 'start',
+    useDateFormat: '',
+    pin: '',
+    html: '',
+    sortField: '',
+    lines: '',
+    rowHeader: false,
+    mergeRows: false,
+    mergeColumns: false,
+    group: '',
+  })
+  return [
+    text('seed-item-loading-h', 'Loading mode', { variant: 'h3' }),
+    text(
+      'seed-item-loading-intro',
+      'Each load in the Page data tab picks how the page waits: Skeleton (every component bound to it draws a placeholder in its own shape until the data lands), Spinner (the page overlay) or Silent. Here country, region and members are skeleton loads; tableRows is a spinner load. Open the Live Preview and watch the first paint.',
+      { color: 'gray' },
+    ),
+    ...heading('seed-item-loading-status', 'Load status', 'A $status line never skeletons — it is what shows while the load runs.'),
+    ...status(LOAD_LM_COUNTRY_ID, 'country', 'skeleton'),
+    ...status(LOAD_LM_REGION_ID, 'region', 'skeleton (chained)'),
+    ...status(LOAD_LM_MEMBERS_ID, 'members', 'skeleton (chained)'),
+    ...status(LOAD_LM_TABLE_ID, 'tableRows', 'spinner (chained)'),
+    ...heading('seed-item-loading-text', 'Text and image', 'A typography placeholder takes the variant’s size; an avatar’s is round.'),
+    {
+      id: 'seed-item-loading-avatar',
+      label: 'Avatar',
+      type: 'avatar',
+      settings: createDefaultItemSettings({ colSpan: { xs: 1, sm: 1, md: 1, lg: 1 } }),
+      config: {
+        ...createDefaultAvatarConfig('loadingFlag'),
+        size: 'lg',
+        fallback: '?',
+        srcBinding: state(LOAD_LM_COUNTRY_ID, 'avatar'),
+        fallbackBinding: state(LOAD_LM_COUNTRY_ID, 'code'),
+      },
+    },
+    text('seed-item-loading-name', 'Country name', { variant: 'h4', binding: state(LOAD_LM_COUNTRY_ID, 'name') }, { xs: 3, sm: 5, md: 7, lg: 11 }),
+    text('seed-item-loading-about', 'About the region', { color: 'gray', binding: state(LOAD_LM_REGION_ID, 'about') }),
+    ...heading('seed-item-loading-card', 'Card and HTML content', 'The header and media slots shimmer in place; the HTML block shows three lines.'),
+    {
+      id: 'seed-item-loading-card-item',
+      label: 'Card',
+      type: 'card',
+      settings: createDefaultItemSettings({ colSpan: half }),
+      config: {
+        ...createDefaultCardConfig('loadingCountry'),
+        variant: 'outlined',
+        header: {
+          ...createDefaultCardConfig('').header,
+          title: 'Country',
+          titleBinding: state(LOAD_LM_COUNTRY_ID, 'name'),
+          subheader: '—',
+          subheaderBinding: state(LOAD_LM_COUNTRY_ID, 'code'),
+          avatarEnabled: true,
+          avatar: {
+            ...createDefaultAvatarConfig(''),
+            fallback: '?',
+            srcBinding: state(LOAD_LM_COUNTRY_ID, 'avatar'),
+            fallbackBinding: state(LOAD_LM_COUNTRY_ID, 'code'),
+          },
+        },
+        media: { enabled: true, src: '', srcBinding: state(LOAD_LM_COUNTRY_ID, 'image'), alt: 'Flag', height: 140 },
+      },
+      childCanvases: [
+        {
+          ...createChildCanvas(),
+          items: [text('seed-item-loading-card-region', 'Region', { variant: 'subtitle2', binding: state(LOAD_LM_REGION_ID, 'name') })],
+        },
+        createChildCanvas(),
+      ],
+    },
+    {
+      id: 'seed-item-loading-html',
+      label: 'HTML content',
+      type: 'html',
+      settings: createDefaultItemSettings({ colSpan: half }),
+      config: {
+        ...createDefaultHtmlContentConfig('loadingRegionHtml'),
+        html: '<h4>{{name}}</h4><p>{{description}}</p><p><span class="dt-badge">{{countries.length}} countries</span></p>',
+        binding: state(LOAD_LM_REGION_ID),
+      },
+    },
+    ...heading('seed-item-loading-fields', 'Form fields', 'A field with an initial value from a load, and a select whose options are the global lookups load — both shimmer in their own box.'),
+    {
+      id: 'seed-item-loading-field',
+      label: 'Text Field',
+      type: 'textfield',
+      settings: createDefaultItemSettings({ colSpan: half }),
+      config: { ...createDefaultTextFieldConfig('loadingName'), label: 'Name (initial value from country)' },
+      initialValue: state(LOAD_LM_COUNTRY_ID, 'name'),
+    },
+    {
+      id: 'seed-item-loading-select',
+      label: 'Select',
+      type: 'select',
+      settings: createDefaultItemSettings({ colSpan: half }),
+      config: {
+        ...createDefaultSelectFieldConfig('loadingRegion'),
+        label: 'Region (options from lookups)',
+        idKey: '_id',
+        displayKey: 'name',
+        searchKey: 'name',
+        optionsBinding: state(LOAD_LOOKUPS_ID),
+      },
+    },
+    ...heading('seed-item-loading-repeater', 'Repeater', 'Three ghost cards in the item grid while the members load has nothing — then one card per country.'),
+    {
+      id: 'seed-item-loading-repeater-item',
+      label: 'Repeater',
+      type: 'repeater',
+      settings: createDefaultItemSettings({ colSpan: full }),
+      config: {
+        ...createDefaultRepeaterConfig('loadingMembers'),
+        idKey: '_id',
+        source: 'state',
+        stateBinding: state(LOAD_LM_MEMBERS_ID),
+        itemSpan: { xs: 12, sm: 6, md: 4, lg: 3 },
+        itemSurface: 'outlined',
+        itemPadding: '3',
+        emptyText: 'No countries in this region',
+      },
+      childCanvases: [
+        {
+          ...createChildCanvas(),
+          items: [
+            text('seed-item-loading-repeater-name', 'Name', { variant: 'subtitle2', binding: { key: 'name', path: '' } }),
+            text('seed-item-loading-repeater-code', 'Code', { color: 'gray', binding: { key: 'code', path: '' } }),
+          ],
+        },
+      ],
+    },
+    ...heading('seed-item-loading-rows', 'Rows from a spinner load', 'tableRows is a Spinner load: the overlay covers the page while it fetches and the table stays empty meanwhile — compare with the repeater above.'),
+    {
+      id: 'seed-item-loading-table',
+      label: 'Data Table',
+      type: 'datatable',
+      settings: createDefaultItemSettings({ colSpan: full }),
+      config: {
+        ...createDefaultDataTableConfig('dtLoadingMembers'),
+        title: 'Countries in the same region',
+        canEdit: false,
+        canDelete: false,
+        columns: [column('code', 'Code'), column('name', 'Name'), column('updated_by_name', 'Updated By')],
+        rowsBinding: state(LOAD_LM_TABLE_ID),
+      },
+    },
+    {
+      id: 'seed-item-loading-reload',
+      label: 'Button',
+      type: 'button',
+      settings: createDefaultItemSettings({ colSpan: { xs: 4, sm: 3, md: 3, lg: 3 } }),
+      config: {
+        ...createDefaultButtonItemConfig(),
+        label: 'Reload country',
+        icon: 'refresh',
+        variant: 'outlined',
+        actions: ['ReloadDataTable' as const],
+        reloadTableItemId: LOAD_LM_COUNTRY_ID,
+      },
+    },
+    text('seed-item-loading-reload-note', 'A reload keeps the data on screen: a skeleton only draws while a load has nothing yet.', { color: 'gray' }, { xs: 4, sm: 3, md: 5, lg: 9 }),
   ]
 }

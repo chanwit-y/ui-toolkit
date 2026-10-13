@@ -4,6 +4,8 @@ import {
   AppShell,
   DataProvider,
   GlobalLoads,
+  getStateStore,
+  loadingModeOf,
   HttpClientFactory,
   PageRouter,
   ThemeProvider,
@@ -29,6 +31,9 @@ const http = new HttpClientFactory(
  * each time the user lands on a new page. Kept outside `PageRouter` on purpose:
  * transitions are the consumer's policy, not the router's.
  */
+// Dev aid: the page-data slices and their loading modes, for the console.
+;(window as any).__gummy = { getStateStore, loadingModeOf };
+
 function PageTransition({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation();
   return (

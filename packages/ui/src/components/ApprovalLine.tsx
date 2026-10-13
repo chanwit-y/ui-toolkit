@@ -6,7 +6,8 @@ import type { ApprovalLineElement, ApprovalStep, ApprovalStepState, FormListRead
 import { renderTemplate } from "../util/template";
 import { Avatar } from "./Avatar";
 import { initialsOf, normalizeApprovalSteps, readKey } from "./core/approvalSteps";
-import { displayText, useDataValue } from "./core/rowScope";
+import { displayText, useDataValue, useSkeleton } from "./core/rowScope";
+import { SkeletonBlock, SkeletonCircle } from "./Skeleton";
 import { useReadApi } from "./core/useReadApi";
 
 const AVATAR_PX = { sm: 32, md: 40, lg: 48 } as const;
@@ -24,6 +25,8 @@ export type ApprovalLineViewProps = Pick<
   ApprovalLineElement,
   "orientation" | "size" | "showJobTitle" | "showIndex" | "stepMinWidth" | "verticalBelow" | "emptyText" | "className"
 > & {
+  /** Draw ghost steps instead of `steps` (the bound slice is still loading). */
+  skeleton?: boolean;
   steps: ApprovalStep[];
   style?: CSSProperties;
 };
@@ -67,6 +70,7 @@ export function ApprovalLineView({
   stepMinWidth = 96,
   verticalBelow,
   emptyText = "No approval steps.",
+  skeleton = false,
   className,
   style,
 }: ApprovalLineViewProps) {
@@ -82,11 +86,31 @@ export function ApprovalLineView({
     list.scrollLeft = current.offsetLeft - (list.clientWidth - current.offsetWidth) / 2;
   }, [steps, orientation]);
 
+  // The avatar size and the step's minimum width are the two config numbers.
+  const vars = { "--al-avatar": `${AVATAR_PX[size]}px`, "--al-step-min": `${stepMinWidth}px`, ...style } as CSSProperties;
+  const listClass = `approval-line approval-line-${orientation} approval-line-${size} ${verticalBelow ? `approval-line-vertical-below-${verticalBelow}` : ""} ${className ?? ""}`;
+  // Loading (the bound slice is in `skeleton` mode): four ghost steps on the connector.
+  if (skeleton) {
+    return (
+      <ol className={listClass} style={vars} aria-label="Approval line" aria-busy="true">
+        {[0, 1, 2, 3].map((i) => (
+          <li key={i} className="approval-step approval-step-pending" aria-hidden>
+            {i > 0 && <span className="approval-connector" />}
+            <div className="approval-step-avatar">
+              <SkeletonCircle size={AVATAR_PX[size]} />
+            </div>
+            <div className="approval-step-text" style={{ width: "100%" }}>
+              <SkeletonBlock height={12} width="70%" style={{ margin: "0 auto" }} />
+              <SkeletonBlock height={10} width="45%" style={{ margin: "4px auto 0" }} />
+            </div>
+          </li>
+        ))}
+      </ol>
+    );
+  }
   if (steps.length === 0) {
     return <p className={`approval-line-empty ${className ?? ""}`} style={style}>{emptyText}</p>;
   }
-  // The avatar size and the step's minimum width are the two config numbers.
-  const vars = { "--al-avatar": `${AVATAR_PX[size]}px`, "--al-step-min": `${stepMinWidth}px`, ...style } as CSSProperties;
   const currentIndex = steps.findIndex((s) => s.state === "current");
   // A connector is "reached" (solid) while it leads up to the current step; with
   // no current step (all done, or rejected) every connector up to the last
@@ -98,7 +122,7 @@ export function ApprovalLineView({
     <Tooltip.Provider delayDuration={200}>
       <ol
         ref={listRef}
-        className={`approval-line approval-line-${orientation} approval-line-${size} ${verticalBelow ? `approval-line-vertical-below-${verticalBelow}` : ""} ${className ?? ""}`}
+        className={listClass}
         style={vars}
         aria-label="Approval line"
       >
@@ -161,6 +185,7 @@ export type ApprovalLineProps = Omit<ApprovalLineElement, "name" | "api"> & {
  */
 export function ApprovalLine({ name = "approvalLine", items, api, stepsPath, keys, requester, roleRules, statusMap, statusLabels, avatarUrl, emptyText, ...view }: ApprovalLineProps) {
   const scoped = useDataValue(api ? undefined : items);
+  const pending = useSkeleton(api ? undefined : items, requester?.nameValue);
   const read = useReadApi(name, api);
   // With `api` the record is fetched here and the rows sit at `stepsPath`
   // inside it; the requester's `*Path`s read the same record.
@@ -184,7 +209,7 @@ export function ApprovalLine({ name = "approvalLine", items, api, stepsPath, key
   }, [rows, reqName, reqTitle, reqAvatar, reqPersonId, JSON.stringify([keys, requester, roleRules, statusMap, statusLabels, avatarUrl])]);
   // While the own read is held or loading, say so instead of "no steps".
   const empty = api && (read.held || read.isLoading) ? "Loading…" : api && read.isError ? "Couldn't load the approval." : emptyText;
-  return <ApprovalLineView steps={steps} emptyText={empty} {...view} />;
+  return <ApprovalLineView steps={steps} emptyText={empty} skeleton={pending} {...view} />;
 }
 
 const text = (v: unknown): string | undefined =>

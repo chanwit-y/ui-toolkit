@@ -19,7 +19,7 @@ import { DEFAULT_CONTAINER_GRID } from "@gummy-ui/ui";
 export const approvalLineLoads: PageLoad[] = [
   {
     key: "approval",
-    blocking: true,
+    loading: "skeleton",
     errorMessage: "Approval request not found.",
     api: { name: "approvalDetail", paths: ["data"], params: { id: { type: "url", key: "id" } } },
   },

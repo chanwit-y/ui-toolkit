@@ -7,8 +7,9 @@ import type { PageLoad } from "../@types";
 import { LoadingProvider } from "../context";
 import { SnackbarProvider } from "../Snackbar";
 import { queryClient } from "./context";
-import { loadCycles } from "./pageLoads";
+import { loadCycles, loadingMode } from "./pageLoads";
 import { StateLoader } from "./stateLoader";
+import { setLoadingMode } from "./stateStore";
 
 export type GlobalLoadsProps = {
   http: HttpClientFactory;
@@ -34,6 +35,9 @@ export function GlobalLoads({ http, model, api, loads }: GlobalLoadsProps): Reac
     () => new ApiMaster(model, api as TApiMaster<TModelMaster>, new ApiFactory(http, {})),
     [http, model, api],
   );
+
+  // The loading modes are known before anything bound to the slices renders.
+  useMemo(() => loads.forEach((l) => setLoadingMode(l.key, loadingMode(l))), [loads]);
 
   useEffect(() => {
     for (const c of loadCycles(loads))

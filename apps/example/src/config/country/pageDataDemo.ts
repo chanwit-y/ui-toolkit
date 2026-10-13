@@ -6,16 +6,20 @@ import { DEFAULT_CONTAINER_GRID } from "@gummy-ui/ui";
  * (`PageElement.loads`) and bound anywhere on it with `{ type: "state" }`
  * values. Four loads, fired in dependency order by the engine:
  *
- * - `country`  ← `countryDetail` with `:id` = the URL's `:code` — blocking
+ * - `country`  ← `countryDetail` with `:id` = the URL's `:code` — `loading: "cycle"`
  *               (the loading overlay) with an error snackbar.
  * - `region`   ← `regionByCountry`, `:code` read from the `country` slice —
- *               held until the country lands (a chained load).
+ *               held until the country lands (a chained load); `loading:
+ *               "skeleton"`, so the region's name / blurb and the card
+ *               slots bound to it shimmer meanwhile.
  * - `regionCountries` ← `regionCountriesPaged`, `:region` = `region._id` —
- *               two deep. The United States belongs to no region, so this
- *               chain stops at a failed `region`.
+ *               two deep, `skeleton` (the table draws skeleton rows). The
+ *               United States belongs to no region, so this chain stops at
+ *               a failed `region`.
  * - `lookups`  ← `regions` — a **global** load (`globalLoads`, mounted once
  *               by `<GlobalLoads>` in App.tsx): fetched when the app starts
- *               and kept across pages, so returning here doesn't refetch it.
+ *               and kept across pages, so returning here doesn't refetch it;
+ *               `skeleton`, so the select shimmers on the very first visit.
  *
  * On the page: a card bound to the country, the region's name / blurb, a
  * data table whose rows *are* the `regionCountries` slice (a row click opens
@@ -28,22 +32,24 @@ import { DEFAULT_CONTAINER_GRID } from "@gummy-ui/ui";
 export const pageDataLoads: PageLoad[] = [
   {
     key: "country",
-    blocking: true,
+    loading: "cycle",
     errorMessage: "Country not found.",
     api: { name: "countryDetail", paths: ["data"], params: { id: { type: "url", key: "code" } } },
   },
   {
     key: "region",
+    loading: "skeleton",
     api: { name: "regionByCountry", paths: ["data"], params: { code: { type: "state", key: "country", path: "code" } } },
   },
   {
     key: "regionCountries",
+    loading: "skeleton",
     api: { name: "regionCountriesPaged", paths: ["data"], params: { region: { type: "state", key: "region", path: "_id" } } },
   },
 ];
 
 /** App-wide loads (`<GlobalLoads>` in App.tsx): readable from every page. */
-export const globalLoads: PageLoad[] = [{ key: "lookups", api: { name: "regions", paths: ["data"] } }];
+export const globalLoads: PageLoad[] = [{ key: "lookups", loading: "skeleton", api: { name: "regions", paths: ["data"] } }];
 
 const full = { sm: "12", md: "12", lg: "12", xl: "12" } as const;
 const state = (key: string, path?: string): DataValue => ({ type: "state", key, ...(path ? { path } : {}) });

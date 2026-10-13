@@ -5,12 +5,15 @@ import { Form } from "../form";
 import { Schema } from "./schema";
 import { Provider } from "./context";
 import { ElementContext } from "./elementBuilder";
-import { useMemo, useEffect, useId, useReducer } from "react";
+import { useMemo, useEffect, useId, useReducer, type ReactNode } from "react";
 import { get } from "lodash";
 import { ConditionExpression } from "./expression";
 import { useTheme } from "../context";
 import { useData } from "../context/DataProvider";
-import { getStateStore } from "./stateStore";
+import { getStateStore, setLoadingMode } from "./stateStore";
+import { loadingMode } from "./pageLoads";
+import { useSkeleton } from "./rowScope";
+import { binSkeleton, binSkeletonValue } from "./skeletons";
 import { engineDebug } from "./engineDebug";
 import { StateLoader } from "./stateLoader";
 import { conditionStateKeys } from "./expression";
@@ -114,15 +117,26 @@ export function ContainerGrid({ container: c, builder, form, theme, ctx }: Conta
 								: "";
 
 				return (
-					<div
-						key={`${c.id}-bin-${binIndex}`}
-						className={`${colClasses} ${alignClass}`}
-						style={getBinGridItemStyle(b)}
-					>
+					<BinCell key={`${c.id}-bin-${binIndex}`} bin={b} className={`${colClasses} ${alignClass}`}>
 						{builder.renderElement(b, form, api, theme)}
-					</div>
+					</BinCell>
 				);
 			})}
+		</div>
+	);
+}
+
+/**
+ * One bin's grid cell. A form field whose `value` reads a page load in
+ * `skeleton` mode draws its placeholder here, over the rendered element,
+ * until the slice lands (display elements with their own bindings handle
+ * theirs — see `skeletons.tsx`).
+ */
+function BinCell({ bin, className, children }: { bin: Bin; className: string; children: ReactNode }) {
+	const pending = useSkeleton(binSkeletonValue(bin));
+	return (
+		<div className={className} style={getBinGridItemStyle(bin)}>
+			{pending ? binSkeleton(bin, children) : children}
 		</div>
 	);
 }
@@ -233,7 +247,11 @@ export class ContainerBuilder<M extends TModelMaster, A extends TApiMaster<M>> {
 		private _apis: ApiMaster<M, A>,
 		/** Page-level loads, mounted by the root renderer only (`draw(true)`). */
 		private _loads: PageLoad[] = [],
-	) { }
+	) {
+		// Known before the first render, so bound components skeleton from
+		// their first paint rather than after the loaders' mount effects.
+		for (const l of _loads) setLoadingMode(l.key, loadingMode(l));
+	}
 
 	public get loads() {
 		return this._loads;
