@@ -3,7 +3,11 @@ import type { AvatarElement, DataValue, TextElement, TypographyElement } from ".
 import { Avatar } from "../Avatar";
 import { Text } from "../Text";
 import { Typography } from "../Typography";
-import { displayText, useDataValue } from "./rowScope";
+import { Skeleton } from "../Skeleton";
+import { displayText, useDataValue, useSkeleton } from "./rowScope";
+
+/** What a text placeholder is sized from while its slice loads. */
+const TEXT_PLACEHOLDER = "Loading placeholder text";
 
 /**
  * Display elements with a {@link DataValue} binding. The builders mount these
@@ -14,11 +18,15 @@ import { displayText, useDataValue } from "./rowScope";
 
 export function BoundText({ value, text, ...props }: TextElement) {
   const bound = displayText(useDataValue(value));
+  const pending = useSkeleton(value);
+  if (pending) return <Skeleton inline><Text {...props} text={text || TEXT_PLACEHOLDER} /></Skeleton>;
   return <Text {...props} text={bound ?? text} />;
 }
 
 export function BoundTypography({ value, text, ...props }: TypographyElement) {
   const bound = displayText(useDataValue(value));
+  const pending = useSkeleton(value);
+  if (pending) return <Skeleton inline><Typography {...props} text={text || TEXT_PLACEHOLDER} /></Skeleton>;
   return <Typography {...props} text={bound ?? text} />;
 }
 
@@ -50,13 +58,17 @@ export function BoundOptions<P extends { options?: unknown[] }>({
   props: P;
 }) {
   const value = useDataValue(optionsValue);
+  const pending = useSkeleton(optionsValue);
   const options = useMemo(() => (Array.isArray(value) ? value : NO_OPTIONS), [value]);
-  return createElement(component, { ...props, options });
+  const field = createElement(component, { ...props, options });
+  return pending ? <Skeleton>{field}</Skeleton> : field;
 }
 
 export function BoundAvatar({ srcValue, fallbackValue, src, fallback, name: _name, ...props }: AvatarElement) {
   const boundSrc = imageSrc(useDataValue(srcValue));
   const boundFallback = displayText(useDataValue(fallbackValue));
+  const pending = useSkeleton(srcValue, fallbackValue);
+  if (pending) return <Skeleton inline style={{ borderRadius: "9999px" }}><Avatar {...props} fallback="" /></Skeleton>;
   return (
     <Avatar
       {...props}

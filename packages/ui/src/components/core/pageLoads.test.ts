@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import type { ContainerLoad } from "../@types";
 import { ConditionExpression, conditionStateKeys } from "./expression";
-import { loadCycles, loadDependencies, resolveLoadRequest } from "./pageLoads";
-import { getStateStore, readSlice } from "./stateStore";
+import { loadCycles, loadDependencies, loadingMode, resolveLoadRequest } from "./pageLoads";
+import { getStateStore, readSlice, skeletonBindingKeys, skeletonPending } from "./stateStore";
 import { resolveDataValue } from "./dataValue";
 
 const load = (key: string, reads: string[] = []): ContainerLoad => ({
@@ -101,5 +101,49 @@ describe("conditions — source: state", () => {
         undefined,
       ]),
     ).toEqual(["a", "b"]);
+  });
+});
+
+describe("loadingMode — how a load shows its wait", () => {
+  test("defaults to none", () => {
+    expect(loadingMode(load("a"))).toBe("none");
+  });
+  test("the deprecated blocking flag means cycle", () => {
+    expect(loadingMode({ ...load("a"), blocking: true })).toBe("cycle");
+    expect(loadingMode({ ...load("a"), blocking: false })).toBe("none");
+  });
+  test("loading wins over blocking", () => {
+    expect(loadingMode({ ...load("a"), blocking: true, loading: "skeleton" })).toBe("skeleton");
+    expect(loadingMode({ ...load("a"), blocking: true, loading: "none" })).toBe("none");
+  });
+});
+
+describe("skeletonPending — when a bound component draws a placeholder", () => {
+  test("only in skeleton mode", () => {
+    expect(skeletonPending({ data: undefined, status: "loading" }, "cycle")).toBe(false);
+    expect(skeletonPending({ data: undefined, status: "loading" }, "none")).toBe(false);
+    expect(skeletonPending({ data: undefined, status: "loading" }, "skeleton")).toBe(true);
+  });
+  test("while the slice has no data: idle, held or loading", () => {
+    for (const status of ["idle", "held", "loading"] as const) expect(skeletonPending({ data: undefined, status }, "skeleton")).toBe(true);
+    expect(skeletonPending({ data: undefined, status: "error" }, "skeleton")).toBe(false);
+    expect(skeletonPending({ data: undefined, status: "success" }, "skeleton")).toBe(false);
+  });
+  test("skeletonBindingKeys: state bindings that read data, never $status / $error, deduped", () => {
+    expect(
+      skeletonBindingKeys([
+        { type: "state", key: "a", path: "name" },
+        { type: "state", key: "a" },
+        { type: "state", key: "b", path: "$status" },
+        { type: "state", key: "c", path: "$error.message" },
+        { type: "url", key: "id" },
+        { type: "row", key: "x" },
+        undefined,
+      ]),
+    ).toEqual(["a"]);
+  });
+  test("never over data it already has (a refetch keeps the previous result)", () => {
+    expect(skeletonPending({ data: { id: 1 }, status: "loading" }, "skeleton")).toBe(false);
+    expect(skeletonPending({ data: [], status: "loading" }, "skeleton")).toBe(false);
   });
 });

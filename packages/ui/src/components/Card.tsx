@@ -4,7 +4,8 @@ import { useState, type CSSProperties, type KeyboardEvent, type MouseEvent, type
 import type { DataValue, NavigateTarget } from "./@types";
 import { imageSrc } from "./core/bound";
 import { useNavigateTo } from "./core/pages";
-import { displayText, useDataValue } from "./core/rowScope";
+import { displayText, useDataValue, useSkeleton } from "./core/rowScope";
+import { Skeleton } from "./Skeleton";
 import { Paper, type PaperProps } from "./Paper";
 
 /**
@@ -253,6 +254,9 @@ export function CardView({
   const boundTitle = displayText(useDataValue(titleValue));
   const boundSubheader = displayText(useDataValue(subheaderValue));
   const boundMedia = imageSrc(useDataValue(media?.srcValue));
+  // Slots bound to a page load in `skeleton` mode shimmer until it lands.
+  const headerPending = useSkeleton(titleValue, subheaderValue);
+  const mediaPending = useSkeleton(media?.srcValue);
   const [expanded, setExpanded] = useState(defaultExpanded);
   const navigateTo = useNavigateTo();
 
@@ -263,8 +267,21 @@ export function CardView({
 
   return (
     <Card onActivate={navigate ? () => navigateTo(navigate) : undefined} variant={variant} elevation={elevation} square={square} className={className} style={style}>
-      {hasHeader && <CardHeader avatar={avatar} title={headerTitle} subheader={headerSubheader} action={headerAction} />}
-      {media && <CardMedia src={boundMedia ?? media.src} alt={media.alt} height={media.height} />}
+      {hasHeader && (
+        <Skeleton loading={headerPending}>
+          <CardHeader
+            avatar={avatar}
+            title={headerPending ? headerTitle || "Loading title" : headerTitle}
+            subheader={headerPending && subheaderValue ? headerSubheader || "Loading subheader" : headerSubheader}
+            action={headerAction}
+          />
+        </Skeleton>
+      )}
+      {media && (
+        <Skeleton loading={mediaPending}>
+          <CardMedia src={mediaPending ? undefined : boundMedia ?? media.src} alt={media.alt} height={media.height} />
+        </Skeleton>
+      )}
       {content !== undefined && <CardContent>{content}</CardContent>}
       {hasActions && (
         <CardActions align={actionsAlign}>

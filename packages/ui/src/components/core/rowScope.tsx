@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useMemo, useSyncExternalStore, 
 import { useParams, useSearchParams } from "react-router-dom";
 import type { DataValue } from "../@types";
 import { resolveDataValue } from "./dataValue";
-import { getStateStore } from "./stateStore";
+import { getStateStore, loadingModeOf, skeletonBindingKeys, skeletonPending } from "./stateStore";
 
 /** The item a `repeater` is rendering, and its position in the array. */
 export type RowScope = { row: unknown; index: number };
@@ -40,6 +40,32 @@ export function useDataValue(dv: DataValue | undefined): unknown {
     () => (dv ? resolveDataValue(dv, { params, searchParams, row: scope?.row }) : undefined),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [JSON.stringify(dv), JSON.stringify(params), searchParams.toString(), scope?.row]
+  );
+  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+}
+
+/**
+ * Whether a component bound through any of `dvs` should draw a skeleton
+ * instead of its content: some `state` binding reads a slice whose load is in
+ * `skeleton` mode and still has no data (see `skeletonPending`). Bindings of
+ * any other type, and `$status` / `$error` paths, never skeleton. Re-renders
+ * as the slices change.
+ */
+export function useSkeleton(...dvs: (DataValue | undefined)[]): boolean {
+  const keys = skeletonBindingKeys(dvs);
+  const sig = keys.join("|");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const slices = useMemo(() => keys.map((key) => ({ key, store: getStateStore(key) })), [sig]);
+  const subscribe = useCallback(
+    (cb: () => void) => {
+      const unsubs = slices.map((s) => s.store.subscribe(cb));
+      return () => unsubs.forEach((u) => u());
+    },
+    [slices],
+  );
+  const getSnapshot = useCallback(
+    () => slices.some((s) => skeletonPending(s.store.getState(), loadingModeOf(s.key))),
+    [slices],
   );
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }

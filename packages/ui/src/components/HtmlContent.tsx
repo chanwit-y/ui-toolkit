@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import type { DataValue } from "./@types";
-import { useDataValue } from "./core/rowScope";
+import { useDataValue, useSkeleton } from "./core/rowScope";
+import { SkeletonText } from "./Skeleton";
 import { HtmlCell } from "./HtmlCell";
 
 export type HtmlContentProps = {
@@ -25,9 +26,10 @@ export type HtmlContentProps = {
  */
 export function HtmlContent({ html, value, prose = true, className, style }: HtmlContentProps) {
   const data = useDataValue(value);
+  const pending = useSkeleton(value);
   return (
     <div className={`gummy-html-content ${className ?? ""}`} style={style}>
-      <HtmlCell template={html} row={data} value={data} className={prose ? "gummy-html-prose" : ""} />
+      {pending ? <SkeletonText lines={3} /> : <HtmlCell template={html} row={data} value={data} className={prose ? "gummy-html-prose" : ""} />}
     </div>
   );
 }

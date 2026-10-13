@@ -16,9 +16,18 @@ export type PageLoadDef = {
   key: string
   read: FormListCrudRef
   paths: string
-  blocking: boolean
+  /** How the page waits (the engine `PageLoad.loading`): the overlay, skeletons on the bound components, or nothing. */
+  loading: LoadingMode
   errorMessage: string
 }
+
+export type LoadingMode = 'cycle' | 'skeleton' | 'none'
+
+export const LOADING_MODE_OPTIONS: { value: LoadingMode; label: string }[] = [
+  { value: 'skeleton', label: 'Skeleton' },
+  { value: 'cycle', label: 'Spinner' },
+  { value: 'none', label: 'Silent' },
+]
 
 /** Load ids carry this prefix, so a `state` source can tell a load ref from a raw slice key. */
 export const LOAD_ID_PREFIX = 'load-'
@@ -31,7 +40,7 @@ export function createPageLoad(key: string): PageLoadDef {
     key,
     read: { endpointId: null, params: {}, extra: {} },
     paths: 'data',
-    blocking: false,
+    loading: 'skeleton',
     errorMessage: '',
   }
 }
@@ -146,7 +155,7 @@ export function enginePageLoad(
       ...(Object.keys(params).length ? { params } : {}),
       ...(Object.keys(query).length ? { query } : {}),
     },
-    ...(load.blocking ? { blocking: true } : {}),
+    ...(load.loading !== 'none' ? { loading: load.loading } : {}),
     ...(load.errorMessage ? { errorMessage: load.errorMessage } : {}),
   }
 }

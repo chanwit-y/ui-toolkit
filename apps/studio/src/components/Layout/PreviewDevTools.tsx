@@ -1,5 +1,6 @@
 import {
   getStateStore,
+  loadingModeOf,
   stateStoreKeys,
   useEngineDebugStore,
   useStord,
@@ -179,7 +180,12 @@ function PageDataTab() {
         {slices.map(([k, s]) => (
           <li key={k} className="flex items-center justify-between gap-2">
             <span className="truncate text-ink">{k}</span>
-            <span className={STATUS_CLASS[s.status] ?? 'text-ink-3'}>{s.status}</span>
+            <span className="flex items-center gap-2">
+              {loadingModeOf(k) !== 'none' && (
+                <span className="text-ink-3">{loadingModeOf(k) === 'cycle' ? 'spinner' : 'skeleton'}</span>
+              )}
+              <span className={STATUS_CLASS[s.status] ?? 'text-ink-3'}>{s.status}</span>
+            </span>
           </li>
         ))}
       </ul>

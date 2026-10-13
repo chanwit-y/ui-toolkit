@@ -69,6 +69,10 @@ import {
   LOAD_WORKFLOW_ID,
   workflowDemoSeedItems,
   workflowSeedLoads,
+  LOADING_MODE_PAGE_ID,
+  LOAD_LM_COUNTRY_ID,
+  loadingModeDemoSeedItems,
+  loadingModeSeedLoads,
 } from '../seed/country'
 import { builtinTemplates } from '../seed/templates'
 import { useThemeStore } from '../Theme/themeStore'
@@ -594,6 +598,35 @@ export function workflowDemoPage(): PageDef {
   }
 }
 
+/** The "Loading mode" example page: skeleton and spinner loads side by side. */
+export function loadingModeDemoPage(): PageDef {
+  return {
+    id: LOADING_MODE_PAGE_ID,
+    key: 'loadingMode',
+    name: 'Loading mode',
+    path: '/loading-mode/:code',
+    grid: {
+      items: loadingModeDemoSeedItems(),
+      containerSettings: defaultContainerSettings,
+      fieldSeq: 0,
+    },
+    parentId: 'seed-page-countries',
+    crumb: { type: 'state', key: LOAD_LM_COUNTRY_ID, path: 'name' },
+    loads: loadingModeSeedLoads(),
+  }
+}
+
+/** Its sidebar link: the route needs a `:code`, so the link fixes one. */
+export function loadingModeMenuItem(): MenuItemDef {
+  return {
+    id: crypto.randomUUID(),
+    kind: 'page',
+    label: 'Loading mode',
+    icon: 'loader',
+    navigate: { pageId: LOADING_MODE_PAGE_ID, params: { code: { type: 'value', value: 'TH' } }, replace: false },
+  }
+}
+
 /** Its sidebar link: the route needs an `:id`, so the link fixes one. */
 export function workflowMenuItem(): MenuItemDef {
   return {
@@ -718,6 +751,7 @@ export function countryProjectSnapshot(library: LibraryData): ProjectSnapshot {
       pageDataDemoPage(),
       approvalLineDemoPage(),
       workflowDemoPage(),
+    loadingModeDemoPage(),
   ]
   // Every data table carries its two canvases (edit modal + filter form).
   for (const page of pages) ensureDataTableCanvases(page.grid.items)
@@ -730,6 +764,7 @@ export function countryProjectSnapshot(library: LibraryData): ProjectSnapshot {
   menu.push(pageDataMenuItem())
   menu.push(approvalLineMenuItem())
   menu.push(workflowMenuItem())
+  menu.push(loadingModeMenuItem())
   return {
     pages,
     menu,

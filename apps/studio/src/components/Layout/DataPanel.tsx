@@ -1,10 +1,12 @@
 import { ChevronDown, ChevronRight, Database, Globe, Plus, Trash2 } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
-import { Button, IconButton, Input, cn } from '../common'
+import { Button, IconButton, Input, SegmentedControl, cn } from '../common'
 import {
+  LOADING_MODE_OPTIONS,
   createPageLoad,
   loadsOnCycle,
   uniqueLoadKey,
+  type LoadingMode,
   type PageLoadDef,
 } from '../Workspace/pageLoads'
 import { useActivePage } from '../Workspace/workspaceStore'
@@ -162,7 +164,7 @@ function LoadSection({
                   <span className={cn('truncate font-mono text-ui-sm font-medium', keyError ? 'text-danger' : 'text-ink')}>
                     {key || '(no key)'}
                   </span>
-                  {load.blocking && <span className="tag shrink-0">blocking</span>}
+                  {load.loading !== 'none' && <span className="tag shrink-0">{load.loading === 'cycle' ? 'spinner' : 'skeleton'}</span>}
                   {cycles.has(load.id) && <span className="tag shrink-0 text-danger">cycle</span>}
                 </button>
                 <IconButton
@@ -213,20 +215,27 @@ function LoadSection({
                       param source.
                     </WiringHint>
                   )}
-                  <label className="flex items-center justify-between gap-2">
-                    <span className="text-ui-sm font-medium text-ink-2">Blocking (loading overlay)</span>
-                    <input
-                      type="checkbox"
-                      checked={load.blocking}
-                      onChange={(e) => update(load.id, { blocking: e.target.checked })}
-                      className="h-4 w-4 rounded border-line-strong"
+                  <div className="space-y-1">
+                    <span className="block text-ui-sm font-medium text-ink-2">While loading</span>
+                    <SegmentedControl
+                      options={LOADING_MODE_OPTIONS}
+                      value={load.loading}
+                      onChange={(v) => update(load.id, { loading: v as LoadingMode })}
+                      aria-label="While loading"
                     />
-                  </label>
+                    <p className="text-ui-xs text-ink-3">
+                      {load.loading === 'skeleton'
+                        ? 'Every component bound to this load draws a placeholder in its own shape until the data lands.'
+                        : load.loading === 'cycle'
+                          ? 'The page is covered by the loading overlay (a spinner) while the request is in flight.'
+                          : 'Nothing is shown — bind “Show when (page data)” to its status instead.'}
+                    </p>
+                  </div>
                   <Field label="Error message (snackbar)">
                     <Input
                       value={load.errorMessage}
                       onChange={(e) => update(load.id, { errorMessage: e.target.value })}
-                      placeholder={load.blocking ? `Couldn't load ${key || 'data'}.` : 'none — silent'}
+                      placeholder={load.loading === 'cycle' ? `Couldn't load ${key || 'data'}.` : 'none — silent'}
                     />
                   </Field>
                 </div>
