@@ -22,6 +22,7 @@ The standalone components (Modal, DataTable2, Paper, Button, …) are also expor
 - [Configuration reference (property tables)](#configuration-reference)
 - [Theming](#theming)
 - [Standalone components](#standalone-components)
+- [Gummy Studio (visual builder)](#gummy-studio-visual-builder)
 - [Project structure](#project-structure)
 - [Development & build](#development--build)
 
@@ -549,6 +550,14 @@ All of the following are exported from `@gummy-ui/ui` for direct JSX use.
 
 ---
 
+## Gummy Studio (visual builder)
+
+`apps/studio` is a visual builder for the engine: drag components onto a page, configure them in a side panel, wire them to endpoints from a shared library, preview the real engine rendering the result, and export `model.ts`, `api.ts`, `pages.ts`, `menu.ts` and `theme.ts` for an app to consume. It runs on port 3300 (`bun run studio`) against the mock API and keeps its workspace in the browser's localStorage.
+
+The user guide, with screenshots of every configuration panel, is in [apps/studio/README.md](apps/studio/README.md).
+
+---
+
 ## Project structure
 
 ```
@@ -568,6 +577,7 @@ ui-toolkit/
 │           └── styles.css        # ships RAW, imported as @gummy-ui/ui/styles.css
 ├── apps/
 │   ├── example/                  # Vite demo (:3200) — config/country/ shows the engine
+│   ├── studio/                   # Gummy Studio, the visual builder (:3300) — see apps/studio/README.md
 │   └── api/                      # Hono mock backend (:9000)
 └── scripts/dev.mjs               # dev orchestrator
 ```
