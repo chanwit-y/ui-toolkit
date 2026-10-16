@@ -1,9 +1,11 @@
 import {
+  ActionsProvider,
   AppShell,
   GlobalLoads,
   HttpClientFactory,
   Modal,
   PageRouter,
+  type TActionMaster,
   type TApiMaster,
   type TMenu,
   type TModelMaster,
@@ -51,7 +53,10 @@ import { gridConfigToJson, pageLoadsToEngine } from './gridConfig'
 import { useGridStore } from './gridStore'
 import { buildLivePreviewContainer, collectPreviewNavigation, type LivePreviewWiring } from './livePreview'
 import { indexItems } from './pageLinks'
-import { PreviewDevTools, PreviewDevToolsToggle, type ApiLogEntry } from './PreviewDevTools'
+import { PreviewDevTools, PreviewDevToolsToggle, type ActionLogEntry, type ApiLogEntry } from './PreviewDevTools'
+import { isValidActionName, type CustomActionDef } from '../Workspace/customActions'
+
+const NO_CUSTOM_ACTIONS: CustomActionDef[] = []
 import type { GridItemData } from './types'
 
 /**
@@ -195,6 +200,9 @@ export function LivePreviewModal({ onClose }: { onClose: () => void }) {
   )
   // App-wide loads: mounted once beside the router (`<GlobalLoads>`), read by every page.
   const globalLoads = useMemo(() => project?.snapshot.globalLoads ?? [], [project?.snapshot.globalLoads])
+  // The declared custom actions: `fn:<id>` in a button resolves to `fn:<name>`
+  // in its exported config, and the preview mounts a stub per name (below).
+  const customActions = project?.snapshot.customActions ?? NO_CUSTOM_ACTIONS
   // The project's attached endpoints and the models they reference — exactly
   // what its model.ts / api.ts exports contain.
   const models = useProjectModels()
@@ -212,8 +220,51 @@ export function LivePreviewModal({ onClose }: { onClose: () => void }) {
   // grows with it (its height is bounded to the modal either way).
   const [fullscreen, setFullscreen] = useState(false)
   const [apiLog, setApiLog] = useState<ApiLogEntry[]>([])
+  const [actionLog, setActionLog] = useState<ActionLogEntry[]>([])
   const [configJson, setConfigJson] = useState('[]')
   const logSeq = useRef(0)
+  const actionSeq = useRef(0)
+
+  // The preview's `ActionsProvider` registry (see the grilled design): no app
+  // code exists here, so every declared action is a stub that logs the call
+  // with the context the real function would get, then returns — the chain
+  // continues. A name a button uses but nobody declared is left out, so the
+  // engine's own warn-and-skip shows, as it would in the app.
+  const stubActions = useMemo<TActionMaster>(
+    () =>
+      Object.fromEntries(
+        customActions
+          .map((a) => a.name.trim())
+          .filter((name) => isValidActionName(name))
+          .map((name) => [
+            name,
+            (ctx: {
+              form: { getValues: () => unknown }
+              row: unknown
+              contextData: unknown
+              element: { label: string }
+              snackbar: (variant: 'info', message: string) => void
+            }) => {
+              // Visible feedback too: without the app's code the step has no
+              // effect of its own, which would read as a dead button.
+              ctx.snackbar('info', `Custom action "${name}" called — stubbed in the preview (the app's actions.ts runs it for real; see dev tools → Actions)`)
+              setActionLog((prev) =>
+                [
+                  {
+                    id: ++actionSeq.current,
+                    name,
+                    button: ctx.element.label,
+                    time: new Date().toLocaleTimeString(),
+                    context: { form: ctx.form.getValues(), row: ctx.row, contextData: ctx.contextData },
+                  },
+                  ...prev,
+                ].slice(0, 50),
+              )
+            },
+          ]),
+      ),
+    [customActions],
+  )
 
   // The live page draws from the grid store; the others from their
   // snapshots. Outside a project (the template editor) the live canvas is the
@@ -309,13 +360,14 @@ export function LivePreviewModal({ onClose }: { onClose: () => void }) {
                 pages,
                 `page-${pg.key}`,
                 [...(pg.loads ?? []), ...globalLoads],
+                customActions,
               ),
             ],
             ...(pg.loads?.length ? { loads: pageLoadsToEngine(pg.loads, endpoints, globalLoads) as PageLoad[] } : {}),
           },
         ]),
       ),
-    [pages, endpoints, engine, globalLoads],
+    [pages, endpoints, engine, globalLoads, customActions],
   )
   const engineGlobalLoads = useMemo(
     () => (pageLoadsToEngine(globalLoads, endpoints) ?? []) as PageLoad[],
@@ -374,6 +426,8 @@ export function LivePreviewModal({ onClose }: { onClose: () => void }) {
             frameTheme={frameTheme}
             projectSlug={projectSlug}
             fullscreen={fullscreen}
+            customActions={customActions}
+            stubActions={stubActions}
             onConfigJson={setConfigJson}
           />
         </MemoryRouter>
@@ -385,6 +439,7 @@ export function LivePreviewModal({ onClose }: { onClose: () => void }) {
       {devOpen ? (
         <PreviewDevTools
           log={apiLog}
+          actionLog={actionLog}
           configJson={configJson}
           onClose={() => setDevOpen(false)}
         />
@@ -417,6 +472,8 @@ const PreviewApp = memo(function PreviewApp({
   frameTheme,
   projectSlug,
   fullscreen,
+  customActions,
+  stubActions,
   onConfigJson,
 }: {
   pages: PreviewPage[]
@@ -433,6 +490,8 @@ const PreviewApp = memo(function PreviewApp({
   frameTheme: React.CSSProperties
   projectSlug: string
   fullscreen: boolean
+  customActions: CustomActionDef[]
+  stubActions: TActionMaster
   onConfigJson: (json: string) => void
 }) {
   const location = useLocation()
@@ -467,12 +526,16 @@ const PreviewApp = memo(function PreviewApp({
   const configJson = useMemo(
     () =>
       grid
-        ? gridConfigToJson(grid.containerSettings, grid.items, endpoints, pages, [
-            ...(current?.page.loads ?? []),
-            ...globalLoads,
-          ])
+        ? gridConfigToJson(
+            grid.containerSettings,
+            grid.items,
+            endpoints,
+            pages,
+            [...(current?.page.loads ?? []), ...globalLoads],
+            customActions,
+          )
         : '[]',
-    [grid, endpoints, pages, current?.page.loads, globalLoads],
+    [grid, endpoints, pages, current?.page.loads, globalLoads, customActions],
   )
   useEffect(() => onConfigJson(configJson), [configJson, onConfigJson])
   const navigation = useMemo(
@@ -610,27 +673,30 @@ const PreviewApp = memo(function PreviewApp({
           {/* The exported app's chrome: AppShell around PageRouter, exactly as
               HANDOFF.md wires it. Its height is bounded to the modal (85vh,
               or the viewport in full screen) minus the modal and page-bar chrome. */}
-          <AppShell
-            pages={enginePages}
-            menu={engineMenu}
-            {...engineShell}
-            sidebarWidth="13rem"
-            height={fullscreen ? 'calc(100vh - 11rem)' : 'calc(85vh - 11rem)'}
-          >
-            <div className="p-4">
-              {engineGlobalLoads.length > 0 && (
-                <GlobalLoads http={http} model={model} api={api} loads={engineGlobalLoads} />
-              )}
-              <PageRouter
-                http={http}
-                model={model}
-                api={api}
-                pages={enginePages}
-                notFound={NOT_FOUND}
-                documentTitle={false}
-              />
-            </div>
-          </AppShell>
+          {/* The custom-action stubs, mounted where HANDOFF.md mounts the real registry. */}
+          <ActionsProvider actions={stubActions}>
+            <AppShell
+              pages={enginePages}
+              menu={engineMenu}
+              {...engineShell}
+              sidebarWidth="13rem"
+              height={fullscreen ? 'calc(100vh - 11rem)' : 'calc(85vh - 11rem)'}
+            >
+              <div className="p-4">
+                {engineGlobalLoads.length > 0 && (
+                  <GlobalLoads http={http} model={model} api={api} loads={engineGlobalLoads} />
+                )}
+                <PageRouter
+                  http={http}
+                  model={model}
+                  api={api}
+                  pages={enginePages}
+                  notFound={NOT_FOUND}
+                  documentTitle={false}
+                />
+              </div>
+            </AppShell>
+          </ActionsProvider>
         </PreviewErrorBoundary>
 
         {scrim && (

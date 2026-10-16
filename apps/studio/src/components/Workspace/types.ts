@@ -5,6 +5,7 @@ import type { GroupDef } from '../Library/groupStore'
 import type { ModelDef } from '../Model/types'
 import type { StudioThemeConfig, ThemeAppearance } from '../Theme/types'
 import type { PageLoadDef } from './pageLoads'
+import type { CustomActionDef } from './customActions'
 
 /** One canvas tree — the shape `gridStore.hydrate` takes and autosave writes. */
 export type PageGrid = {
@@ -104,6 +105,11 @@ export type ProjectSnapshot = {
    * id space as `PageDef.loads`.
    */
   globalLoads?: PageLoadDef[]
+  /**
+   * The project's declared custom button actions (names only — the code
+   * lives in the app; see `customActions.ts`). Optional: absent = none.
+   */
+  customActions?: CustomActionDef[]
 }
 
 export type ProjectDef = {
@@ -166,7 +172,7 @@ export type ActivityEntry = {
 
 /** The persisted shape (one localStorage key, versioned). */
 export type WorkspaceData = {
-  version: 45
+  version: 46
   /** The portal's own appearance; inside a project the project theme wins. */
   appearance: ThemeAppearance
   /** The mock identity stamped on activity and templates (see `MOCK_USERS`). */

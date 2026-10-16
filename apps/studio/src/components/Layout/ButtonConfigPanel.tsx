@@ -5,7 +5,8 @@ import { IconPicker, Input, SegmentedControl, Select } from '../common'
 import { pathParams } from '../Workspace/snapshots'
 import { LOAD_ID_PREFIX } from '../Workspace/pageLoads'
 import { LoadFieldPicker, usePageLoads } from './pageData'
-import { useActivePages, useWorkspaceStore } from '../Workspace/workspaceStore'
+import { useActivePages, useActiveProject, useWorkspaceStore } from '../Workspace/workspaceStore'
+import { customActionIdOf, customActionKey, isCustomActionKey, type CustomActionDef } from '../Workspace/customActions'
 import { useGridStore } from './gridStore'
 import { useRepeaterScope } from './repeaterScope'
 import { EndpointPicker } from './SelectFieldConfigPanel'
@@ -15,6 +16,7 @@ import {
   collectOverlayTargets,
   createDefaultNavigate,
   NO_NAVIGATION,
+  type BuiltinButtonActionKey,
   type ButtonActionKey,
   type ButtonItemConfig,
   type ButtonSnackbarVariant,
@@ -36,7 +38,7 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 
 /** Human labels for the offered actions (see the grilled design: only the
  * engine-implemented ones — no OpenModal / SubmitFormToDeleteAPI). */
-const ACTION_LABELS: Record<ButtonActionKey, string> = {
+const ACTION_LABELS: Record<BuiltinButtonActionKey, string> = {
   StartLoading: 'Start loading',
   SubmitFormToPostAPI: 'Submit form (POST)',
   SubmitFormToPatchAPI: 'Submit form (PATCH)',
@@ -46,7 +48,8 @@ const ACTION_LABELS: Record<ButtonActionKey, string> = {
   Navigate: 'Go to page',
   ReloadDataTable: 'Reload data',
 }
-const ALL_ACTIONS = Object.keys(ACTION_LABELS) as ButtonActionKey[]
+const ALL_ACTIONS = Object.keys(ACTION_LABELS) as BuiltinButtonActionKey[]
+const NO_CUSTOM_ACTIONS: CustomActionDef[] = []
 
 /** The canonical submit sequence every example-app button uses. */
 const SUBMIT_SEQUENCE: ButtonActionKey[] = [
@@ -80,41 +83,78 @@ function ActionChipList({
   value: ButtonActionKey[]
   onChange: (next: ButtonActionKey[]) => void
 }) {
+  // The project's declared custom actions (Env page): offered under the
+  // built-ins, stored by id (`fn:<id>`), shown by name — a deleted one stays
+  // in the list, flagged, and exports as `fn:MISSING_ACTION`.
+  const customActions = useActiveProject()?.snapshot.customActions ?? NO_CUSTOM_ACTIONS
+  const customById = useMemo(() => new Map(customActions.map((d) => [d.id, d])), [customActions])
+  const customLabel = (key: string) => {
+    const def = customById.get(customActionIdOf(key))
+    if (!def) return 'fn: (deleted action)'
+    return `fn: ${def.name.trim() || '(unnamed action)'}`
+  }
+  const label = (a: ButtonActionKey) => (isCustomActionKey(a) ? customLabel(a) : ACTION_LABELS[a as BuiltinButtonActionKey])
   const available = ALL_ACTIONS.filter((a) => !value.includes(a))
+  const availableCustom = customActions.filter((d) => !value.includes(customActionKey(d.id)))
+  const dangling = value.filter((a) => isCustomActionKey(a) && !customById.has(customActionIdOf(a)))
   return (
     <div className="space-y-1.5">
       {value.length > 0 && (
         <div className="flex flex-wrap gap-1">
-          {value.map((action) => (
-            <span
-              key={action}
-              className="inline-flex items-center gap-1 rounded-full border border-line-strong bg-panel-2 py-0.5 pl-2 pr-1 text-ui-sm font-medium text-ink"
-            >
-              {ACTION_LABELS[action]}
-              <button
-                type="button"
-                aria-label={`Remove ${ACTION_LABELS[action]}`}
-                onClick={() => onChange(value.filter((a) => a !== action))}
-                className="rounded-full p-0.5 text-ink transition-colors hover:bg-panel-2 hover:text-ink"
+          {value.map((action) => {
+            const custom = isCustomActionKey(action)
+            const missing = custom && !customById.has(customActionIdOf(action))
+            return (
+              <span
+                key={action}
+                className={`inline-flex items-center gap-1 rounded-full border py-0.5 pl-2 pr-1 text-ui-sm font-medium ${
+                  missing
+                    ? 'border-warn/60 bg-warn/8 text-warn'
+                    : custom
+                      ? 'border-accent/50 bg-panel-2 text-ink'
+                      : 'border-line-strong bg-panel-2 text-ink'
+                }`}
+                title={custom ? 'Custom action — coded in the app, named here' : undefined}
               >
-                <X size={11} aria-hidden="true" />
-              </button>
-            </span>
-          ))}
+                {custom && <span aria-hidden="true" className="font-mono text-ui-xs text-ink-3">ƒ</span>}
+                {label(action)}
+                <button
+                  type="button"
+                  aria-label={`Remove ${label(action)}`}
+                  onClick={() => onChange(value.filter((a) => a !== action))}
+                  className="rounded-full p-0.5 text-ink transition-colors hover:bg-panel-2 hover:text-ink"
+                >
+                  <X size={11} aria-hidden="true" />
+                </button>
+              </span>
+            )
+          })}
         </div>
       )}
-      {available.length > 0 && (
+      {(available.length > 0 || availableCustom.length > 0) && (
         <Select
           aria-label="Add action"
           options={[
             { value: '', label: '+ Add action…' },
             ...available.map((a) => ({ value: a, label: ACTION_LABELS[a] })),
+            ...availableCustom.map((d) => ({
+              value: customActionKey(d.id),
+              label: `Custom: ${d.name.trim() || '(unnamed action)'}`,
+            })),
           ]}
           value=""
           onChange={(v) => {
             if (v) onChange([...value, v as ButtonActionKey])
           }}
         />
+      )}
+      {dangling.length > 0 && (
+        <WiringHint>
+          {dangling.length === 1 ? 'A custom action' : `${dangling.length} custom actions`} in this list{' '}
+          {dangling.length === 1 ? 'was' : 'were'} deleted on the Env page — the export marks{' '}
+          {dangling.length === 1 ? 'it' : 'them'} fn:MISSING_ACTION and the app skips{' '}
+          {dangling.length === 1 ? 'it' : 'them'} with a warning.
+        </WiringHint>
       )}
     </div>
   )

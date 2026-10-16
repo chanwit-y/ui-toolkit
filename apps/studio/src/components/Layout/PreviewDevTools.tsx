@@ -33,12 +33,25 @@ export type ApiLogEntry = {
   data: unknown
 }
 
+/** One stubbed custom-action call in the preview (see the grilled design). */
+export type ActionLogEntry = {
+  id: number
+  /** The declared name (`fn:<name>` in the export). */
+  name: string
+  /** The button that ran the chain. */
+  button: string
+  time: string
+  /** What the real function would have received (JSON-safe parts of the ActionContext). */
+  context: unknown
+}
+
 const TABS = [
   { value: 'form', label: 'Form' },
   { value: 'data', label: 'Data' },
   { value: 'page', label: 'Page data' },
   { value: 'stores', label: 'Stores' },
   { value: 'api', label: 'API' },
+  { value: 'actions', label: 'Actions' },
   { value: 'config', label: 'Config' },
 ]
 
@@ -279,6 +292,53 @@ function ApiTab({ log }: { log: ApiLogEntry[] }) {
   )
 }
 
+/**
+ * The custom actions the preview stubbed: no app code runs here, so each
+ * call is logged with the context it would have received, and the chain
+ * continues as if the function returned.
+ */
+function ActionsTab({ log }: { log: ActionLogEntry[] }) {
+  const [expandedId, setExpandedId] = useState<number | null>(null)
+  if (log.length === 0) {
+    return (
+      <EmptyHint>
+        No custom actions called yet — click a button whose chain has one (an{' '}
+        <span className="font-mono">ƒ</span> chip). The preview stubs it: a line here, then the chain continues.
+      </EmptyHint>
+    )
+  }
+  return (
+    <div className="space-y-1">
+      {log.map((entry) => {
+        const expanded = expandedId === entry.id
+        return (
+          <div key={entry.id} className="rounded-md border border-line bg-panel">
+            <button
+              type="button"
+              onClick={() => setExpandedId(expanded ? null : entry.id)}
+              className="flex w-full items-center gap-1.5 px-2 py-1.5 text-left text-ui-sm"
+            >
+              {expanded ? (
+                <ChevronDown className="h-3 w-3 shrink-0 text-ink-3" aria-hidden="true" />
+              ) : (
+                <ChevronRight className="h-3 w-3 shrink-0 text-ink-3" aria-hidden="true" />
+              )}
+              <span className="font-mono font-semibold text-ink-2">fn:{entry.name}</span>
+              <span className="min-w-0 flex-1 truncate text-ink-3">from “{entry.button}”</span>
+              <span className="text-ink-3">{entry.time}</span>
+            </button>
+            {expanded && (
+              <div className="border-t border-line p-1.5">
+                <JsonBlock id={`action-${entry.id}`} label="context (stubbed)" value={entry.context} />
+              </div>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 function EmptyHint({ children }: { children: React.ReactNode }) {
   return (
     <p className="rounded-md border border-dashed border-line-strong px-2 py-3 text-center text-ui-sm text-ink-3">
@@ -299,10 +359,12 @@ function EmptyHint({ children }: { children: React.ReactNode }) {
  */
 export function PreviewDevTools({
   log,
+  actionLog,
   configJson,
   onClose,
 }: {
   log: ApiLogEntry[]
+  actionLog: ActionLogEntry[]
   configJson: string
   onClose: () => void
 }) {
@@ -338,6 +400,7 @@ export function PreviewDevTools({
         {tab === 'page' && <PageDataTab />}
         {tab === 'stores' && <StoresTab />}
         {tab === 'api' && <ApiTab log={log} />}
+        {tab === 'actions' && <ActionsTab log={actionLog} />}
         {tab === 'config' && (
           <JsonBlock id="config" label="bins JSON" value={JSON.parse(configJson)} />
         )}

@@ -10,6 +10,7 @@ import { appWiringSnippet, toMenuTs } from './menu'
 import { enginePageMeta } from './pageMeta'
 import { pathParams } from './snapshots'
 import type { PageDef, ProjectDef } from './types'
+import { makeActionKeyResolver, toActionsTs, type CustomActionRef } from './customActions'
 
 export type ExportFile = { name: string; lang: 'json' | 'ts' | 'md'; body: string }
 
@@ -34,9 +35,14 @@ export function pageItemCount(page: PageDef): number {
   return n
 }
 
-function pageButtons(items: GridItemData[], pages: PageDef[]): { label: string; does: string }[] {
+function pageButtons(
+  items: GridItemData[],
+  pages: PageDef[],
+  customActions: CustomActionRef[] = [],
+): { label: string; does: string }[] {
   const out: { label: string; does: string }[] = []
   const pageName = (id: string) => pages.find((p) => p.id === id)?.name ?? 'a missing page'
+  const actionKey = makeActionKeyResolver(customActions)
   walkItems(items, (item) => {
     if (!item.config) return
     if (item.type === 'datatable') {
@@ -50,7 +56,7 @@ function pageButtons(items: GridItemData[], pages: PageDef[]): { label: string; 
     const parts: string[] = []
     const actions = c.mode === 'confirm' ? c.confirmTrue : c.actions
     if (c.mode === 'confirm') parts.push('confirm first')
-    if (actions.length) parts.push(actions.join(' → '))
+    if (actions.length) parts.push(actions.map(actionKey).join(' → '))
     if (buttonNavigates(c) && c.navigate?.pageId) parts.push(`go to ${pageName(c.navigate.pageId)}`)
     const nav = c.navigation
     if (nav?.kind === 'link') parts.push(`open ${nav.href || 'a link'}`)
@@ -76,6 +82,7 @@ export function buildExportFiles(
 ): ExportFile[] {
   const { snapshot } = project
   const globalLoads = snapshot.globalLoads ?? []
+  const customActions = snapshot.customActions ?? []
   const engineGlobalLoads = pageLoadsToEngine(globalLoads, endpoints) ?? []
   const pages = snapshot.pages.map((pg) => ({
     id: pg.id,
@@ -95,10 +102,16 @@ export function buildExportFiles(
       columns: pg.grid.containerSettings.columns,
       gap: pg.grid.containerSettings.gap,
     },
-    bins: buildBins(pg.grid.containerSettings, pg.grid.items, endpoints, snapshot.pages, undefined, undefined, [
-      ...(pg.loads ?? []),
-      ...globalLoads,
-    ]),
+    bins: buildBins(
+      pg.grid.containerSettings,
+      pg.grid.items,
+      endpoints,
+      snapshot.pages,
+      undefined,
+      undefined,
+      [...(pg.loads ?? []), ...globalLoads],
+      customActions,
+    ),
     loads: pageLoadsToEngine(pg.loads, endpoints, globalLoads),
   }))
 
@@ -133,6 +146,8 @@ export function buildExportFiles(
   out.push({ name: 'api.ts', lang: 'ts', body: toApiTs(endpoints, models) })
   out.push({ name: 'model.ts', lang: 'ts', body: toModelTs(models) })
   out.push({ name: 'theme.ts', lang: 'ts', body: toThemeTs(snapshot.theme) })
+  // The custom-action stubs the app's developer fills in (see customActions.ts).
+  out.push({ name: 'actions.ts', lang: 'ts', body: toActionsTs(customActions) })
 
   // The keyed pages record the library's `PageRouter` renders:
   //   <PageRouter http={http} model={model} api={api} pages={pages} />
@@ -186,7 +201,7 @@ export function buildExportFiles(
     const eps = pageEndpointNames(pg, endpoints)
     if (eps.length) lines.push(`- data: ${eps.map((x) => `\`${x}\``).join(', ')}`)
     if (pg.loads?.length) lines.push(`- page loads: ${pg.loads.map((l) => `\`${l.key}\``).join(', ')}`)
-    const buttons = pageButtons(pg.grid.items, snapshot.pages)
+    const buttons = pageButtons(pg.grid.items, snapshot.pages, customActions)
     if (buttons.length)
       lines.push(`- actions: ${buttons.map((b) => `\`${b.label}\` → ${b.does}`).join('; ')}`)
     lines.push(`- ${pageItemCount(pg)} component(s)`, '')
@@ -194,6 +209,17 @@ export function buildExportFiles(
   if (globalLoads.length) {
     lines.push('## Global loads', '', 'Fetched once by `<GlobalLoads>` and kept across pages:', '')
     for (const l of globalLoads) lines.push(`- \`${l.key}\``)
+    lines.push('')
+  }
+  if (customActions.length) {
+    lines.push(
+      '## Custom actions',
+      '',
+      'Named in button action chains as `fn:<name>`; the code lives in `actions.ts` (typed stubs to fill in), mounted once through `<ActionsProvider actions={actions}>`:',
+      '',
+    )
+    for (const a of customActions)
+      lines.push(`- \`${a.name.trim() || '(unnamed)'}\`${a.description.trim() ? ` — ${a.description.trim()}` : ''}`)
     lines.push('')
   }
   lines.push('## Endpoints', '')

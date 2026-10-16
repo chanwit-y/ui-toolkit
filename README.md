@@ -19,6 +19,7 @@ The standalone components (Modal, DataTable2, Paper, Button, …) are also expor
   - [3. container](#3-container--layout)
   - [4. Container API load](#4-container-api-load)
   - [5. Wire it up](#5-wire-it-up)
+  - [6. Custom actions — your own code in a button chain](#6-custom-actions)
 - [Configuration reference (property tables)](#configuration-reference)
 - [Theming](#theming)
 - [Standalone components](#standalone-components)
@@ -259,6 +260,85 @@ export function App() {
 ```
 
 > To add a new feature screen, create a sibling folder `apps/example/src/config/<feature>/` with `model.ts`, `api.ts`, and `container.ts`, mirroring `config/country/`.
+
+<a id="6-custom-actions"></a>
+### 6. Custom actions — your own code in a button chain
+
+A button's `actions` are engine verbs (`StartLoading`, `SubmitFormToPostAPI`, `CloseModal`, …). When a screen needs behaviour the engine doesn't have — a calculation, a check before a submit, a call into your own services — you write it as a plain function in your app, register it once, and name it in the config as `"fn:<name>"`. The config stays declarative; the code stays in code.
+
+**1. Write the registry** — one function per name, typed against `TActionMaster`:
+
+```ts
+// src/actions.ts
+import type { TActionMaster } from "@gummy-ui/ui";
+
+export const actions: TActionMaster = {
+  // Bump the `count` field of the enclosing form.
+  increase: ({ form }) => {
+    form.setValue("count", Number(form.getValues().count ?? 0) + 1);
+  },
+
+  // A guard: `return false` ends the chain, so the submit after it never runs.
+  checkStock: ({ form, snackbar }) => {
+    if (Number(form.getValues().stock ?? 0) <= 0) {
+      snackbar("warning", "Out of stock");
+      return false;
+    }
+  },
+
+  // Async is fine — the chain waits. Inside a repeater, `row` is the item.
+  notifyCrm: async ({ row, api, snackbar }) => {
+    await fetch("/crm/notify", { method: "POST", body: JSON.stringify(row) });
+    snackbar("success", "CRM notified");
+  },
+};
+```
+
+**2. Mount it once**, above the routes, next to the other providers:
+
+```tsx
+import { ActionsProvider, DataProvider, PageRouter, ThemeProvider } from "@gummy-ui/ui";
+import { actions } from "./actions";
+
+<DataProvider>
+  <ThemeProvider theme={theme} components={components}>
+    <ActionsProvider actions={actions}>
+      <PageRouter http={http} model={model} api={api} pages={pages} />
+    </ActionsProvider>
+  </ThemeProvider>
+</DataProvider>
+```
+
+**3. Name it in a button** — anywhere in the chain, as many as you like, in both confirm branches too:
+
+```ts
+{
+  type: "button",
+  element: {
+    label: "Save",
+    actions: ["StartLoading", "fn:checkStock", "SubmitFormToPostAPI", "StopLoading", "fn:notifyCrm"],
+    api: { name: "createOrder" },
+    snackbarError: "$exception",
+  },
+}
+```
+
+Every function receives one `ActionContext`:
+
+| Field | What it is |
+|-------|------------|
+| `form` | The enclosing react-hook-form: `getValues()`, `setValue(name, value)`, `trigger()` (validate), `errors`. |
+| `row` | The nearest `repeater` item, `undefined` outside one. |
+| `contextData` | The `DataProvider` map — a data table's selected row under its `name`. |
+| `state` | `get(key, path?)` / `set(key, data)` over the page / global data slices (`PageElement.loads`, `GlobalLoads`). |
+| `api` | The button's own wired endpoint (`element.api`), if any. |
+| `fns` | `reload(name)` a table / list / repeater / load, `openModal(id)`, `closeModal(id)`. |
+| `snackbar(variant, message)`, `startLoading()` / `stopLoading(id)`, `navigate(target)` | The same services the built-in actions use. |
+| `element`, `event` | The button's config and the click that started the chain. |
+
+Rules: the function is awaited; `return false` ends the chain and stops the loader; a thrown error surfaces through `snackbarError: "$exception"` like an API failure; a name with no registered function (or no `ActionsProvider`) logs a warning and is **skipped**, the rest of the chain still runs. There are no config-side arguments — register `increaseBy5` as its own name, or read what you need from the form.
+
+The example app's **Custom actions** page (`/custom-actions`, `apps/example/src/actions.ts` + `config/country/customActionsDemo.ts`) shows a counter, a vetoed submit, a per-item button inside a repeater, state reads, an async step, a throwing step, custom confirm branches and an unregistered name. In the studio, declare the names on the Env page's **Custom actions** section, pick them in a button's action chips, and the export writes a typed `actions.ts` stub for each.
 
 ---
 
@@ -519,7 +599,7 @@ All of the following are exported from `@gummy-ui/ui` for direct JSX use.
 | `variant` | `"solid" \| "outline" \| "ghost" \| "link"` | Visual style. |
 | `color` | accent color | Override accent. |
 | `icon` | icon name | Leading icon. |
-| `actions` | `ButtonAction[]` | Declarative actions (call API, open modal, reload table…). |
+| `actions` | `ButtonAction[]` | Declarative actions (call API, open modal, reload table…) and `"fn:<name>"` entries calling your own registered functions (see [Custom actions](#6-custom-actions)). |
 | `api` / `apiInfo` | — | API binding for action buttons. |
 | `modalId` | `string` | Modal to open. |
 | `reloadDataTable` | `string` | DataTable id to refresh after action. |

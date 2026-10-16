@@ -221,6 +221,8 @@ The **Env** tab holds the project's environment variables. They are exported as 
 
 ![The Env editor](docs/images/env-page.png)
 
+Below the variables, **Custom actions** is the list of functions the app's developer will code and hand to the library's `<ActionsProvider>`. The studio only knows their *names*: declare one here (a JS identifier, with an optional description), and it appears in every button's `+ Add action…` list as `Custom: name`. The export's `actions.ts` carries a typed stub per declared name, ready to fill in — see [Utility: the Button](#utility-the-button) for the chain side.
+
 ### 9. Live Preview, Overview and Export
 
 The eye button in the topbar opens the **Live Preview**: the real engine rendering the real export, inside the real app shell, against the project's `API_URL`. Tables fetch, forms validate and submit, modals open, navigation works.
@@ -721,7 +723,7 @@ Buttons carry the **actions**. A click runs a chain of engine actions, optionall
 |---|---|
 | Label, Icon, Variant | An empty label makes an icon-only button. Variants `Contained`, `Outlined`, `Text`. |
 | On click | `Run directly` or `Confirm first` (with a title and description). Then one chain per outcome. |
-| Actions | `Start loading`, `Submit form (POST)`, `Submit form (PATCH)`, `Stop loading`, `Clear form selection`, `Close modal`, `Go to page`, `Reload data`. Order matters; a failed validation stops the chain. |
+| Actions | `Start loading`, `Submit form (POST)`, `Submit form (PATCH)`, `Stop loading`, `Clear form selection`, `Close modal`, `Go to page`, `Reload data`, plus every custom action declared on the Env page (`Custom: name`, drawn as an `ƒ` chip). Order matters; a failed validation stops the chain. |
 | Close modal target | Which modal or drawer `Close modal` closes. |
 | Submit endpoint | The endpoint a `Submit form` action posts the form to. |
 | Reload data after submit | A table, list or repeater name, or a page-data load, refetched after a successful submit. |
@@ -753,6 +755,31 @@ The Countries form's Update button, which exists only when editing:
 ```
 
 The `condition` is the `Show when: Editing` control; the confirm chain is the `When confirmed` list.
+
+**Custom actions.** A chain can call code the engine doesn't have. Declare the name on the Env page (say `checkStock`), then add `Custom: checkStock` to the chips — it sits at any position, in both confirm branches too. The export writes it as `"fn:checkStock"`:
+
+```json
+{
+  "type": "button",
+  "element": {
+    "label": "Save",
+    "actions": ["StartLoading", "fn:checkStock", "SubmitFormToPostAPI", "StopLoading"],
+    "api": { "name": "createOrder" }
+  }
+}
+```
+
+and `actions.ts` in the export bundle gets a typed stub for the developer to fill in:
+
+```ts
+export const actions: TActionMaster = {
+  checkStock: async (ctx) => {
+    // TODO: implement "checkStock"
+  },
+};
+```
+
+In the app the function receives the form, the repeater item, the page data, snackbar / loading / navigation and the fn registry; `return false` ends the chain, a throw shows through the error snackbar. The Live Preview has no app code, so it **stubs** every declared action: the chain continues and the call is logged, with the context it would have received, in the dev tools' **Actions** tab. A chip whose declaration was deleted turns amber, exports as `fn:MISSING_ACTION`, and the app skips it with a console warning. The seeded project's **Custom actions** page is the walkthrough: a counter, a guarded Save, a per-item button in a repeater, a confirm with custom branches, and one deleted name.
 
 **Hidden** is a form field that is never drawn, for ids and other values the form must carry. **Empty** is a blank cell for spacing.
 

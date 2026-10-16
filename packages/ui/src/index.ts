@@ -41,6 +41,11 @@ export * from "./components/core/core";
 export * from "./components/core/containerBuilder";
 export { PageRouter } from "./components/core/PageRouter";
 export { GlobalLoads } from "./components/core/GlobalLoads";
+// Custom button actions: the consumer's registry of coded functions, referenced
+// inline in a button's action chain as "fn:<name>" (see core/actions.tsx).
+export { ActionsProvider, useActions, isCustomAction, customActionName, customAction, resolveCustomAction, CUSTOM_ACTION_PREFIX } from "./components/core/actions";
+export type { ActionsProviderProps } from "./components/core/actions";
+export type { ActionContext, ActionFn, TActionMaster, CustomActionName, ButtonAction } from "./components/@types";
 export type { GlobalLoadsProps } from "./components/core/GlobalLoads";
 export type { PageRouterProps } from "./components/core/PageRouter";
 export { PagesProvider, usePages, useNavigateTo, buildNavigateUrl, pathParamNames, matchPageKey, matchPage, breadcrumbTrail, usePageTitle } from "./components/core/pages";

@@ -2,6 +2,7 @@ import type { EndpointDef } from '../Api/types'
 import {
   createChildCanvas,
   createDefaultButtonItemConfig,
+  type ButtonItemConfig,
   createDefaultDataTableConfig,
   createDefaultSortConfig,
   DEFAULT_COLUMN_SIZING,
@@ -38,6 +39,7 @@ import {
   type GridItemData,
 } from '../Layout/types'
 import type { ModelDef, ModelField } from '../Model/types'
+import type { CustomActionDef } from '../Workspace/customActions'
 import type { EnvVarDef } from '../Env/types'
 import type { StudioThemeConfig } from '../Theme/types'
 import type { PageLoadDef } from '../Workspace/pageLoads'
@@ -4270,5 +4272,167 @@ export function loadingModeDemoSeedItems(): GridItemData[] {
       },
     },
     text('seed-item-loading-reload-note', 'A reload keeps the data on screen: a skeleton only draws while a load has nothing yet.', { color: 'gray' }, { xs: 4, sm: 3, md: 5, lg: 9 }),
+  ]
+}
+
+/* ------------------------------------------------------------ custom actions */
+
+export const CUSTOM_ACTIONS_PAGE_ID = 'seed-page-custom-actions'
+
+export const ACTION_INCREASE_ID = 'action-seed-increase'
+export const ACTION_INCREASE_BY_5_ID = 'action-seed-increase-by-5'
+export const ACTION_RESET_ID = 'action-seed-reset'
+export const ACTION_CHECK_STOCK_ID = 'action-seed-check-stock'
+export const ACTION_LOG_ROW_ID = 'action-seed-log-row'
+export const ACTION_DESCRIBE_STATE_ID = 'action-seed-describe-state'
+export const ACTION_FAIL_ID = 'action-seed-fail'
+export const ACTION_WAIT_ID = 'action-seed-wait'
+
+/**
+ * The seeded project's custom-action declarations (see the grilled design):
+ * the example app's `src/actions.ts` registry, by name. The code isn't here —
+ * the export writes a typed stub per name and the Live Preview logs a stub call.
+ */
+export function customActionsSeedDefs(): CustomActionDef[] {
+  return [
+    { id: ACTION_INCREASE_ID, name: 'increase', description: 'Bump the count field of the enclosing form' },
+    { id: ACTION_INCREASE_BY_5_ID, name: 'increaseBy5', description: 'The same, by five — a variation is another name' },
+    { id: ACTION_RESET_ID, name: 'reset', description: 'Set count back to 0 and say so' },
+    { id: ACTION_CHECK_STOCK_ID, name: 'checkStock', description: 'Return false while stock is 0 — vetoes the submit after it' },
+    { id: ACTION_LOG_ROW_ID, name: 'logRow', description: 'Inside a repeater: show the enclosing item (ctx.row)' },
+    { id: ACTION_DESCRIBE_STATE_ID, name: 'describeState', description: 'Read the global lookups slice and the DataProvider map' },
+    { id: ACTION_FAIL_ID, name: 'fail', description: 'Throw — surfaced by snackbarError: "$exception"' },
+    { id: ACTION_WAIT_ID, name: 'wait', description: 'Async: the chain waits 800 ms before the next step' },
+  ]
+}
+
+/**
+ * The "Custom actions" demo page (the example app's `/custom-actions`): a
+ * counter driven by `fn:increase` / `fn:increaseBy5` / `fn:reset`, a Save
+ * guarded by `fn:checkStock`, a repeater whose per-item button gets the item,
+ * the state / async / throwing steps, a confirm box with custom branches, and
+ * a button naming a deleted declaration (exported as `fn:MISSING_ACTION`,
+ * warned and skipped by the engine).
+ */
+export function customActionsDemoSeedItems(): GridItemData[] {
+  const full = { xs: 4, sm: 6, md: 8, lg: 12 }
+  const third = { xs: 4, sm: 3, md: 4, lg: 4 }
+  const quarter = { xs: 2, sm: 3, md: 2, lg: 3 }
+  const small = { xs: 2, sm: 2, md: 2, lg: 2 }
+  const start = { xs: 'start', sm: 'start', md: 'start', lg: 'start' } as const
+  const typography = (id: string, text: string, extra: Record<string, unknown> = {}): GridItemData => ({
+    id,
+    label: 'Typography',
+    type: 'typography',
+    settings: createDefaultItemSettings({ colSpan: full }),
+    config: { ...createDefaultTypographyConfig(), text, variant: 'body2', ...extra },
+  })
+  const heading = (id: string, text: string, caption: string): GridItemData[] => [
+    typography(`${id}-title`, text, { variant: 'subtitle1', weight: 'medium' }),
+    typography(`${id}-caption`, caption, { color: 'gray' }),
+  ]
+  const fn = (id: string): `fn:${string}` => `fn:${id}`
+  const button = (
+    id: string,
+    label: string,
+    extra: Partial<ButtonItemConfig>,
+    colSpan: Record<'xs' | 'sm' | 'md' | 'lg', number> = quarter,
+  ): GridItemData => ({
+    id,
+    label: 'Button',
+    type: 'button',
+    settings: createDefaultItemSettings({ colSpan, justifySelf: start, alignSelf: { xs: 'end', sm: 'end', md: 'end', lg: 'end' } }),
+    config: { ...createDefaultButtonItemConfig(), label, variant: 'outlined', ...extra },
+  })
+  return [
+    typography('seed-item-custom-actions-h', 'Custom actions', { variant: 'h3' }),
+    typography(
+      'seed-item-custom-actions-intro',
+      'Behaviour coded in the app, named in a button\'s action chips as a custom action. Declare the names on the Env page (Custom actions); the export writes a typed actions.ts stub for each, and the Live Preview logs a stub call (dev tools → Actions) and continues the chain.',
+      { color: 'gray' },
+    ),
+
+    ...heading('seed-item-custom-actions-counter-h', 'Counter', 'increase / increaseBy5 / reset write the form through ctx.form.setValue. A variation is another declared name.'),
+    {
+      id: 'seed-item-custom-actions-count',
+      label: 'Text Field',
+      type: 'textfield',
+      settings: createDefaultItemSettings({ colSpan: third }),
+      config: { ...createDefaultTextFieldConfig('count'), label: 'Count', dataType: 'number' },
+    },
+    button('seed-item-custom-actions-increase', 'Increase', { icon: 'puls', actions: [fn(ACTION_INCREASE_ID)] }, small),
+    button('seed-item-custom-actions-plus5', '+5', { actions: [fn(ACTION_INCREASE_BY_5_ID)] }, small),
+    button('seed-item-custom-actions-reset', 'Reset', { icon: 'refresh', variant: 'text', actions: [fn(ACTION_RESET_ID)] }, small),
+
+    ...heading('seed-item-custom-actions-guard-h', 'Guard a submit', 'Save runs Start loading → checkStock → Submit (POST) → Stop loading. With stock at 0 the guard returns false and the chain ends there.'),
+    {
+      id: 'seed-item-custom-actions-stock',
+      label: 'Text Field',
+      type: 'textfield',
+      settings: createDefaultItemSettings({ colSpan: third }),
+      config: { ...createDefaultTextFieldConfig('stock'), label: 'Stock', dataType: 'number', isRequired: true, errorMessage: 'Stock is required' },
+    },
+    button('seed-item-custom-actions-save', 'Save', {
+      icon: 'save',
+      variant: 'contained',
+      actions: ['StartLoading', fn(ACTION_CHECK_STOCK_ID), 'SubmitFormToPostAPI', 'StopLoading'],
+      snackbarSuccessEnabled: true,
+      snackbarSuccessMessage: 'Saved — checkStock let the submit through',
+    }),
+
+    ...heading('seed-item-custom-actions-row-h', 'The item in a repeater', 'A button inside a repeater\'s template gets the enclosing item as ctx.row.'),
+    {
+      id: 'seed-item-custom-actions-regions',
+      label: 'Repeater',
+      type: 'repeater',
+      settings: createDefaultItemSettings({ colSpan: full }),
+      config: {
+        ...createDefaultRepeaterConfig('customActionRegions'),
+        idKey: '_id',
+        read: { endpointId: REGIONS_ENDPOINT_ID, params: {}, extra: {} },
+        itemSpan: { xs: 12, sm: 12, md: 6, lg: 4 },
+        itemSurface: 'outlined',
+        emptyText: 'No regions',
+      },
+      childCanvases: [
+        {
+          ...createChildCanvas(),
+          items: [
+            {
+              id: 'seed-item-custom-actions-region-name',
+              label: 'Typography',
+              type: 'typography',
+              settings: createDefaultItemSettings({ colSpan: { xs: 4, sm: 4, md: 5, lg: 8 } }),
+              config: { ...createDefaultTypographyConfig(), text: 'Region', variant: 'subtitle2', weight: 'medium', binding: { key: 'name', path: '' } },
+            },
+            {
+              id: 'seed-item-custom-actions-region-log',
+              label: 'Button',
+              type: 'button',
+              settings: createDefaultItemSettings({ colSpan: { xs: 4, sm: 2, md: 3, lg: 4 }, justifySelf: { xs: 'end', sm: 'end', md: 'end', lg: 'end' } }),
+              config: { ...createDefaultButtonItemConfig(), label: 'Log this region', icon: 'terminal', variant: 'text', actions: [fn(ACTION_LOG_ROW_ID)] },
+            },
+          ],
+        },
+      ],
+    },
+
+    ...heading('seed-item-custom-actions-state-h', 'State, async, errors', 'describeState reads the global lookups slice; wait is async and the chain waits; fail throws, surfaced by the "$exception" snackbar.'),
+    button('seed-item-custom-actions-describe', 'Describe state', { icon: 'database', actions: [fn(ACTION_DESCRIBE_STATE_ID)] }),
+    button('seed-item-custom-actions-wait', 'Wait, then reset', { icon: 'refresh', actions: ['StartLoading', fn(ACTION_WAIT_ID), fn(ACTION_RESET_ID), 'StopLoading'] }),
+    button('seed-item-custom-actions-fail', 'Fail', { icon: 'x', actions: ['StartLoading', fn(ACTION_FAIL_ID), 'StopLoading'], snackbarErrorException: true }),
+
+    ...heading('seed-item-custom-actions-confirm-h', 'Confirm branches', 'Both ConfirmBox branches take custom actions: Yes runs reset, No runs increase.'),
+    button('seed-item-custom-actions-confirm', 'Reset with confirm', {
+      icon: 'trash',
+      mode: 'confirm',
+      confirmTitle: 'Reset the counter?',
+      confirmDescription: 'Yes resets it (reset); No bumps it instead (increase).',
+      confirmTrue: [fn(ACTION_RESET_ID)],
+      confirmFalse: [fn(ACTION_INCREASE_ID)],
+    }),
+
+    ...heading('seed-item-custom-actions-missing-h', 'A deleted declaration', 'This button names a custom action that no longer exists: the chip is flagged, the export writes fn:MISSING_ACTION, the engine warns and skips it — and the counter still increases.'),
+    button('seed-item-custom-actions-missing', 'Skip missing, then increase', { icon: 'puls', actions: [fn('action-seed-deleted'), fn(ACTION_INCREASE_ID)] }),
   ]
 }

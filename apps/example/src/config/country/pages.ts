@@ -17,6 +17,7 @@ import { containerCardDemo } from "./cardDemo";
 import { containerHtmlContentDemo } from "./htmlContentDemo";
 import { containerDrawerDemo } from "./drawerDemo";
 import { containerSwitchDemo } from "./switchDemo";
+import { containerCustomActionsDemo } from "./customActionsDemo";
 import { containerUploadDemo } from "./uploadDemo";
 import { containerPageDataDemo, pageDataLoads } from "./pageDataDemo";
 import { approvalLineLoads, containerApprovalLineDemo } from "./approvalLineDemo";
@@ -164,6 +165,15 @@ export const pages = {
     parent: "countryList",
     title: "Switch",
     containers: containerSwitchDemo,
+  },
+  customActionsDemo: {
+    // Consumer-coded button actions (`src/actions.ts`, mounted through
+    // `<ActionsProvider>` in App.tsx) named inline in action chains as
+    // "fn:<name>" (see ./customActionsDemo.ts).
+    path: "/custom-actions",
+    parent: "countryList",
+    title: "Custom actions",
+    containers: containerCustomActionsDemo,
   },
   uploadDemo: {
     // The `uploadfile` config on its own: single / multiple, accept presets

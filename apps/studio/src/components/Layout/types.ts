@@ -1409,7 +1409,7 @@ export function createDefaultButtonConfig(): ButtonConfig {
  * `SubmitFormToDeleteAPI` are silent no-ops in the engine's `Button` switch,
  * so they aren't offered (see the grilled design).
  */
-export type ButtonActionKey =
+export type BuiltinButtonActionKey =
   | 'StartLoading'
   | 'StopLoading'
   | 'SubmitFormToPostAPI'
@@ -1419,6 +1419,13 @@ export type ButtonActionKey =
   | 'Navigate'
   /** Refetch `reloadTableItemId`: a table / form list / repeater, or a page load. */
   | 'ReloadDataTable'
+
+/**
+ * A built-in engine action, or a project custom action by its declaration
+ * **id** (`"fn:action-…"`, see `Workspace/customActions.ts`) — resolved to
+ * the engine's `"fn:<name>"` at export.
+ */
+export type ButtonActionKey = BuiltinButtonActionKey | `fn:${string}`
 
 /** Mirrors the library's `SnackbarVariant`. */
 
