@@ -723,7 +723,7 @@ Buttons carry the **actions**. A click runs a chain of engine actions, optionall
 |---|---|
 | Label, Icon, Variant | An empty label makes an icon-only button. Variants `Contained`, `Outlined`, `Text`. |
 | On click | `Run directly` or `Confirm first` (with a title and description). Then one chain per outcome. |
-| Actions | `Start loading`, `Submit form (POST)`, `Submit form (PATCH)`, `Stop loading`, `Clear form selection`, `Close modal`, `Go to page`, `Reload data`, plus every custom action declared on the Env page (`Custom: name`, drawn as an `ƒ` chip). Order matters; a failed validation stops the chain. |
+| Actions | `Start loading`, `Submit form (POST)`, `Submit form (PATCH)`, `Stop loading`, `Clear form selection`, `Close modal`, `Go to page`, `Reload data`, plus every custom action declared on the Env page (`Custom: name`, drawn as an `ƒ` chip). Order matters — drag a chip by its grip to reorder (or focus the grip: Space, arrows, Space); a failed validation stops the chain. |
 | Close modal target | Which modal or drawer `Close modal` closes. |
 | Submit endpoint | The endpoint a `Submit form` action posts the form to. |
 | Reload data after submit | A table, list or repeater name, or a page-data load, refetched after a successful submit. |

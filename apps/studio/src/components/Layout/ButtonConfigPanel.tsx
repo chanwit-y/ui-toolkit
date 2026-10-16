@@ -1,5 +1,16 @@
 import { useMemo, type ReactNode } from 'react'
-import { X } from 'lucide-react'
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+import { SortableContext, arrayMove, rectSortingStrategy, sortableKeyboardCoordinates, useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import { GripVertical, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { IconPicker, Input, SegmentedControl, Select } from '../common'
 import { pathParams } from '../Workspace/snapshots'
@@ -72,9 +83,69 @@ const isSubmit = (a: ButtonActionKey) =>
   a === 'SubmitFormToPostAPI' || a === 'SubmitFormToPatchAPI'
 
 /**
- * One ordered action list as chips: an add-dropdown appends, × removes, order
- * is insertion order, no duplicates (picked actions leave the dropdown — see
- * the grilled design: lists are short, so no drag machinery).
+ * One chip of an action list: sortable by its grip (pointer drag, or focus
+ * the grip and Space / arrows / Space), removable by its ×. The drag
+ * listeners live only on the grip so the × stays a plain click. Keys are
+ * unique within a list, so the action key is the sortable id.
+ */
+function ActionChip({
+  action,
+  label,
+  custom,
+  missing,
+  onRemove,
+}: {
+  action: ButtonActionKey
+  label: string
+  custom: boolean
+  missing: boolean
+  onRemove: () => void
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: action })
+  return (
+    <span
+      ref={setNodeRef}
+      style={{ transform: CSS.Translate.toString(transform), transition, zIndex: isDragging ? 1 : undefined }}
+      className={`inline-flex items-center gap-0.5 rounded-full border py-0.5 pl-1 pr-1 text-ui-sm font-medium ${
+        missing
+          ? 'border-warn/60 bg-warn/8 text-warn'
+          : custom
+            ? 'border-accent/50 bg-panel-2 text-ink'
+            : 'border-line-strong bg-panel-2 text-ink'
+      } ${isDragging ? 'relative opacity-40' : ''}`}
+      title={custom ? 'Custom action — coded in the app, named here' : undefined}
+    >
+      <button
+        type="button"
+        aria-label={`Reorder ${label}`}
+        title="Drag to reorder (or Space, arrows, Space)"
+        {...attributes}
+        {...listeners}
+        className="flex h-4 w-4 shrink-0 cursor-grab touch-none items-center justify-center rounded-full text-ink-3 transition-colors hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/40 active:cursor-grabbing"
+      >
+        <GripVertical className="h-3 w-3" aria-hidden="true" />
+      </button>
+      {custom && <span aria-hidden="true" className="font-mono text-ui-xs text-ink-3">ƒ</span>}
+      {label}
+      <button
+        type="button"
+        aria-label={`Remove ${label}`}
+        onClick={onRemove}
+        className="rounded-full p-0.5 text-ink transition-colors hover:bg-panel-2 hover:text-ink"
+      >
+        <X size={11} aria-hidden="true" />
+      </button>
+    </span>
+  )
+}
+
+/**
+ * One ordered action list as chips: an add-dropdown appends, × removes, and
+ * the chips reorder by drag and drop (pointer or keyboard through the grip —
+ * the engine runs the chain in this order). No duplicates: picked actions
+ * leave the dropdown. Own `DndContext` like `SortableCardList` (the inspector
+ * sits outside the canvas's context), `rectSortingStrategy` because the
+ * chips wrap onto several lines.
  */
 function ActionChipList({
   value,
@@ -97,39 +168,39 @@ function ActionChipList({
   const available = ALL_ACTIONS.filter((a) => !value.includes(a))
   const availableCustom = customActions.filter((d) => !value.includes(customActionKey(d.id)))
   const dangling = value.filter((a) => isCustomActionKey(a) && !customById.has(customActionIdOf(a)))
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  )
+  const handleDragEnd = ({ active, over }: DragEndEvent) => {
+    if (!over || active.id === over.id) return
+    const from = value.indexOf(active.id as ButtonActionKey)
+    const to = value.indexOf(over.id as ButtonActionKey)
+    if (from < 0 || to < 0) return
+    onChange(arrayMove(value, from, to))
+  }
   return (
     <div className="space-y-1.5">
       {value.length > 0 && (
-        <div className="flex flex-wrap gap-1">
-          {value.map((action) => {
-            const custom = isCustomActionKey(action)
-            const missing = custom && !customById.has(customActionIdOf(action))
-            return (
-              <span
-                key={action}
-                className={`inline-flex items-center gap-1 rounded-full border py-0.5 pl-2 pr-1 text-ui-sm font-medium ${
-                  missing
-                    ? 'border-warn/60 bg-warn/8 text-warn'
-                    : custom
-                      ? 'border-accent/50 bg-panel-2 text-ink'
-                      : 'border-line-strong bg-panel-2 text-ink'
-                }`}
-                title={custom ? 'Custom action — coded in the app, named here' : undefined}
-              >
-                {custom && <span aria-hidden="true" className="font-mono text-ui-xs text-ink-3">ƒ</span>}
-                {label(action)}
-                <button
-                  type="button"
-                  aria-label={`Remove ${label(action)}`}
-                  onClick={() => onChange(value.filter((a) => a !== action))}
-                  className="rounded-full p-0.5 text-ink transition-colors hover:bg-panel-2 hover:text-ink"
-                >
-                  <X size={11} aria-hidden="true" />
-                </button>
-              </span>
-            )
-          })}
-        </div>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={value} strategy={rectSortingStrategy}>
+            <div className="flex flex-wrap gap-1">
+              {value.map((action) => {
+                const custom = isCustomActionKey(action)
+                return (
+                  <ActionChip
+                    key={action}
+                    action={action}
+                    label={label(action)}
+                    custom={custom}
+                    missing={custom && !customById.has(customActionIdOf(action))}
+                    onRemove={() => onChange(value.filter((a) => a !== action))}
+                  />
+                )
+              })}
+            </div>
+          </SortableContext>
+        </DndContext>
       )}
       {(available.length > 0 || availableCustom.length > 0) && (
         <Select
