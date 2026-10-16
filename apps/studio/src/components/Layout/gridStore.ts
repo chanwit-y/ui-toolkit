@@ -36,6 +36,7 @@ import {
   createDefaultPaperConfig,
   createDefaultCardConfig,
   createDefaultHtmlContentConfig,
+  createDefaultCustomComponentConfig,
   createDefaultApprovalLineConfig,
   createDefaultWorkflowEditorConfig,
   createDefaultPopoverConfig,
@@ -631,6 +632,9 @@ export const useGridStore = create<GridState>((set, get) => {
         } else if (type === 'html') {
           nextSeq = fieldSeq + 1
           config = createDefaultHtmlContentConfig(`html_${nextSeq}`)
+        } else if (type === 'custom') {
+          nextSeq = fieldSeq + 1
+          config = createDefaultCustomComponentConfig(`custom_${nextSeq}`)
         } else if (type === 'approvalline') {
           nextSeq = fieldSeq + 1
           config = createDefaultApprovalLineConfig(`approval_${nextSeq}`)
@@ -676,6 +680,7 @@ export const useGridStore = create<GridState>((set, get) => {
           type === 'paper' ||
           type === 'card' ||
           type === 'html' ||
+          type === 'custom' ||
           type === 'approvalline' ||
           type === 'workfloweditor' ||
           type === 'tab'

@@ -10,6 +10,7 @@ import {
   SwitchBase,
   DataTable2,
   HtmlCell,
+  CustomComponentPlaceholder,
   DataTableEditable,
   DatePickerBase,
   DateRangePickerBase,
@@ -58,6 +59,7 @@ import {
   StickyNote,
   CreditCard,
   Code,
+  Puzzle,
   Workflow,
   GitBranch,
   Table,
@@ -78,6 +80,7 @@ import { ENTER_DURATION_MS, prefersReducedMotion, UPGRADE_FADE_MS } from './grid
 import { useGridStore, useIsEntering } from './gridStore'
 import { buildDataTablePreviewRows, buildHtmlPreviewValue, DATATABLE_PREVIEW_ROW_COUNT } from './dataTablePreview'
 import { useBindingToken } from './ItemBindingField'
+import { useActiveProject } from '../Workspace/workspaceStore'
 import type {
   AvatarConfig,
   ButtonConfig,
@@ -101,6 +104,7 @@ import type {
   CardConfig,
   CardActionConfig,
   HtmlContentConfig,
+  CustomComponentConfig,
   ApprovalLineConfig,
   WorkflowEditorConfig,
   PopoverConfig,
@@ -180,6 +184,8 @@ function thresholdsForType(type: GridItemData['type']): LiveThresholds {
     type === 'card' ||
     // An HTML block is markup — legible at any width.
     type === 'html' ||
+    // A custom component previews as its placeholder box — any width.
+    type === 'custom' ||
     // An approval line is avatars on a line — it scrolls when narrow.
     type === 'approvalline' ||
     // A workflow editor is a column of cards — it reads at any width.
@@ -293,6 +299,9 @@ function CellContent({ item }: { item: GridItemData }) {
   if (item.type === 'html' && item.config) {
     return <GlyphChip Icon={Code} />
   }
+  if (item.type === 'custom' && item.config) {
+    return <GlyphChip Icon={Puzzle} />
+  }
   if (item.type === 'approvalline' && item.config) {
     return <GlyphChip Icon={Workflow} />
   }
@@ -372,6 +381,8 @@ function ActiveBody({ item }: { item: GridItemData }) {
                                       ? CreditCard
                                     : item.type === 'html'
                                       ? Code
+                                    : item.type === 'custom'
+                                      ? Puzzle
                                     : item.type === 'approvalline'
                                       ? Workflow
                                       : item.type === 'tab'
@@ -1369,6 +1380,38 @@ function HtmlContentLivePreview({ config }: { config: HtmlContentConfig }) {
   )
 }
 
+/**
+ * A custom component on the canvas: the library's placeholder box — the one
+ * the engine draws for an unregistered name — with the declared name, the
+ * binding token and the set props. The real component lives in the app; the
+ * Live Preview's stub shows the resolved value.
+ */
+function CustomComponentLivePreview({ config }: { config: CustomComponentConfig }) {
+  const def = useActiveProject()?.snapshot.customComponents?.find((d) => d.id === config.componentId)
+  const toToken = useBindingToken()
+  const token = config.binding ? toToken(config.binding) : ''
+  const details = useMemo(() => {
+    const out: Record<string, unknown> = {}
+    for (const p of def?.props ?? []) {
+      const text = config.props[p.key] ?? ''
+      if (text.trim() !== '') out[p.key] = text
+    }
+    if (token) out.value = token
+    return out
+  }, [def, config.props, token])
+  const name = def ? def.name.trim() || '(unnamed)' : config.componentId ? 'MISSING_COMPONENT' : ''
+  return (
+    <div data-grid-item-content className="pointer-events-none h-full w-full px-3 py-2">
+      <CustomComponentPlaceholder
+        name={name || 'Custom component'}
+        note={!config.componentId ? 'pick a declared component' : !def ? 'declaration deleted' : 'rendered by the app'}
+        details={details}
+        error={!!config.componentId && !def}
+      />
+    </div>
+  )
+}
+
 /** The mock line every workflow editor previews with (the user's e-memo screen). */
 const WORKFLOW_PREVIEW_STEPS = [
   { actionType: 'inputter', sequence: 1, inchargeUsers: [{ id: '1', name: 'Sigang Liang' }, { id: '2', name: 'Sai Cao' }], ccUsers: [] },
@@ -1749,6 +1792,9 @@ function renderLive(item: GridItemData, isLive: boolean) {
   }
   if (item.type === 'html' && item.config) {
     return <HtmlContentLivePreview config={item.config as HtmlContentConfig} />
+  }
+  if (item.type === 'custom' && item.config) {
+    return <CustomComponentLivePreview config={item.config as CustomComponentConfig} />
   }
   if (item.type === 'approvalline' && item.config) {
     return <ApprovalLineLivePreview config={item.config as ApprovalLineConfig} />

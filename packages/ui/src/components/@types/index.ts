@@ -15,7 +15,7 @@ import {
   Text as RadixText,
 } from "@radix-ui/themes";
 import { type ThemeProps } from "@radix-ui/themes";
-import type { MouseEvent as ReactMouseEvent, ReactNode } from "react";
+import type { ComponentType, MouseEvent as ReactMouseEvent, ReactNode } from "react";
 import type { LucideIcon, LucideProps } from "lucide-react";
 import type { IconData } from "../core/const/iconData";
 import type {
@@ -1675,6 +1675,7 @@ export type TElement =
   | PaperElement
   | CardElement
   | HtmlContentElement
+  | CustomComponentElement
   | ApprovalLineElement
   | WorkflowEditorElement
   | PopoverElement
@@ -1710,6 +1711,7 @@ export type BinType =
   | "paper"
   | "card"
   | "html"
+  | "custom"
   | "approvalline"
   | "workfloweditor"
   | "popover"
@@ -2440,6 +2442,47 @@ export type HtmlContentElement = {
   className?: string;
   style?: CSSProperties;
 };
+
+/**
+ * The `custom` element (see the grilled custom-components design): a React
+ * component the consumer coded in the app and registered under `component`
+ * in `<ComponentsProvider components={…}>`. Display-only — not a field of the
+ * enclosing form (`schema.ts` skips it), allowed inside a repeater.
+ */
+export type CustomComponentElement = {
+  name?: string;
+  /** The registry key (`components[component]`). */
+  component: string;
+  /** Static configuration, passed through verbatim as `props`. */
+  props?: Record<string, unknown>;
+  /** The one bound value (`{ type: "row" }` inside a repeater, `state`, `url`, `value`). */
+  value?: DataValue;
+  className?: string;
+  style?: CSSProperties;
+};
+
+/** What the engine hands a custom component (see {@link CustomComponentElement}). */
+export type CustomComponentProps<P = Record<string, unknown>, V = unknown> = {
+  /** The element's `props` object, untouched. */
+  props: P;
+  /** The resolved `value` binding; `undefined` when unbound or not loaded yet. */
+  value: V | undefined;
+  /** `true` while a `skeleton`-mode page load the binding reads has no data yet — draw your own placeholder. */
+  loading: boolean;
+  /** The nearest enclosing `repeater` item, `undefined` outside one. */
+  row: unknown;
+  /** Config-driven page change through the enclosing `PageRouter`. */
+  navigate: (target: NavigateTarget) => void;
+  /** Read-only access to the page / global data slices. */
+  state: { get: (key: string, path?: string) => unknown };
+};
+
+/**
+ * The consumer's registry of custom components, keyed by the name a config
+ * references as `element.component` — the rendering counterpart of
+ * `TActionMaster`.
+ */
+export type TComponentMaster = Record<string, ComponentType<CustomComponentProps<any, any>>>;
 
 export type Modals = Record<string, ModalElement>;
 

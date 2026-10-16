@@ -4,6 +4,7 @@ import { isClickOnlyOverlay } from './designTypes'
 import type { DesignNavigation, GridContainerSettings, GridItemData } from './types'
 import type { PageLoadDef } from '../Workspace/pageLoads'
 import type { CustomActionRef } from '../Workspace/customActions'
+import type { CustomComponentDef } from '../Workspace/customComponents'
 
 /**
  * Builds the `Container` the live-preview modal feeds to the real engine
@@ -280,9 +281,10 @@ export function buildLivePreviewContainer(
   name = 'studio-live-preview',
   loads: Pick<PageLoadDef, 'id' | 'key'>[] = [],
   customActions: CustomActionRef[] = [],
+  customComponents: CustomComponentDef[] = [],
 ): Container {
   const bins = previewBins(
-    JSON.parse(gridConfigToJson(settings, items, endpoints, pages, loads, customActions)) as ParsedBin[],
+    JSON.parse(gridConfigToJson(settings, items, endpoints, pages, loads, customActions, customComponents)) as ParsedBin[],
     wiring,
   )
   return rootContainer(name, settings, bins as unknown as Bin[]) as unknown as Container

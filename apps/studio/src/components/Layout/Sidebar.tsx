@@ -2,6 +2,7 @@ import { CodeViewer, cn } from '../common'
 import { ButtonConfigPanel } from './ButtonConfigPanel'
 import { CardConfigPanel } from './CardConfigPanel'
 import { HtmlContentConfigPanel } from './HtmlContentConfigPanel'
+import { CustomComponentConfigPanel } from './CustomComponentConfigPanel'
 import { ApprovalLineConfigPanel } from './ApprovalLineConfigPanel'
 import { WorkflowEditorConfigPanel } from './WorkflowEditorConfigPanel'
 import { CheckboxConfigPanel } from './CheckboxConfigPanel'
@@ -55,6 +56,7 @@ import type {
   PaperConfig,
   CardConfig,
   HtmlContentConfig,
+  CustomComponentConfig,
   ApprovalLineConfig,
   WorkflowEditorConfig,
   PopoverConfig,
@@ -296,6 +298,8 @@ export function Sidebar({ gridConfigJson, fullGridCss }: SidebarProps) {
             <CardConfigPanel itemId={selectedItem.id} config={selectedItem.config as CardConfig} />
           ) : selectedItem.type === 'html' && selectedItem.config ? (
             <HtmlContentConfigPanel itemId={selectedItem.id} config={selectedItem.config as HtmlContentConfig} />
+          ) : selectedItem.type === 'custom' && selectedItem.config ? (
+            <CustomComponentConfigPanel itemId={selectedItem.id} config={selectedItem.config as CustomComponentConfig} />
           ) : selectedItem.type === 'approvalline' && selectedItem.config ? (
             <ApprovalLineConfigPanel itemId={selectedItem.id} config={selectedItem.config as ApprovalLineConfig} />
           ) : selectedItem.type === 'workfloweditor' && selectedItem.config ? (

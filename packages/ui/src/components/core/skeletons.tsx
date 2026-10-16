@@ -9,7 +9,7 @@ import { skeletonBindingKeys } from "./stateStore";
  * alone. Everything else with a `value: { type: "state" }` — the form fields
  * — is covered generically by the cell.
  */
-const SELF_SKELETON = new Set<Bin["type"]>(["text", "typography", "html", "hidden", "avatar", "card", "repeater", "datatable", "approvalline"]);
+const SELF_SKELETON = new Set<Bin["type"]>(["text", "typography", "html", "custom", "hidden", "avatar", "card", "repeater", "datatable", "approvalline"]);
 
 /** The state binding a bin's cell should skeleton on, if any. */
 export function binSkeletonValue(bin: Bin): DataValue | undefined {

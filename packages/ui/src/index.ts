@@ -45,7 +45,14 @@ export { GlobalLoads } from "./components/core/GlobalLoads";
 // inline in a button's action chain as "fn:<name>" (see core/actions.tsx).
 export { ActionsProvider, useActions, isCustomAction, customActionName, customAction, resolveCustomAction, CUSTOM_ACTION_PREFIX } from "./components/core/actions";
 export type { ActionsProviderProps } from "./components/core/actions";
+// Custom components: the consumer's registry of coded React components, placed
+// by a `custom` Bin's `element.component` (see core/components.tsx).
+export { ComponentsProvider, useComponents, resolveCustomComponent } from "./components/core/components";
+export type { ComponentsProviderProps } from "./components/core/components";
+export { CustomComponent, CustomComponentPlaceholder, CustomComponentBoundary, previewJson } from "./components/CustomComponent";
+export type { CustomComponentPlaceholderProps, CustomComponentHostProps } from "./components/CustomComponent";
 export type { ActionContext, ActionFn, TActionMaster, CustomActionName, ButtonAction } from "./components/@types";
+export type { CustomComponentElement, CustomComponentProps, TComponentMaster } from "./components/@types";
 export type { GlobalLoadsProps } from "./components/core/GlobalLoads";
 export type { PageRouterProps } from "./components/core/PageRouter";
 export { PagesProvider, usePages, useNavigateTo, buildNavigateUrl, pathParamNames, matchPageKey, matchPage, breadcrumbTrail, usePageTitle } from "./components/core/pages";

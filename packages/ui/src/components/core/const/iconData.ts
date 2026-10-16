@@ -96,6 +96,7 @@ export const IconData = {
 	database: i.Database,
 	server: i.Server,
 	terminal: i.Terminal,
+	puzzle: i.Puzzle,
 	code: i.Code,
 	package: i.Package,
 	archive: i.Archive,

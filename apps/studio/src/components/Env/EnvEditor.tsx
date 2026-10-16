@@ -1,6 +1,6 @@
-import { Lock, Plus, Trash2 } from 'lucide-react'
-import { useMemo } from 'react'
-import { CodeViewer, IconButton, Input } from '../common'
+import { ChevronDown, ChevronRight, Lock, Plus, Trash2 } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { CodeViewer, IconButton, Input, Select } from '../common'
 import { useEnvStore } from './envStore'
 import { exportName, toDotEnv, toWiringTs } from './serialize'
 import { useActiveProject, useWorkspaceStore } from '../Workspace/workspaceStore'
@@ -12,7 +12,157 @@ import {
   type CustomActionDef,
 } from '../Workspace/customActions'
 
+import {
+  CUSTOM_PROP_KIND_OPTIONS,
+  createCustomComponentDef,
+  createCustomPropDef,
+  duplicateComponentNames,
+  isValidComponentName,
+  toComponentsTsx,
+  type CustomComponentDef,
+  type CustomPropDef,
+  type CustomPropKind,
+} from '../Workspace/customComponents'
+
 const NO_ACTIONS: CustomActionDef[] = []
+const NO_COMPONENTS: CustomComponentDef[] = []
+
+/** One declared prop row: key, kind, label, select options, default. */
+function PropRow({ prop, onChange, onRemove }: { prop: CustomPropDef; onChange: (p: Partial<CustomPropDef>) => void; onRemove: () => void }) {
+  const key = prop.key.trim()
+  const invalid = !!key && !isValidComponentName(key)
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center gap-2">
+        <div className="w-[160px] shrink-0">
+          <Input value={prop.key} onChange={(e) => onChange({ key: e.target.value })} placeholder="propKey" aria-label="Prop key" className="font-mono" />
+        </div>
+        <div className="w-[110px] shrink-0">
+          <Select value={prop.kind} onChange={(v) => onChange({ kind: v as CustomPropKind })} options={CUSTOM_PROP_KIND_OPTIONS} aria-label="Prop kind" />
+        </div>
+        <Input value={prop.label} onChange={(e) => onChange({ label: e.target.value })} placeholder="Label (optional)" aria-label="Prop label" />
+        <div className="w-[120px] shrink-0">
+          <Input value={prop.defaultValue} onChange={(e) => onChange({ defaultValue: e.target.value })} placeholder="default" aria-label="Prop default" className="font-mono" />
+        </div>
+        <IconButton label={`Remove ${key || 'prop'}`} onClick={onRemove} className="shrink-0 text-ink-3 hover:text-danger">
+          <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+        </IconButton>
+      </div>
+      {prop.kind === 'select' && (
+        <Input
+          value={prop.options.join(', ')}
+          onChange={(e) => onChange({ options: e.target.value.split(',').map((o) => o.trim()) })}
+          placeholder="Options, comma-separated (bar, line, pie)"
+          aria-label="Select options"
+          className="font-mono"
+        />
+      )}
+      {invalid && (
+        <p className="pl-1 text-ui-sm text-warn">
+          Not a JS identifier — <span className="font-mono">props.{key}</span> can't be written; the prop is left out.
+        </p>
+      )}
+    </div>
+  )
+}
+
+/**
+ * The project's custom components (see the grilled design): the names of
+ * React components the developer codes in the app and hands to
+ * `<ComponentsProvider>`, each with the props it accepts (key + kind, so the
+ * item inspector draws a typed field). Declared once here, picked by a
+ * Custom item, exported as typed stubs in `components.tsx`.
+ */
+function CustomComponentsSection() {
+  const project = useActiveProject()
+  const update = useWorkspaceStore((s) => s.updateProjectCustomComponents)
+  const defs = project?.snapshot.customComponents ?? NO_COMPONENTS
+  const duplicates = useMemo(() => duplicateComponentNames(defs), [defs])
+  const [open, setOpen] = useState<Record<string, boolean>>({})
+  if (!project) return null
+  const set = (next: CustomComponentDef[]) => update(project.id, next)
+  const patch = (id: string, p: Partial<CustomComponentDef>) => set(defs.map((d) => (d.id === id ? { ...d, ...p } : d)))
+  return (
+    <div className="mt-8">
+      <h2 className="text-base font-[650] tracking-[-0.01em] text-ink">Custom components</h2>
+      <p className="mb-4 mt-1 text-ui text-ink-2">
+        React components coded in the app and registered through{' '}
+        <span className="font-mono">{'<ComponentsProvider components={…}>'}</span>. Declare a name and
+        the props it accepts here, then place a <span className="font-mono">Custom</span> item and pick
+        it. The export's <span className="font-mono">components.tsx</span> carries a typed stub for
+        each; the Live Preview shows a placeholder with the resolved value.
+      </p>
+      <div className="space-y-2">
+        {defs.map((d) => {
+          const name = d.name.trim()
+          const invalid = !!name && !isValidComponentName(name)
+          const duplicate = !!name && duplicates.has(name)
+          const expanded = open[d.id] ?? false
+          return (
+            <div key={d.id} className="space-y-1 rounded-md border border-line bg-panel p-2">
+              <div className="flex items-center gap-2">
+                <IconButton label={expanded ? 'Hide props' : 'Show props'} onClick={() => setOpen({ ...open, [d.id]: !expanded })} className="shrink-0 text-ink-3">
+                  {expanded ? <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" /> : <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />}
+                </IconButton>
+                <div className="w-[200px] shrink-0">
+                  <Input
+                    value={d.name}
+                    onChange={(e) => patch(d.id, { name: e.target.value })}
+                    placeholder="ComponentName"
+                    aria-label="Custom component name"
+                    className="font-mono"
+                  />
+                </div>
+                <Input
+                  value={d.description}
+                  onChange={(e) => patch(d.id, { description: e.target.value })}
+                  placeholder="What it shows (optional)"
+                  aria-label="Custom component description"
+                />
+                <span className="shrink-0 text-ui-sm text-ink-3">{d.props.length} prop{d.props.length === 1 ? '' : 's'}</span>
+                <IconButton label={`Remove ${name || 'component'}`} onClick={() => set(defs.filter((x) => x.id !== d.id))} className="shrink-0 text-ink-3 hover:text-danger">
+                  <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                </IconButton>
+              </div>
+              {!name && <p className="pl-1 text-ui-sm text-ink-3">Unnamed — items using it export MISSING_COMPONENT until it has a name.</p>}
+              {invalid && (
+                <p className="pl-1 text-ui-sm text-warn">
+                  Not a JS identifier — <span className="font-mono">components.{name}</span> can't be written. Letters, digits, _ and $ only, no leading digit.
+                </p>
+              )}
+              {duplicate && (
+                <p className="pl-1 text-ui-sm text-warn">
+                  Duplicate name <span className="font-mono">{name}</span> — one registry key, so only one implementation survives.
+                </p>
+              )}
+              {expanded && (
+                <div className="mt-2 space-y-2 border-t border-line pt-2">
+                  <span className="sec-label block">Props</span>
+                  {d.props.map((p, i) => (
+                    <PropRow
+                      key={i}
+                      prop={p}
+                      onChange={(patchProp) => patch(d.id, { props: d.props.map((x, j) => (j === i ? { ...x, ...patchProp } : x)) })}
+                      onRemove={() => patch(d.id, { props: d.props.filter((_, j) => j !== i) })}
+                    />
+                  ))}
+                  <button type="button" onClick={() => patch(d.id, { props: [...d.props, createCustomPropDef()] })} className="btn w-full border-dashed">
+                    <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+                    Add prop
+                  </button>
+                </div>
+              )}
+            </div>
+          )
+        })}
+        <button type="button" onClick={() => set([...defs, createCustomComponentDef()])} className="btn w-full border-dashed">
+          <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+          Add custom component
+        </button>
+      </div>
+    </div>
+  )
+}
 
 /**
  * The project's custom button actions (see the grilled design): the names of
@@ -121,6 +271,8 @@ export function EnvEditor() {
   const wiring = useMemo(() => toWiringTs(vars), [vars])
   const customActions = useActiveProject()?.snapshot.customActions ?? NO_ACTIONS
   const actionsTs = useMemo(() => toActionsTs(customActions), [customActions])
+  const customComponents = useActiveProject()?.snapshot.customComponents ?? NO_COMPONENTS
+  const componentsTsx = useMemo(() => toComponentsTsx(customComponents), [customComponents])
 
   // Non-blocking duplicate check on the *exported* names (API_URL and
   // VITE_API_URL collide after prefixing) — same philosophy as the API page's
@@ -201,6 +353,7 @@ export function EnvEditor() {
         </div>
 
         <CustomActionsSection />
+        <CustomComponentsSection />
 
         <div className="mt-6">
           <span className="sec-label mb-2 block">Export</span>
@@ -210,6 +363,7 @@ export function EnvEditor() {
               { id: 'env', label: '.env', language: 'text', code: dotEnv },
               { id: 'wiring', label: 'App wiring', language: 'text', code: wiring },
               { id: 'actions', label: 'actions.ts', language: 'text', code: actionsTs },
+              { id: 'components', label: 'components.tsx', language: 'text', code: componentsTsx },
             ]}
           />
         </div>

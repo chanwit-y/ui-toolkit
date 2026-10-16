@@ -1,11 +1,15 @@
 import {
   ActionsProvider,
+  ComponentsProvider,
+  CustomComponentPlaceholder,
   AppShell,
   GlobalLoads,
   HttpClientFactory,
   Modal,
   PageRouter,
   type TActionMaster,
+  type TComponentMaster,
+  type CustomComponentProps,
   type TApiMaster,
   type TMenu,
   type TModelMaster,
@@ -55,8 +59,26 @@ import { buildLivePreviewContainer, collectPreviewNavigation, type LivePreviewWi
 import { indexItems } from './pageLinks'
 import { PreviewDevTools, PreviewDevToolsToggle, type ActionLogEntry, type ApiLogEntry } from './PreviewDevTools'
 import { isValidActionName, type CustomActionDef } from '../Workspace/customActions'
+import { isValidComponentName, type CustomComponentDef } from '../Workspace/customComponents'
 
 const NO_CUSTOM_ACTIONS: CustomActionDef[] = []
+const NO_CUSTOM_COMPONENTS: CustomComponentDef[] = []
+
+/**
+ * The preview's stand-in for one declared custom component (see the grilled
+ * design): the library placeholder showing the props it was given and the
+ * **resolved** `value` / `row` / `loading`, so a binding can be checked
+ * before the app code exists.
+ */
+function StubComponent({ name, props, value, row, loading }: { name: string } & CustomComponentProps) {
+  return (
+    <CustomComponentPlaceholder
+      name={name}
+      note={loading ? 'loading…' : 'stub — the app\'s components.tsx renders it for real'}
+      details={{ ...props, value, ...(row !== undefined ? { row } : {}) }}
+    />
+  )
+}
 import type { GridItemData } from './types'
 
 /**
@@ -203,6 +225,10 @@ export function LivePreviewModal({ onClose }: { onClose: () => void }) {
   // The declared custom actions: `fn:<id>` in a button resolves to `fn:<name>`
   // in its exported config, and the preview mounts a stub per name (below).
   const customActions = project?.snapshot.customActions ?? NO_CUSTOM_ACTIONS
+  // The declared custom components: an item's declaration id resolves to the
+  // name in its exported config, and the preview mounts a placeholder stub
+  // per name (below) that shows the resolved value.
+  const customComponents = project?.snapshot.customComponents ?? NO_CUSTOM_COMPONENTS
   // The project's attached endpoints and the models they reference — exactly
   // what its model.ts / api.ts exports contain.
   const models = useProjectModels()
@@ -264,6 +290,21 @@ export function LivePreviewModal({ onClose }: { onClose: () => void }) {
           ]),
       ),
     [customActions],
+  )
+
+  // The preview's `ComponentsProvider` registry: no app code exists here, so
+  // every declared component is the placeholder with its resolved bindings. A
+  // name an item uses but nobody declared is left out, so the engine's own
+  // "not registered" placeholder shows, as it would in the app.
+  const stubComponents = useMemo<TComponentMaster>(
+    () =>
+      Object.fromEntries(
+        customComponents
+          .map((c) => c.name.trim())
+          .filter((name) => isValidComponentName(name))
+          .map((name) => [name, (p: CustomComponentProps) => <StubComponent name={name} {...p} />]),
+      ),
+    [customComponents],
   )
 
   // The live page draws from the grid store; the others from their
@@ -361,13 +402,14 @@ export function LivePreviewModal({ onClose }: { onClose: () => void }) {
                 `page-${pg.key}`,
                 [...(pg.loads ?? []), ...globalLoads],
                 customActions,
+                customComponents,
               ),
             ],
             ...(pg.loads?.length ? { loads: pageLoadsToEngine(pg.loads, endpoints, globalLoads) as PageLoad[] } : {}),
           },
         ]),
       ),
-    [pages, endpoints, engine, globalLoads, customActions],
+    [pages, endpoints, engine, globalLoads, customActions, customComponents],
   )
   const engineGlobalLoads = useMemo(
     () => (pageLoadsToEngine(globalLoads, endpoints) ?? []) as PageLoad[],
@@ -427,7 +469,9 @@ export function LivePreviewModal({ onClose }: { onClose: () => void }) {
             projectSlug={projectSlug}
             fullscreen={fullscreen}
             customActions={customActions}
+            customComponents={customComponents}
             stubActions={stubActions}
+            stubComponents={stubComponents}
             onConfigJson={setConfigJson}
           />
         </MemoryRouter>
@@ -473,7 +517,9 @@ const PreviewApp = memo(function PreviewApp({
   projectSlug,
   fullscreen,
   customActions,
+  customComponents,
   stubActions,
+  stubComponents,
   onConfigJson,
 }: {
   pages: PreviewPage[]
@@ -491,7 +537,9 @@ const PreviewApp = memo(function PreviewApp({
   projectSlug: string
   fullscreen: boolean
   customActions: CustomActionDef[]
+  customComponents: CustomComponentDef[]
   stubActions: TActionMaster
+  stubComponents: TComponentMaster
   onConfigJson: (json: string) => void
 }) {
   const location = useLocation()
@@ -533,9 +581,10 @@ const PreviewApp = memo(function PreviewApp({
             pages,
             [...(current?.page.loads ?? []), ...globalLoads],
             customActions,
+            customComponents,
           )
         : '[]',
-    [grid, endpoints, pages, current?.page.loads, globalLoads, customActions],
+    [grid, endpoints, pages, current?.page.loads, globalLoads, customActions, customComponents],
   )
   useEffect(() => onConfigJson(configJson), [configJson, onConfigJson])
   const navigation = useMemo(
@@ -675,6 +724,8 @@ const PreviewApp = memo(function PreviewApp({
               or the viewport in full screen) minus the modal and page-bar chrome. */}
           {/* The custom-action stubs, mounted where HANDOFF.md mounts the real registry. */}
           <ActionsProvider actions={stubActions}>
+          {/* The custom-component stubs, likewise. */}
+          <ComponentsProvider components={stubComponents}>
             <AppShell
               pages={enginePages}
               menu={engineMenu}
@@ -696,6 +747,7 @@ const PreviewApp = memo(function PreviewApp({
                 />
               </div>
             </AppShell>
+          </ComponentsProvider>
           </ActionsProvider>
         </PreviewErrorBoundary>
 

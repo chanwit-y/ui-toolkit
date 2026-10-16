@@ -26,6 +26,7 @@ import {
   createDefaultCardConfig,
   createDefaultCardActionConfig,
   createDefaultHtmlContentConfig,
+  createDefaultCustomComponentConfig,
   createDefaultDrawerConfig,
   createDefaultDividerConfig,
   createDefaultMultiAutocompleteConfig,
@@ -40,6 +41,7 @@ import {
 } from '../Layout/types'
 import type { ModelDef, ModelField } from '../Model/types'
 import type { CustomActionDef } from '../Workspace/customActions'
+import type { CustomComponentDef } from '../Workspace/customComponents'
 import type { EnvVarDef } from '../Env/types'
 import type { StudioThemeConfig } from '../Theme/types'
 import type { PageLoadDef } from '../Workspace/pageLoads'
@@ -4434,5 +4436,148 @@ export function customActionsDemoSeedItems(): GridItemData[] {
 
     ...heading('seed-item-custom-actions-missing-h', 'A deleted declaration', 'This button names a custom action that no longer exists: the chip is flagged, the export writes fn:MISSING_ACTION, the engine warns and skips it — and the counter still increases.'),
     button('seed-item-custom-actions-missing', 'Skip missing, then increase', { icon: 'puls', actions: [fn('action-seed-deleted'), fn(ACTION_INCREASE_ID)] }),
+  ]
+}
+
+/* --------------------------------------------------------- custom components */
+
+export const CUSTOM_COMPONENTS_PAGE_ID = 'seed-page-custom-components'
+
+export const COMPONENT_STAT_BADGE_ID = 'component-seed-stat-badge'
+export const COMPONENT_SPARKLINE_ID = 'component-seed-sparkline'
+export const COMPONENT_COUNTRY_CHIP_ID = 'component-seed-country-chip'
+export const LOAD_CC_REGIONS_ID = 'load-seed-cc-regions'
+
+/**
+ * The seeded project's custom-component declarations (see the grilled
+ * design): the example app's `src/customComponents.ts` registry, by name and
+ * prop shape. The code isn't here — the export writes a typed stub per name
+ * and the Live Preview draws a placeholder with the resolved value.
+ */
+export function customComponentsSeedDefs(): CustomComponentDef[] {
+  return [
+    {
+      id: COMPONENT_STAT_BADGE_ID,
+      name: 'StatBadge',
+      description: 'A labelled pill; the bound value is the number it shows',
+      props: [
+        { key: 'label', kind: 'text', label: 'Label', options: [], defaultValue: '' },
+        { key: 'tone', kind: 'select', label: 'Tone', options: ['accent', 'green', 'red', 'gray'], defaultValue: 'gray' },
+        { key: 'big', kind: 'boolean', label: 'Big number', options: [], defaultValue: 'false' },
+      ],
+    },
+    {
+      id: COMPONENT_SPARKLINE_ID,
+      name: 'Sparkline',
+      description: 'A bar per item of the bound array; draws its own skeleton while loading',
+      props: [
+        { key: 'countField', kind: 'text', label: 'Count field (array length)', options: [], defaultValue: 'countries' },
+        { key: 'labelField', kind: 'text', label: 'Label field', options: [], defaultValue: 'name' },
+        { key: 'color', kind: 'select', label: 'Bar colour', options: ['accent', 'green', 'blue', 'orange'], defaultValue: 'accent' },
+        { key: 'height', kind: 'number', label: 'Bar height (px)', options: [], defaultValue: '72' },
+      ],
+    },
+    {
+      id: COMPONENT_COUNTRY_CHIP_ID,
+      name: 'CountryChip',
+      description: 'Inside a repeater: the item as a chip that opens the detail page',
+      props: [
+        { key: 'page', kind: 'text', label: 'Page key to open', options: [], defaultValue: 'countryDetail' },
+        { key: 'showCode', kind: 'boolean', label: 'Show the code', options: [], defaultValue: 'true' },
+      ],
+    },
+  ]
+}
+
+/** The regions, loaded in skeleton mode: the Sparkline shows `loading` until they land. */
+export function customComponentsSeedLoads(): PageLoadDef[] {
+  return [seedLoad(LOAD_CC_REGIONS_ID, 'regionsChart', REGIONS_ENDPOINT_ID)]
+}
+
+/**
+ * The "Custom components" demo page (the example app's `/custom-components`):
+ * three StatBadges differing in props, two Sparklines bound to the
+ * skeleton-mode `regionsChart` load, a repeater whose item template is a
+ * CountryChip (the item as `row`), a custom item whose declaration was
+ * deleted (exported as MISSING_COMPONENT — the engine's placeholder), and a
+ * badge shown only once the load succeeded.
+ */
+export function customComponentsDemoSeedItems(): GridItemData[] {
+  const full = { xs: 4, sm: 6, md: 8, lg: 12 }
+  const half = { xs: 4, sm: 6, md: 4, lg: 6 }
+  const third = { xs: 4, sm: 3, md: 4, lg: 4 }
+  const typography = (id: string, text: string, extra: Record<string, unknown> = {}): GridItemData => ({
+    id,
+    label: 'Typography',
+    type: 'typography',
+    settings: createDefaultItemSettings({ colSpan: full }),
+    config: { ...createDefaultTypographyConfig(), text, variant: 'body2', ...extra },
+  })
+  const heading = (id: string, text: string, caption: string): GridItemData[] => [
+    typography(`${id}-title`, text, { variant: 'subtitle1', weight: 'medium' }),
+    typography(`${id}-caption`, caption, { color: 'gray' }),
+  ]
+  const custom = (
+    id: string,
+    name: string,
+    componentId: string,
+    props: Record<string, string>,
+    extra: Record<string, unknown> = {},
+    colSpan: Record<'xs' | 'sm' | 'md' | 'lg', number> = third,
+  ): GridItemData => ({
+    id,
+    label: 'Custom',
+    type: 'custom',
+    settings: createDefaultItemSettings({ colSpan, alignSelf: { xs: 'center', sm: 'center', md: 'center', lg: 'center' } }),
+    config: { ...createDefaultCustomComponentConfig(name), componentId, props, ...extra },
+  })
+  const regions = { key: LOAD_CC_REGIONS_ID, path: '', source: 'state' as const }
+  return [
+    typography('seed-item-custom-components-h', 'Custom components', { variant: 'h3' }),
+    typography(
+      'seed-item-custom-components-intro',
+      'React components coded in the app, declared on the Env page (Custom components) and placed by a Custom item naming them. Each receives the props set here, one bound value, the loading flag, the repeater item and navigation. The export writes a typed components.tsx stub per name; the Live Preview draws a placeholder with the resolved value.',
+      { color: 'gray' },
+    ),
+
+    ...heading('seed-item-custom-components-static-h', 'Static props', 'Three StatBadge items differing only in their declared props (label / tone / big).'),
+    custom('seed-item-custom-components-badge-1', 'badgeCountries', COMPONENT_STAT_BADGE_ID, { label: 'Countries', tone: 'accent' }),
+    custom('seed-item-custom-components-badge-2', 'badgeRegions', COMPONENT_STAT_BADGE_ID, { label: 'Regions', tone: 'green', big: 'true' }),
+    custom('seed-item-custom-components-badge-3', 'badgeUnbound', COMPONENT_STAT_BADGE_ID, { label: 'Unbound' }),
+
+    ...heading('seed-item-custom-components-bound-h', 'Bound value + loading', 'Sparkline over the page load regionsChart (skeleton mode): loading is true until the regions land.'),
+    custom('seed-item-custom-components-spark-1', 'regionsSparkline', COMPONENT_SPARKLINE_ID, { color: 'accent' }, { binding: regions }, half),
+    custom('seed-item-custom-components-spark-2', 'regionsSparklineSmall', COMPONENT_SPARKLINE_ID, { color: 'orange', height: '40' }, { binding: regions }, half),
+
+    ...heading('seed-item-custom-components-row-h', 'Inside a repeater', 'CountryChip reads the enclosing item as row and opens the detail page through navigate.'),
+    {
+      id: 'seed-item-custom-components-countries',
+      label: 'Repeater',
+      type: 'repeater',
+      settings: createDefaultItemSettings({ colSpan: full }),
+      config: {
+        ...createDefaultRepeaterConfig('customComponentCountries'),
+        idKey: '_id',
+        read: { endpointId: COUNTRIES_ENDPOINT_ID, params: {}, extra: {} },
+        itemSpan: { xs: 6, sm: 6, md: 4, lg: 2 },
+        gap: '2',
+        emptyText: 'No countries',
+      },
+      childCanvases: [
+        {
+          ...createChildCanvas(),
+          items: [custom('seed-item-custom-components-chip', 'countryChip', COMPONENT_COUNTRY_CHIP_ID, { showCode: 'true' }, {}, full)],
+        },
+      ],
+    },
+
+    ...heading('seed-item-custom-components-missing-h', 'A deleted declaration', 'This item names a declaration that no longer exists: it exports MISSING_COMPONENT and the engine draws its placeholder.'),
+    custom('seed-item-custom-components-missing', 'missingComponent', 'component-seed-deleted', { anything: 'goes' }, {}, half),
+
+    ...heading('seed-item-custom-components-cond-h', 'Conditional', 'Shown only once regionsChart has loaded — Show when (page data) on the item.'),
+    {
+      ...custom('seed-item-custom-components-loaded', 'badgeLoaded', COMPONENT_STAT_BADGE_ID, { label: 'Regions loaded', tone: 'green' }, { binding: { ...regions, path: 'length' } }),
+      dataWhen: { loadId: LOAD_CC_REGIONS_ID, test: 'loaded', path: '', op: 'eq', value: '' },
+    },
   ]
 }

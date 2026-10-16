@@ -11,6 +11,7 @@ import { enginePageMeta } from './pageMeta'
 import { pathParams } from './snapshots'
 import type { PageDef, ProjectDef } from './types'
 import { makeActionKeyResolver, toActionsTs, type CustomActionRef } from './customActions'
+import { toComponentsTsx } from './customComponents'
 
 export type ExportFile = { name: string; lang: 'json' | 'ts' | 'md'; body: string }
 
@@ -83,6 +84,7 @@ export function buildExportFiles(
   const { snapshot } = project
   const globalLoads = snapshot.globalLoads ?? []
   const customActions = snapshot.customActions ?? []
+  const customComponents = snapshot.customComponents ?? []
   const engineGlobalLoads = pageLoadsToEngine(globalLoads, endpoints) ?? []
   const pages = snapshot.pages.map((pg) => ({
     id: pg.id,
@@ -111,6 +113,7 @@ export function buildExportFiles(
       undefined,
       [...(pg.loads ?? []), ...globalLoads],
       customActions,
+      customComponents,
     ),
     loads: pageLoadsToEngine(pg.loads, endpoints, globalLoads),
   }))
@@ -148,6 +151,8 @@ export function buildExportFiles(
   out.push({ name: 'theme.ts', lang: 'ts', body: toThemeTs(snapshot.theme) })
   // The custom-action stubs the app's developer fills in (see customActions.ts).
   out.push({ name: 'actions.ts', lang: 'ts', body: toActionsTs(customActions) })
+  // The custom-component stubs the app's developer fills in (see customComponents.ts).
+  if (customComponents.length) out.push({ name: 'components.tsx', lang: 'ts', body: toComponentsTsx(customComponents) })
 
   // The keyed pages record the library's `PageRouter` renders:
   //   <PageRouter http={http} model={model} api={api} pages={pages} />
@@ -220,6 +225,19 @@ export function buildExportFiles(
     )
     for (const a of customActions)
       lines.push(`- \`${a.name.trim() || '(unnamed)'}\`${a.description.trim() ? ` — ${a.description.trim()}` : ''}`)
+    lines.push('')
+  }
+  if (customComponents.length) {
+    lines.push(
+      '## Custom components',
+      '',
+      'Placed by `custom` bins naming them; the code lives in `components.tsx` (typed stubs to fill in — copy it, it is re-generated on every export), mounted once through `<ComponentsProvider components={components}>` beside `<ActionsProvider>`:',
+      '',
+    )
+    for (const c of customComponents) {
+      const props = c.props.filter((p) => p.key.trim()).map((p) => `\`${p.key.trim()}\` (${p.kind})`)
+      lines.push(`- \`${c.name.trim() || '(unnamed)'}\`${c.description.trim() ? ` — ${c.description.trim()}` : ''}${props.length ? ` · props: ${props.join(', ')}` : ''}`)
+    }
     lines.push('')
   }
   lines.push('## Endpoints', '')

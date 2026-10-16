@@ -1678,6 +1678,24 @@ export function createDefaultHtmlContentConfig(name: string): HtmlContentConfig 
   }
 }
 
+/**
+ * Editable config for a custom component (see the grilled design). Maps onto
+ * the engine `CustomComponentElement`: `componentId` is the project
+ * declaration (`Workspace/customComponents.ts`) resolved to its `name` at
+ * export, `props` the authored text per declared prop key (parsed to the
+ * prop's kind at export), `binding` the one bound `value`.
+ */
+export type CustomComponentConfig = {
+  name: string
+  componentId: string
+  props: Record<string, string>
+  binding: ItemBinding
+}
+
+export function createDefaultCustomComponentConfig(name: string): CustomComponentConfig {
+  return { name, componentId: '', props: {}, binding: null }
+}
+
 /** One key of an approval line's row mapping: paths tried in order (see the engine `ApprovalKeyPath`). */
 export type ApprovalLineKeyConfig = {
   name: string[]
@@ -2080,6 +2098,7 @@ export type GridItemData = {
     | PaperConfig
     | CardConfig
     | HtmlContentConfig
+    | CustomComponentConfig
     | ApprovalLineConfig
     | WorkflowEditorConfig
     | ApprovalLineConfig

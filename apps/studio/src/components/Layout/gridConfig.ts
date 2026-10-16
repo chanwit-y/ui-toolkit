@@ -48,6 +48,7 @@ import type {
   CardConfig,
   CardActionConfig,
   HtmlContentConfig,
+  CustomComponentConfig,
   ApprovalLineConfig,
   ApprovalLineKeyConfig,
   WorkflowEditorConfig,
@@ -76,6 +77,7 @@ import {
   type PageLoadDef,
 } from '../Workspace/pageLoads'
 import { makeActionKeyResolver, type CustomActionRef } from '../Workspace/customActions'
+import { exportProps, makeComponentNameResolver, type CustomComponentDef } from '../Workspace/customComponents'
 
 /**
  * Serializes the studio canvas into the declarative engine's `Bin[]` shape — the
@@ -151,6 +153,10 @@ type ButtonRefMaps = {
   loadKey: LoadKeyResolver
   /** A button action key as stored (`fn:<action id>`) → the engine's `fn:<name>`; built-ins pass through. */
   actionKey: (key: string) => string
+  /** A custom component declaration id → the engine `component` name (`MISSING_COMPONENT` when gone). */
+  componentName: (id: string) => string
+  /** The declarations themselves, for the props' kinds. */
+  componentDefs: CustomComponentDef[]
 }
 
 function makeButtonRefMaps(
@@ -158,6 +164,7 @@ function makeButtonRefMaps(
   pages: PageRef[],
   loads: Pick<PageLoadDef, 'id' | 'key'>[] = [],
   customActions: CustomActionRef[] = [],
+  customComponents: CustomComponentDef[] = [],
 ): ButtonRefMaps {
   const targets = collectButtonTargets(rootItems)
   return {
@@ -166,6 +173,8 @@ function makeButtonRefMaps(
     pageKeyById: new Map(pages.map((p) => [p.id, p.key])),
     loadKey: makeLoadKeyResolver(loads),
     actionKey: makeActionKeyResolver(customActions),
+    componentName: makeComponentNameResolver(customComponents),
+    componentDefs: customComponents,
   }
 }
 
@@ -1196,6 +1205,24 @@ function htmlContentElement(c: HtmlContentConfig, refs: ButtonRefMaps): Record<s
 }
 
 /**
+ * `custom` → engine `CustomComponentElement`: the declaration resolved to its
+ * registry name (`MISSING_COMPONENT` when deleted / unpicked), the authored
+ * props parsed to their declared kinds (only those set and off the default),
+ * the binding as the one `value`.
+ */
+function customComponentElement(c: CustomComponentConfig, refs: ButtonRefMaps): Record<string, unknown> {
+  const def = refs.componentDefs.find((d) => d.id === c.componentId)
+  const props = exportProps(def, c.props)
+  const value = itemBindingValue(c.binding, refs)
+  return {
+    name: c.name,
+    component: refs.componentName(c.componentId),
+    ...(Object.keys(props).length ? { props } : {}),
+    ...(value ? { value } : {}),
+  }
+}
+
+/**
  * `approvalline` → engine `ApprovalLineElement`: each key's path list (one
  * path stays a string, several a list, none dropped), the role rules, the
  * status map / labels only when they differ from the engine defaults, the
@@ -1727,6 +1754,8 @@ function buildElement(
       return item.config ? typographyElement(item.config as TypographyConfig, refs) : undefined
     case 'html':
       return item.config ? htmlContentElement(item.config as HtmlContentConfig, refs) : undefined
+    case 'custom':
+      return item.config ? customComponentElement(item.config as CustomComponentConfig, refs) : undefined
     case 'approvalline':
       return item.config ? approvalLineElement(item.config as ApprovalLineConfig, endpoints, resolveEndpoint, refs) : undefined
     case 'avatar':
@@ -1783,10 +1812,12 @@ export function buildBins(
   loads: Pick<PageLoadDef, 'id' | 'key'>[] = [],
   /** The project's declared custom actions, so a button's `fn:<id>` exports as `fn:<name>` (top-level call only). */
   customActions: CustomActionRef[] = [],
+  /** The project's declared custom components, so a `custom` item's declaration id exports as its name (top-level call only). */
+  customComponents: CustomComponentDef[] = [],
 ): Record<string, unknown>[] {
   const cols = container.columns
   const resolveEndpoint = makeEndpointResolver(endpoints)
-  const buttonRefs = refs ?? makeButtonRefMaps(items, pages, loads, customActions)
+  const buttonRefs = refs ?? makeButtonRefMaps(items, pages, loads, customActions, customComponents)
   return items.map((item) => {
     const span = item.settings.colSpan
     const lg = toBoxRange(span.lg, cols.lg)
@@ -1876,8 +1907,9 @@ export function gridConfigToJson(
   pages: PageRef[] = [],
   loads: Pick<PageLoadDef, 'id' | 'key'>[] = [],
   customActions: CustomActionRef[] = [],
+  customComponents: CustomComponentDef[] = [],
 ): string {
-  return JSON.stringify(buildBins(container, items, endpoints, pages, undefined, undefined, loads, customActions), null, 2)
+  return JSON.stringify(buildBins(container, items, endpoints, pages, undefined, undefined, loads, customActions, customComponents), null, 2)
 }
 
 /**

@@ -34,6 +34,7 @@ import {
   PanelTop,
   Pilcrow,
   Presentation,
+  Puzzle,
   Repeat2,
   Search,
   SeparatorHorizontal,
@@ -86,6 +87,7 @@ export type ComponentType =
   | 'paper'
   | 'card'
   | 'html'
+  | 'custom'
   | 'approvalline'
   | 'popover'
   | 'divider'
@@ -192,6 +194,7 @@ export const COMPONENT_GROUPS: ComponentGroup[] = [
       { type: 'avatar', label: 'Avatar', icon: User },
       { type: 'divider', label: 'Divider', icon: SeparatorHorizontal },
       { type: 'html', label: 'HTML', icon: Code },
+      { type: 'custom', label: 'Custom', icon: Puzzle },
       { type: 'approvalline', label: 'Approval line', icon: Workflow },
     ],
   },

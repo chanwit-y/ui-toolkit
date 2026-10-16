@@ -24,6 +24,7 @@ import { Tab } from "../tab";
 import { Paper } from "../paper";
 import { Card } from "../card";
 import { HtmlContent } from "../htmlContent";
+import { CustomComponent } from "../customComponent";
 import { ApprovalLine } from "../approvalLine";
 import { WorkflowEditor } from "../workflowEditor";
 import { Popover } from "../popover";
@@ -67,6 +68,7 @@ export const ElementData = {
 	paper: Paper,
 	card: Card,
 	html: HtmlContent,
+	custom: CustomComponent,
 	approvalline: ApprovalLine,
 	workfloweditor: WorkflowEditor,
 	popover: Popover,

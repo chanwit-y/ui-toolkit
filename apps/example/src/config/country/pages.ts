@@ -18,6 +18,7 @@ import { containerHtmlContentDemo } from "./htmlContentDemo";
 import { containerDrawerDemo } from "./drawerDemo";
 import { containerSwitchDemo } from "./switchDemo";
 import { containerCustomActionsDemo } from "./customActionsDemo";
+import { containerCustomComponentsDemo, customComponentsLoads } from "./customComponentsDemo";
 import { containerUploadDemo } from "./uploadDemo";
 import { containerPageDataDemo, pageDataLoads } from "./pageDataDemo";
 import { approvalLineLoads, containerApprovalLineDemo } from "./approvalLineDemo";
@@ -174,6 +175,16 @@ export const pages = {
     parent: "countryList",
     title: "Custom actions",
     containers: containerCustomActionsDemo,
+  },
+  customComponentsDemo: {
+    // Consumer-coded React components (`src/components/custom`, registered
+    // through `<ComponentsProvider>` in App.tsx) placed by `custom` Bins
+    // (see ./customComponentsDemo.ts).
+    path: "/custom-components",
+    parent: "countryList",
+    title: "Custom components",
+    loads: customComponentsLoads,
+    containers: containerCustomComponentsDemo,
   },
   uploadDemo: {
     // The `uploadfile` config on its own: single / multiple, accept presets
