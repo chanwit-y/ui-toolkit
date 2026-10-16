@@ -15,7 +15,7 @@ import {
   Text as RadixText,
 } from "@radix-ui/themes";
 import { type ThemeProps } from "@radix-ui/themes";
-import type { ReactNode } from "react";
+import type { MouseEvent as ReactMouseEvent, ReactNode } from "react";
 import type { LucideIcon, LucideProps } from "lucide-react";
 import type { IconData } from "../core/const/iconData";
 import type {
@@ -1855,7 +1855,74 @@ export type ButtonAction =
   | "ConfirmBox"
   | "CloseModal"
   /** Go to the page named by the element's `navigate` target (see {@link NavigateTarget}). */
-  | "Navigate";
+  | "Navigate"
+  /**
+   * A consumer-coded function, by registry name (see {@link CustomActionName}):
+   * `"fn:increase"` calls `actions.increase(ctx)` from the enclosing
+   * `ActionsProvider`. Unknown names warn and are skipped.
+   */
+  | CustomActionName;
+
+/**
+ * The `actions` entry that names a function of the consumer's registry
+ * (`<ActionsProvider actions={{ increase, … }}>`): the name with the `fn:`
+ * prefix, so it can never collide with a built-in {@link ButtonAction} and
+ * reads as "code, not engine" in a config.
+ */
+export type CustomActionName = `fn:${string}`;
+
+/**
+ * What a custom action receives — the same services the built-in actions
+ * use, as one named object so the shape can grow without breaking a
+ * registered function. See the custom-actions design: the function may be
+ * `async`, `return false` ends the chain (the loader is stopped), a throw
+ * surfaces through `snackbarError: "$exception"` like an API failure.
+ */
+export type ActionContext = {
+  /** The enclosing react-hook-form (the page's, or the modal / drawer / popover's own). */
+  form: {
+    getValues: () => Record<string, any>;
+    setValue: (name: string, value: unknown) => void;
+    /** Run validation; `false` when the form has errors. */
+    trigger: () => Promise<boolean>;
+    errors: Record<string, any>;
+  };
+  /** The nearest enclosing `repeater` item, `undefined` outside one. */
+  row: unknown;
+  /** The `DataProvider` map — a data table's selected row under its `name`, etc. */
+  contextData: Record<string, any>;
+  /** The page / global data slices (`PageElement.loads`, `GlobalLoads`). */
+  state: {
+    get: (key: string, path?: string) => unknown;
+    set: (key: string, data: unknown) => void;
+  };
+  /** The button's own wired endpoint (`ButtonElement.api`), if any. */
+  api?: (...args: any[]) => Promise<any>;
+  /** The engine's function registry: refetch by name / load key, open or close a modal / drawer by id. */
+  fns: {
+    reload: (name: string) => Promise<void>;
+    openModal: (id: string) => void;
+    closeModal: (id: string) => void;
+  };
+  snackbar: (variant: SnackbarVariant, message: string) => void;
+  startLoading: () => string;
+  stopLoading: (id: string) => void;
+  navigate: (target: NavigateTarget) => void;
+  /** The button's config, as authored. */
+  element: Pick<ButtonElement, "label" | "actions" | "modalId" | "reloadDataTable" | "navigate" | "confirmBox">;
+  /** The click that started the chain, when there was one (a confirm branch has none). */
+  event?: ReactMouseEvent<HTMLButtonElement>;
+};
+
+/** One consumer-coded button action. `false` ends the action chain. */
+export type ActionFn = (ctx: ActionContext) => void | boolean | Promise<void | boolean>;
+
+/**
+ * The consumer's registry of custom actions, keyed by the name a config
+ * references as `"fn:<name>"` — the routing counterpart of
+ * `TModelMaster` / `TApiMaster` for behaviour that lives in code.
+ */
+export type TActionMaster = Record<string, ActionFn>;
 
 /**
  * A config-driven page change, shared by every navigating element

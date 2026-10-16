@@ -22,6 +22,7 @@ export const menu: TMenu = [
   { label: "HTML content", icon: "code", navigate: { page: "htmlContentDemo" } },
   { label: "Drawer", icon: "panelRight", navigate: { page: "drawerDemo" } },
   { label: "Switch", icon: "toggleLeft", navigate: { page: "switchDemo" } },
+  { label: "Custom actions", icon: "terminal", navigate: { page: "customActionsDemo" } },
   { label: "Upload", icon: "upload", navigate: { page: "uploadDemo" } },
   {
     label: "Approval line",

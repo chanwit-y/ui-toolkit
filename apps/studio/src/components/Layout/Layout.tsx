@@ -47,6 +47,9 @@ import { usePageLoads } from './pageData'
 import { useGridFlipAnimation } from './useGridFlipAnimation'
 import { useUndoShortcuts } from './useUndoShortcuts'
 import { escapeClassName } from './utils'
+import type { CustomActionDef } from '../Workspace/customActions'
+
+const EMPTY_ACTIONS: CustomActionDef[] = []
 
 // Dev-only commit logger. No-op in prod (the <Profiler> below is unconditional,
 // but React strips Profiler overhead from production builds).
@@ -443,10 +446,12 @@ export function Layout({ templateMode = false }: { templateMode?: boolean } = {}
   const pages = useActivePages()
   // Bindings to page data resolve a load id → its key (the page's and the global ones).
   const loads = usePageLoads()
+  // A button's custom action id → its declared name.
+  const customActions = useActiveProject()?.snapshot.customActions ?? EMPTY_ACTIONS
 
   const gridConfigJson = useMemo(
-    () => (computeCode ? gridConfigToJson(rootSettings, rootItems, endpoints, pages, loads) : ''),
-    [computeCode, rootSettings, rootItems, endpoints, pages, loads],
+    () => (computeCode ? gridConfigToJson(rootSettings, rootItems, endpoints, pages, loads, customActions) : ''),
+    [computeCode, rootSettings, rootItems, endpoints, pages, loads, customActions],
   )
 
   const fullGridCss = useMemo(

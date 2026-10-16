@@ -2,12 +2,15 @@ import { Button as RadixButton, type ThemeProps } from '@radix-ui/themes';
 import { forwardRef, useCallback, useState, type ElementRef } from "react";
 import { useFormContext } from "react-hook-form";
 import { getErrorMessage } from "../util/error";
-import { ButtonAction, ButtonProps, ButtonVariant } from "./@types";
+import { ActionContext, ButtonAction, ButtonProps, ButtonVariant } from "./@types";
 import { ConfirmBox } from "./ConfirmBox";
 import { useLoading, useTheme } from "./context";
 import { useData } from "./context/DataProvider";
 import { useStord } from "./core/stord";
 import { useNavigateTo } from "./core/pages";
+import { useRowScope } from "./core/rowScope";
+import { getStateStore, readSlice } from "./core/stateStore";
+import { isCustomAction, resolveCustomAction, useActions } from "./core/actions";
 import Icon from "./Icon";
 import type { IconData } from "./core/const/iconData";
 import { useSnackbar } from "./Snackbar";
@@ -78,10 +81,12 @@ const Button = forwardRef<ElementRef<typeof RadixButton>, ButtonProps>(({
 
 	const fnCtxs = useStord((state) => state.fnCtxs)
 	const navigateTo = useNavigateTo()
-	const { clearCurrentFormSelected } = useData()
+	const { clearCurrentFormSelected, contextData } = useData()
 	const { showSnackbar } = useSnackbar()
-	const { handleSubmit, formState, trigger } = useFormContext()
+	const { handleSubmit, formState, trigger, getValues, setValue } = useFormContext()
 	const { startLoading, stopLoading } = useLoading()
+	const customActions = useActions()
+	const rowScope = useRowScope()
 
 	const [open, setOpen] = useState(false)
 
@@ -178,8 +183,50 @@ const Button = forwardRef<ElementRef<typeof RadixButton>, ButtonProps>(({
 					case 'Navigate':
 						navigateTo(navigate)
 						break;
-					default:
+					default: {
+						// "fn:<name>" — a consumer-coded action from the ActionsProvider
+						// registry. It gets the same services the built-ins use, as one
+						// context object; `false` ends the chain; an unknown name warns
+						// and is skipped (see core/actions.tsx).
+						if (!isCustomAction(action)) break;
+						const fn = resolveCustomAction(customActions, action, label)
+						if (!fn) break;
+						const ctx: ActionContext = {
+							form: {
+								getValues: () => getValues(),
+								setValue: (name, value) => setValue(name, value, { shouldDirty: true, shouldValidate: formState.isSubmitted }),
+								trigger: () => trigger(),
+								errors: formState.errors,
+							},
+							row: rowScope?.row,
+							contextData,
+							state: {
+								get: readSlice,
+								set: (key, data) => getStateStore(key).getState().setData(data),
+							},
+							api,
+							fns: {
+								reload: async (name) => {
+									if (fnCtxs[name]) await fnCtxs[name]()
+									else console.warn(`[Button] reload: nothing registered under "${name}"`)
+								},
+								openModal: (id) => fnCtxs?.[id]?.bind(fnCtxs)?.(true),
+								closeModal: (id) => fnCtxs?.[id]?.bind(fnCtxs)?.(false),
+							},
+							snackbar: (variant, message) => showSnackbar({ variant, message }),
+							startLoading,
+							stopLoading,
+							navigate: (target) => navigateTo(target),
+							element: { label, actions, modalId, reloadDataTable, navigate, confirmBox },
+							event,
+						}
+						const result = await fn(ctx)
+						if (result === false) {
+							loaderId && stopLoading(loaderId)
+							return
+						}
 						break;
+					}
 				}
 			}
 
@@ -195,7 +242,7 @@ const Button = forwardRef<ElementRef<typeof RadixButton>, ButtonProps>(({
 				})
 			}
 		}
-	}, [api, clearCurrentFormSelected, handleSubmit, fnCtxs, onClick, showSnackbar, snackbarSuccess, startLoading, stopLoading, modalId, reloadDataTable, formState, trigger, snackbarError, navigateTo, navigate])
+	}, [api, clearCurrentFormSelected, handleSubmit, fnCtxs, onClick, showSnackbar, snackbarSuccess, startLoading, stopLoading, modalId, reloadDataTable, formState, trigger, snackbarError, navigateTo, navigate, customActions, label, actions, confirmBox, contextData, getValues, setValue, rowScope])
 
 	const handleConfirm = useCallback((isConfirm: boolean) => {
 		if (isConfirm) {

@@ -45,6 +45,9 @@ import {
   chipsDemoSeedItems,
   SWITCH_PAGE_ID,
   switchDemoSeedItems,
+  CUSTOM_ACTIONS_PAGE_ID,
+  customActionsDemoSeedItems,
+  customActionsSeedDefs,
   drawerDemoSeedItems,
   htmlColumnDemoSeedItems,
   dataTableDemoSeedItems,
@@ -599,6 +602,22 @@ export function workflowDemoPage(): PageDef {
 }
 
 /** The "Loading mode" example page: skeleton and spinner loads side by side. */
+/** The "Custom actions" demo page (the example app's `/custom-actions`). */
+export function customActionsDemoPage(): PageDef {
+  return {
+    id: CUSTOM_ACTIONS_PAGE_ID,
+    key: 'customActions',
+    name: 'Custom actions',
+    path: '/custom-actions',
+    grid: {
+      items: customActionsDemoSeedItems(),
+      containerSettings: defaultContainerSettings,
+      fieldSeq: 0,
+    },
+    parentId: 'seed-page-countries',
+  }
+}
+
 export function loadingModeDemoPage(): PageDef {
   return {
     id: LOADING_MODE_PAGE_ID,
@@ -696,6 +715,7 @@ export const OPTION_DEMO_MENU_ICONS: Record<string, string> = {
   [DRAWER_PAGE_ID]: 'panelRight',
   [CHIPS_PAGE_ID]: 'tag',
   [SWITCH_PAGE_ID]: 'toggleLeft',
+  [CUSTOM_ACTIONS_PAGE_ID]: 'terminal',
   [UPLOAD_PAGE_ID]: 'upload',
 }
 
@@ -752,6 +772,7 @@ export function countryProjectSnapshot(library: LibraryData): ProjectSnapshot {
       approvalLineDemoPage(),
       workflowDemoPage(),
     loadingModeDemoPage(),
+    customActionsDemoPage(),
   ]
   // Every data table carries its two canvases (edit modal + filter form).
   for (const page of pages) ensureDataTableCanvases(page.grid.items)
@@ -773,6 +794,7 @@ export function countryProjectSnapshot(library: LibraryData): ProjectSnapshot {
     env: countrySeedEnvVars(),
     theme: countrySeedTheme(),
     endpointIds: countryEndpointIds(library),
+    customActions: customActionsSeedDefs(),
   }
 }
 
@@ -809,6 +831,7 @@ export function emptyProjectSnapshot(name = 'My app'): ProjectSnapshot {
     env: countrySeedEnvVars(),
     theme: defaultThemeConfig(),
     endpointIds: [],
+    customActions: [],
   }
 }
 

@@ -3,6 +3,7 @@ import { gridConfigToJson, MISSING_ENDPOINT, rootContainer, type EndpointRef, ty
 import { isClickOnlyOverlay } from './designTypes'
 import type { DesignNavigation, GridContainerSettings, GridItemData } from './types'
 import type { PageLoadDef } from '../Workspace/pageLoads'
+import type { CustomActionRef } from '../Workspace/customActions'
 
 /**
  * Builds the `Container` the live-preview modal feeds to the real engine
@@ -278,9 +279,10 @@ export function buildLivePreviewContainer(
   pages: PageRef[] = [],
   name = 'studio-live-preview',
   loads: Pick<PageLoadDef, 'id' | 'key'>[] = [],
+  customActions: CustomActionRef[] = [],
 ): Container {
   const bins = previewBins(
-    JSON.parse(gridConfigToJson(settings, items, endpoints, pages, loads)) as ParsedBin[],
+    JSON.parse(gridConfigToJson(settings, items, endpoints, pages, loads, customActions)) as ParsedBin[],
     wiring,
   )
   return rootContainer(name, settings, bins as unknown as Bin[]) as unknown as Container

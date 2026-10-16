@@ -4,6 +4,7 @@ import type { EndpointDef } from '../Api/types'
 import type { ModelDef } from '../Model/types'
 import type { ThemeAppearance } from '../Theme/types'
 import type { LoadingMode, PageLoadDef } from './pageLoads'
+import type { CustomActionDef } from './customActions'
 import { seedActivity } from '../seed/activity'
 import {
   countryCreateButtonSeedItem,
@@ -32,6 +33,7 @@ import {
   workflowSeedEndpoints,
   WORKFLOW_PAGE_ID,
   LOADING_MODE_PAGE_ID,
+  customActionsSeedDefs,
   tableLayoutSeedEndpoints,
   REGION_RES_MODEL_ID,
   DATA_TABLE_PAGE_ID,
@@ -99,6 +101,7 @@ import {
   workflowMenuItem,
   loadingModeDemoPage,
   loadingModeMenuItem,
+  customActionsDemoPage,
   seedGlobalLoads,
   uploadDemoPage,
   OPTION_DEMO_MENU_ICONS,
@@ -162,6 +165,8 @@ type WorkspaceStore = WorkspaceData & {
   updateProjectShell: (id: string, shell: ShellSettings) => void
   /** Replace the project's app-wide data loads (the Page data tab's Global section). */
   updateProjectGlobalLoads: (id: string, loads: PageLoadDef[]) => void
+  /** Replace the project's declared custom button actions (the Env page's section). */
+  updateProjectCustomActions: (id: string, actions: CustomActionDef[]) => void
   deleteProject: (id: string) => void
   /** Write the live env/theme and the active page's grid back (autosave). */
   saveProjectState: (id: string, pageId: string, state: ProjectStateSnapshot) => void
@@ -944,6 +949,28 @@ function migrateV33(data: { projects: ProjectDef[]; library: LibraryData }): {
 }
 
 /**
+ * v45 → v46: custom button actions (see the grilled design). Every project
+ * gets a `customActions` list (empty), and the seeded one the example app's
+ * declarations plus the seeded "Custom actions" page.
+ */
+function migrateV45(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  return {
+    projects: data.projects.map((p) => {
+      const customActions = p.snapshot.customActions ?? []
+      if (p.id !== 'seed-project-country') return { ...p, snapshot: { ...p.snapshot, customActions } }
+      const have = new Set(customActions.map((a) => a.id))
+      const seeded = [...customActions, ...customActionsSeedDefs().filter((a) => !have.has(a.id))]
+      const next = appendDemoPages(p, [customActionsDemoPage()])
+      return { ...next, snapshot: { ...next.snapshot, customActions: seeded } }
+    }),
+    library: data.library,
+  }
+}
+
+/**
  * v44 → v45: the seeded "Loading mode" page (its route needs a `:code`, so
  * the sidebar link fixes one).
  */
@@ -1544,7 +1571,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
       const templateOf = (id: string) => get().library.templates.find((t) => t.id === id)
 
       return {
-      version: 45,
+      version: 46,
       appearance: 'light',
       user: MOCK_USERS[0].name,
       projects: seedProjects(initialLibrary),
@@ -1586,6 +1613,12 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
       updateProjectShell: (id, shell) => {
         set((s) => ({
           projects: patchProject(s.projects, id, (p) => ({ snapshot: { ...p.snapshot, shell } })),
+        }))
+      },
+
+      updateProjectCustomActions: (id, customActions) => {
+        set((s) => ({
+          projects: patchProject(s.projects, id, (p) => ({ snapshot: { ...p.snapshot, customActions } })),
         }))
       },
 
@@ -1886,7 +1919,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
     },
     {
       name: WORKSPACE_STORAGE_KEY,
-      version: 45,
+      version: 46,
       partialize: (s) => ({
         version: s.version,
         appearance: s.appearance,
@@ -1911,7 +1944,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
         if (data.version === 1) {
           const v1 = migrateV1(data.projects as unknown as V1Project[])
           const { projects, library } = migrateV3(migrateV2(v1.projects), v1.library)
-          return { ...current, appearance, user, activity, ...migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(migrateV7(migrateV6(migrateV5(migrateV4(projects))))), library)), library))))))))))))))))))))))))))))))))) }
+          return { ...current, appearance, user, activity, ...migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(migrateV7(migrateV6(migrateV5(migrateV4(projects))))), library)), library)))))))))))))))))))))))))))))))))) }
         }
         if (!data.library) return current
         // Libraries saved before templates existed get the builtin set.
@@ -1923,136 +1956,139 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
         }
         if (data.version === 2) {
           const migrated = migrateV3(migrateV2(data.projects as unknown as V2Project[]), library)
-          return { ...current, appearance, user, activity, ...migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(migrateV7(migrateV6(migrateV5(migrateV4(migrated.projects))))), migrated.library)), migrated.library))))))))))))))))))))))))))))))))) }
+          return { ...current, appearance, user, activity, ...migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(migrateV7(migrateV6(migrateV5(migrateV4(migrated.projects))))), migrated.library)), migrated.library)))))))))))))))))))))))))))))))))) }
         }
         if (data.version === 3) {
           const migrated = migrateV3(data.projects as unknown as V3Project[], library)
-          return { ...current, appearance, user, activity, ...migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(migrateV7(migrateV6(migrateV5(migrateV4(migrated.projects))))), migrated.library)), migrated.library))))))))))))))))))))))))))))))))) }
+          return { ...current, appearance, user, activity, ...migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(migrateV7(migrateV6(migrateV5(migrateV4(migrated.projects))))), migrated.library)), migrated.library)))))))))))))))))))))))))))))))))) }
         }
         if (data.version === 4) {
-          return { ...current, appearance, user, activity, ...migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(migrateV7(migrateV6(migrateV5(migrateV4(data.projects as unknown as V4Project[]))))), library)), library))))))))))))))))))))))))))))))))) }
+          return { ...current, appearance, user, activity, ...migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(migrateV7(migrateV6(migrateV5(migrateV4(data.projects as unknown as V4Project[]))))), library)), library)))))))))))))))))))))))))))))))))) }
         }
         if (data.version === 5) {
-          return { ...current, appearance, user, activity, ...migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(migrateV7(migrateV6(migrateV5(data.projects as unknown as V5Project[])))), library)), library))))))))))))))))))))))))))))))))) }
+          return { ...current, appearance, user, activity, ...migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(migrateV7(migrateV6(migrateV5(data.projects as unknown as V5Project[])))), library)), library)))))))))))))))))))))))))))))))))) }
         }
         if (data.version === 6) {
-          return { ...current, appearance, user, activity, ...migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(migrateV7(migrateV6(data.projects as unknown as V6Project[]))), library)), library))))))))))))))))))))))))))))))))) }
+          return { ...current, appearance, user, activity, ...migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(migrateV7(migrateV6(data.projects as unknown as V6Project[]))), library)), library)))))))))))))))))))))))))))))))))) }
         }
         if (data.version === 7) {
-          return { ...current, appearance, user, activity, ...migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(migrateV7(data.projects as unknown as V7Project[])), library)), library))))))))))))))))))))))))))))))))) }
+          return { ...current, appearance, user, activity, ...migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(migrateV7(data.projects as unknown as V7Project[])), library)), library)))))))))))))))))))))))))))))))))) }
         }
         if (data.version === 8) {
-          return { ...current, appearance, user, activity, ...migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(data.projects as unknown as V8Project[]), library)), library))))))))))))))))))))))))))))))))) }
+          return { ...current, appearance, user, activity, ...migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(data.projects as unknown as V8Project[]), library)), library)))))))))))))))))))))))))))))))))) }
         }
         if (data.version === 9) {
-          return { ...current, appearance, user, activity, ...migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(data.projects, library)), library))))))))))))))))))))))))))))))))) }
+          return { ...current, appearance, user, activity, ...migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(data.projects, library)), library)))))))))))))))))))))))))))))))))) }
         }
         if (data.version === 10) {
-          return { ...current, appearance, user, activity, ...migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(data.projects), library))))))))))))))))))))))))))))))))) }
+          return { ...current, appearance, user, activity, ...migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(data.projects), library)))))))))))))))))))))))))))))))))) }
         }
         if (data.version === 11) {
-          return { ...current, appearance, user, activity, ...migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(data.projects, library))))))))))))))))))))))))))))))))) }
+          return { ...current, appearance, user, activity, ...migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(data.projects, library)))))))))))))))))))))))))))))))))) }
         }
         if (data.version === 12) {
-          return { ...current, appearance, user, activity, ...migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12({ projects: data.projects, library })))))))))))))))))))))))))))))))) }
+          return { ...current, appearance, user, activity, ...migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12({ projects: data.projects, library }))))))))))))))))))))))))))))))))) }
         }
         if (data.version === 13) {
-          return { ...current, appearance, user, activity, ...migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13({ projects: data.projects, library }))))))))))))))))))))))))))))))) }
+          return { ...current, appearance, user, activity, ...migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13({ projects: data.projects, library })))))))))))))))))))))))))))))))) }
         }
         if (data.version === 14) {
-          return { ...current, appearance, user, activity, ...migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13({ projects: data.projects, library }))))))))))))))))))))))))))))))) }
+          return { ...current, appearance, user, activity, ...migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13({ projects: data.projects, library })))))))))))))))))))))))))))))))) }
         }
         if (data.version === 15) {
-          return { ...current, appearance, user, activity, ...migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15({ projects: data.projects, library })))))))))))))))))))))))))))))) }
+          return { ...current, appearance, user, activity, ...migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15({ projects: data.projects, library }))))))))))))))))))))))))))))))) }
         }
         if (data.version === 16) {
-          return { ...current, appearance, user, activity, ...migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16({ projects: data.projects, library }))))))))))))))))))))))))))))) }
+          return { ...current, appearance, user, activity, ...migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16({ projects: data.projects, library })))))))))))))))))))))))))))))) }
         }
         if (data.version === 17) {
-          return { ...current, appearance, user, activity, ...migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17({ projects: data.projects, library })))))))))))))))))))))))))))) }
+          return { ...current, appearance, user, activity, ...migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17({ projects: data.projects, library }))))))))))))))))))))))))))))) }
         }
         if (data.version === 18) {
-          return { ...current, appearance, user, activity, ...migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18({ projects: data.projects, library }))))))))))))))))))))))))))) }
+          return { ...current, appearance, user, activity, ...migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18({ projects: data.projects, library })))))))))))))))))))))))))))) }
         }
         if (data.version === 19) {
-          return { ...current, appearance, user, activity, ...migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19({ projects: data.projects, library })))))))))))))))))))))))))) }
+          return { ...current, appearance, user, activity, ...migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19({ projects: data.projects, library }))))))))))))))))))))))))))) }
         }
         if (data.version === 20) {
-          return { ...current, appearance, user, activity, ...migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20({ projects: data.projects, library }))))))))))))))))))))))))) }
+          return { ...current, appearance, user, activity, ...migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20({ projects: data.projects, library })))))))))))))))))))))))))) }
         }
         if (data.version === 21) {
-          return { ...current, appearance, user, activity, ...migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21({ projects: data.projects, library })))))))))))))))))))))))) }
+          return { ...current, appearance, user, activity, ...migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21({ projects: data.projects, library }))))))))))))))))))))))))) }
         }
         if (data.version === 22) {
-          return { ...current, appearance, user, activity, ...migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22({ projects: data.projects, library }))))))))))))))))))))))) }
+          return { ...current, appearance, user, activity, ...migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22({ projects: data.projects, library })))))))))))))))))))))))) }
         }
         if (data.version === 23) {
-          return { ...current, appearance, user, activity, ...migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23({ projects: data.projects, library })))))))))))))))))))))) }
+          return { ...current, appearance, user, activity, ...migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23({ projects: data.projects, library }))))))))))))))))))))))) }
         }
         if (data.version === 24) {
-          return { ...current, appearance, user, activity, ...migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24({ projects: data.projects, library }))))))))))))))))))))) }
+          return { ...current, appearance, user, activity, ...migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24({ projects: data.projects, library })))))))))))))))))))))) }
         }
         if (data.version === 25) {
-          return { ...current, appearance, user, activity, ...migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25({ projects: data.projects, library })))))))))))))))))))) }
+          return { ...current, appearance, user, activity, ...migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25({ projects: data.projects, library }))))))))))))))))))))) }
         }
         if (data.version === 26) {
-          return { ...current, appearance, user, activity, ...migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26({ projects: data.projects, library }))))))))))))))))))) }
+          return { ...current, appearance, user, activity, ...migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26({ projects: data.projects, library })))))))))))))))))))) }
         }
         if (data.version === 27) {
-          return { ...current, appearance, user, activity, ...migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27({ projects: data.projects, library })))))))))))))))))) }
+          return { ...current, appearance, user, activity, ...migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27({ projects: data.projects, library }))))))))))))))))))) }
         }
         if (data.version === 28) {
-          return { ...current, appearance, user, activity, ...migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28({ projects: data.projects, library }))))))))))))))))) }
+          return { ...current, appearance, user, activity, ...migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28({ projects: data.projects, library })))))))))))))))))) }
         }
         if (data.version === 29) {
-          return { ...current, appearance, user, activity, ...migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29({ projects: data.projects, library })))))))))))))))) }
+          return { ...current, appearance, user, activity, ...migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29({ projects: data.projects, library }))))))))))))))))) }
         }
         if (data.version === 30) {
-          return { ...current, appearance, user, activity, ...migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30({ projects: data.projects, library }))))))))))))))) }
+          return { ...current, appearance, user, activity, ...migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30({ projects: data.projects, library })))))))))))))))) }
         }
         if (data.version === 31) {
-          return { ...current, appearance, user, activity, ...migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31({ projects: data.projects, library })))))))))))))) }
+          return { ...current, appearance, user, activity, ...migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31({ projects: data.projects, library }))))))))))))))) }
         }
         if (data.version === 32) {
-          return { ...current, appearance, user, activity, ...migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32({ projects: data.projects, library }))))))))))))) }
+          return { ...current, appearance, user, activity, ...migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32({ projects: data.projects, library })))))))))))))) }
         }
         if (data.version === 33) {
-          return { ...current, appearance, user, activity, ...migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33({ projects: data.projects, library })))))))))))) }
+          return { ...current, appearance, user, activity, ...migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33({ projects: data.projects, library }))))))))))))) }
         }
         if (data.version === 34) {
-          return { ...current, appearance, user, activity, ...migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34({ projects: data.projects, library }))))))))))) }
+          return { ...current, appearance, user, activity, ...migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34({ projects: data.projects, library })))))))))))) }
         }
         if (data.version === 35) {
-          return { ...current, appearance, user, activity, ...migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35({ projects: data.projects, library })))))))))) }
+          return { ...current, appearance, user, activity, ...migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35({ projects: data.projects, library }))))))))))) }
         }
         if (data.version === 36) {
-          return { ...current, appearance, user, activity, ...migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36({ projects: data.projects, library }))))))))) }
+          return { ...current, appearance, user, activity, ...migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36({ projects: data.projects, library })))))))))) }
         }
         if (data.version === 37) {
-          return { ...current, appearance, user, activity, ...migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37({ projects: data.projects, library })))))))) }
+          return { ...current, appearance, user, activity, ...migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37({ projects: data.projects, library }))))))))) }
         }
         if (data.version === 38) {
-          return { ...current, appearance, user, activity, ...migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38({ projects: data.projects, library }))))))) }
+          return { ...current, appearance, user, activity, ...migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38({ projects: data.projects, library })))))))) }
         }
         if (data.version === 39) {
-          return { ...current, appearance, user, activity, ...migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39({ projects: data.projects, library })))))) }
+          return { ...current, appearance, user, activity, ...migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39({ projects: data.projects, library }))))))) }
         }
         if (data.version === 40) {
-          return { ...current, appearance, user, activity, ...migrateV44(migrateV43(migrateV42(migrateV41(migrateV40({ projects: data.projects, library }))))) }
+          return { ...current, appearance, user, activity, ...migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40({ projects: data.projects, library })))))) }
         }
         if (data.version === 41) {
-          return { ...current, appearance, user, activity, ...migrateV44(migrateV43(migrateV42(migrateV41({ projects: data.projects, library })))) }
+          return { ...current, appearance, user, activity, ...migrateV45(migrateV44(migrateV43(migrateV42(migrateV41({ projects: data.projects, library }))))) }
         }
         if (data.version === 42) {
-          return { ...current, appearance, user, activity, ...migrateV44(migrateV43(migrateV42({ projects: data.projects, library }))) }
+          return { ...current, appearance, user, activity, ...migrateV45(migrateV44(migrateV43(migrateV42({ projects: data.projects, library })))) }
         }
         if (data.version === 43) {
-          return { ...current, appearance, user, activity, ...migrateV44(migrateV43({ projects: data.projects, library })) }
+          return { ...current, appearance, user, activity, ...migrateV45(migrateV44(migrateV43({ projects: data.projects, library }))) }
         }
         if (data.version === 44) {
-          return { ...current, appearance, user, activity, ...migrateV44({ projects: data.projects, library }) }
+          return { ...current, appearance, user, activity, ...migrateV45(migrateV44({ projects: data.projects, library })) }
         }
-        if (data.version !== 45) return current
+        if (data.version === 45) {
+          return { ...current, appearance, user, activity, ...migrateV45({ projects: data.projects, library }) }
+        }
+        if (data.version !== 46) return current
         return { ...current, appearance, user, activity, projects: data.projects, library }
       },
       // The version bumps are handled in `merge` (it sees the raw payload);

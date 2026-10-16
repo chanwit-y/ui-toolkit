@@ -75,6 +75,7 @@ import {
   type LoadKeyResolver,
   type PageLoadDef,
 } from '../Workspace/pageLoads'
+import { makeActionKeyResolver, type CustomActionRef } from '../Workspace/customActions'
 
 /**
  * Serializes the studio canvas into the declarative engine's `Bin[]` shape — the
@@ -148,12 +149,15 @@ type ButtonRefMaps = {
   pageKeyById: Map<string, string>
   /** A `state` key as stored (a page-load id, or a raw slice key) → the slice name. */
   loadKey: LoadKeyResolver
+  /** A button action key as stored (`fn:<action id>`) → the engine's `fn:<name>`; built-ins pass through. */
+  actionKey: (key: string) => string
 }
 
 function makeButtonRefMaps(
   rootItems: GridItemData[],
   pages: PageRef[],
   loads: Pick<PageLoadDef, 'id' | 'key'>[] = [],
+  customActions: CustomActionRef[] = [],
 ): ButtonRefMaps {
   const targets = collectButtonTargets(rootItems)
   return {
@@ -161,6 +165,7 @@ function makeButtonRefMaps(
     tableNameByItem: new Map(targets.tables.map((t) => [t.itemId, t.name])),
     pageKeyById: new Map(pages.map((p) => [p.id, p.key])),
     loadKey: makeLoadKeyResolver(loads),
+    actionKey: makeActionKeyResolver(customActions),
   }
 }
 
@@ -1381,14 +1386,15 @@ function buttonItemElement(
     label: c.label,
     ...(c.icon ? { icon: c.icon } : {}),
     ...(c.variant !== 'contained' ? { variant: c.variant } : {}),
-    actions: confirm ? ['ConfirmBox'] : [...c.actions],
+    // Custom actions are stored by declaration id and exported by name.
+    actions: confirm ? ['ConfirmBox'] : c.actions.map(refs.actionKey),
     ...(confirm
       ? {
           confirmBox: {
             title: c.confirmTitle,
             description: c.confirmDescription,
-            True: [...c.confirmTrue],
-            False: [...c.confirmFalse],
+            True: c.confirmTrue.map(refs.actionKey),
+            False: c.confirmFalse.map(refs.actionKey),
           },
         }
       : {}),
@@ -1775,10 +1781,12 @@ export function buildBins(
   scope?: CanvasScope,
   /** The page's loads, so bindings / conditions resolve load ids → keys (top-level call only). */
   loads: Pick<PageLoadDef, 'id' | 'key'>[] = [],
+  /** The project's declared custom actions, so a button's `fn:<id>` exports as `fn:<name>` (top-level call only). */
+  customActions: CustomActionRef[] = [],
 ): Record<string, unknown>[] {
   const cols = container.columns
   const resolveEndpoint = makeEndpointResolver(endpoints)
-  const buttonRefs = refs ?? makeButtonRefMaps(items, pages, loads)
+  const buttonRefs = refs ?? makeButtonRefMaps(items, pages, loads, customActions)
   return items.map((item) => {
     const span = item.settings.colSpan
     const lg = toBoxRange(span.lg, cols.lg)
@@ -1867,8 +1875,9 @@ export function gridConfigToJson(
   endpoints: EndpointRef[],
   pages: PageRef[] = [],
   loads: Pick<PageLoadDef, 'id' | 'key'>[] = [],
+  customActions: CustomActionRef[] = [],
 ): string {
-  return JSON.stringify(buildBins(container, items, endpoints, pages, undefined, undefined, loads), null, 2)
+  return JSON.stringify(buildBins(container, items, endpoints, pages, undefined, undefined, loads, customActions), null, 2)
 }
 
 /**
