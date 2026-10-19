@@ -300,7 +300,7 @@ function EditorBodyInner({
         const px = activator.clientX + event.delta.x
         const py = activator.clientY + event.delta.y
         addItem(
-          { type: toolbox.def.type, label: toolbox.def.label },
+          { type: toolbox.def.type, label: toolbox.def.label, componentId: toolbox.def.componentId },
           computeInsertIndex(container, px, py),
         )
         return

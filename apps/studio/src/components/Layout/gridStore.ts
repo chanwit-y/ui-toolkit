@@ -88,7 +88,17 @@ import {
 } from './types'
 
 /** A palette component being dropped onto the canvas. */
-export type NewComponent = { type: ComponentType; label: string }
+/** `StatBadge` → `statBadge`: the item-name base for a declared custom component. */
+function lowerFirst(s: string): string {
+  return s ? s[0].toLowerCase() + s.slice(1) : s
+}
+
+export type NewComponent = {
+  type: ComponentType
+  label: string
+  /** `custom` only: the registry declaration the new item is mapped onto. */
+  componentId?: string
+}
 
 /**
  * One step of the drill-in path: which item's child canvas the editor is inside
@@ -634,7 +644,14 @@ export const useGridStore = create<GridState>((set, get) => {
           config = createDefaultHtmlContentConfig(`html_${nextSeq}`)
         } else if (type === 'custom') {
           nextSeq = fieldSeq + 1
-          config = createDefaultCustomComponentConfig(`custom_${nextSeq}`)
+          // A tile for a declared component names the item after it
+          // (`statBadge_3`) and maps it at once; the generic tile stays unmapped.
+          const declared = component?.componentId
+          const base = declared ? lowerFirst(component.label) : 'custom'
+          config = {
+            ...createDefaultCustomComponentConfig(`${base}_${nextSeq}`),
+            ...(declared ? { componentId: declared } : {}),
+          }
         } else if (type === 'approvalline') {
           nextSeq = fieldSeq + 1
           config = createDefaultApprovalLineConfig(`approval_${nextSeq}`)

@@ -102,6 +102,11 @@ export type ComponentDef = {
   /** No @gummy-ui/ui counterpart yet: renders a design on the canvas and a
    * placeholder in the Live Preview (see the grilled design). */
   designOnly?: boolean
+  /** A `custom` tile for one declaration of the project's registry (Env →
+   * Custom components): the dropped item is mapped onto it right away. */
+  componentId?: string
+  /** Shown under the tile label / in search (a declaration's description). */
+  hint?: string
 }
 
 export type ComponentGroup = {
