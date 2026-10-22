@@ -2,40 +2,26 @@ import {
   AppWindow,
   UserCheck,
   UserCog,
-  BarChart3,
-  BellRing,
   Box,
   Calendar,
   CalendarClock,
   CalendarRange,
-  ChartLine,
-  ChartPie,
   CircleDot,
-  Clapperboard,
   Code,
   Workflow,
   GitBranch,
   CreditCard,
   EyeOff,
   FileSpreadsheet,
-  GalleryHorizontal,
-  Gauge,
-  Hash,
-  Image,
   ImagePlus,
-  Link2,
   ListChecks,
   ListFilter,
   ListPlus,
-  Megaphone,
   MessageSquare,
-  MessageSquareWarning,
   MousePointerClick,
-  Network,
   PanelRight,
   PanelTop,
   Pilcrow,
-  Presentation,
   Puzzle,
   Repeat2,
   Search,
@@ -47,15 +33,11 @@ import {
   TextCursorInput,
   TextWrap,
   ToggleLeft,
-  TriangleAlert,
   Type,
   type LucideIcon,
-  UnfoldVertical,
   Upload,
   User,
-  Users,
 } from 'lucide-react'
-import type { DesignOnlyType } from './designTypes'
 
 /** Every component kind the toolbox can drop onto the canvas. */
 export type ComponentType =
@@ -96,16 +78,12 @@ export type ComponentType =
   | 'popover'
   | 'divider'
   | 'empty'
-  | DesignOnlyType
 
 export type ComponentDef = {
   type: ComponentType
   /** Human-readable name shown in the toolbox and used as the new item's label. */
   label: string
   icon: LucideIcon
-  /** No @gummy-ui/ui counterpart yet: renders a design on the canvas and a
-   * placeholder in the Live Preview (see the grilled design). */
-  designOnly?: boolean
   /** A `custom` tile for one declaration of the project's registry (Env →
    * Custom components): the dropped item is mapped onto it right away. */
   componentId?: string
@@ -160,39 +138,6 @@ export const COMPONENT_GROUPS: ComponentGroup[] = [
       { type: 'datatableeditable', label: 'Editable Table', icon: FileSpreadsheet },
       { type: 'formlist', label: 'Form List', icon: ListPlus },
       { type: 'repeater', label: 'Repeater', icon: Repeat2 },
-      { type: 'stat', label: 'Stat', icon: Hash, designOnly: true },
-      { type: 'barchart', label: 'Bar chart', icon: BarChart3, designOnly: true },
-      { type: 'linechart', label: 'Line chart', icon: ChartLine, designOnly: true },
-      { type: 'piechart', label: 'Pie / donut', icon: ChartPie, designOnly: true },
-    ],
-  },
-  {
-    category: 'Content',
-    items: [
-      { type: 'hero', label: 'Hero', icon: Presentation, designOnly: true },
-      { type: 'image', label: 'Image', icon: Image, designOnly: true },
-      { type: 'gallery', label: 'Image gallery', icon: GalleryHorizontal, designOnly: true },
-      { type: 'video', label: 'Video', icon: Clapperboard, designOnly: true },
-      { type: 'linkcard', label: 'Link', icon: Link2, designOnly: true },
-      { type: 'quicklinks', label: 'Quick links', icon: ListChecks, designOnly: true },
-      { type: 'spacer', label: 'Spacer', icon: UnfoldVertical, designOnly: true },
-    ],
-  },
-  {
-    category: 'People',
-    items: [
-      { type: 'people', label: 'People', icon: Users, designOnly: true },
-      { type: 'orgchart', label: 'Org chart', icon: Network, designOnly: true },
-    ],
-  },
-  {
-    category: 'Feedback',
-    items: [
-      { type: 'alert', label: 'Alert', icon: TriangleAlert, designOnly: true },
-      { type: 'banner', label: 'Banner', icon: Megaphone, designOnly: true },
-      { type: 'progress', label: 'Progress', icon: Gauge, designOnly: true },
-      { type: 'toast', label: 'Toast', icon: BellRing, designOnly: true },
-      { type: 'dialog', label: 'Dialog', icon: MessageSquareWarning, designOnly: true },
     ],
   },
   {

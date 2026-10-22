@@ -19,8 +19,6 @@ import {
 import { DataTableConfigPanel } from './DataTableConfigPanel'
 import { DataTableEditableConfigPanel } from './DataTableEditableConfigPanel'
 import { DateConfigPanel } from './DateConfigPanel'
-import { DesignConfigPanel } from './DesignConfigPanel'
-import { isDesignOnly } from './designTypes'
 import {
   AvatarConfigPanel,
   DividerConfigPanel,
@@ -37,10 +35,10 @@ import { SelectFieldConfigPanel } from './SelectFieldConfigPanel'
 import { ContainerSettingsPanel, ItemSettingsPanel } from './SettingsPanel'
 import { ShowWhenPanel } from './ShowWhenPanel'
 import { PageDataPanel } from './PageDataPanel'
-import { StylePanel } from './StylePanel'
 import { TextareaConfigPanel } from './TextareaConfigPanel'
 import { UploadFileConfigPanel, UploadImageConfigPanel } from './UploadConfigPanel'
 import type {
+  ContainerConfig,
   AvatarConfig,
   ButtonItemConfig,
   CheckboxConfig,
@@ -77,7 +75,6 @@ import type {
 const VIEW_OPTIONS: { value: SidebarView; label: string }[] = [
   { value: 'layout', label: 'Layout' },
   { value: 'inspector', label: 'Props' },
-  { value: 'style', label: 'Style' },
   { value: 'code', label: 'Code' },
 ]
 
@@ -165,21 +162,8 @@ export function Sidebar({ gridConfigJson, fullGridCss }: SidebarProps) {
           />
         ) : sidebarView === 'layout' ? (
           selectedItem ? <ItemSettingsPanel /> : <ContainerSettingsPanel />
-        ) : sidebarView === 'style' ? (
-          selectedItem ? (
-            <StylePanel item={selectedItem} />
-          ) : (
-            <Empty>
-              Select an element to give it its own colours.
-              <br />
-              <br />
-              <span className="text-ink-3">Project-wide colours live in the Theme tab.</span>
-            </Empty>
-          )
         ) : selectedItem ? (
-          isDesignOnly(selectedItem.type) ? (
-            <DesignConfigPanel item={selectedItem} />
-          ) : selectedItem.type === 'textfield' && selectedItem.config ? (
+          selectedItem.type === 'textfield' && selectedItem.config ? (
             <FieldConfigPanel
               itemId={selectedItem.id}
               config={selectedItem.config as TextFieldConfig}
@@ -291,7 +275,7 @@ export function Sidebar({ gridConfigJson, fullGridCss }: SidebarProps) {
               config={selectedItem.config as HiddenConfig}
             />
           ) : selectedItem.type === 'container' ? (
-            <ContainerConfigPanel itemId={selectedItem.id} />
+            <ContainerConfigPanel itemId={selectedItem.id} config={selectedItem.config as ContainerConfig | undefined} />
           ) : selectedItem.type === 'paper' && selectedItem.config ? (
             <PaperConfigPanel
               itemId={selectedItem.id}

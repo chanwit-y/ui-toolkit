@@ -24,6 +24,59 @@
           "gridAutoFlow": "row"
         }
       ]
+    },
+    "p2": {
+      "path": "/p2",
+      "title": "P2",
+      "containers": [
+        {
+          "id": "page-p2",
+          "name": "page-p2",
+          "isArray": false,
+          "bins": [
+            {
+              "sm": "6",
+              "md": "3",
+              "lg": "4",
+              "xl": "4",
+              "type": "textfield",
+              "justifySelf": "stretch",
+              "alignSelf": "stretch",
+              "element": {
+                "name": "textField_1",
+                "dataType": "string",
+                "label": "Text Field",
+                "isRequired": false,
+                "errorMessage": "",
+                "variant": "surface",
+                "size": "3",
+                "radius": "medium",
+                "isFullWidth": true,
+                "isFixedHeight": true
+              }
+            },
+            {
+              "sm": "6",
+              "md": "3",
+              "lg": "2",
+              "xl": "2",
+              "type": "button",
+              "justifySelf": "stretch",
+              "alignSelf": "stretch",
+              "element": {
+                "label": "Button",
+                "actions": []
+              }
+            }
+          ],
+          "gap": "16px",
+          "justifyItems": "stretch",
+          "alignItems": "stretch",
+          "justifyContent": "start",
+          "alignContent": "start",
+          "gridAutoFlow": "row"
+        }
+      ]
     }
   },
   "menu": [
@@ -31,6 +84,12 @@
       "label": "Page 1",
       "navigate": {
         "page": "page1"
+      }
+    },
+    {
+      "label": "Page 2",
+      "navigate": {
+        "page": "p2"
       }
     }
   ],

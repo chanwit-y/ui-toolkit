@@ -29,10 +29,6 @@ export function cloneItems(items: GridItemData[]): GridItemData[] {
         const c = item.config as ButtonItemConfig
         if (c.modalItemId) c.modalItemId = idMap.get(c.modalItemId) ?? ''
         if (c.reloadTableItemId) c.reloadTableItemId = idMap.get(c.reloadTableItemId) ?? ''
-        const nav = c.navigation
-        if (nav?.kind === 'toast' || nav?.kind === 'dialog') {
-          c.navigation = { ...nav, targetItemId: idMap.get(nav.targetItemId) ?? '' }
-        }
         if (c.navigate) delete c.navigate
       } else if (item.type === 'datatable' && item.config) {
         const t = item.config as DataTableConfig

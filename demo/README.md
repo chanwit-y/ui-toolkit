@@ -12,7 +12,8 @@ demo/
 │  └─ projects/demo.json   a project document — what `gummy studio` writes per project on save
 ├─ src/
 │  ├─ main.tsx             BrowserRouter + the library stylesheet
-│  ├─ App.tsx              <GummyApp project={demo.json} …/>
+│  ├─ App.tsx              <GummyApp project={…} …/>
+│  ├─ project.ts           picks which gummy/projects/*.json to render
 │  ├─ actions.ts           custom button actions the configs name as "fn:<name>"
 │  └─ components.tsx       custom React components the configs place by name
 ├─ index.html
@@ -55,8 +56,8 @@ A real app does the same with `npm install @gummy-ui/ui` and its own API.
 
 ## Editing the screens
 
-The studio owns the document. `@gummy-ui/studio` is a devDependency, so from
-this folder:
+The studio owns the document. `@gummy-ui/cli` is a devDependency (it brings
+the prebuilt `@gummy-ui/studio` with it), so from this folder:
 
 ```bash
 bun run studio          # = gummy studio → http://127.0.0.1:3300
@@ -78,9 +79,11 @@ Saves are version-checked: if `workspace.json` changes on disk under an open
 studio (a `git pull`, another tab), the studio pauses saving and shows a
 Reload banner instead of overwriting the file.
 
-The hand-written `gummy/projects/demo.json` this starter ships with is not in
-the studio's workspace; once your own project exists, point `src/App.tsx` at
-its file (`./gummy/projects/<key>.json`) and delete `demo.json`.
+Every `gummy/projects/*.json` is picked up automatically (`src/project.ts`):
+`VITE_GUMMY_PROJECT=<key>` wins when set, else the project named after this
+package (`gummy-demo`, what a fresh `gummy studio` creates), else the first
+exported project, else the shipped `demo` sample. The console says which one
+is rendering. Delete `demo.json` once your own project is there.
 
 ## What the demo shows
 

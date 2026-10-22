@@ -51,53 +51,6 @@ export function serializeModels(models: ModelDef[]): TModelMaster {
   return master
 }
 
-const IDENTIFIER = /^[A-Za-z_$][A-Za-z0-9_$]*$/
-
-/** A key is emitted bare when it's a valid JS identifier, else quoted. */
-function emitKey(key: string): string {
-  return IDENTIFIER.test(key) ? key : JSON.stringify(key)
-}
-
-/** Pretty-print a serialized value as a TS literal (double quotes, 2-space). */
-function emitValue(value: TModelValue, indent: number): string {
-  if (typeof value === 'string') return JSON.stringify(value)
-  if (value.type === 'array' && typeof value.collection === 'string') {
-    const pad = '  '.repeat(indent + 1)
-    const close = '  '.repeat(indent)
-    return `{\n${pad}type: "array",\n${pad}collection: ${JSON.stringify(value.collection)},\n${close}}`
-  }
-  // object, or array-of-object: both carry a nested TModel collection.
-  const collection = value.collection as Record<string, TModelValue>
-  const pad = '  '.repeat(indent + 1)
-  const close = '  '.repeat(indent)
-  return `{\n${pad}type: ${JSON.stringify(value.type)},\n${pad}collection: ${emitObject(collection, indent + 1)},\n${close}}`
-}
-
-/** Pretty-print a TModel object literal. */
-function emitObject(model: Record<string, TModelValue>, indent: number): string {
-  const keys = Object.keys(model)
-  if (keys.length === 0) return '{}'
-  const pad = '  '.repeat(indent + 1)
-  const close = '  '.repeat(indent)
-  const body = keys
-    .map((k) => `${pad}${emitKey(k)}: ${emitValue(model[k], indent + 1)},`)
-    .join('\n')
-  return `{\n${body}\n${close}}`
-}
-
-/** The paste-ready `model.ts` source, mirroring the example config's model.ts. */
-export function toModelTs(models: ModelDef[]): string {
-  const master = serializeModels(models)
-  const names = Object.keys(master)
-  const body = names
-    .map((name) => `  ${emitKey(name)}: ${emitObject(master[name], 1)},`)
-    .join('\n')
-  const inner = names.length === 0 ? '{}' : `{\n${body}\n}`
-  // `satisfies` (not `: TModelMaster`) keeps `typeof model` carrying literal
-  // model names, so the API page's `TApiMaster<typeof model>` export can
-  // typecheck its model references against this file.
-  return `import type { TModelMaster } from "@gummy-ui/ui";\n\nexport const model = ${inner} satisfies TModelMaster;\n`
-}
 
 /** The same value as raw JSON. */
 export function toModelJson(models: ModelDef[]): string {

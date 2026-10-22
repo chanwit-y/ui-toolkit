@@ -70,7 +70,7 @@ import type {
   UploadFileConfig,
   UploadImageConfig,
 } from './types'
-import { hasElementStyle, isDesignOnly } from './designTypes'
+import type { ContainerConfig } from './types'
 import { isBlockedInRepeater } from './repeaterRules'
 import type { DataCondition } from './types'
 import {
@@ -1939,6 +1939,12 @@ function buildElement(
  * API page's list, threaded through so refs resolve id → current name.
  * `refs` carries the button targets collected from the ROOT items; omitted at
  * the top-level call, where `items` IS the root and the maps are built here. */
+/** The engine `surface` of a plain container, from its Props panel flags (nothing when both are off). */
+function containerSurface(c: ContainerConfig | undefined): { surface?: { background: boolean; border: boolean } } {
+  if (!c || (!c.background && !c.border)) return {}
+  return { surface: { background: c.background, border: c.border } }
+}
+
 export function buildBins(
   container: GridContainerSettings,
   items: GridItemData[],
@@ -1982,8 +1988,8 @@ export function buildBins(
         ? { left: modalCondition, operator: 'and', right: dataCondition }
         : (modalCondition ?? dataCondition)
     // A plain `container` Bin nests via the Bin-level `container` key (not an
-    // element) — the engine renders it as a nested grid. Style-tab background /
-    // border (design-only otherwise) turn on the engine's themed surface.
+    // element) — the engine renders it as a nested grid; its Props panel's
+    // background / border flags are the engine's themed `surface`.
     const nested =
       item.type === 'container'
         ? {
@@ -1993,16 +1999,9 @@ export function buildBins(
               endpoints,
               buttonRefs,
             ),
-            ...(hasElementStyle(item.style) && (item.style.bg || item.style.line)
-              ? { surface: { background: !!item.style.bg, border: !!item.style.line } }
-              : {}),
+            ...containerSurface(item.config as ContainerConfig | undefined),
           }
         : undefined
-    // Design-only kinds (see `designTypes.ts`) have no engine element: they
-    // export as an `empty` bin carrying their design config under `designOnly`,
-    // which the Live Preview turns into a labelled placeholder and a developer
-    // can read from project.json.
-    const designOnly = isDesignOnly(item.type)
     return {
       sm: toBoxRange(span.sm, cols.sm),
       md: toBoxRange(span.md, cols.md),
@@ -2010,30 +2009,12 @@ export function buildBins(
       // The engine has no `xs`; `xl` mirrors `lg` (studio's widest breakpoint).
       xl: lg,
       // Studio's `select` is the engine's `autocomplete`; everything else passes through.
-      type: designOnly ? 'empty' : item.type === 'select' ? 'autocomplete' : item.type,
+      type: item.type === 'select' ? 'autocomplete' : item.type,
       justifySelf: item.settings.justifySelf.lg,
       alignSelf: item.settings.alignSelf.lg,
       ...(condition ? { condition } : {}),
       ...(element ? { element } : {}),
       ...(nested ? { container: nested } : {}),
-      ...(designOnly
-        ? { designOnly: { type: item.type, label: item.label, config: item.config ?? {} } }
-        : {}),
-      // A button's design-only navigation (link / toast / dialog) rides beside
-      // the engine element: read by the Live Preview and project.json. Page
-      // navigation is the engine `navigate` on the element itself.
-      ...(item.type === 'button' &&
-      item.config &&
-      (item.config as ButtonItemConfig).navigation &&
-      (item.config as ButtonItemConfig).navigation!.kind !== 'none'
-        ? {
-            designNavigation: {
-              label: (item.config as ButtonItemConfig).label,
-              ...(item.config as ButtonItemConfig).navigation!,
-            },
-          }
-        : {}),
-      ...(hasElementStyle(item.style) ? { style: item.style } : {}),
     }
   })
 }

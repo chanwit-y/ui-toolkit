@@ -21,6 +21,16 @@
         "typescript": "^5.4.5",
       },
     },
+    "apps/cli": {
+      "name": "@gummy-ui/cli",
+      "version": "0.0.1",
+      "bin": {
+        "gummy": "bin/gummy.mjs",
+      },
+      "dependencies": {
+        "@gummy-ui/studio": "workspace:*",
+      },
+    },
     "apps/example": {
       "name": "@gummy-ui/example",
       "version": "0.0.1",
@@ -44,9 +54,6 @@
     "apps/studio": {
       "name": "@gummy-ui/studio",
       "version": "0.0.0",
-      "bin": {
-        "gummy": "bin/gummy.mjs",
-      },
       "dependencies": {
         "@dnd-kit/core": "^6.3.1",
         "@dnd-kit/sortable": "^10.0.0",
@@ -89,7 +96,7 @@
         "react-router-dom": "^6.30.1",
       },
       "devDependencies": {
-        "@gummy-ui/studio": "workspace:*",
+        "@gummy-ui/cli": "workspace:*",
         "@types/react": "^18.3.3",
         "@types/react-dom": "^18.3.0",
         "@vitejs/plugin-react": "^4.3.1",
@@ -292,6 +299,8 @@
     "@floating-ui/utils": ["@floating-ui/utils@0.2.11", "", {}, "sha512-RiB/yIh78pcIxl6lLMG0CgBXAZ2Y0eVHqMPYugu+9U0AeT6YBeiJpf7lbdJNIugFP5SIjwNRgo4DhR1Qxi26Gg=="],
 
     "@gummy-ui/api": ["@gummy-ui/api@workspace:apps/api"],
+
+    "@gummy-ui/cli": ["@gummy-ui/cli@workspace:apps/cli"],
 
     "@gummy-ui/example": ["@gummy-ui/example@workspace:apps/example"],
 

@@ -24,15 +24,12 @@ import { EndpointPicker } from './SelectFieldConfigPanel'
 import {
   BUTTON_VARIANT_OPTIONS,
   collectButtonTargets,
-  collectOverlayTargets,
   createDefaultNavigate,
-  NO_NAVIGATION,
   type BuiltinButtonActionKey,
   type ButtonActionKey,
   type ButtonItemConfig,
   type ButtonSnackbarVariant,
   type ButtonVariant,
-  type DesignNavigation,
   type NavParamSource,
   type StudioNavigate,
 } from './types'
@@ -475,7 +472,6 @@ export function ButtonConfigPanel({
       <NavigationSection
         config={config}
         update={(patch) => updateItemConfig(itemId, patch)}
-        rootItems={rootItems}
       />
     </div>
   )
@@ -699,15 +695,12 @@ export function NavigateEditor({
   )
 }
 
-/** The Navigation dropdown: the engine page change plus the design-only kinds. */
-type NavKind = 'none' | 'page' | DesignNavigation['kind']
+/** The Navigation dropdown: nothing, or the engine page change. */
+type NavKind = 'none' | 'page'
 
 const NAV_OPTIONS: { value: NavKind; label: string }[] = [
   { value: 'none', label: 'Nothing (engine actions only)' },
   { value: 'page', label: 'Go to another page' },
-  { value: 'toast', label: 'Show a toast (design only)' },
-  { value: 'dialog', label: 'Show a dialog (design only)' },
-  { value: 'link', label: 'Open a link (design only)' },
 ]
 
 /**
@@ -716,26 +709,20 @@ const NAV_OPTIONS: { value: NavKind; label: string }[] = [
  * appends `Navigate` to the button's effective action list — the end of the
  * direct list, or of the confirm-true list — and edits its `navigate` target
  * here; the action chip above stays in sync, so a sequence like submit →
- * navigate can be reordered there. The other kinds are design-only: a link,
- * or a toast / dialog on this page, played by the Live Preview but never
- * exported into the engine `ButtonElement`.
+ * navigate can be reordered there.
  */
 function NavigationSection({
   config,
   update,
-  rootItems,
 }: {
   config: ButtonItemConfig
   update: (patch: Partial<ButtonItemConfig>) => void
-  rootItems: ReturnType<typeof useGridStore.getState>['items']
 }) {
-  const overlays = useMemo(() => collectOverlayTargets(rootItems), [rootItems])
   const inRepeater = useRepeaterScope() !== null
-  const navigation = config.navigation ?? NO_NAVIGATION
   const confirm = config.mode === 'confirm'
   const usesNavigate = (confirm ? [...config.confirmTrue, ...config.confirmFalse] : config.actions)
     .includes('Navigate')
-  const kind: NavKind = usesNavigate ? 'page' : navigation.kind
+  const kind: NavKind = usesNavigate ? 'page' : 'none'
 
   const withoutNavigate = (list: ButtonActionKey[]) => list.filter((a) => a !== 'Navigate')
 
@@ -744,7 +731,6 @@ function NavigationSection({
     if (next === 'page') {
       // Engine navigation: add the action where the click will run it.
       update({
-        navigation: NO_NAVIGATION,
         navigate: config.navigate ?? createDefaultNavigate(),
         ...(confirm
           ? { confirmTrue: [...withoutNavigate(config.confirmTrue), 'Navigate'] }
@@ -752,16 +738,12 @@ function NavigationSection({
       })
       return
     }
-    const cleared = {
+    update({
       actions: withoutNavigate(config.actions),
       confirmTrue: withoutNavigate(config.confirmTrue),
       confirmFalse: withoutNavigate(config.confirmFalse),
-    }
-    if (next === 'none') update({ ...cleared, navigation: NO_NAVIGATION })
-    else if (next === 'link') update({ ...cleared, navigation: { kind: 'link', href: '', newTab: true } })
-    else update({ ...cleared, navigation: { kind: next, targetItemId: '' } })
+    })
   }
-  const onChange = (nextNav: DesignNavigation) => update({ navigation: nextNav })
 
   return (
     <div className="space-y-3 border-t border-line pt-3">
@@ -781,45 +763,6 @@ function NavigationSection({
         />
       )}
 
-      {(navigation.kind === 'toast' || navigation.kind === 'dialog') && (
-        <>
-          <Field label={navigation.kind === 'toast' ? 'Which toast' : 'Which dialog'}>
-            <Select
-              options={[
-                { value: '', label: '— pick one —' },
-                ...overlays
-                  .filter((o) => o.type === navigation.kind)
-                  .map((o) => ({ value: o.itemId, label: o.title })),
-              ]}
-              value={navigation.targetItemId}
-              onChange={(targetItemId) => onChange({ ...navigation, targetItemId })}
-            />
-          </Field>
-          {overlays.filter((o) => o.type === navigation.kind).length === 0 && (
-            <WiringHint>
-              Drop a {navigation.kind} from the Feedback palette onto this page first, then pick it here.
-            </WiringHint>
-          )}
-        </>
-      )}
-
-      {navigation.kind === 'link' && (
-        <>
-          <Field label="URL">
-            <Input
-              value={navigation.href}
-              onChange={(e) => onChange({ ...navigation, href: e.target.value })}
-              placeholder="https://…"
-              className="font-mono"
-            />
-          </Field>
-          <CheckboxRow
-            label="Open in a new tab"
-            checked={navigation.newTab}
-            onChange={(newTab) => onChange({ ...navigation, newTab })}
-          />
-        </>
-      )}
     </div>
   )
 }

@@ -1,7 +1,6 @@
 import type { DataType } from '@gummy-ui/ui'
 import type { Breakpoint } from './breakpoints'
 import type { ComponentType } from './componentCatalog'
-import type { DesignConfig, ElementStyle } from './designTypes'
 
 export type { Breakpoint } from './breakpoints'
 export { MAX_GRID_COLUMNS } from './breakpoints'
@@ -1458,21 +1457,6 @@ export function createDefaultNavigate(): StudioNavigate {
 }
 export type ButtonSnackbarVariant = 'success' | 'error' | 'info' | 'warning' | 'neutral'
 
-/**
- * A button's design-only navigation (see the grilled design): the engine has
- * no link, toast or dialog concept, so this rides beside the engine
- * `actions` untouched, exports into project.json, and is played by the
- * studio itself in the Live Preview (link, mock overlay). Page changes are
- * NOT design-only any more — they are the engine `Navigate` action with a
- * `navigate` target (see {@link StudioNavigate}).
- */
-export type DesignNavigation =
-  | { kind: 'none' }
-  | { kind: 'link'; href: string; newTab: boolean }
-  | { kind: 'toast'; targetItemId: string }
-  | { kind: 'dialog'; targetItemId: string }
-
-export const NO_NAVIGATION: DesignNavigation = { kind: 'none' }
 
 /**
  * Full editable config for a *standalone* button item — the visual slice plus
@@ -1506,8 +1490,6 @@ export type ButtonItemConfig = ButtonConfig & {
   /** Exports `snackbarError: "$exception"` — the only form the engine reads
    * (it shows the thrown API error's message). */
   snackbarErrorException: boolean
-  /** Design-only navigation; absent on configs saved before it existed. */
-  navigation?: DesignNavigation
   /** Target of the `Navigate` action (engine `ButtonElement.navigate`);
    * absent until the action is added. */
   navigate?: StudioNavigate
@@ -1554,6 +1536,16 @@ export function createDefaultHiddenConfig(name: string): HiddenConfig {
  * canvas — see `ChildCanvas`). `elevation` is ignored by the component when
  * `variant` is `'outlined'`.
  */
+/** A plain nested container: the engine `Container.surface` flags — a themed panel background and / or a border. */
+export type ContainerConfig = {
+  background: boolean
+  border: boolean
+}
+
+export function createDefaultContainerConfig(): ContainerConfig {
+  return { background: false, border: false }
+}
+
 export type PaperConfig = {
   elevation: number
   variant: 'elevation' | 'outlined'
@@ -2047,8 +2039,6 @@ export type GridItemData = {
   /** Which palette component this cell represents (set on drop). */
   type: ComponentType
   settings: GridItemSettings
-  /** Per-element colours from the Style tab — design-only (see `designTypes.ts`). */
-  style?: ElementStyle
   /** Inside a data table's modal canvas only: adding / editing visibility (see `ShowWhen`). */
   showWhen?: ShowWhen
   /** Show only while a page-data condition holds (any canvas); `null` / absent = always. */
@@ -2108,7 +2098,7 @@ export type GridItemData = {
     | ModalConfig
     | DrawerConfig
     | PopoverConfig
-    | DesignConfig
+    | ContainerConfig
   /**
    * Child canvases for the container-hosting types (see the grilled design:
    * drill-in editing, arbitrary depth). `container`/`paper`/`modal`/`popover`
@@ -2179,28 +2169,6 @@ export type ButtonRefTargets = {
  * its modal's child canvas, so enumeration must be cross-canvas. Used by the
  * button inspector's dropdowns and by the export's id → name resolution.
  */
-/** The toasts / dialogs a button can show, across every canvas of a page. */
-export function collectOverlayTargets(
-  items: GridItemData[],
-): { itemId: string; type: 'toast' | 'dialog'; title: string }[] {
-  const out: { itemId: string; type: 'toast' | 'dialog'; title: string }[] = []
-  const walk = (list: GridItemData[]) => {
-    for (const item of list) {
-      if ((item.type === 'toast' || item.type === 'dialog') && item.config) {
-        const c = item.config as { title?: string; person?: string; variant?: string }
-        out.push({
-          itemId: item.id,
-          type: item.type,
-          title: (c.variant === 'Person' ? c.person : c.title) || item.label,
-        })
-      }
-      item.childCanvases?.forEach((canvas) => walk(canvas.items))
-    }
-  }
-  walk(items)
-  return out
-}
-
 export function collectButtonTargets(items: GridItemData[]): ButtonRefTargets {
   const modals: ButtonRefTargets['modals'] = []
   const tables: ButtonRefTargets['tables'] = []

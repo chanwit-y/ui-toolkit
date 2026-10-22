@@ -17,10 +17,11 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup && bun run build:css",
+    "build": "rm -rf dist && tsup && bun run build:css",
     "build:css": "tailwindcss -i src/styles.css -o dist/styles.css --minify",
     "dev": "tsup --watch",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "dev:css": "tailwindcss -i src/styles.css -o dist/styles.css --watch"
   },
   "peerDependencies": {
     "react": ">=18",

@@ -78,8 +78,6 @@ import dayjs from 'dayjs'
 import { memo, useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { cn, IconButton } from '../common'
 import { COMPONENT_BY_TYPE } from './componentCatalog'
-import { renderDesignPreview } from './DesignPreviews'
-import { elementStyleVars, hasElementStyle, isDesignOnly } from './designTypes'
 import { ENTER_DURATION_MS, prefersReducedMotion, UPGRADE_FADE_MS } from './gridAnimation'
 import { useGridStore, useIsEntering } from './gridStore'
 import { buildDataTablePreviewRows, buildHtmlPreviewValue, DATATABLE_PREVIEW_ROW_COUNT } from './dataTablePreview'
@@ -198,9 +196,7 @@ function thresholdsForType(type: GridItemData['type']): LiveThresholds {
     type === 'switchprofile' ||
     type === 'replaceprofile' ||
     // A workflow editor is a column of cards — it reads at any width.
-    type === 'workfloweditor' ||
-    // Design-only kinds are the design itself — nothing heavier to gate.
-    isDesignOnly(type)
+    type === 'workfloweditor'
   ) {
     return ALWAYS_LIVE
   }
@@ -332,9 +328,6 @@ function CellContent({ item }: { item: GridItemData }) {
   if (item.type === 'popover' && item.config) {
     return <GlyphChip Icon={MessageSquare} />
   }
-  if (isDesignOnly(item.type)) {
-    return <GlyphChip Icon={COMPONENT_BY_TYPE[item.type].icon} />
-  }
   return (
     <div
       data-grid-item-content
@@ -412,9 +405,7 @@ function ActiveBody({ item }: { item: GridItemData }) {
                                             ? PanelRight
                                           : item.type === 'popover'
                                             ? MessageSquare
-                                            : isDesignOnly(item.type)
-                                              ? COMPONENT_BY_TYPE[item.type].icon
-                                              : null
+                                            : null
   if (!Icon) return null
   return (
     <div
@@ -1898,11 +1889,6 @@ function renderLive(item: GridItemData, isLive: boolean) {
   if (item.type === 'popover' && item.config) {
     return <PopoverLivePreview config={item.config as PopoverConfig} />
   }
-  // Design-only kinds render their design (see `DesignPreviews.tsx` — the seam
-  // a real component slots into once the library gains one).
-  if (isDesignOnly(item.type)) {
-    return <div className="pointer-events-none w-full">{renderDesignPreview(item)}</div>
-  }
   // `hidden` intentionally has no live render — it renders nothing at runtime,
   // so its chip is the honest representation at any width.
   return null
@@ -1986,12 +1972,7 @@ export function GridItem({ item, isSelected }: GridItemProps) {
     }
   }, [isEntering])
 
-  // Style-tab colours (design-only) ride along as CSS variables on the cell so
-  // the chrome tokens and design renders inside re-tint; the values are
-  // author-chosen hex colours, so inline is the only place they can live.
-  const styleVars = hasElementStyle(item.style) ? elementStyleVars(item.style) : undefined
   const style = {
-    ...styleVars,
     transform: CSS.Translate.toString(transform),
     transition,
   } as React.CSSProperties
@@ -2000,7 +1981,6 @@ export function GridItem({ item, isSelected }: GridItemProps) {
     <div
       ref={setRefs}
       style={style}
-      data-styled={styleVars ? '' : undefined}
       data-grid-item={item.id}
       onClick={(e) => {
         // Select this cell; stop the canvas click that would clear selection.

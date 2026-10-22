@@ -1,21 +1,24 @@
 import type { GummyProject, PageLoad, TModelMaster, TPageMaster } from '@gummy-ui/ui'
 import { serializeEndpoints } from '../Api/serialize'
+import type { EndpointDef } from '../Api/types'
 import { buildBins, pageLoadsToEngine, rootContainer } from '../Layout/gridConfig'
 import { serializeModels } from '../Model/serialize'
+import type { ModelDef } from '../Model/types'
 import { toThemeObjects } from '../Theme/serialize'
 import { isValidActionName as isValidIdentifier } from './customActions'
 import { menuToEngine, shellToEngine } from './menu'
 import { enginePageMeta } from './pageMeta'
 import { attachedEndpoints, referencedModels } from './snapshots'
-import type { LibraryData, ProjectDef } from './types'
+import type { LibraryData, ProjectDef, ProjectSnapshot } from './types'
 
 /**
  * The runtime document (`GummyProject`, `schemaVersion: 1`) a consumer app
  * renders with `<GummyApp>` — see the grilled library / CLI design. One per
- * project, written by the CLI to `gummy/projects/<key>.json` on every save.
- * It is the Live Preview's engine assembly (model + api lowered like the
- * code tabs, every page's exported container, menu / shell / theme / loads)
- * captured as data, so what the preview renders is what the app renders.
+ * project, written by the CLI to `gummy/projects/<key>.json` on every save,
+ * shown by the Export dialog, and rendered by the Live Preview. It is the
+ * engine assembly (model + api lowered like the code panes, every page's
+ * exported container, menu / shell / theme / loads) captured as data, so what
+ * the preview renders is what the app renders.
  */
 
 /** The file name a project is written under: its name as a slug (`My App` → `my-app`). */
@@ -28,10 +31,20 @@ export function projectKey(name: string): string {
   return slug || 'project'
 }
 
-export function projectToRuntime(project: ProjectDef, library: LibraryData): GummyProject {
-  const { snapshot } = project
-  const endpoints = attachedEndpoints(snapshot.endpointIds, library.endpoints)
-  const models = referencedModels(endpoints, library.models)
+/** What `runtimeDocument` reads: a project's name and snapshot (the Live Preview substitutes its live pages). */
+export type RuntimeSource = {
+  name: string
+  description?: string
+  snapshot: ProjectSnapshot
+}
+
+/**
+ * A project snapshot → the runtime document, against the endpoints it has
+ * attached and the models they reference (`endpoints` / `models` are the
+ * project-scoped sets, as `useProjectEndpoints` / `useProjectModels` give them).
+ */
+export function runtimeDocument(source: RuntimeSource, endpoints: EndpointDef[], models: ModelDef[]): GummyProject {
+  const { snapshot } = source
   const globalLoads = snapshot.globalLoads ?? []
   const customActions = snapshot.customActions ?? []
   const customComponents = snapshot.customComponents ?? []
@@ -74,8 +87,8 @@ export function projectToRuntime(project: ProjectDef, library: LibraryData): Gum
 
   return {
     schemaVersion: 1,
-    name: project.name,
-    ...(project.description ? { description: project.description } : {}),
+    name: source.name,
+    ...(source.description ? { description: source.description } : {}),
     env,
     model: serializeModels(models) as TModelMaster,
     api: serializeEndpoints(endpoints, models) as GummyProject['api'],
@@ -99,6 +112,13 @@ export function projectToRuntime(project: ProjectDef, library: LibraryData): Gum
         })),
       })),
   }
+}
+
+/** A stored project → its runtime document, resolving its endpoints and models against the shared library. */
+export function projectToRuntime(project: ProjectDef, library: LibraryData): GummyProject {
+  const endpoints = attachedEndpoints(project.snapshot.endpointIds, library.endpoints)
+  const models = referencedModels(endpoints, library.models)
+  return runtimeDocument(project, endpoints, models)
 }
 
 /** Every project of a workspace by its file key; a name clash gets `-2`, `-3`… */

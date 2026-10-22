@@ -34,8 +34,6 @@ export function PagesPanel() {
 
   const row = (pg: PageDef, depth: number, via?: string) => {
     const isCurrent = pg.id === activePageId
-    const links = linksOf.get(pg.id) ?? []
-    const overlays = links.filter((l) => l.kind === 'toast' || l.kind === 'dialog').length
     return (
       <div key={`${pg.id}-${depth}-${via ?? ''}`}>
         {via && (
@@ -55,14 +53,6 @@ export function PagesPanel() {
             <span className="truncate">{pg.name}</span>
             <span className="truncate font-mono text-ui-xs font-normal text-ink-3">{pg.path}</span>
           </span>
-          {overlays > 0 && (
-            <span
-              className="font-mono text-ui-xs text-ink-3"
-              title="modals, dialogs and toasts opened from this page"
-            >
-              {overlays} act
-            </span>
-          )}
           <span
             className="font-mono text-ui-xs text-ink-3"
             title={`${countComponents(pg.grid.items)} component(s)`}

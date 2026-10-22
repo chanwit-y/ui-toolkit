@@ -14,7 +14,7 @@ This guide is for people who build screens in the studio. It walks through the w
   2. [Shared library: APIs and models](#2-shared-library-apis-and-models)
   3. [Pages](#3-pages)
   4. [The canvas](#4-the-canvas)
-  5. [The inspector: Layout, Props, Style, Code](#5-the-inspector-layout-props-style-code)
+  5. [The inspector: Layout, Props, Code](#5-the-inspector-layout-props-code)
   6. [Page data](#6-page-data)
   7. [Menu and app shell](#7-menu-and-app-shell)
   8. [Theme and environment](#8-theme-and-environment)
@@ -30,7 +30,6 @@ This guide is for people who build screens in the studio. It walks through the w
   - [Layout](#layout)
   - [Overlay](#overlay)
   - [Utility: the Button](#utility-the-button)
-  - [Design-only components](#design-only-components)
 - [For developers](#for-developers)
 
 ---
@@ -71,12 +70,9 @@ Open <http://localhost:3300>. The portal shows one seeded project, **Country man
 
 ### Where your work is saved
 
-Everything you do is saved automatically into the browser's `localStorage` (the topbar shows `saved locally`). That means:
+Served by the `gummy studio` CLI (`@gummy-ui/cli`: `npx gummy studio` in your app's folder), everything is written to `gummy/` in that folder on every change: `workspace.json` is the studio's own state and `projects/<key>.json` is the runtime document each project renders through `<GummyApp>`. Commit that folder.
 
-- Nothing leaves your machine until you use **Export**.
-- Another browser, or a private window, starts from the seeded demo again.
-- Clearing site data resets the workspace. **Reset demo data** in the portal sidebar does the same on purpose.
-- Older workspaces are migrated forward when the studio starts, so an upgrade keeps your projects.
+Served any other way (the monorepo's `bun run studio`, a static host), the workspace lives in your browser's localStorage. The **Save to project** button in the topbar (the floppy icon beside the save status) writes the same files out: in Chrome or Edge it asks once for your app's folder (pick the project root or its `gummy/` folder) and writes `gummy/workspace.json` and `gummy/projects/*.json` into it — shift-click to pick another folder; in other browsers it downloads the files for you to drop into `gummy/`. Under the CLI the same button just flushes the pending autosave.
 
 ### Troubleshooting
 
@@ -141,7 +137,7 @@ The page controls sit at the head of the canvas bar: the page name (click to ren
 
 The Layout tab has three areas. The **left pane** holds the component palette and four other tabs. The **canvas** in the middle is the page, drawn at the chosen breakpoint. The **inspector** on the right edits whatever is selected.
 
-**Adding components.** Drag a tile from the palette onto the canvas to insert it at the drop point, or click the tile to append it. Tiles with a dashed border are containers that hold other components. Tiles with an orange dot are design-only (see [Design-only components](#design-only-components)). The search box filters the palette.
+**Adding components.** Drag a tile from the palette onto the canvas to insert it at the drop point, or click the tile to append it. Tiles with a dashed border are containers that hold other components. The search box filters the palette.
 
 ![The component palette](docs/images/toolbox.png)
 
@@ -163,19 +159,15 @@ The Layout tab has three areas. The **left pane** holds the component palette an
 
 ![The Templates tab](docs/images/templates-panel.png)
 
-### 5. The inspector: Layout, Props, Style, Code
+### 5. The inspector: Layout, Props, Code
 
-The right pane has four tabs. The line under them shows where the selected component lives (`root / Data Table / Text Field`); click an ancestor to jump back up.
+The right pane has three tabs. The line under them shows where the selected component lives (`root / Data Table / Text Field`); click an ancestor to jump back up.
 
 **Layout** is the grid cell. With a component selected it shows the cell's settings **per breakpoint**: the column span (tap 1 to 12), an explicit column start, the row span, `grid-area`, self-alignment and order. Pick a breakpoint first; a value you set at LG does not change SM. With nothing selected the same tab shows the canvas's own grid: columns, gaps, alignment and auto-flow per breakpoint.
 
 ![The Layout tab for a cell](docs/images/inspector-layout.png)
 
 **Props** is the component's configuration. It is different for every type and is what the rest of this guide is about.
-
-**Style** gives the selected component its own colours: background, text, border, accent, radius, and for tables the header colours and zebra rows. These are design annotations painted on the canvas and exported as a `style` key on the Bin. Project-wide colours live in the Theme tab.
-
-![The Style tab](docs/images/inspector-style.png)
 
 **Code** shows the page as the engine will receive it: the **Bins (engine)** JSON and the responsive CSS. It is read-only and always covers the whole page, whichever canvas you are in. This is the quickest way to see what a Props field changes.
 
@@ -225,7 +217,7 @@ Below the variables, **Custom actions** is the list of functions the app's devel
 
 ### 9. Live Preview, Overview and Export
 
-The eye button in the topbar opens the **Live Preview**: the real engine rendering the real export, inside the real app shell, against the project's `API_URL`. Tables fetch, forms validate and submit, modals open, navigation works.
+The eye button in the topbar opens the **Live Preview**: the library's own `<GummyApp>` rendering the project document exactly as the app will, inside the real app shell, against the project's `API_URL`. Tables fetch, forms validate and submit, modals open, navigation works.
 
 ![The Live Preview](docs/images/live-preview.png)
 
@@ -235,19 +227,16 @@ The network icon opens the **Overview**, a map of every page with the jumps betw
 
 ![The Overview](docs/images/overview.png)
 
-The download icon opens **Export**, which is how a project reaches a developer.
+The download icon opens **Export**: the project document the engine renders, plus the stubs for the code only the app can supply. **Export to project** writes the whole bundle into your app's `gummy/` folder — `projects/<key>.json` where `<GummyApp>` reads it, `actions.ts` / `components.tsx` / `HANDOFF.md` beside it, never into `src/` — through the `gummy studio` CLI when the studio runs under it, else the folder picker (Chrome / Edge; shift-click to pick another folder) or downloads. **Download all** saves the files to your downloads folder instead.
 
 ![The Export dialog](docs/images/export.png)
 
 | File | Contents |
 |---|---|
-| `project.json` | The whole project as data: env, theme, pages, menu. A runtime could render it directly. |
-| `api.ts` | The attached endpoints as a Gummy UI `TApiMaster`. |
-| `model.ts` | The models those endpoints reference as a `TModelMaster`. |
-| `theme.ts` | The `ThemeProvider` props. |
-| `pages.ts` | Every page's container config, keyed by page key, plus page loads and global loads. |
-| `menu.ts` | The menu and app-shell settings. |
-| `HANDOFF.md` | A human summary: each page's route, key, params, endpoints, loads and button actions, the endpoint list, the env, and the app wiring snippet. |
+| `<key>.json` | The whole project as data (`schemaVersion: 1`): env, model, api, pages, menu, shell, theme, global loads, the names of the custom actions and components. `<GummyApp project={…}>` renders it. |
+| `actions.ts` | Typed stubs for the custom actions declared on the Env page (only when there are any). |
+| `components.tsx` | Typed stubs for the custom components declared on the Env page (only when there are any). |
+| `HANDOFF.md` | How to mount it (`<GummyApp>` inside the app's router), every page with its route, params, data and actions, the endpoints and the environment. |
 
 The files match the shape a developer would otherwise write by hand (see the root [README](../../README.md#the-declarative-engine)), so the handoff is `pages.ts` + `menu.ts` dropped into `AppShell` / `PageRouter`.
 
@@ -728,7 +717,7 @@ Buttons carry the **actions**. A click runs a chain of engine actions, optionall
 | Submit endpoint | The endpoint a `Submit form` action posts the form to. |
 | Reload data after submit | A table, list or repeater name, or a page-data load, refetched after a successful submit. |
 | Success snackbar, Show API error as snackbar | Toasts. |
-| Navigation | `Go to another page` with `:param` sources, or a design-only toast, dialog or link. |
+| Navigation | `Go to another page` with `:param` sources (the engine `Navigate` action). |
 
 The Countries form's Update button, which exists only when editing:
 
@@ -782,10 +771,6 @@ export const actions: TActionMaster = {
 In the app the function receives the form, the repeater item, the page data, snackbar / loading / navigation and the fn registry; `return false` ends the chain, a throw shows through the error snackbar. The Live Preview has no app code, so it **stubs** every declared action: the chain continues and the call is logged, with the context it would have received, in the dev tools' **Actions** tab. A chip whose declaration was deleted turns amber, exports as `fn:MISSING_ACTION`, and the app skips it with a console warning. The seeded project's **Custom actions** page is the walkthrough: a counter, a guarded Save, a per-item button in a repeater, a confirm with custom branches, and one deleted name.
 
 **Hidden** is a form field that is never drawn, for ids and other values the form must carry. **Empty** is a blank cell for spacing.
-
-### Design-only components
-
-The palette tiles with an orange dot (Stat, the charts, Hero, Image, Gallery, Video, Link, Quick links, Spacer, People, Org chart, Alert, Banner, Progress, Toast, Dialog) have no Gummy UI component yet. They render their design on the canvas and have Props panels, but they export as an `empty` Bin carrying a `designOnly` description, and the Live Preview shows a labelled placeholder in their place. Use them to mock a screen and tell the developer what is wanted there.
 
 ---
 

@@ -138,6 +138,29 @@ async function flush() {
   }
 }
 
+/** The persisted payload as last handed to the storage (CLI mode: the cache; else what localStorage holds). */
+export function currentPayload(storageKey: string): string | null {
+  return mode === 'cli' ? cache : localStorage.getItem(storageKey)
+}
+
+/**
+ * "Save to project": write what is pending right now instead of waiting for
+ * the debounce, and report how it went. In localStorage mode there is
+ * nothing to flush — the caller writes the files itself (see `saveToProject.ts`).
+ */
+export async function flushNow(): Promise<CliStatus> {
+  if (mode !== 'cli') return 'saved'
+  if (timer) {
+    clearTimeout(timer)
+    timer = null
+  }
+  dirty = true
+  await flush()
+  // A write that was already in flight when we were called: wait for the one it schedules after it.
+  while (inFlight) await new Promise((r) => setTimeout(r, 50))
+  return status
+}
+
 /** The CLI pushes a `changed` event when the file on disk no longer matches what this tab loaded. */
 function watchDiskChanges() {
   if (typeof EventSource === 'undefined') return

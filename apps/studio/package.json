@@ -1,17 +1,10 @@
 {
   "name": "@gummy-ui/studio",
   "version": "0.0.0",
-  "description": "Gummy Studio \u2014 the visual builder for @gummy-ui/ui projects, served by the `gummy studio` CLI over ./gummy/",
-  "bin": {
-    "gummy": "bin/gummy.mjs"
-  },
+  "description": "Gummy Studio \u2014 the visual builder for @gummy-ui/ui projects, as a prebuilt static app served by `gummy studio` (@gummy-ui/cli)",
   "files": [
-    "bin",
     "dist"
   ],
-  "engines": {
-    "node": ">=18"
-  },
   "type": "module",
   "scripts": {
     "dev": "vite --port 3300",

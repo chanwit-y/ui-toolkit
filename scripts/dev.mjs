@@ -80,6 +80,8 @@ execSync("bun run build", {
 
 const children = [
   run("packages/ui", "dev"),
+  // The compiled stylesheet beside the JS (dist/styles.css) — tsup does not emit it.
+  run("packages/ui", "dev:css"),
   run("apps/api", "dev"),
 ];
 

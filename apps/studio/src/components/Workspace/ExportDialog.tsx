@@ -1,11 +1,14 @@
 import { Modal } from '@gummy-ui/ui'
-import { Download, FileCode2 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { Download, FileCode2, FolderDown } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { currentPayload, isCliMode, cliInfo } from '../../cli/cliStorage'
+import { canPickFolder, saveToProject, type SaveResult } from '../../cli/saveToProject'
 import { Button, cn, CodeViewer } from '../common'
 import { useProjectEndpoints, useProjectModels } from '../Library/scope'
 import { buildExportFiles } from './exportFiles'
+import { projectKey, runtimeProjectsFromPayload } from './runtimeProject'
 import type { ProjectDef } from './types'
-import { useWorkspaceStore } from './workspaceStore'
+import { useWorkspaceStore, WORKSPACE_STORAGE_KEY } from './workspaceStore'
 
 function download(name: string, body: string) {
   const blob = new Blob([body], { type: 'text/plain;charset=utf-8' })
@@ -20,10 +23,11 @@ function download(name: string, body: string) {
 }
 
 /**
- * "Hand off" (the mockup's export dialog): the bundle a developer needs —
- * project.json, api.ts, model.ts, theme.ts, pages.ts, menu.ts, HANDOFF.md — with a
- * file list, the selected file's code (with copy), Download, and Download all.
- * Built from the persisted project (the autosave is 400 ms behind at most).
+ * "Hand off": the runtime project document `<GummyApp>` renders (the file
+ * `gummy studio` keeps in `gummy/projects/`), the custom action / component
+ * stubs the app still codes, and HANDOFF.md — a file list, the selected
+ * file's code (with copy), Download, and Download all. Built from the
+ * persisted project (the autosave is 400 ms behind at most).
  */
 export function ExportDialog({ project, onClose }: { project: ProjectDef; onClose: () => void }) {
   const endpoints = useProjectEndpoints()
@@ -38,6 +42,49 @@ export function ExportDialog({ project, onClose }: { project: ProjectDef; onClos
     logActivity('exported', 'project', project.name, `${files.length} files`, project.id)
   }
 
+  // "Export to project": the bundle into the app's gummy/ folder — the
+  // document where <GummyApp> reads it (projects/<key>.json, with every other
+  // project's), the stubs and HANDOFF beside it (never in src/, so they can't
+  // overwrite the app's real code). Under the CLI that folder is the served
+  // one; elsewhere the folder picker / downloads (see cli/saveToProject.ts).
+  const [saveMsg, setSaveMsg] = useState('')
+  const [saving, setSaving] = useState(false)
+  useEffect(() => {
+    if (!saveMsg) return
+    const t = setTimeout(() => setSaveMsg(''), 8000)
+    return () => clearTimeout(t)
+  }, [saveMsg])
+  const exportToProject = async (repick: boolean) => {
+    const payload = currentPayload(WORKSPACE_STORAGE_KEY)
+    if (!payload) {
+      setSaveMsg('Could not save: nothing is persisted yet')
+      return
+    }
+    const key = projectKey(project.name)
+    const extraFiles = Object.fromEntries(files.filter((f) => f.name !== `${key}.json`).map((f) => [f.name, f.body]))
+    setSaving(true)
+    try {
+      const r: SaveResult = await saveToProject(payload, runtimeProjectsFromPayload(payload), { repick, extraFiles })
+      if (r.mode === 'cancelled') return
+      if (r.mode === 'error') setSaveMsg(`Could not save: ${r.message}`)
+      else {
+        setSaveMsg(
+          r.mode === 'download'
+            ? `Downloaded ${r.files.length} files — drop them into your project's gummy/ folder`
+            : `Wrote ${r.files.length} files to ${r.where} (projects/${key}.json is what the app renders)`,
+        )
+        logActivity('exported', 'project', project.name, `${r.files.length} files to ${r.where}`, project.id)
+      }
+    } finally {
+      setSaving(false)
+    }
+  }
+  const exportLabel = isCliMode()
+    ? `Export to project — write into ${cliInfo()?.dir ?? 'gummy'}/ (the folder gummy studio serves)`
+    : canPickFolder()
+      ? 'Export to project — pick your app\'s folder and write gummy/ into it (shift-click to pick another)'
+      : 'Export to project — download the files for your app\'s gummy/ folder'
+
   return (
     <Modal
       id="studio-export"
@@ -46,7 +93,7 @@ export function ExportDialog({ project, onClose }: { project: ProjectDef; onClos
         if (!o) onClose()
       }}
       title={`Hand off — ${project.name}`}
-      description={`${files.length} files · everything a developer needs to build this for real`}
+      description={`${files.length} file${files.length === 1 ? '' : 's'} · the project as the engine renders it`}
       width="min(92vw, 1040px)"
     >
       <div className="flex min-h-0 gap-3.5 pt-2">
@@ -73,6 +120,23 @@ export function ExportDialog({ project, onClose }: { project: ProjectDef; onClos
             <Download size={12} aria-hidden="true" />
             Download all
           </Button>
+          <Button
+            size="sm"
+            variant="primary"
+            className="mt-1.5 w-full"
+            title={exportLabel}
+            aria-label={exportLabel}
+            disabled={saving}
+            onClick={(e) => void exportToProject(e.shiftKey)}
+          >
+            <FolderDown size={12} aria-hidden="true" />
+            Export to project
+          </Button>
+          {saveMsg && (
+            <p role="status" className={cn('mt-2 text-ui-xs leading-snug', saveMsg.startsWith('Could not') ? 'text-danger' : 'text-ink-3')}>
+              {saveMsg}
+            </p>
+          )}
         </div>
         <div className="flex min-w-0 flex-1 flex-col">
           {file && (
@@ -98,8 +162,9 @@ export function ExportDialog({ project, onClose }: { project: ProjectDef; onClos
                 ]}
               />
               <p className="mt-2 text-ui-xs leading-snug text-ink-3">
-                project.json is the whole thing as data — the same file a runtime could render. The
-                .ts files match the shape your team already writes by hand.
+                The .json file is the whole app as data — what &lt;GummyApp&gt; renders and what
+                `gummy studio` writes to gummy/projects/ on every save. The .ts files are stubs for the
+                code only the app can supply.
               </p>
             </>
           )}

@@ -2,15 +2,24 @@
 /**
  * `gummy` — the Gummy UI command line (see the grilled library / CLI design).
  *
+ *   gummy init [dir] [--name <package name>] [--force]
  *   gummy studio [--port 3300] [--dir gummy] [--host 127.0.0.1] [--open] [--demo]
  *
- * Serves the prebuilt studio (this package's `dist/`) and a small file API
- * over the consumer's `./gummy/` folder:
+ * `init` scaffolds the consumer starter (this package's `template/`, the
+ * monorepo's `demo/` as a template): a Vite + React app that mounts
+ * `<GummyApp>` over `gummy/projects/<key>.json`, with the registries for
+ * custom actions / components and a one-page starter project.
+ *
+ * Serves the prebuilt studio (the `dist/` of the `@gummy-ui/studio` package
+ * this one depends on) and a small file API over the consumer's `./gummy/`
+ * folder:
  *
  *   GET  /__gummy/info            { dir, name, demo, version }
  *   GET  /__gummy/workspace       { revision, workspace | null }   — workspace.json
  *   PUT  /__gummy/workspace       { revision, workspace, projects } → { revision }
  *                                  409 when `revision` is not the file's current one
+ *   PUT  /__gummy/files           { files: { "<relative path>": text } }  — written under ./gummy/ (the
+ *                                  Export dialog's stubs and HANDOFF); plain path segments only
  *   GET  /__gummy/events          server-sent `changed` events when the file changes on disk
  *
  * The studio serialises everything in the browser; the CLI only stores files:
@@ -19,15 +28,26 @@
  * Node 18+, no dependencies, localhost only by default.
  */
 import { createHash } from 'node:crypto'
-import { existsSync, mkdirSync, readFileSync, watch, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, watch, writeFileSync } from 'node:fs'
 import { createServer } from 'node:http'
+import { createRequire } from 'node:module'
 import { basename, dirname, extname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawn } from 'node:child_process'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const pkg = JSON.parse(readFileSync(join(here, '..', 'package.json'), 'utf8'))
-const DIST = join(here, '..', 'dist')
+
+/** The studio build: `@gummy-ui/studio`'s `dist/`, resolved from this package's dependencies. */
+function studioDist() {
+  try {
+    const require = createRequire(import.meta.url)
+    return join(dirname(require.resolve('@gummy-ui/studio/package.json')), 'dist')
+  } catch {
+    return null
+  }
+}
+const DIST = studioDist()
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -49,19 +69,25 @@ function usage() {
   console.log(`gummy ${pkg.version}
 
 Usage:
-  gummy studio [options]   serve the studio over ./gummy in the current folder
+  gummy init [dir] [options]   scaffold a starter app that renders gummy/projects/*.json with <GummyApp>
+  gummy studio [options]       serve the studio over ./gummy in the current folder
 
-Options:
+init options:
+  --name <name>  the package name (default: the folder's name)
+  --force        write into a folder that is not empty (existing files are overwritten)
+
+studio options:
   --port <n>     port to listen on (default 3300)
   --host <h>     interface to bind (default 127.0.0.1)
   --dir <path>   the folder holding workspace.json and projects/ (default gummy)
   --open         open the browser once the server is up
   --demo         a fresh folder starts with the Country demo instead of an empty project
+
   -h, --help     this help`)
 }
 
 function parseArgs(argv) {
-  const opts = { command: argv[0], port: 3300, host: '127.0.0.1', dir: 'gummy', open: false, demo: false, help: false }
+  const opts = { command: argv[0], port: 3300, host: '127.0.0.1', dir: 'gummy', open: false, demo: false, help: false, name: '', force: false, target: '' }
   for (let i = 1; i < argv.length; i++) {
     const a = argv[i]
     const value = () => argv[++i]
@@ -73,7 +99,11 @@ function parseArgs(argv) {
     else if (a.startsWith('--dir=')) opts.dir = a.slice(6)
     else if (a === '--open') opts.open = true
     else if (a === '--demo') opts.demo = true
+    else if (a === '--name') opts.name = value()
+    else if (a.startsWith('--name=')) opts.name = a.slice(7)
+    else if (a === '--force') opts.force = true
     else if (a === '-h' || a === '--help') opts.help = true
+    else if (!a.startsWith('-') && !opts.target) opts.target = a
     else {
       console.error(`Unknown option: ${a}`)
       process.exit(2)
@@ -91,6 +121,76 @@ function projectName(cwd) {
     // no package.json
   }
   return basename(cwd)
+}
+
+/** A path inside the served folder: plain segments, none of them `.` or `..`, no leading slash. */
+const safeRelativePath = (rel) =>
+  typeof rel === 'string' &&
+  rel.length > 0 &&
+  rel.split('/').every((s) => /^[A-Za-z0-9._-]+$/.test(s) && s !== '.' && s !== '..')
+
+const TEMPLATE = join(here, '..', 'template')
+
+/** The file key a project is written under: its name as a slug. */
+const slug = (name) =>
+  name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'project'
+
+/** Every file under `dir`, as paths relative to it. */
+function listFiles(dir, prefix = '') {
+  const out = []
+  for (const entry of readdirSync(dir)) {
+    const full = join(dir, entry)
+    const rel = prefix ? `${prefix}/${entry}` : entry
+    if (statSync(full).isDirectory()) out.push(...listFiles(full, rel))
+    else out.push(rel)
+  }
+  return out
+}
+
+/**
+ * `gummy init [dir]`: copy the template into `dir` with the placeholders
+ * filled — `__NAME__` the package name, `__KEY__` its slug (the project file
+ * name), `__CLI_VERSION__` / `__UI_VERSION__` the versions to depend on.
+ */
+function init(opts) {
+  const target = resolve(process.cwd(), opts.target || '.')
+  const name = (opts.name || basename(target)).replace(/^@[^/]+\//, '')
+  const key = slug(name)
+  if (!existsSync(TEMPLATE)) {
+    console.error(`The starter template is missing (${TEMPLATE}). Reinstall @gummy-ui/cli.`)
+    process.exit(1)
+  }
+  if (existsSync(target) && readdirSync(target).length > 0 && !opts.force) {
+    console.error(`${target} is not empty — pass --force to write into it anyway (template files are overwritten).`)
+    process.exit(1)
+  }
+  const vars = {
+    __NAME__: name,
+    __KEY__: key,
+    __CLI_VERSION__: `^${pkg.version}`,
+    __UI_VERSION__: `^${pkg.version}`,
+  }
+  const fill = (text) => text.replace(/__(NAME|KEY|CLI_VERSION|UI_VERSION)__/g, (m) => vars[m])
+  const written = []
+  for (const rel of listFiles(TEMPLATE)) {
+    const outRel = fill(rel)
+    const out = join(target, outRel)
+    mkdirSync(dirname(out), { recursive: true })
+    writeFileSync(out, fill(readFileSync(join(TEMPLATE, rel), 'utf8')))
+    written.push(outRel)
+  }
+  const rel = target === process.cwd() ? '.' : target.startsWith(process.cwd()) ? target.slice(process.cwd().length + 1) : target
+  console.log(`gummy ${pkg.version} — created ${name} in ${rel}`)
+  for (const f of written) console.log(`  ${f}`)
+  console.log(`
+Next:
+  ${rel === '.' ? '' : `cd ${rel}\n  `}npm install
+  npm run dev        # the app at http://localhost:5173 (renders gummy/projects/${key}.json)
+  npm run studio     # the studio at http://127.0.0.1:3300 — every save rewrites gummy/projects/${key}.json`)
 }
 
 const hash = (text) => createHash('sha1').update(text).digest('hex').slice(0, 16)
@@ -117,8 +217,12 @@ function send(res, status, body, headers = {}) {
 }
 
 function studio(opts) {
-  if (!existsSync(join(DIST, 'index.html'))) {
-    console.error(`The studio build is missing (${DIST}). Reinstall @gummy-ui/studio.`)
+  if (!DIST || !existsSync(join(DIST, 'index.html'))) {
+    console.error(
+      DIST
+        ? `The studio build is missing (${DIST}). Reinstall @gummy-ui/studio.`
+        : 'Cannot find @gummy-ui/studio — install it beside @gummy-ui/cli (it is a dependency of this package).',
+    )
     process.exit(1)
   }
   const cwd = process.cwd()
@@ -167,7 +271,10 @@ function studio(opts) {
       if (path === '/__gummy/workspace' && req.method === 'PUT') {
         const body = await readJson(req)
         const current = diskRevision()
-        if ((body.revision ?? '') !== current) {
+        // A write is stale when the file changed under the studio. A file that
+        // was deleted (or never existed) cannot be newer than the studio's copy,
+        // so the studio's copy wins and recreates it.
+        if (current !== '' && (body.revision ?? '') !== current) {
           return send(res, 409, { error: 'workspace.json changed on disk', revision: current })
         }
         const text = JSON.stringify(body.workspace, null, 2) + '\n'
@@ -180,6 +287,19 @@ function studio(opts) {
           writeFileSync(join(projectsDir, `${key}.json`), JSON.stringify(project, null, 2) + '\n')
         }
         return send(res, 200, { revision, projects: Object.keys(projects) })
+      }
+      if (path === '/__gummy/files' && req.method === 'PUT') {
+        const body = await readJson(req)
+        const files = body.files && typeof body.files === 'object' ? body.files : {}
+        const written = []
+        for (const [rel, text] of Object.entries(files)) {
+          if (!safeRelativePath(rel) || typeof text !== 'string') continue
+          const target = join(dir, rel)
+          mkdirSync(dirname(target), { recursive: true })
+          writeFileSync(target, text)
+          written.push(rel)
+        }
+        return send(res, 200, { files: written })
       }
       if (path === '/__gummy/events') {
         res.writeHead(200, {
@@ -232,6 +352,7 @@ if (opts.help || !opts.command) {
   process.exit(opts.help ? 0 : 2)
 }
 if (opts.command === 'studio') studio(opts)
+else if (opts.command === 'init') init(opts)
 else {
   console.error(`Unknown command: ${opts.command}\n`)
   usage()

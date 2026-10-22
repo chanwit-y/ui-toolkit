@@ -4,7 +4,7 @@ import { Button, CodeViewer, IconButton, Input, Popover, Select, SegmentedContro
 import { useWorkspaceStore } from '../Workspace/workspaceStore'
 import { accentInk, resolvedSurfaces } from './designTheme'
 import { useThemeStore } from './themeStore'
-import { toThemeTs } from './serialize'
+import { toThemeObjects } from './serialize'
 import {
   ACCENT_COLORS,
   createDefaultDesignTheme,
@@ -316,7 +316,7 @@ export function ThemeEditor() {
   // the project until Apply — the sample block below paints the candidate.
   const [preview, setPreview] = useState<{ palette: ThemePalette; surfaces: boolean } | null>(null)
 
-  const themeTs = useMemo(() => toThemeTs(config), [config])
+  const themeJson = useMemo(() => JSON.stringify(toThemeObjects(config), null, 2), [config])
   const mode = config.appearance
   const design = config.design ?? createDefaultDesignTheme()
   const surfaces = resolvedSurfaces(config, mode)
@@ -633,11 +633,11 @@ export function ThemeEditor() {
           )}
         </Section>
 
-        <span className="sec-label mb-2 block">theme.ts</span>
+        <span className="sec-label mb-2 block">In the project JSON</span>
         <CodeViewer
           maxHeightClassName="max-h-[60vh]"
           tabs={[
-            { id: 'theme', label: 'theme.ts', language: 'text', code: themeTs },
+            { id: 'theme', label: 'theme', language: 'json', code: themeJson },
             {
               id: 'design',
               label: 'design (project.json)',

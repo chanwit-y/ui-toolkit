@@ -48,8 +48,6 @@ function ToolboxItem({ def }: ToolboxItemProps) {
       title={
         blocked
           ? BLOCKED_IN_REPEATER_HINT
-          : def.designOnly
-          ? `${def.label} — design only (no library component yet). Drag onto the canvas, or click to append it`
           : def.componentId
           ? `${def.hint ? `${def.hint}. ` : ''}Drag ${def.label} onto the canvas, or click to append it (mapped onto the declared component)`
           : `Drag ${def.label} onto the canvas, or click to append it`
@@ -65,13 +63,6 @@ function ToolboxItem({ def }: ToolboxItemProps) {
         blocked && 'cursor-not-allowed opacity-40 hover:border-line hover:text-ink-2 active:scale-100',
       )}
     >
-      {def.designOnly && (
-        <span
-          aria-hidden="true"
-          title="Design only"
-          className="absolute right-1 top-1 block h-1.5 w-1.5 rounded-full bg-warn"
-        />
-      )}
       <Icon
         className="h-[15px] w-[15px] text-ink-3 transition-colors group-hover:text-ink"
         aria-hidden="true"

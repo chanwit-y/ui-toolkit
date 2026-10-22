@@ -1,7 +1,8 @@
 import { useEffect, useMemo, type ReactElement, type ReactNode } from "react";
+import { Navigate, useLocation } from "react-router-dom";
 import { HttpClientFactory } from "../api";
 import type { TActionMaster, TComponentMaster } from "./@types";
-import { AppShell } from "./AppShell";
+import { AppShell, type AppShellProps } from "./AppShell";
 import { DataProvider, ThemeProvider } from "./context";
 import { ActionsProvider } from "./core/actions";
 import { ComponentsProvider } from "./core/components";
@@ -26,14 +27,19 @@ export type GummyAppProps = {
   components?: TComponentMaster;
   /**
    * `false` renders the routed pages with no `AppShell`; an object overrides
-   * the project's shell settings. Default: the project's shell.
+   * the project's shell settings (plus the shell's embedding props `height` /
+   * `className`). Default: the project's shell.
    */
-  shell?: boolean | GummyProjectShell;
+  shell?: boolean | GummyAppShell;
   /** `AppShell` slots. */
   brand?: ReactNode;
   header?: ReactNode;
   footer?: ReactNode;
-  /** Rendered for paths no page matches. */
+  /**
+   * Rendered for paths no page matches. Default: the root `/` redirects to the
+   * first page when no page claims it (a studio project's pages start at
+   * `/page-1`), any other path shows a short note.
+   */
   notFound?: ReactNode;
   /** Mirror page titles into `document.title` (default true). */
   documentTitle?: boolean;
@@ -42,7 +48,21 @@ export type GummyAppProps = {
   className?: string;
 };
 
+/** The project shell settings plus what only an embedding host sets. */
+export type GummyAppShell = GummyProjectShell & Pick<AppShellProps, "height" | "className">;
+
 const DEFAULT_RENDER = (pages: ReactElement) => <div className="p-8">{pages}</div>;
+
+/** The default `notFound`: `/` → the first page (when none is at `/`), else a note. */
+function DefaultNotFound({ firstPath }: { firstPath: string | undefined }) {
+  const { pathname } = useLocation();
+  if (pathname === "/" && firstPath && firstPath !== "/" && !firstPath.includes(":")) return <Navigate to={firstPath} replace />;
+  return (
+    <p className="text-sm text-[var(--gray-11)]">
+      No page matches <code className="font-mono">{pathname}</code>.
+    </p>
+  );
+}
 
 /**
  * Renders a studio project at runtime (see the grilled library / CLI design):
@@ -98,10 +118,18 @@ export function GummyApp({
       if (!components?.[c.name]) console.warn(`[gummy-ui] GummyApp: project "${project.name}" places custom component "${c.name}", which is not in \`components\`.`);
   }, [project, actions, components]);
 
-  const shellProps: GummyProjectShell | null = shell === false ? null : { ...project.shell, ...(shell === true ? {} : shell) };
+  const shellProps: GummyAppShell | null = shell === false ? null : { ...project.shell, ...(shell === true ? {} : shell) };
 
+  const firstPath = Object.values(project.pages)[0]?.path;
   const pages = (
-    <PageRouter http={http} model={project.model} api={api} pages={project.pages} notFound={notFound} documentTitle={documentTitle} />
+    <PageRouter
+      http={http}
+      model={project.model}
+      api={api}
+      pages={project.pages}
+      notFound={notFound ?? <DefaultNotFound firstPath={firstPath} />}
+      documentTitle={documentTitle}
+    />
   );
   const content = (
     <>
