@@ -283,6 +283,7 @@ export const model: TModelMaster = {
         email: "string",
         jobTitle: "string",
         jobStatus: "string",
+        isPrimaryAssignment: "string",
         isAdmin: "boolean",
         avatar: "string",
         companyModel: { type: "object", collection: { code: "string", name: "string" } },

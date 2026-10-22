@@ -235,7 +235,7 @@ export function LivePreviewModal({ onClose }: { onClose: () => void }) {
   const endpoints = useProjectEndpoints()
   const apiUrl = useApiUrl()
   const themeConfig = useThemeStore((s) => s.config)
-  const frameTheme = useMemo(() => designThemeStyle(themeConfig), [themeConfig])
+  const frameTheme = useMemo(() => designThemeStyle(themeConfig) ?? {}, [themeConfig])
 
   // Dev tools (see the grilled design): closed on every open — the modal
   // mounts fresh, and so does this. The request log is captured through the

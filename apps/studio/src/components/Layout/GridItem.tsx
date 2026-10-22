@@ -1515,9 +1515,10 @@ const PROFILE_PREVIEW: NormalizedProfile[] = [
     name: 'Kavisara Thisakobsuk',
     jobTitle: 'Section Manager - Application Development',
     company: 'Banpu Public Company Limited',
+    primary: false,
     raw: {},
   },
-  { personId: 'p-1', userId: 'u-2', name: 'Kavisara Thisakobsuk', jobTitle: 'Product Owner - Employee Platforms', company: 'Banpu NEXT', raw: {} },
+  { personId: 'p-1', userId: 'u-2', name: 'Kavisara Thisakobsuk', jobTitle: 'Product Owner - Employee Platforms', company: 'Banpu NEXT', primary: true, raw: {} },
 ]
 
 /** The real `SwitchProfileView` over two sample profiles (the list is fetched at runtime). Always live and inert. */
@@ -1528,6 +1529,8 @@ function SwitchProfileLivePreview({ config }: { config: SwitchProfileConfig }) {
         title={config.title || undefined}
         emptyText={config.emptyText || undefined}
         hideWhenSingle={false}
+        display={config.display}
+        showSubtitle={config.showSubtitle}
         profiles={PROFILE_PREVIEW}
         activeUserId={PROFILE_PREVIEW[0].userId}
       />

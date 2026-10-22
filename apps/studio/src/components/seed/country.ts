@@ -4609,6 +4609,7 @@ function profileFields(): ModelField[] {
     field('email'),
     field('jobTitle'),
     field('jobStatus'),
+    field('isPrimaryAssignment'),
     field('isAdmin', 'boolean'),
     field('avatar'),
     field('companyModel', 'object', [field('code'), field('name')]),
@@ -4681,6 +4682,48 @@ export function profileSeedLoads(): PageLoadDef[] {
  * seeded profile endpoints, both seeded from the `me` load, beside an HTML
  * block and a typography bound to the `profile` slice they write.
  */
+export const PROFILE_SWITCH_DROPDOWN_ITEM_ID = 'seed-item-profile-switch-dropdown'
+
+/**
+ * The Switch Profile additions (v49): the same list as a dropdown (job title
+ * only — the shape of a profile menu) and an HTML block over the
+ * `profileList` slice, the person's rows shared by both elements.
+ */
+export function profileSwitchSeedItems(): GridItemData[] {
+  const full = { xs: 4, sm: 6, md: 8, lg: 12 }
+  const half = { xs: 4, sm: 6, md: 4, lg: 6 }
+  const me = { key: LOAD_ME_ID, path: '', source: 'state' as const }
+  const profiles = { endpointId: PROFILES_BY_PERSON_ENDPOINT_ID, params: {}, extra: { exceptJobStatus: { type: 'value' as const, value: 'T' } } }
+  return [
+    {
+      id: PROFILE_SWITCH_DROPDOWN_ITEM_ID,
+      label: 'Switch profile',
+      type: 'switchprofile',
+      settings: createDefaultItemSettings({ colSpan: half }),
+      config: {
+        ...createDefaultSwitchProfileConfig('switchProfileDropdown'),
+        initial: me,
+        read: profiles,
+        display: 'dropdown',
+        showSubtitle: false,
+        title: 'Position',
+        hideWhenSingle: false,
+      },
+    },
+    {
+      id: 'seed-item-profile-list',
+      label: 'HTML',
+      type: 'html',
+      settings: createDefaultItemSettings({ colSpan: full }),
+      config: {
+        ...createDefaultHtmlContentConfig('profileListCount'),
+        binding: { key: 'profileList', path: '', source: 'state' },
+        html: '<p class="dt-muted">The active person holds <strong>{{length}}</strong> profile(s) — the <code>profileList</code> slice, filled by whichever element fetched it first; a pick calls no API.</p>',
+      },
+    },
+  ]
+}
+
 export function profileDemoSeedItems(): GridItemData[] {
   const full = { xs: 4, sm: 6, md: 8, lg: 12 }
   const half = { xs: 4, sm: 6, md: 4, lg: 6 }
@@ -4717,11 +4760,10 @@ export function profileDemoSeedItems(): GridItemData[] {
         search: { endpointId: SEARCH_PROFILES_ENDPOINT_ID, params: {}, extra: {} },
         read: profiles,
         canReplace: { loadId: LOAD_ME_ID, test: 'compare', path: 'isAdmin', op: 'eq', value: 'true' },
-        reload: ['switchProfile'],
       },
     },
 
-    ...heading('seed-item-profile-switch-h', 'Switch profile', 'Every profile the active person holds — the admin\u2019s two positions, then the replaced person\u2019s. Picking one makes it active; the choice is remembered and restored on load when still listed.'),
+    ...heading('seed-item-profile-switch-h', 'Switch profile', 'Every profile the active person holds — the admin\u2019s two positions, then the replaced person\u2019s. Picking one makes it active (no API call); the choice is remembered and restored on load when still listed, else the primary assignment wins — the admin\u2019s is the second row.'),
     {
       id: 'seed-item-profile-switch',
       label: 'Switch profile',
@@ -4729,6 +4771,7 @@ export function profileDemoSeedItems(): GridItemData[] {
       settings: createDefaultItemSettings({ colSpan: half }),
       config: { ...createDefaultSwitchProfileConfig('switchProfile'), initial: me, read: profiles, hideWhenSingle: false },
     },
+    ...profileSwitchSeedItems(),
     {
       id: 'seed-item-profile-active',
       label: 'HTML',

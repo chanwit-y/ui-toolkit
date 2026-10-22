@@ -1703,6 +1703,12 @@ export type ProfileKeys = {
   email?: ApprovalKeyPath;
   /** An image URL on the record. */
   avatar?: ApprovalKeyPath;
+  /**
+   * The primary-assignment flag (default `isPrimaryAssignment`): `true`, `1`,
+   * `"1"`, `"Y"` or `"true"` mark the profile picked when nobody chose one —
+   * the replaced person's starting profile, the fallback of a restore.
+   */
+  primary?: ApprovalKeyPath;
 };
 
 /** What the two profile elements share (see the grilled design). */
@@ -1739,6 +1745,10 @@ export type SwitchProfileElement = ProfileSessionElement & {
   emptyText?: string;
   /** Render nothing while the person has at most one profile (default true). */
   hideWhenSingle?: boolean;
+  /** A vertical list with the active row checked (default), or a dropdown whose value is the `userId` and label the job title. */
+  display?: "list" | "dropdown";
+  /** Show "company · department" after the job title (default true). */
+  showSubtitle?: boolean;
 };
 
 /**

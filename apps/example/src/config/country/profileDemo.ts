@@ -6,9 +6,12 @@ import { DEFAULT_CONTAINER_GRID } from "@gummy-ui/ui";
  * over the mock profile service, sharing the `profile` state slice (see the
  * grilled design). The logged-in profile is the page load `me` (an admin
  * with two positions); `replaceprofile` offers its trigger only while
- * `me.isAdmin`, `switchprofile` lists the active person's profiles. Every
- * other block binds to `{ type: "state", key: "profile" }`, so it follows
- * whichever profile is active — a switch, a replacement, a return.
+ * `me.isAdmin`, `switchprofile` lists the active person's profiles — once as
+ * the list, once as a dropdown — from one shared, per-person cache (Confirm's
+ * fetch feeds the switch; a pick calls no API). Every other block binds to
+ * `{ type: "state", key: "profile" }`, so it follows whichever profile is
+ * active — a switch, a replacement, a return; the person's rows are the
+ * `profileList` slice.
  *
  * Try: search "tian" and Confirm (two positions to switch between), "nadia"
  * (no active profile — the dialog says so and nothing changes), "broken"
@@ -60,11 +63,10 @@ export const containerProfileDemo: Container[] = [
           searchApi: { name: "searchProfiles", paths: ["data"] },
           profilesApi: { name: "profilesByPerson", paths: ["data"], query: { exceptJobStatus: { type: "value", key: "none", value: "T" } } },
           canReplace: isAdmin,
-          reload: ["switchProfile"],
         },
       },
 
-      ...section("Switch profile", "Every profile the active person holds — the admin's two positions, then the replaced person's. Picking one makes it active; the choice is remembered in localStorage and restored on load when still listed."),
+      ...section("Switch profile", "Every profile the active person holds — the admin's two positions, then the replaced person's. Picking one makes it active (no API call); the choice is remembered in localStorage and restored on load when still listed, else the primary assignment (`isPrimaryAssignment`) wins — the admin's is the second row."),
       {
         ...half,
         type: "switchprofile",
@@ -73,6 +75,27 @@ export const containerProfileDemo: Container[] = [
           initial: me,
           api: { name: "profilesByPerson", paths: ["data"], query: { exceptJobStatus: { type: "value", key: "none", value: "T" } } },
           hideWhenSingle: false,
+        },
+      },
+      {
+        ...half,
+        type: "switchprofile",
+        element: {
+          name: "switchProfileDropdown",
+          initial: me,
+          api: { name: "profilesByPerson", paths: ["data"], query: { exceptJobStatus: { type: "value", key: "none", value: "T" } } },
+          display: "dropdown",
+          showSubtitle: false,
+          title: "Position",
+          hideWhenSingle: false,
+        },
+      },
+      {
+        ...full,
+        type: "html",
+        element: {
+          value: { type: "state", key: "profileList" },
+          html: "<p class=\"dt-muted\">The active person holds <strong>{{length}}</strong> profile(s) — the <code>profileList</code> slice, filled by whichever element fetched it first.</p>",
         },
       },
       {

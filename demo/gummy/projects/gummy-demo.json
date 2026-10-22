@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "name": "gummy-demo",
+  "env": {
+    "API_URL": "http://localhost:9000"
+  },
+  "model": {},
+  "api": {},
+  "pages": {
+    "page1": {
+      "path": "/page-1",
+      "title": "Page 1",
+      "containers": [
+        {
+          "id": "page-page1",
+          "name": "page-page1",
+          "isArray": false,
+          "bins": [],
+          "gap": "16px",
+          "justifyItems": "stretch",
+          "alignItems": "stretch",
+          "justifyContent": "start",
+          "alignContent": "start",
+          "gridAutoFlow": "row"
+        }
+      ]
+    }
+  },
+  "menu": [
+    {
+      "label": "Page 1",
+      "navigate": {
+        "page": "page1"
+      }
+    }
+  ],
+  "shell": {
+    "navigation": "sidebar",
+    "breadcrumbs": true,
+    "appBar": {
+      "title": "gummy-demo"
+    }
+  },
+  "theme": {
+    "theme": {
+      "appearance": "light",
+      "accentColor": "blue",
+      "radius": "small",
+      "panelBackground": "translucent"
+    },
+    "components": {}
+  },
+  "globalLoads": [],
+  "customActions": [],
+  "customComponents": []
+}

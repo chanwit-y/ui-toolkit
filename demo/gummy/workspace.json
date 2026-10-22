@@ -1,0 +1,3606 @@
+{
+  "state": {
+    "version": 49,
+    "appearance": "light",
+    "user": "Chanwit Y.",
+    "projects": [
+      {
+        "id": "d5bf1bd2-f18c-4ba1-bd46-d74ed1738d26",
+        "name": "gummy-demo",
+        "description": "",
+        "createdAt": 1792659551081,
+        "updatedAt": 1792659551081,
+        "snapshot": {
+          "pages": [
+            {
+              "id": "fbffbe70-87e8-489b-bd89-b2362bc4849d",
+              "key": "page1",
+              "name": "Page 1",
+              "path": "/page-1",
+              "grid": {
+                "items": [],
+                "containerSettings": {
+                  "columns": {
+                    "xs": 4,
+                    "sm": 6,
+                    "md": 8,
+                    "lg": 12
+                  },
+                  "gap": {
+                    "xs": "16px",
+                    "sm": "16px",
+                    "md": "16px",
+                    "lg": "16px"
+                  },
+                  "rowGap": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "columnGap": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "justifyItems": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "alignItems": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "justifyContent": {
+                    "xs": "start",
+                    "sm": "start",
+                    "md": "start",
+                    "lg": "start"
+                  },
+                  "alignContent": {
+                    "xs": "start",
+                    "sm": "start",
+                    "md": "start",
+                    "lg": "start"
+                  },
+                  "gridAutoRows": {
+                    "xs": "minmax(56px, auto)",
+                    "sm": "minmax(56px, auto)",
+                    "md": "minmax(56px, auto)",
+                    "lg": "minmax(56px, auto)"
+                  },
+                  "gridAutoFlow": {
+                    "xs": "row",
+                    "sm": "row",
+                    "md": "row",
+                    "lg": "row"
+                  }
+                },
+                "fieldSeq": 0
+              }
+            }
+          ],
+          "menu": [
+            {
+              "id": "f83b2a32-ecf0-4be1-b7a0-ee4dc82662fd",
+              "kind": "page",
+              "label": "Page 1",
+              "icon": "",
+              "navigate": {
+                "pageId": "fbffbe70-87e8-489b-bd89-b2362bc4849d",
+                "params": {},
+                "replace": false
+              }
+            }
+          ],
+          "shell": {
+            "navigation": "sidebar",
+            "breadcrumbs": true,
+            "appBar": {
+              "title": "gummy-demo",
+              "icon": "",
+              "logo": "",
+              "variant": "panel",
+              "sidebarToggle": {
+                "hide": "",
+                "show": ""
+              }
+            },
+            "menuIcons": true,
+            "collapsible": true
+          },
+          "env": [
+            {
+              "id": "seed-env-api-url",
+              "name": "API_URL",
+              "value": "http://localhost:9000",
+              "locked": true
+            }
+          ],
+          "theme": {
+            "appearance": "light",
+            "accentColor": "blue",
+            "radius": "small",
+            "panelBackground": "translucent",
+            "buttonColor": "",
+            "dataTable": {
+              "headerColor": "",
+              "headerTextColor": "",
+              "headerFontSize": "",
+              "headerFontWeight": "",
+              "headerHoverColor": "",
+              "paginationButtonColor": "",
+              "paginationButtonHoverColor": "",
+              "rowHoverColor": "",
+              "editButtonColor": "",
+              "deleteButtonColor": ""
+            }
+          },
+          "endpointIds": [],
+          "customActions": [],
+          "customComponents": []
+        }
+      }
+    ],
+    "library": {
+      "groups": [],
+      "models": [],
+      "endpoints": [],
+      "templates": [
+        {
+          "id": "seed-tpl-record-list",
+          "name": "Record list",
+          "description": "Heading, search and a bound table.",
+          "category": "Data",
+          "grid": {
+            "items": [
+              {
+                "id": "seed-tpl-item-1",
+                "label": "Typography",
+                "type": "typography",
+                "settings": {
+                  "colSpan": {
+                    "xs": 4,
+                    "sm": 6,
+                    "md": 8,
+                    "lg": 12
+                  },
+                  "colStart": {
+                    "xs": 0,
+                    "sm": 0,
+                    "md": 0,
+                    "lg": 0
+                  },
+                  "rowSpan": {
+                    "xs": 1,
+                    "sm": 1,
+                    "md": 1,
+                    "lg": 1
+                  },
+                  "gridArea": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "justifySelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "alignSelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "order": {
+                    "xs": "0",
+                    "sm": "0",
+                    "md": "0",
+                    "lg": "0"
+                  }
+                },
+                "config": {
+                  "text": "Records",
+                  "variant": "h4",
+                  "weight": "",
+                  "color": "",
+                  "align": "",
+                  "truncate": false,
+                  "href": "",
+                  "binding": null
+                }
+              },
+              {
+                "id": "seed-tpl-item-2",
+                "label": "Text",
+                "type": "text",
+                "settings": {
+                  "colSpan": {
+                    "xs": 4,
+                    "sm": 6,
+                    "md": 8,
+                    "lg": 12
+                  },
+                  "colStart": {
+                    "xs": 0,
+                    "sm": 0,
+                    "md": 0,
+                    "lg": 0
+                  },
+                  "rowSpan": {
+                    "xs": 1,
+                    "sm": 1,
+                    "md": 1,
+                    "lg": 1
+                  },
+                  "gridArea": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "justifySelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "alignSelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "order": {
+                    "xs": "0",
+                    "sm": "0",
+                    "md": "0",
+                    "lg": "0"
+                  }
+                },
+                "config": {
+                  "text": "Everything in this collection, searchable.",
+                  "isLabel": false,
+                  "binding": null
+                }
+              },
+              {
+                "id": "seed-tpl-item-3",
+                "label": "Autocomplete",
+                "type": "autocomplete",
+                "settings": {
+                  "colSpan": {
+                    "xs": 4,
+                    "sm": 2,
+                    "md": 3,
+                    "lg": 4
+                  },
+                  "colStart": {
+                    "xs": 0,
+                    "sm": 0,
+                    "md": 0,
+                    "lg": 0
+                  },
+                  "rowSpan": {
+                    "xs": 1,
+                    "sm": 1,
+                    "md": 1,
+                    "lg": 1
+                  },
+                  "gridArea": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "justifySelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "alignSelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "order": {
+                    "xs": "0",
+                    "sm": "0",
+                    "md": "0",
+                    "lg": "0"
+                  }
+                },
+                "config": {
+                  "name": "search",
+                  "dataType": "text",
+                  "label": "Search",
+                  "placeholder": "Type to search",
+                  "helperText": "",
+                  "isRequired": false,
+                  "errorMessage": "",
+                  "variant": "surface",
+                  "size": "2",
+                  "radius": "medium",
+                  "isFullWidth": true,
+                  "isFixedHeight": true,
+                  "width": "",
+                  "regex": "",
+                  "regexErrorMessage": "",
+                  "mode": "source",
+                  "options": [
+                    {
+                      "id": "1",
+                      "name": "Option 1"
+                    },
+                    {
+                      "id": "2",
+                      "name": "Option 2"
+                    }
+                  ],
+                  "idKey": "id",
+                  "displayKey": "name",
+                  "searchKey": "name",
+                  "subtitleKey": "",
+                  "avatarKey": "",
+                  "inputIcon": "",
+                  "itemIcon": "",
+                  "dataSource": {
+                    "endpointId": null,
+                    "paths": ""
+                  },
+                  "observeToItemId": ""
+                }
+              },
+              {
+                "id": "seed-tpl-item-4",
+                "label": "Data Table",
+                "type": "datatable",
+                "settings": {
+                  "colSpan": {
+                    "xs": 4,
+                    "sm": 6,
+                    "md": 8,
+                    "lg": 12
+                  },
+                  "colStart": {
+                    "xs": 0,
+                    "sm": 0,
+                    "md": 0,
+                    "lg": 0
+                  },
+                  "rowSpan": {
+                    "xs": 1,
+                    "sm": 1,
+                    "md": 1,
+                    "lg": 1
+                  },
+                  "gridArea": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "justifySelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "alignSelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "order": {
+                    "xs": "0",
+                    "sm": "0",
+                    "md": "0",
+                    "lg": "0"
+                  }
+                },
+                "config": {
+                  "name": "dtRecords",
+                  "title": "Records",
+                  "canEdit": true,
+                  "canDelete": true,
+                  "canSearchAllColumns": true,
+                  "columns": [
+                    {
+                      "size": "",
+                      "minSize": "",
+                      "maxSize": "",
+                      "resizable": true,
+                      "id": "c56f629d-8e27-43c2-bbaf-3878f8564586",
+                      "accessor": "id",
+                      "header": "ID",
+                      "enableSorting": true,
+                      "enableColumnFilter": false,
+                      "align": "center",
+                      "useDateFormat": "",
+                      "pin": "",
+                      "html": "",
+                      "sortField": "",
+                      "lines": "",
+                      "rowHeader": false,
+                      "mergeRows": false,
+                      "mergeColumns": false,
+                      "group": ""
+                    },
+                    {
+                      "size": "",
+                      "minSize": "",
+                      "maxSize": "",
+                      "resizable": true,
+                      "id": "87ea74c4-8af8-4204-be08-c5f958599aaa",
+                      "accessor": "name",
+                      "header": "Name",
+                      "enableSorting": true,
+                      "enableColumnFilter": false,
+                      "align": "center",
+                      "useDateFormat": "",
+                      "pin": "",
+                      "html": "",
+                      "sortField": "",
+                      "lines": "",
+                      "rowHeader": false,
+                      "mergeRows": false,
+                      "mergeColumns": false,
+                      "group": ""
+                    },
+                    {
+                      "size": "",
+                      "minSize": "",
+                      "maxSize": "",
+                      "resizable": true,
+                      "id": "42fc4978-98ce-4ee1-a4a0-1073afa0299b",
+                      "accessor": "email",
+                      "header": "Email",
+                      "enableSorting": true,
+                      "enableColumnFilter": false,
+                      "align": "center",
+                      "useDateFormat": "",
+                      "pin": "",
+                      "html": "",
+                      "sortField": "",
+                      "lines": "",
+                      "rowHeader": false,
+                      "mergeRows": false,
+                      "mergeColumns": false,
+                      "group": ""
+                    },
+                    {
+                      "size": "",
+                      "minSize": "",
+                      "maxSize": "",
+                      "resizable": true,
+                      "id": "5e415c3c-097f-4089-a578-b25b86536a13",
+                      "accessor": "status",
+                      "header": "Status",
+                      "enableSorting": true,
+                      "enableColumnFilter": false,
+                      "align": "center",
+                      "useDateFormat": "",
+                      "pin": "",
+                      "html": "",
+                      "sortField": "",
+                      "lines": "",
+                      "rowHeader": false,
+                      "mergeRows": false,
+                      "mergeColumns": false,
+                      "group": ""
+                    }
+                  ],
+                  "endpointId": null,
+                  "apiPaths": "",
+                  "modalMaxWidth": "",
+                  "modalMinWidth": "",
+                  "modalMaxHeight": "",
+                  "deleteEndpointId": null,
+                  "deleteParams": {},
+                  "deleteConfirmEnabled": true,
+                  "deleteConfirmTitle": "Delete record",
+                  "deleteConfirmDescription": "Are you sure you want to delete this record?",
+                  "deleteIsReload": true,
+                  "pagination": {
+                    "enabled": false,
+                    "placement": "auto",
+                    "offsetKey": "offset",
+                    "limitKey": "limit",
+                    "searchKey": "",
+                    "totalPath": "total",
+                    "defaultPageSize": 10,
+                    "pageSizeOptions": [
+                      5,
+                      10,
+                      20,
+                      30,
+                      40,
+                      50
+                    ]
+                  },
+                  "canAdd": false,
+                  "addButton": {
+                    "label": "Add",
+                    "icon": "puls",
+                    "variant": "contained"
+                  },
+                  "headerGap": "",
+                  "canResizeColumns": true,
+                  "cellLines": 2,
+                  "filtersEnabled": false,
+                  "filterButton": {
+                    "label": "Filter",
+                    "icon": "filter",
+                    "variant": "outlined"
+                  },
+                  "filterDisplay": "popover",
+                  "filterDefaults": [],
+                  "requestMapping": [],
+                  "sort": {
+                    "enabled": false,
+                    "placement": "auto",
+                    "sortKey": "",
+                    "orderKey": "",
+                    "ascValue": "asc",
+                    "descValue": "desc",
+                    "defaultField": "",
+                    "defaultOrder": "asc"
+                  },
+                  "deleteSnackbarSuccessEnabled": false,
+                  "deleteSnackbarSuccessType": "success",
+                  "deleteSnackbarSuccessMessage": "",
+                  "deleteSnackbarErrorException": false
+                }
+              }
+            ],
+            "containerSettings": {
+              "columns": {
+                "xs": 4,
+                "sm": 6,
+                "md": 8,
+                "lg": 12
+              },
+              "gap": {
+                "xs": "16px",
+                "sm": "16px",
+                "md": "16px",
+                "lg": "16px"
+              },
+              "rowGap": {
+                "xs": "",
+                "sm": "",
+                "md": "",
+                "lg": ""
+              },
+              "columnGap": {
+                "xs": "",
+                "sm": "",
+                "md": "",
+                "lg": ""
+              },
+              "justifyItems": {
+                "xs": "stretch",
+                "sm": "stretch",
+                "md": "stretch",
+                "lg": "stretch"
+              },
+              "alignItems": {
+                "xs": "stretch",
+                "sm": "stretch",
+                "md": "stretch",
+                "lg": "stretch"
+              },
+              "justifyContent": {
+                "xs": "start",
+                "sm": "start",
+                "md": "start",
+                "lg": "start"
+              },
+              "alignContent": {
+                "xs": "start",
+                "sm": "start",
+                "md": "start",
+                "lg": "start"
+              },
+              "gridAutoRows": {
+                "xs": "minmax(56px, auto)",
+                "sm": "minmax(56px, auto)",
+                "md": "minmax(56px, auto)",
+                "lg": "minmax(56px, auto)"
+              },
+              "gridAutoFlow": {
+                "xs": "row",
+                "sm": "row",
+                "md": "row",
+                "lg": "row"
+              }
+            },
+            "fieldSeq": 0
+          },
+          "active": true,
+          "builtin": true,
+          "createdBy": "System",
+          "updatedAt": 1792054751081
+        },
+        {
+          "id": "seed-tpl-create-manage",
+          "name": "Create and manage",
+          "description": "CRUD page — filters, table and a form modal.",
+          "category": "Data",
+          "grid": {
+            "items": [
+              {
+                "id": "seed-tpl-item-10",
+                "label": "Typography",
+                "type": "typography",
+                "settings": {
+                  "colSpan": {
+                    "xs": 4,
+                    "sm": 6,
+                    "md": 8,
+                    "lg": 12
+                  },
+                  "colStart": {
+                    "xs": 0,
+                    "sm": 0,
+                    "md": 0,
+                    "lg": 0
+                  },
+                  "rowSpan": {
+                    "xs": 1,
+                    "sm": 1,
+                    "md": 1,
+                    "lg": 1
+                  },
+                  "gridArea": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "justifySelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "alignSelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "order": {
+                    "xs": "0",
+                    "sm": "0",
+                    "md": "0",
+                    "lg": "0"
+                  }
+                },
+                "config": {
+                  "text": "Records",
+                  "variant": "h4",
+                  "weight": "",
+                  "color": "",
+                  "align": "",
+                  "truncate": false,
+                  "href": "",
+                  "binding": null
+                }
+              },
+              {
+                "id": "seed-tpl-item-5",
+                "label": "Button",
+                "type": "button",
+                "settings": {
+                  "colSpan": {
+                    "xs": 2,
+                    "sm": 2,
+                    "md": 2,
+                    "lg": 2
+                  },
+                  "colStart": {
+                    "xs": 0,
+                    "sm": 0,
+                    "md": 0,
+                    "lg": 0
+                  },
+                  "rowSpan": {
+                    "xs": 1,
+                    "sm": 1,
+                    "md": 1,
+                    "lg": 1
+                  },
+                  "gridArea": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "justifySelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "alignSelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "order": {
+                    "xs": "0",
+                    "sm": "0",
+                    "md": "0",
+                    "lg": "0"
+                  }
+                },
+                "config": {
+                  "label": "Add record",
+                  "icon": "puls",
+                  "variant": "contained",
+                  "mode": "direct",
+                  "actions": [],
+                  "confirmTitle": "",
+                  "confirmDescription": "",
+                  "confirmTrue": [],
+                  "confirmFalse": [],
+                  "modalItemId": "",
+                  "reloadTableItemId": "",
+                  "endpointId": null,
+                  "snackbarSuccessEnabled": false,
+                  "snackbarSuccessType": "success",
+                  "snackbarSuccessMessage": "",
+                  "snackbarErrorException": false
+                }
+              },
+              {
+                "id": "seed-tpl-item-9",
+                "label": "Container",
+                "type": "container",
+                "settings": {
+                  "colSpan": {
+                    "xs": 4,
+                    "sm": 6,
+                    "md": 8,
+                    "lg": 12
+                  },
+                  "colStart": {
+                    "xs": 0,
+                    "sm": 0,
+                    "md": 0,
+                    "lg": 0
+                  },
+                  "rowSpan": {
+                    "xs": 1,
+                    "sm": 1,
+                    "md": 1,
+                    "lg": 1
+                  },
+                  "gridArea": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "justifySelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "alignSelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "order": {
+                    "xs": "0",
+                    "sm": "0",
+                    "md": "0",
+                    "lg": "0"
+                  }
+                },
+                "childCanvases": [
+                  {
+                    "items": [
+                      {
+                        "id": "seed-tpl-item-6",
+                        "label": "Autocomplete",
+                        "type": "autocomplete",
+                        "settings": {
+                          "colSpan": {
+                            "xs": 4,
+                            "sm": 2,
+                            "md": 3,
+                            "lg": 4
+                          },
+                          "colStart": {
+                            "xs": 0,
+                            "sm": 0,
+                            "md": 0,
+                            "lg": 0
+                          },
+                          "rowSpan": {
+                            "xs": 1,
+                            "sm": 1,
+                            "md": 1,
+                            "lg": 1
+                          },
+                          "gridArea": {
+                            "xs": "",
+                            "sm": "",
+                            "md": "",
+                            "lg": ""
+                          },
+                          "justifySelf": {
+                            "xs": "stretch",
+                            "sm": "stretch",
+                            "md": "stretch",
+                            "lg": "stretch"
+                          },
+                          "alignSelf": {
+                            "xs": "stretch",
+                            "sm": "stretch",
+                            "md": "stretch",
+                            "lg": "stretch"
+                          },
+                          "order": {
+                            "xs": "0",
+                            "sm": "0",
+                            "md": "0",
+                            "lg": "0"
+                          }
+                        },
+                        "config": {
+                          "name": "search",
+                          "dataType": "text",
+                          "label": "Search",
+                          "placeholder": "Name or code",
+                          "helperText": "",
+                          "isRequired": false,
+                          "errorMessage": "",
+                          "variant": "surface",
+                          "size": "2",
+                          "radius": "medium",
+                          "isFullWidth": true,
+                          "isFixedHeight": true,
+                          "width": "",
+                          "regex": "",
+                          "regexErrorMessage": "",
+                          "mode": "source",
+                          "options": [
+                            {
+                              "id": "1",
+                              "name": "Option 1"
+                            },
+                            {
+                              "id": "2",
+                              "name": "Option 2"
+                            }
+                          ],
+                          "idKey": "id",
+                          "displayKey": "name",
+                          "searchKey": "name",
+                          "subtitleKey": "",
+                          "avatarKey": "",
+                          "inputIcon": "",
+                          "itemIcon": "",
+                          "dataSource": {
+                            "endpointId": null,
+                            "paths": ""
+                          },
+                          "observeToItemId": ""
+                        }
+                      },
+                      {
+                        "id": "seed-tpl-item-7",
+                        "label": "Select",
+                        "type": "select",
+                        "settings": {
+                          "colSpan": {
+                            "xs": 4,
+                            "sm": 2,
+                            "md": 2,
+                            "lg": 3
+                          },
+                          "colStart": {
+                            "xs": 0,
+                            "sm": 0,
+                            "md": 0,
+                            "lg": 0
+                          },
+                          "rowSpan": {
+                            "xs": 1,
+                            "sm": 1,
+                            "md": 1,
+                            "lg": 1
+                          },
+                          "gridArea": {
+                            "xs": "",
+                            "sm": "",
+                            "md": "",
+                            "lg": ""
+                          },
+                          "justifySelf": {
+                            "xs": "stretch",
+                            "sm": "stretch",
+                            "md": "stretch",
+                            "lg": "stretch"
+                          },
+                          "alignSelf": {
+                            "xs": "stretch",
+                            "sm": "stretch",
+                            "md": "stretch",
+                            "lg": "stretch"
+                          },
+                          "order": {
+                            "xs": "0",
+                            "sm": "0",
+                            "md": "0",
+                            "lg": "0"
+                          }
+                        },
+                        "config": {
+                          "name": "status",
+                          "dataType": "text",
+                          "label": "Status",
+                          "placeholder": "All",
+                          "helperText": "",
+                          "isRequired": false,
+                          "errorMessage": "",
+                          "variant": "surface",
+                          "size": "2",
+                          "radius": "medium",
+                          "isFullWidth": true,
+                          "isFixedHeight": true,
+                          "width": "",
+                          "regex": "",
+                          "regexErrorMessage": "",
+                          "mode": "static",
+                          "options": [
+                            {
+                              "id": "1",
+                              "name": "Option 1"
+                            },
+                            {
+                              "id": "2",
+                              "name": "Option 2"
+                            }
+                          ],
+                          "idKey": "id",
+                          "displayKey": "name",
+                          "searchKey": "name",
+                          "subtitleKey": "",
+                          "avatarKey": "",
+                          "inputIcon": "",
+                          "itemIcon": "",
+                          "dataSource": {
+                            "endpointId": null,
+                            "paths": ""
+                          },
+                          "observeToItemId": ""
+                        }
+                      },
+                      {
+                        "id": "seed-tpl-item-8",
+                        "label": "Date Range",
+                        "type": "daterangepicker",
+                        "settings": {
+                          "colSpan": {
+                            "xs": 4,
+                            "sm": 3,
+                            "md": 3,
+                            "lg": 5
+                          },
+                          "colStart": {
+                            "xs": 0,
+                            "sm": 0,
+                            "md": 0,
+                            "lg": 0
+                          },
+                          "rowSpan": {
+                            "xs": 1,
+                            "sm": 1,
+                            "md": 1,
+                            "lg": 1
+                          },
+                          "gridArea": {
+                            "xs": "",
+                            "sm": "",
+                            "md": "",
+                            "lg": ""
+                          },
+                          "justifySelf": {
+                            "xs": "stretch",
+                            "sm": "stretch",
+                            "md": "stretch",
+                            "lg": "stretch"
+                          },
+                          "alignSelf": {
+                            "xs": "stretch",
+                            "sm": "stretch",
+                            "md": "stretch",
+                            "lg": "stretch"
+                          },
+                          "order": {
+                            "xs": "0",
+                            "sm": "0",
+                            "md": "0",
+                            "lg": "0"
+                          }
+                        },
+                        "config": {
+                          "kind": "range",
+                          "name": "updatedBetween",
+                          "label": "Updated between",
+                          "placeholder": "",
+                          "helperText": "",
+                          "isRequired": false,
+                          "errorMessage": "",
+                          "variant": "surface",
+                          "size": "2",
+                          "radius": "medium",
+                          "clearable": true,
+                          "displayFormat": "yyyy-MM-dd",
+                          "min": "",
+                          "max": "",
+                          "weekStartsOn": 0,
+                          "minuteStep": 1
+                        }
+                      }
+                    ],
+                    "settings": {
+                      "columns": {
+                        "xs": 4,
+                        "sm": 6,
+                        "md": 8,
+                        "lg": 12
+                      },
+                      "gap": {
+                        "xs": "16px",
+                        "sm": "16px",
+                        "md": "16px",
+                        "lg": "16px"
+                      },
+                      "rowGap": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "columnGap": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifyItems": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignItems": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "justifyContent": {
+                        "xs": "start",
+                        "sm": "start",
+                        "md": "start",
+                        "lg": "start"
+                      },
+                      "alignContent": {
+                        "xs": "start",
+                        "sm": "start",
+                        "md": "start",
+                        "lg": "start"
+                      },
+                      "gridAutoRows": {
+                        "xs": "minmax(56px, auto)",
+                        "sm": "minmax(56px, auto)",
+                        "md": "minmax(56px, auto)",
+                        "lg": "minmax(56px, auto)"
+                      },
+                      "gridAutoFlow": {
+                        "xs": "row",
+                        "sm": "row",
+                        "md": "row",
+                        "lg": "row"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "seed-tpl-item-11",
+                "label": "Data Table",
+                "type": "datatable",
+                "settings": {
+                  "colSpan": {
+                    "xs": 4,
+                    "sm": 6,
+                    "md": 8,
+                    "lg": 12
+                  },
+                  "colStart": {
+                    "xs": 0,
+                    "sm": 0,
+                    "md": 0,
+                    "lg": 0
+                  },
+                  "rowSpan": {
+                    "xs": 1,
+                    "sm": 1,
+                    "md": 1,
+                    "lg": 1
+                  },
+                  "gridArea": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "justifySelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "alignSelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "order": {
+                    "xs": "0",
+                    "sm": "0",
+                    "md": "0",
+                    "lg": "0"
+                  }
+                },
+                "config": {
+                  "name": "dtRecords",
+                  "title": "Records",
+                  "canEdit": true,
+                  "canDelete": true,
+                  "canSearchAllColumns": true,
+                  "columns": [
+                    {
+                      "size": "",
+                      "minSize": "",
+                      "maxSize": "",
+                      "resizable": true,
+                      "id": "354d805a-8368-42c2-a1ed-990a576c733c",
+                      "accessor": "id",
+                      "header": "ID",
+                      "enableSorting": true,
+                      "enableColumnFilter": false,
+                      "align": "center",
+                      "useDateFormat": "",
+                      "pin": "",
+                      "html": "",
+                      "sortField": "",
+                      "lines": "",
+                      "rowHeader": false,
+                      "mergeRows": false,
+                      "mergeColumns": false,
+                      "group": ""
+                    },
+                    {
+                      "size": "",
+                      "minSize": "",
+                      "maxSize": "",
+                      "resizable": true,
+                      "id": "165f6662-e67b-41e9-b0e4-ec849e07ebb7",
+                      "accessor": "name",
+                      "header": "Name",
+                      "enableSorting": true,
+                      "enableColumnFilter": false,
+                      "align": "center",
+                      "useDateFormat": "",
+                      "pin": "",
+                      "html": "",
+                      "sortField": "",
+                      "lines": "",
+                      "rowHeader": false,
+                      "mergeRows": false,
+                      "mergeColumns": false,
+                      "group": ""
+                    },
+                    {
+                      "size": "",
+                      "minSize": "",
+                      "maxSize": "",
+                      "resizable": true,
+                      "id": "8f67953a-4bc7-43d3-bba4-2b15bc7349df",
+                      "accessor": "email",
+                      "header": "Email",
+                      "enableSorting": true,
+                      "enableColumnFilter": false,
+                      "align": "center",
+                      "useDateFormat": "",
+                      "pin": "",
+                      "html": "",
+                      "sortField": "",
+                      "lines": "",
+                      "rowHeader": false,
+                      "mergeRows": false,
+                      "mergeColumns": false,
+                      "group": ""
+                    },
+                    {
+                      "size": "",
+                      "minSize": "",
+                      "maxSize": "",
+                      "resizable": true,
+                      "id": "d8d4165b-ae86-4b90-9bd9-6ac3a71c78f3",
+                      "accessor": "status",
+                      "header": "Status",
+                      "enableSorting": true,
+                      "enableColumnFilter": false,
+                      "align": "center",
+                      "useDateFormat": "",
+                      "pin": "",
+                      "html": "",
+                      "sortField": "",
+                      "lines": "",
+                      "rowHeader": false,
+                      "mergeRows": false,
+                      "mergeColumns": false,
+                      "group": ""
+                    }
+                  ],
+                  "endpointId": null,
+                  "apiPaths": "",
+                  "modalMaxWidth": "",
+                  "modalMinWidth": "",
+                  "modalMaxHeight": "",
+                  "deleteEndpointId": null,
+                  "deleteParams": {},
+                  "deleteConfirmEnabled": true,
+                  "deleteConfirmTitle": "Delete record",
+                  "deleteConfirmDescription": "Are you sure you want to delete this record?",
+                  "deleteIsReload": true,
+                  "pagination": {
+                    "enabled": false,
+                    "placement": "auto",
+                    "offsetKey": "offset",
+                    "limitKey": "limit",
+                    "searchKey": "",
+                    "totalPath": "total",
+                    "defaultPageSize": 10,
+                    "pageSizeOptions": [
+                      5,
+                      10,
+                      20,
+                      30,
+                      40,
+                      50
+                    ]
+                  },
+                  "canAdd": false,
+                  "addButton": {
+                    "label": "Add",
+                    "icon": "puls",
+                    "variant": "contained"
+                  },
+                  "headerGap": "",
+                  "canResizeColumns": true,
+                  "cellLines": 2,
+                  "filtersEnabled": false,
+                  "filterButton": {
+                    "label": "Filter",
+                    "icon": "filter",
+                    "variant": "outlined"
+                  },
+                  "filterDisplay": "popover",
+                  "filterDefaults": [],
+                  "requestMapping": [],
+                  "sort": {
+                    "enabled": false,
+                    "placement": "auto",
+                    "sortKey": "",
+                    "orderKey": "",
+                    "ascValue": "asc",
+                    "descValue": "desc",
+                    "defaultField": "",
+                    "defaultOrder": "asc"
+                  },
+                  "deleteSnackbarSuccessEnabled": false,
+                  "deleteSnackbarSuccessType": "success",
+                  "deleteSnackbarSuccessMessage": "",
+                  "deleteSnackbarErrorException": false
+                }
+              },
+              {
+                "id": "seed-tpl-item-14",
+                "label": "Modal",
+                "type": "modal",
+                "settings": {
+                  "colSpan": {
+                    "xs": 2,
+                    "sm": 2,
+                    "md": 2,
+                    "lg": 2
+                  },
+                  "colStart": {
+                    "xs": 0,
+                    "sm": 0,
+                    "md": 0,
+                    "lg": 0
+                  },
+                  "rowSpan": {
+                    "xs": 1,
+                    "sm": 1,
+                    "md": 1,
+                    "lg": 1
+                  },
+                  "gridArea": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "justifySelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "alignSelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "order": {
+                    "xs": "0",
+                    "sm": "0",
+                    "md": "0",
+                    "lg": "0"
+                  }
+                },
+                "config": {
+                  "id": "recordModal",
+                  "title": "Add record",
+                  "description": "Create a record",
+                  "maxWidth": "520px",
+                  "minWidth": "",
+                  "maxHeight": "",
+                  "trigger": {
+                    "label": "Add record",
+                    "icon": "puls",
+                    "variant": "contained"
+                  }
+                },
+                "childCanvases": [
+                  {
+                    "items": [
+                      {
+                        "id": "seed-tpl-item-12",
+                        "label": "Text Field",
+                        "type": "textfield",
+                        "settings": {
+                          "colSpan": {
+                            "xs": 4,
+                            "sm": 2,
+                            "md": 2,
+                            "lg": 3
+                          },
+                          "colStart": {
+                            "xs": 0,
+                            "sm": 0,
+                            "md": 0,
+                            "lg": 0
+                          },
+                          "rowSpan": {
+                            "xs": 1,
+                            "sm": 1,
+                            "md": 1,
+                            "lg": 1
+                          },
+                          "gridArea": {
+                            "xs": "",
+                            "sm": "",
+                            "md": "",
+                            "lg": ""
+                          },
+                          "justifySelf": {
+                            "xs": "stretch",
+                            "sm": "stretch",
+                            "md": "stretch",
+                            "lg": "stretch"
+                          },
+                          "alignSelf": {
+                            "xs": "stretch",
+                            "sm": "stretch",
+                            "md": "stretch",
+                            "lg": "stretch"
+                          },
+                          "order": {
+                            "xs": "0",
+                            "sm": "0",
+                            "md": "0",
+                            "lg": "0"
+                          }
+                        },
+                        "config": {
+                          "name": "code",
+                          "dataType": "text",
+                          "label": "Code",
+                          "placeholder": "TH",
+                          "helperText": "",
+                          "isRequired": false,
+                          "errorMessage": "",
+                          "variant": "surface",
+                          "size": "3",
+                          "radius": "medium",
+                          "isFullWidth": true,
+                          "isFixedHeight": true,
+                          "width": "",
+                          "regex": "",
+                          "regexErrorMessage": ""
+                        }
+                      },
+                      {
+                        "id": "seed-tpl-item-13",
+                        "label": "Text Field",
+                        "type": "textfield",
+                        "settings": {
+                          "colSpan": {
+                            "xs": 4,
+                            "sm": 3,
+                            "md": 4,
+                            "lg": 6
+                          },
+                          "colStart": {
+                            "xs": 0,
+                            "sm": 0,
+                            "md": 0,
+                            "lg": 0
+                          },
+                          "rowSpan": {
+                            "xs": 1,
+                            "sm": 1,
+                            "md": 1,
+                            "lg": 1
+                          },
+                          "gridArea": {
+                            "xs": "",
+                            "sm": "",
+                            "md": "",
+                            "lg": ""
+                          },
+                          "justifySelf": {
+                            "xs": "stretch",
+                            "sm": "stretch",
+                            "md": "stretch",
+                            "lg": "stretch"
+                          },
+                          "alignSelf": {
+                            "xs": "stretch",
+                            "sm": "stretch",
+                            "md": "stretch",
+                            "lg": "stretch"
+                          },
+                          "order": {
+                            "xs": "0",
+                            "sm": "0",
+                            "md": "0",
+                            "lg": "0"
+                          }
+                        },
+                        "config": {
+                          "name": "name",
+                          "dataType": "text",
+                          "label": "Name",
+                          "placeholder": "Thailand",
+                          "helperText": "",
+                          "isRequired": false,
+                          "errorMessage": "",
+                          "variant": "surface",
+                          "size": "3",
+                          "radius": "medium",
+                          "isFullWidth": true,
+                          "isFixedHeight": true,
+                          "width": "",
+                          "regex": "",
+                          "regexErrorMessage": ""
+                        }
+                      }
+                    ],
+                    "settings": {
+                      "columns": {
+                        "xs": 4,
+                        "sm": 6,
+                        "md": 8,
+                        "lg": 12
+                      },
+                      "gap": {
+                        "xs": "16px",
+                        "sm": "16px",
+                        "md": "16px",
+                        "lg": "16px"
+                      },
+                      "rowGap": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "columnGap": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifyItems": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignItems": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "justifyContent": {
+                        "xs": "start",
+                        "sm": "start",
+                        "md": "start",
+                        "lg": "start"
+                      },
+                      "alignContent": {
+                        "xs": "start",
+                        "sm": "start",
+                        "md": "start",
+                        "lg": "start"
+                      },
+                      "gridAutoRows": {
+                        "xs": "minmax(56px, auto)",
+                        "sm": "minmax(56px, auto)",
+                        "md": "minmax(56px, auto)",
+                        "lg": "minmax(56px, auto)"
+                      },
+                      "gridAutoFlow": {
+                        "xs": "row",
+                        "sm": "row",
+                        "md": "row",
+                        "lg": "row"
+                      }
+                    }
+                  }
+                ]
+              }
+            ],
+            "containerSettings": {
+              "columns": {
+                "xs": 4,
+                "sm": 6,
+                "md": 8,
+                "lg": 12
+              },
+              "gap": {
+                "xs": "16px",
+                "sm": "16px",
+                "md": "16px",
+                "lg": "16px"
+              },
+              "rowGap": {
+                "xs": "",
+                "sm": "",
+                "md": "",
+                "lg": ""
+              },
+              "columnGap": {
+                "xs": "",
+                "sm": "",
+                "md": "",
+                "lg": ""
+              },
+              "justifyItems": {
+                "xs": "stretch",
+                "sm": "stretch",
+                "md": "stretch",
+                "lg": "stretch"
+              },
+              "alignItems": {
+                "xs": "stretch",
+                "sm": "stretch",
+                "md": "stretch",
+                "lg": "stretch"
+              },
+              "justifyContent": {
+                "xs": "start",
+                "sm": "start",
+                "md": "start",
+                "lg": "start"
+              },
+              "alignContent": {
+                "xs": "start",
+                "sm": "start",
+                "md": "start",
+                "lg": "start"
+              },
+              "gridAutoRows": {
+                "xs": "minmax(56px, auto)",
+                "sm": "minmax(56px, auto)",
+                "md": "minmax(56px, auto)",
+                "lg": "minmax(56px, auto)"
+              },
+              "gridAutoFlow": {
+                "xs": "row",
+                "sm": "row",
+                "md": "row",
+                "lg": "row"
+              }
+            },
+            "fieldSeq": 0
+          },
+          "active": true,
+          "builtin": true,
+          "createdBy": "System",
+          "updatedAt": 1792054751081
+        },
+        {
+          "id": "seed-tpl-dashboard",
+          "name": "Dashboard",
+          "description": "Four stats, two charts and a table.",
+          "category": "Data",
+          "grid": {
+            "items": [
+              {
+                "id": "seed-tpl-item-15",
+                "label": "Typography",
+                "type": "typography",
+                "settings": {
+                  "colSpan": {
+                    "xs": 4,
+                    "sm": 6,
+                    "md": 8,
+                    "lg": 12
+                  },
+                  "colStart": {
+                    "xs": 0,
+                    "sm": 0,
+                    "md": 0,
+                    "lg": 0
+                  },
+                  "rowSpan": {
+                    "xs": 1,
+                    "sm": 1,
+                    "md": 1,
+                    "lg": 1
+                  },
+                  "gridArea": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "justifySelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "alignSelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "order": {
+                    "xs": "0",
+                    "sm": "0",
+                    "md": "0",
+                    "lg": "0"
+                  }
+                },
+                "config": {
+                  "text": "Overview",
+                  "variant": "h4",
+                  "weight": "",
+                  "color": "",
+                  "align": "",
+                  "truncate": false,
+                  "href": "",
+                  "binding": null
+                }
+              },
+              {
+                "id": "seed-tpl-item-16",
+                "label": "Stat",
+                "type": "stat",
+                "settings": {
+                  "colSpan": {
+                    "xs": 2,
+                    "sm": 3,
+                    "md": 2,
+                    "lg": 3
+                  },
+                  "colStart": {
+                    "xs": 0,
+                    "sm": 0,
+                    "md": 0,
+                    "lg": 0
+                  },
+                  "rowSpan": {
+                    "xs": 1,
+                    "sm": 1,
+                    "md": 1,
+                    "lg": 1
+                  },
+                  "gridArea": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "justifySelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "alignSelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "order": {
+                    "xs": "0",
+                    "sm": "0",
+                    "md": "0",
+                    "lg": "0"
+                  }
+                },
+                "config": {
+                  "label": "Total records",
+                  "value": "—",
+                  "endpointId": null
+                }
+              },
+              {
+                "id": "seed-tpl-item-17",
+                "label": "Stat",
+                "type": "stat",
+                "settings": {
+                  "colSpan": {
+                    "xs": 2,
+                    "sm": 3,
+                    "md": 2,
+                    "lg": 3
+                  },
+                  "colStart": {
+                    "xs": 0,
+                    "sm": 0,
+                    "md": 0,
+                    "lg": 0
+                  },
+                  "rowSpan": {
+                    "xs": 1,
+                    "sm": 1,
+                    "md": 1,
+                    "lg": 1
+                  },
+                  "gridArea": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "justifySelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "alignSelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "order": {
+                    "xs": "0",
+                    "sm": "0",
+                    "md": "0",
+                    "lg": "0"
+                  }
+                },
+                "config": {
+                  "label": "Active",
+                  "value": "—",
+                  "endpointId": null
+                }
+              },
+              {
+                "id": "seed-tpl-item-18",
+                "label": "Stat",
+                "type": "stat",
+                "settings": {
+                  "colSpan": {
+                    "xs": 2,
+                    "sm": 3,
+                    "md": 2,
+                    "lg": 3
+                  },
+                  "colStart": {
+                    "xs": 0,
+                    "sm": 0,
+                    "md": 0,
+                    "lg": 0
+                  },
+                  "rowSpan": {
+                    "xs": 1,
+                    "sm": 1,
+                    "md": 1,
+                    "lg": 1
+                  },
+                  "gridArea": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "justifySelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "alignSelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "order": {
+                    "xs": "0",
+                    "sm": "0",
+                    "md": "0",
+                    "lg": "0"
+                  }
+                },
+                "config": {
+                  "label": "This month",
+                  "value": "—",
+                  "endpointId": null
+                }
+              },
+              {
+                "id": "seed-tpl-item-19",
+                "label": "Stat",
+                "type": "stat",
+                "settings": {
+                  "colSpan": {
+                    "xs": 2,
+                    "sm": 3,
+                    "md": 2,
+                    "lg": 3
+                  },
+                  "colStart": {
+                    "xs": 0,
+                    "sm": 0,
+                    "md": 0,
+                    "lg": 0
+                  },
+                  "rowSpan": {
+                    "xs": 1,
+                    "sm": 1,
+                    "md": 1,
+                    "lg": 1
+                  },
+                  "gridArea": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "justifySelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "alignSelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "order": {
+                    "xs": "0",
+                    "sm": "0",
+                    "md": "0",
+                    "lg": "0"
+                  }
+                },
+                "config": {
+                  "label": "Pending",
+                  "value": "—",
+                  "endpointId": null
+                }
+              },
+              {
+                "id": "seed-tpl-item-20",
+                "label": "Bar chart",
+                "type": "barchart",
+                "settings": {
+                  "colSpan": {
+                    "xs": 4,
+                    "sm": 3,
+                    "md": 4,
+                    "lg": 6
+                  },
+                  "colStart": {
+                    "xs": 0,
+                    "sm": 0,
+                    "md": 0,
+                    "lg": 0
+                  },
+                  "rowSpan": {
+                    "xs": 1,
+                    "sm": 1,
+                    "md": 1,
+                    "lg": 1
+                  },
+                  "gridArea": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "justifySelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "alignSelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "order": {
+                    "xs": "0",
+                    "sm": "0",
+                    "md": "0",
+                    "lg": "0"
+                  }
+                },
+                "config": {
+                  "kind": "bar",
+                  "title": "By category",
+                  "chartType": "Column",
+                  "endpointId": null,
+                  "mode": "Count",
+                  "labelField": "",
+                  "valueField": "",
+                  "sample": "Bangkok, Chiang Mai, Phuket, Khon Kaen",
+                  "palette": ""
+                }
+              },
+              {
+                "id": "seed-tpl-item-21",
+                "label": "Pie / donut",
+                "type": "piechart",
+                "settings": {
+                  "colSpan": {
+                    "xs": 4,
+                    "sm": 3,
+                    "md": 4,
+                    "lg": 6
+                  },
+                  "colStart": {
+                    "xs": 0,
+                    "sm": 0,
+                    "md": 0,
+                    "lg": 0
+                  },
+                  "rowSpan": {
+                    "xs": 1,
+                    "sm": 1,
+                    "md": 1,
+                    "lg": 1
+                  },
+                  "gridArea": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "justifySelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "alignSelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "order": {
+                    "xs": "0",
+                    "sm": "0",
+                    "md": "0",
+                    "lg": "0"
+                  }
+                },
+                "config": {
+                  "kind": "pie",
+                  "title": "Share",
+                  "chartType": "Donut",
+                  "endpointId": null,
+                  "mode": "Count",
+                  "labelField": "",
+                  "valueField": "",
+                  "sample": "Active, Pending, Closed",
+                  "palette": ""
+                }
+              },
+              {
+                "id": "seed-tpl-item-22",
+                "label": "Data Table",
+                "type": "datatable",
+                "settings": {
+                  "colSpan": {
+                    "xs": 4,
+                    "sm": 6,
+                    "md": 8,
+                    "lg": 12
+                  },
+                  "colStart": {
+                    "xs": 0,
+                    "sm": 0,
+                    "md": 0,
+                    "lg": 0
+                  },
+                  "rowSpan": {
+                    "xs": 1,
+                    "sm": 1,
+                    "md": 1,
+                    "lg": 1
+                  },
+                  "gridArea": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "justifySelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "alignSelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "order": {
+                    "xs": "0",
+                    "sm": "0",
+                    "md": "0",
+                    "lg": "0"
+                  }
+                },
+                "config": {
+                  "name": "dtActivity",
+                  "title": "Latest activity",
+                  "canEdit": true,
+                  "canDelete": true,
+                  "canSearchAllColumns": true,
+                  "columns": [
+                    {
+                      "size": "",
+                      "minSize": "",
+                      "maxSize": "",
+                      "resizable": true,
+                      "id": "83e3b373-b59d-438a-894d-e149ab775a21",
+                      "accessor": "id",
+                      "header": "ID",
+                      "enableSorting": true,
+                      "enableColumnFilter": false,
+                      "align": "center",
+                      "useDateFormat": "",
+                      "pin": "",
+                      "html": "",
+                      "sortField": "",
+                      "lines": "",
+                      "rowHeader": false,
+                      "mergeRows": false,
+                      "mergeColumns": false,
+                      "group": ""
+                    },
+                    {
+                      "size": "",
+                      "minSize": "",
+                      "maxSize": "",
+                      "resizable": true,
+                      "id": "75bc09b3-e367-4c3a-914c-e7f0dbbb74b7",
+                      "accessor": "name",
+                      "header": "Name",
+                      "enableSorting": true,
+                      "enableColumnFilter": false,
+                      "align": "center",
+                      "useDateFormat": "",
+                      "pin": "",
+                      "html": "",
+                      "sortField": "",
+                      "lines": "",
+                      "rowHeader": false,
+                      "mergeRows": false,
+                      "mergeColumns": false,
+                      "group": ""
+                    },
+                    {
+                      "size": "",
+                      "minSize": "",
+                      "maxSize": "",
+                      "resizable": true,
+                      "id": "f170867b-4135-4df5-ac76-f278924d0296",
+                      "accessor": "email",
+                      "header": "Email",
+                      "enableSorting": true,
+                      "enableColumnFilter": false,
+                      "align": "center",
+                      "useDateFormat": "",
+                      "pin": "",
+                      "html": "",
+                      "sortField": "",
+                      "lines": "",
+                      "rowHeader": false,
+                      "mergeRows": false,
+                      "mergeColumns": false,
+                      "group": ""
+                    },
+                    {
+                      "size": "",
+                      "minSize": "",
+                      "maxSize": "",
+                      "resizable": true,
+                      "id": "a7ff3163-d056-4a12-b025-703486e546cb",
+                      "accessor": "status",
+                      "header": "Status",
+                      "enableSorting": true,
+                      "enableColumnFilter": false,
+                      "align": "center",
+                      "useDateFormat": "",
+                      "pin": "",
+                      "html": "",
+                      "sortField": "",
+                      "lines": "",
+                      "rowHeader": false,
+                      "mergeRows": false,
+                      "mergeColumns": false,
+                      "group": ""
+                    }
+                  ],
+                  "endpointId": null,
+                  "apiPaths": "",
+                  "modalMaxWidth": "",
+                  "modalMinWidth": "",
+                  "modalMaxHeight": "",
+                  "deleteEndpointId": null,
+                  "deleteParams": {},
+                  "deleteConfirmEnabled": true,
+                  "deleteConfirmTitle": "Delete record",
+                  "deleteConfirmDescription": "Are you sure you want to delete this record?",
+                  "deleteIsReload": true,
+                  "pagination": {
+                    "enabled": false,
+                    "placement": "auto",
+                    "offsetKey": "offset",
+                    "limitKey": "limit",
+                    "searchKey": "",
+                    "totalPath": "total",
+                    "defaultPageSize": 10,
+                    "pageSizeOptions": [
+                      5,
+                      10,
+                      20,
+                      30,
+                      40,
+                      50
+                    ]
+                  },
+                  "canAdd": false,
+                  "addButton": {
+                    "label": "Add",
+                    "icon": "puls",
+                    "variant": "contained"
+                  },
+                  "headerGap": "",
+                  "canResizeColumns": true,
+                  "cellLines": 2,
+                  "filtersEnabled": false,
+                  "filterButton": {
+                    "label": "Filter",
+                    "icon": "filter",
+                    "variant": "outlined"
+                  },
+                  "filterDisplay": "popover",
+                  "filterDefaults": [],
+                  "requestMapping": [],
+                  "sort": {
+                    "enabled": false,
+                    "placement": "auto",
+                    "sortKey": "",
+                    "orderKey": "",
+                    "ascValue": "asc",
+                    "descValue": "desc",
+                    "defaultField": "",
+                    "defaultOrder": "asc"
+                  },
+                  "deleteSnackbarSuccessEnabled": false,
+                  "deleteSnackbarSuccessType": "success",
+                  "deleteSnackbarSuccessMessage": "",
+                  "deleteSnackbarErrorException": false
+                }
+              }
+            ],
+            "containerSettings": {
+              "columns": {
+                "xs": 4,
+                "sm": 6,
+                "md": 8,
+                "lg": 12
+              },
+              "gap": {
+                "xs": "16px",
+                "sm": "16px",
+                "md": "16px",
+                "lg": "16px"
+              },
+              "rowGap": {
+                "xs": "",
+                "sm": "",
+                "md": "",
+                "lg": ""
+              },
+              "columnGap": {
+                "xs": "",
+                "sm": "",
+                "md": "",
+                "lg": ""
+              },
+              "justifyItems": {
+                "xs": "stretch",
+                "sm": "stretch",
+                "md": "stretch",
+                "lg": "stretch"
+              },
+              "alignItems": {
+                "xs": "stretch",
+                "sm": "stretch",
+                "md": "stretch",
+                "lg": "stretch"
+              },
+              "justifyContent": {
+                "xs": "start",
+                "sm": "start",
+                "md": "start",
+                "lg": "start"
+              },
+              "alignContent": {
+                "xs": "start",
+                "sm": "start",
+                "md": "start",
+                "lg": "start"
+              },
+              "gridAutoRows": {
+                "xs": "minmax(56px, auto)",
+                "sm": "minmax(56px, auto)",
+                "md": "minmax(56px, auto)",
+                "lg": "minmax(56px, auto)"
+              },
+              "gridAutoFlow": {
+                "xs": "row",
+                "sm": "row",
+                "md": "row",
+                "lg": "row"
+              }
+            },
+            "fieldSeq": 0
+          },
+          "active": true,
+          "builtin": true,
+          "createdBy": "System",
+          "updatedAt": 1792054751081
+        },
+        {
+          "id": "seed-tpl-report",
+          "name": "Report",
+          "description": "Trend line over a data table.",
+          "category": "Data",
+          "grid": {
+            "items": [
+              {
+                "id": "seed-tpl-item-23",
+                "label": "Typography",
+                "type": "typography",
+                "settings": {
+                  "colSpan": {
+                    "xs": 4,
+                    "sm": 6,
+                    "md": 8,
+                    "lg": 12
+                  },
+                  "colStart": {
+                    "xs": 0,
+                    "sm": 0,
+                    "md": 0,
+                    "lg": 0
+                  },
+                  "rowSpan": {
+                    "xs": 1,
+                    "sm": 1,
+                    "md": 1,
+                    "lg": 1
+                  },
+                  "gridArea": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "justifySelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "alignSelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "order": {
+                    "xs": "0",
+                    "sm": "0",
+                    "md": "0",
+                    "lg": "0"
+                  }
+                },
+                "config": {
+                  "text": "Monthly report",
+                  "variant": "h4",
+                  "weight": "",
+                  "color": "",
+                  "align": "",
+                  "truncate": false,
+                  "href": "",
+                  "binding": null
+                }
+              },
+              {
+                "id": "seed-tpl-item-24",
+                "label": "Text",
+                "type": "text",
+                "settings": {
+                  "colSpan": {
+                    "xs": 4,
+                    "sm": 6,
+                    "md": 8,
+                    "lg": 12
+                  },
+                  "colStart": {
+                    "xs": 0,
+                    "sm": 0,
+                    "md": 0,
+                    "lg": 0
+                  },
+                  "rowSpan": {
+                    "xs": 1,
+                    "sm": 1,
+                    "md": 1,
+                    "lg": 1
+                  },
+                  "gridArea": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "justifySelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "alignSelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "order": {
+                    "xs": "0",
+                    "sm": "0",
+                    "md": "0",
+                    "lg": "0"
+                  }
+                },
+                "config": {
+                  "text": "Figures refresh from the bound endpoint.",
+                  "isLabel": false,
+                  "binding": null
+                }
+              },
+              {
+                "id": "seed-tpl-item-25",
+                "label": "Line chart",
+                "type": "linechart",
+                "settings": {
+                  "colSpan": {
+                    "xs": 4,
+                    "sm": 6,
+                    "md": 8,
+                    "lg": 12
+                  },
+                  "colStart": {
+                    "xs": 0,
+                    "sm": 0,
+                    "md": 0,
+                    "lg": 0
+                  },
+                  "rowSpan": {
+                    "xs": 1,
+                    "sm": 1,
+                    "md": 1,
+                    "lg": 1
+                  },
+                  "gridArea": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "justifySelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "alignSelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "order": {
+                    "xs": "0",
+                    "sm": "0",
+                    "md": "0",
+                    "lg": "0"
+                  }
+                },
+                "config": {
+                  "kind": "line",
+                  "title": "Trend",
+                  "chartType": "Line",
+                  "endpointId": null,
+                  "mode": "Count",
+                  "labelField": "",
+                  "valueField": "",
+                  "sample": "Jan, Feb, Mar, Apr, May, Jun",
+                  "palette": ""
+                }
+              },
+              {
+                "id": "seed-tpl-item-26",
+                "label": "Data Table",
+                "type": "datatable",
+                "settings": {
+                  "colSpan": {
+                    "xs": 4,
+                    "sm": 6,
+                    "md": 8,
+                    "lg": 12
+                  },
+                  "colStart": {
+                    "xs": 0,
+                    "sm": 0,
+                    "md": 0,
+                    "lg": 0
+                  },
+                  "rowSpan": {
+                    "xs": 1,
+                    "sm": 1,
+                    "md": 1,
+                    "lg": 1
+                  },
+                  "gridArea": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "justifySelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "alignSelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "order": {
+                    "xs": "0",
+                    "sm": "0",
+                    "md": "0",
+                    "lg": "0"
+                  }
+                },
+                "config": {
+                  "name": "dtBreakdown",
+                  "title": "Breakdown",
+                  "canEdit": true,
+                  "canDelete": true,
+                  "canSearchAllColumns": true,
+                  "columns": [
+                    {
+                      "size": "",
+                      "minSize": "",
+                      "maxSize": "",
+                      "resizable": true,
+                      "id": "fec7ea25-5d4b-4743-b8ba-706234abc88c",
+                      "accessor": "id",
+                      "header": "ID",
+                      "enableSorting": true,
+                      "enableColumnFilter": false,
+                      "align": "center",
+                      "useDateFormat": "",
+                      "pin": "",
+                      "html": "",
+                      "sortField": "",
+                      "lines": "",
+                      "rowHeader": false,
+                      "mergeRows": false,
+                      "mergeColumns": false,
+                      "group": ""
+                    },
+                    {
+                      "size": "",
+                      "minSize": "",
+                      "maxSize": "",
+                      "resizable": true,
+                      "id": "94943b97-c0e3-41d2-9ec7-d658a3c41d0f",
+                      "accessor": "name",
+                      "header": "Name",
+                      "enableSorting": true,
+                      "enableColumnFilter": false,
+                      "align": "center",
+                      "useDateFormat": "",
+                      "pin": "",
+                      "html": "",
+                      "sortField": "",
+                      "lines": "",
+                      "rowHeader": false,
+                      "mergeRows": false,
+                      "mergeColumns": false,
+                      "group": ""
+                    },
+                    {
+                      "size": "",
+                      "minSize": "",
+                      "maxSize": "",
+                      "resizable": true,
+                      "id": "3802a1b5-1e9f-4b91-8305-59191b8e6a28",
+                      "accessor": "email",
+                      "header": "Email",
+                      "enableSorting": true,
+                      "enableColumnFilter": false,
+                      "align": "center",
+                      "useDateFormat": "",
+                      "pin": "",
+                      "html": "",
+                      "sortField": "",
+                      "lines": "",
+                      "rowHeader": false,
+                      "mergeRows": false,
+                      "mergeColumns": false,
+                      "group": ""
+                    },
+                    {
+                      "size": "",
+                      "minSize": "",
+                      "maxSize": "",
+                      "resizable": true,
+                      "id": "c04ca233-38dc-424e-990e-152929a9c1de",
+                      "accessor": "status",
+                      "header": "Status",
+                      "enableSorting": true,
+                      "enableColumnFilter": false,
+                      "align": "center",
+                      "useDateFormat": "",
+                      "pin": "",
+                      "html": "",
+                      "sortField": "",
+                      "lines": "",
+                      "rowHeader": false,
+                      "mergeRows": false,
+                      "mergeColumns": false,
+                      "group": ""
+                    }
+                  ],
+                  "endpointId": null,
+                  "apiPaths": "",
+                  "modalMaxWidth": "",
+                  "modalMinWidth": "",
+                  "modalMaxHeight": "",
+                  "deleteEndpointId": null,
+                  "deleteParams": {},
+                  "deleteConfirmEnabled": true,
+                  "deleteConfirmTitle": "Delete record",
+                  "deleteConfirmDescription": "Are you sure you want to delete this record?",
+                  "deleteIsReload": true,
+                  "pagination": {
+                    "enabled": false,
+                    "placement": "auto",
+                    "offsetKey": "offset",
+                    "limitKey": "limit",
+                    "searchKey": "",
+                    "totalPath": "total",
+                    "defaultPageSize": 10,
+                    "pageSizeOptions": [
+                      5,
+                      10,
+                      20,
+                      30,
+                      40,
+                      50
+                    ]
+                  },
+                  "canAdd": false,
+                  "addButton": {
+                    "label": "Add",
+                    "icon": "puls",
+                    "variant": "contained"
+                  },
+                  "headerGap": "",
+                  "canResizeColumns": true,
+                  "cellLines": 2,
+                  "filtersEnabled": false,
+                  "filterButton": {
+                    "label": "Filter",
+                    "icon": "filter",
+                    "variant": "outlined"
+                  },
+                  "filterDisplay": "popover",
+                  "filterDefaults": [],
+                  "requestMapping": [],
+                  "sort": {
+                    "enabled": false,
+                    "placement": "auto",
+                    "sortKey": "",
+                    "orderKey": "",
+                    "ascValue": "asc",
+                    "descValue": "desc",
+                    "defaultField": "",
+                    "defaultOrder": "asc"
+                  },
+                  "deleteSnackbarSuccessEnabled": false,
+                  "deleteSnackbarSuccessType": "success",
+                  "deleteSnackbarSuccessMessage": "",
+                  "deleteSnackbarErrorException": false
+                }
+              }
+            ],
+            "containerSettings": {
+              "columns": {
+                "xs": 4,
+                "sm": 6,
+                "md": 8,
+                "lg": 12
+              },
+              "gap": {
+                "xs": "16px",
+                "sm": "16px",
+                "md": "16px",
+                "lg": "16px"
+              },
+              "rowGap": {
+                "xs": "",
+                "sm": "",
+                "md": "",
+                "lg": ""
+              },
+              "columnGap": {
+                "xs": "",
+                "sm": "",
+                "md": "",
+                "lg": ""
+              },
+              "justifyItems": {
+                "xs": "stretch",
+                "sm": "stretch",
+                "md": "stretch",
+                "lg": "stretch"
+              },
+              "alignItems": {
+                "xs": "stretch",
+                "sm": "stretch",
+                "md": "stretch",
+                "lg": "stretch"
+              },
+              "justifyContent": {
+                "xs": "start",
+                "sm": "start",
+                "md": "start",
+                "lg": "start"
+              },
+              "alignContent": {
+                "xs": "start",
+                "sm": "start",
+                "md": "start",
+                "lg": "start"
+              },
+              "gridAutoRows": {
+                "xs": "minmax(56px, auto)",
+                "sm": "minmax(56px, auto)",
+                "md": "minmax(56px, auto)",
+                "lg": "minmax(56px, auto)"
+              },
+              "gridAutoFlow": {
+                "xs": "row",
+                "sm": "row",
+                "md": "row",
+                "lg": "row"
+              }
+            },
+            "fieldSeq": 0
+          },
+          "active": true,
+          "builtin": true,
+          "createdBy": "System",
+          "updatedAt": 1792054751081
+        },
+        {
+          "id": "seed-tpl-form",
+          "name": "Form page",
+          "description": "A grouped form with save and cancel.",
+          "category": "Forms",
+          "grid": {
+            "items": [
+              {
+                "id": "seed-tpl-item-27",
+                "label": "Typography",
+                "type": "typography",
+                "settings": {
+                  "colSpan": {
+                    "xs": 4,
+                    "sm": 6,
+                    "md": 8,
+                    "lg": 12
+                  },
+                  "colStart": {
+                    "xs": 0,
+                    "sm": 0,
+                    "md": 0,
+                    "lg": 0
+                  },
+                  "rowSpan": {
+                    "xs": 1,
+                    "sm": 1,
+                    "md": 1,
+                    "lg": 1
+                  },
+                  "gridArea": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "justifySelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "alignSelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "order": {
+                    "xs": "0",
+                    "sm": "0",
+                    "md": "0",
+                    "lg": "0"
+                  }
+                },
+                "config": {
+                  "text": "New entry",
+                  "variant": "h4",
+                  "weight": "",
+                  "color": "",
+                  "align": "",
+                  "truncate": false,
+                  "href": "",
+                  "binding": null
+                }
+              },
+              {
+                "id": "seed-tpl-item-34",
+                "label": "Paper",
+                "type": "paper",
+                "settings": {
+                  "colSpan": {
+                    "xs": 4,
+                    "sm": 6,
+                    "md": 8,
+                    "lg": 12
+                  },
+                  "colStart": {
+                    "xs": 0,
+                    "sm": 0,
+                    "md": 0,
+                    "lg": 0
+                  },
+                  "rowSpan": {
+                    "xs": 1,
+                    "sm": 1,
+                    "md": 1,
+                    "lg": 1
+                  },
+                  "gridArea": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "justifySelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "alignSelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "order": {
+                    "xs": "0",
+                    "sm": "0",
+                    "md": "0",
+                    "lg": "0"
+                  }
+                },
+                "config": {
+                  "elevation": 1,
+                  "variant": "elevation",
+                  "square": false
+                },
+                "childCanvases": [
+                  {
+                    "items": [
+                      {
+                        "id": "seed-tpl-item-28",
+                        "label": "Text Field",
+                        "type": "textfield",
+                        "settings": {
+                          "colSpan": {
+                            "xs": 4,
+                            "sm": 2,
+                            "md": 2,
+                            "lg": 3
+                          },
+                          "colStart": {
+                            "xs": 0,
+                            "sm": 0,
+                            "md": 0,
+                            "lg": 0
+                          },
+                          "rowSpan": {
+                            "xs": 1,
+                            "sm": 1,
+                            "md": 1,
+                            "lg": 1
+                          },
+                          "gridArea": {
+                            "xs": "",
+                            "sm": "",
+                            "md": "",
+                            "lg": ""
+                          },
+                          "justifySelf": {
+                            "xs": "stretch",
+                            "sm": "stretch",
+                            "md": "stretch",
+                            "lg": "stretch"
+                          },
+                          "alignSelf": {
+                            "xs": "stretch",
+                            "sm": "stretch",
+                            "md": "stretch",
+                            "lg": "stretch"
+                          },
+                          "order": {
+                            "xs": "0",
+                            "sm": "0",
+                            "md": "0",
+                            "lg": "0"
+                          }
+                        },
+                        "config": {
+                          "name": "code",
+                          "dataType": "text",
+                          "label": "Code",
+                          "placeholder": "",
+                          "helperText": "",
+                          "isRequired": false,
+                          "errorMessage": "",
+                          "variant": "surface",
+                          "size": "3",
+                          "radius": "medium",
+                          "isFullWidth": true,
+                          "isFixedHeight": true,
+                          "width": "",
+                          "regex": "",
+                          "regexErrorMessage": ""
+                        }
+                      },
+                      {
+                        "id": "seed-tpl-item-29",
+                        "label": "Text Field",
+                        "type": "textfield",
+                        "settings": {
+                          "colSpan": {
+                            "xs": 4,
+                            "sm": 3,
+                            "md": 4,
+                            "lg": 6
+                          },
+                          "colStart": {
+                            "xs": 0,
+                            "sm": 0,
+                            "md": 0,
+                            "lg": 0
+                          },
+                          "rowSpan": {
+                            "xs": 1,
+                            "sm": 1,
+                            "md": 1,
+                            "lg": 1
+                          },
+                          "gridArea": {
+                            "xs": "",
+                            "sm": "",
+                            "md": "",
+                            "lg": ""
+                          },
+                          "justifySelf": {
+                            "xs": "stretch",
+                            "sm": "stretch",
+                            "md": "stretch",
+                            "lg": "stretch"
+                          },
+                          "alignSelf": {
+                            "xs": "stretch",
+                            "sm": "stretch",
+                            "md": "stretch",
+                            "lg": "stretch"
+                          },
+                          "order": {
+                            "xs": "0",
+                            "sm": "0",
+                            "md": "0",
+                            "lg": "0"
+                          }
+                        },
+                        "config": {
+                          "name": "name",
+                          "dataType": "text",
+                          "label": "Name",
+                          "placeholder": "",
+                          "helperText": "",
+                          "isRequired": false,
+                          "errorMessage": "",
+                          "variant": "surface",
+                          "size": "3",
+                          "radius": "medium",
+                          "isFullWidth": true,
+                          "isFixedHeight": true,
+                          "width": "",
+                          "regex": "",
+                          "regexErrorMessage": ""
+                        }
+                      },
+                      {
+                        "id": "seed-tpl-item-30",
+                        "label": "Select",
+                        "type": "select",
+                        "settings": {
+                          "colSpan": {
+                            "xs": 4,
+                            "sm": 2,
+                            "md": 2,
+                            "lg": 3
+                          },
+                          "colStart": {
+                            "xs": 0,
+                            "sm": 0,
+                            "md": 0,
+                            "lg": 0
+                          },
+                          "rowSpan": {
+                            "xs": 1,
+                            "sm": 1,
+                            "md": 1,
+                            "lg": 1
+                          },
+                          "gridArea": {
+                            "xs": "",
+                            "sm": "",
+                            "md": "",
+                            "lg": ""
+                          },
+                          "justifySelf": {
+                            "xs": "stretch",
+                            "sm": "stretch",
+                            "md": "stretch",
+                            "lg": "stretch"
+                          },
+                          "alignSelf": {
+                            "xs": "stretch",
+                            "sm": "stretch",
+                            "md": "stretch",
+                            "lg": "stretch"
+                          },
+                          "order": {
+                            "xs": "0",
+                            "sm": "0",
+                            "md": "0",
+                            "lg": "0"
+                          }
+                        },
+                        "config": {
+                          "name": "status",
+                          "dataType": "text",
+                          "label": "Status",
+                          "placeholder": "Choose",
+                          "helperText": "",
+                          "isRequired": false,
+                          "errorMessage": "",
+                          "variant": "surface",
+                          "size": "2",
+                          "radius": "medium",
+                          "isFullWidth": true,
+                          "isFixedHeight": true,
+                          "width": "",
+                          "regex": "",
+                          "regexErrorMessage": "",
+                          "mode": "static",
+                          "options": [
+                            {
+                              "id": "1",
+                              "name": "Option 1"
+                            },
+                            {
+                              "id": "2",
+                              "name": "Option 2"
+                            }
+                          ],
+                          "idKey": "id",
+                          "displayKey": "name",
+                          "searchKey": "name",
+                          "subtitleKey": "",
+                          "avatarKey": "",
+                          "inputIcon": "",
+                          "itemIcon": "",
+                          "dataSource": {
+                            "endpointId": null,
+                            "paths": ""
+                          },
+                          "observeToItemId": ""
+                        }
+                      },
+                      {
+                        "id": "seed-tpl-item-31",
+                        "label": "Date Picker",
+                        "type": "datepicker",
+                        "settings": {
+                          "colSpan": {
+                            "xs": 4,
+                            "sm": 2,
+                            "md": 3,
+                            "lg": 4
+                          },
+                          "colStart": {
+                            "xs": 0,
+                            "sm": 0,
+                            "md": 0,
+                            "lg": 0
+                          },
+                          "rowSpan": {
+                            "xs": 1,
+                            "sm": 1,
+                            "md": 1,
+                            "lg": 1
+                          },
+                          "gridArea": {
+                            "xs": "",
+                            "sm": "",
+                            "md": "",
+                            "lg": ""
+                          },
+                          "justifySelf": {
+                            "xs": "stretch",
+                            "sm": "stretch",
+                            "md": "stretch",
+                            "lg": "stretch"
+                          },
+                          "alignSelf": {
+                            "xs": "stretch",
+                            "sm": "stretch",
+                            "md": "stretch",
+                            "lg": "stretch"
+                          },
+                          "order": {
+                            "xs": "0",
+                            "sm": "0",
+                            "md": "0",
+                            "lg": "0"
+                          }
+                        },
+                        "config": {
+                          "kind": "date",
+                          "name": "effectiveDate",
+                          "label": "Effective date",
+                          "placeholder": "",
+                          "helperText": "",
+                          "isRequired": false,
+                          "errorMessage": "",
+                          "variant": "surface",
+                          "size": "2",
+                          "radius": "medium",
+                          "clearable": true,
+                          "displayFormat": "DD/MM/YYYY",
+                          "min": "",
+                          "max": "",
+                          "weekStartsOn": 0,
+                          "minuteStep": 1
+                        }
+                      },
+                      {
+                        "id": "seed-tpl-item-32",
+                        "label": "Textarea",
+                        "type": "textarea",
+                        "settings": {
+                          "colSpan": {
+                            "xs": 4,
+                            "sm": 4,
+                            "md": 5,
+                            "lg": 8
+                          },
+                          "colStart": {
+                            "xs": 0,
+                            "sm": 0,
+                            "md": 0,
+                            "lg": 0
+                          },
+                          "rowSpan": {
+                            "xs": 1,
+                            "sm": 1,
+                            "md": 1,
+                            "lg": 1
+                          },
+                          "gridArea": {
+                            "xs": "",
+                            "sm": "",
+                            "md": "",
+                            "lg": ""
+                          },
+                          "justifySelf": {
+                            "xs": "stretch",
+                            "sm": "stretch",
+                            "md": "stretch",
+                            "lg": "stretch"
+                          },
+                          "alignSelf": {
+                            "xs": "stretch",
+                            "sm": "stretch",
+                            "md": "stretch",
+                            "lg": "stretch"
+                          },
+                          "order": {
+                            "xs": "0",
+                            "sm": "0",
+                            "md": "0",
+                            "lg": "0"
+                          }
+                        },
+                        "config": {
+                          "name": "notes",
+                          "dataType": "text",
+                          "label": "Notes",
+                          "placeholder": "",
+                          "helperText": "",
+                          "isRequired": false,
+                          "errorMessage": "",
+                          "rows": 4,
+                          "resize": "vertical",
+                          "autoResize": false,
+                          "maxLength": "",
+                          "showCharCount": false
+                        }
+                      },
+                      {
+                        "id": "seed-tpl-item-33",
+                        "label": "Upload Image",
+                        "type": "uploadimage",
+                        "settings": {
+                          "colSpan": {
+                            "xs": 4,
+                            "sm": 2,
+                            "md": 3,
+                            "lg": 4
+                          },
+                          "colStart": {
+                            "xs": 0,
+                            "sm": 0,
+                            "md": 0,
+                            "lg": 0
+                          },
+                          "rowSpan": {
+                            "xs": 1,
+                            "sm": 1,
+                            "md": 1,
+                            "lg": 1
+                          },
+                          "gridArea": {
+                            "xs": "",
+                            "sm": "",
+                            "md": "",
+                            "lg": ""
+                          },
+                          "justifySelf": {
+                            "xs": "stretch",
+                            "sm": "stretch",
+                            "md": "stretch",
+                            "lg": "stretch"
+                          },
+                          "alignSelf": {
+                            "xs": "stretch",
+                            "sm": "stretch",
+                            "md": "stretch",
+                            "lg": "stretch"
+                          },
+                          "order": {
+                            "xs": "0",
+                            "sm": "0",
+                            "md": "0",
+                            "lg": "0"
+                          }
+                        },
+                        "config": {
+                          "name": "attachment",
+                          "label": "Attachment",
+                          "helperText": "",
+                          "isRequired": false,
+                          "errorMessage": "",
+                          "accept": "image/*",
+                          "maxSizeMB": "",
+                          "shape": "square",
+                          "previewHeight": 160,
+                          "valueFormat": "dataUrl",
+                          "api": {
+                            "uploadUrl": "",
+                            "deleteUrl": "",
+                            "fieldName": "",
+                            "responsePath": ""
+                          }
+                        }
+                      }
+                    ],
+                    "settings": {
+                      "columns": {
+                        "xs": 4,
+                        "sm": 6,
+                        "md": 8,
+                        "lg": 12
+                      },
+                      "gap": {
+                        "xs": "16px",
+                        "sm": "16px",
+                        "md": "16px",
+                        "lg": "16px"
+                      },
+                      "rowGap": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "columnGap": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifyItems": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignItems": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "justifyContent": {
+                        "xs": "start",
+                        "sm": "start",
+                        "md": "start",
+                        "lg": "start"
+                      },
+                      "alignContent": {
+                        "xs": "start",
+                        "sm": "start",
+                        "md": "start",
+                        "lg": "start"
+                      },
+                      "gridAutoRows": {
+                        "xs": "minmax(56px, auto)",
+                        "sm": "minmax(56px, auto)",
+                        "md": "minmax(56px, auto)",
+                        "lg": "minmax(56px, auto)"
+                      },
+                      "gridAutoFlow": {
+                        "xs": "row",
+                        "sm": "row",
+                        "md": "row",
+                        "lg": "row"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "seed-tpl-item-35",
+                "label": "Button",
+                "type": "button",
+                "settings": {
+                  "colSpan": {
+                    "xs": 2,
+                    "sm": 2,
+                    "md": 2,
+                    "lg": 2
+                  },
+                  "colStart": {
+                    "xs": 0,
+                    "sm": 0,
+                    "md": 0,
+                    "lg": 0
+                  },
+                  "rowSpan": {
+                    "xs": 1,
+                    "sm": 1,
+                    "md": 1,
+                    "lg": 1
+                  },
+                  "gridArea": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "justifySelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "alignSelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "order": {
+                    "xs": "0",
+                    "sm": "0",
+                    "md": "0",
+                    "lg": "0"
+                  }
+                },
+                "config": {
+                  "label": "Save",
+                  "icon": "save",
+                  "variant": "contained",
+                  "mode": "direct",
+                  "actions": [],
+                  "confirmTitle": "",
+                  "confirmDescription": "",
+                  "confirmTrue": [],
+                  "confirmFalse": [],
+                  "modalItemId": "",
+                  "reloadTableItemId": "",
+                  "endpointId": null,
+                  "snackbarSuccessEnabled": false,
+                  "snackbarSuccessType": "success",
+                  "snackbarSuccessMessage": "",
+                  "snackbarErrorException": false
+                }
+              },
+              {
+                "id": "seed-tpl-item-36",
+                "label": "Button",
+                "type": "button",
+                "settings": {
+                  "colSpan": {
+                    "xs": 2,
+                    "sm": 2,
+                    "md": 2,
+                    "lg": 2
+                  },
+                  "colStart": {
+                    "xs": 0,
+                    "sm": 0,
+                    "md": 0,
+                    "lg": 0
+                  },
+                  "rowSpan": {
+                    "xs": 1,
+                    "sm": 1,
+                    "md": 1,
+                    "lg": 1
+                  },
+                  "gridArea": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "justifySelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "alignSelf": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "order": {
+                    "xs": "0",
+                    "sm": "0",
+                    "md": "0",
+                    "lg": "0"
+                  }
+                },
+                "config": {
+                  "label": "Cancel",
+                  "icon": "",
+                  "variant": "contained",
+                  "mode": "direct",
+                  "actions": [],
+                  "confirmTitle": "",
+                  "confirmDescription": "",
+                  "confirmTrue": [],
+                  "confirmFalse": [],
+                  "modalItemId": "",
+                  "reloadTableItemId": "",
+                  "endpointId": null,
+                  "snackbarSuccessEnabled": false,
+                  "snackbarSuccessType": "success",
+                  "snackbarSuccessMessage": "",
+                  "snackbarErrorException": false
+                }
+              }
+            ],
+            "containerSettings": {
+              "columns": {
+                "xs": 4,
+                "sm": 6,
+                "md": 8,
+                "lg": 12
+              },
+              "gap": {
+                "xs": "16px",
+                "sm": "16px",
+                "md": "16px",
+                "lg": "16px"
+              },
+              "rowGap": {
+                "xs": "",
+                "sm": "",
+                "md": "",
+                "lg": ""
+              },
+              "columnGap": {
+                "xs": "",
+                "sm": "",
+                "md": "",
+                "lg": ""
+              },
+              "justifyItems": {
+                "xs": "stretch",
+                "sm": "stretch",
+                "md": "stretch",
+                "lg": "stretch"
+              },
+              "alignItems": {
+                "xs": "stretch",
+                "sm": "stretch",
+                "md": "stretch",
+                "lg": "stretch"
+              },
+              "justifyContent": {
+                "xs": "start",
+                "sm": "start",
+                "md": "start",
+                "lg": "start"
+              },
+              "alignContent": {
+                "xs": "start",
+                "sm": "start",
+                "md": "start",
+                "lg": "start"
+              },
+              "gridAutoRows": {
+                "xs": "minmax(56px, auto)",
+                "sm": "minmax(56px, auto)",
+                "md": "minmax(56px, auto)",
+                "lg": "minmax(56px, auto)"
+              },
+              "gridAutoFlow": {
+                "xs": "row",
+                "sm": "row",
+                "md": "row",
+                "lg": "row"
+              }
+            },
+            "fieldSeq": 0
+          },
+          "active": true,
+          "builtin": true,
+          "createdBy": "System",
+          "updatedAt": 1792054751081
+        }
+      ]
+    },
+    "activity": []
+  },
+  "version": 49
+}

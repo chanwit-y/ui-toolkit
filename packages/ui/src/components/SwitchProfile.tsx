@@ -9,15 +9,17 @@ import {
   profileSubtitle,
   readSwitchedUserId,
   useProfileSession,
+  profileListQueryKey,
   type NormalizedProfile,
 } from "./core/profileSession";
 import { useAfterProfileChange, useRestoreImpersonation } from "./ReplaceProfile";
 import { useReadApi } from "./core/useReadApi";
+import { SelectFieldBase } from "./SelectField";
 import { SkeletonBlock, SkeletonCircle } from "./Skeleton";
 
 export type SwitchProfileStatus = "ready" | "loading" | "error";
 
-export type SwitchProfileViewProps = Pick<SwitchProfileElement, "title" | "emptyText" | "hideWhenSingle" | "className"> & {
+export type SwitchProfileViewProps = Pick<SwitchProfileElement, "title" | "emptyText" | "hideWhenSingle" | "display" | "showSubtitle" | "className"> & {
   profiles: NormalizedProfile[];
   activeUserId?: string;
   status?: SwitchProfileStatus;
@@ -26,14 +28,19 @@ export type SwitchProfileViewProps = Pick<SwitchProfileElement, "title" | "empty
 };
 
 /**
- * The list itself, hook-free: one row per profile (avatar, name, position ·
- * company · department), the active one checked, `role="listbox"` with
- * `aria-selected`. Rendered by the engine element and the studio canvas.
+ * The control itself, hook-free, in one of two displays: a vertical list (one
+ * row per profile — avatar, name, position · company · department — the
+ * active one checked, `role="listbox"` with `aria-selected`), or a dropdown
+ * on the library `SelectFieldBase` whose value is the `userId` and label the
+ * job title. `showSubtitle` governs the "company · department" part in both.
+ * Rendered by the engine element and the studio canvas.
  */
 export function SwitchProfileView({
   title = "Switch profile",
   emptyText = "No other profile.",
   hideWhenSingle = true,
+  display = "list",
+  showSubtitle = true,
   profiles,
   activeUserId,
   status = "ready",
@@ -42,8 +49,37 @@ export function SwitchProfileView({
   style,
 }: SwitchProfileViewProps) {
   if (status === "ready" && hideWhenSingle && profiles.length <= 1) return null;
+  const sectionClass = `profile-switch ${display === "dropdown" ? "profile-switch-dropdown" : ""} ${className ?? ""}`;
+  if (display === "dropdown") {
+    return (
+      <section className={sectionClass} style={style} aria-busy={status === "loading"}>
+        {status === "loading" ? (
+          <div aria-hidden>
+            {title && <SkeletonBlock height={12} width="40%" style={{ marginBottom: 6 }} />}
+            <SkeletonBlock height={32} width="100%" />
+          </div>
+        ) : status === "error" ? (
+          <p className="profile-status profile-error">Couldn't load the profiles.</p>
+        ) : profiles.length === 0 ? (
+          <p className="profile-status">{emptyText}</p>
+        ) : (
+          <SelectFieldBase
+            label={title || undefined}
+            aria-label={title || "Profiles"}
+            placeholder="Choose a profile"
+            options={profiles.map((p) => ({ value: p.userId, label: profileSubtitle(p, showSubtitle) || p.name }))}
+            value={activeUserId}
+            onValueChange={(userId: string) => {
+              const picked = profiles.find((p) => p.userId === userId);
+              if (picked) onSelect?.(picked);
+            }}
+          />
+        )}
+      </section>
+    );
+  }
   return (
-    <section className={`profile-switch ${className ?? ""}`} style={style} aria-busy={status === "loading"}>
+    <section className={sectionClass} style={style} aria-busy={status === "loading"}>
       {title && <h3 className="profile-switch-title">{title}</h3>}
       {status === "loading" ? (
         <ul className="profile-list" aria-hidden>
@@ -65,7 +101,7 @@ export function SwitchProfileView({
         <ul className="profile-list" role="listbox" aria-label={title || "Profiles"}>
           {profiles.map((p) => {
             const active = p.userId === activeUserId;
-            const subtitle = profileSubtitle(p);
+            const subtitle = profileSubtitle(p, showSubtitle);
             return (
               <li
                 key={p.userId}
@@ -103,11 +139,13 @@ export function SwitchProfileView({
 export type SwitchProfileProps = Omit<SwitchProfileElement, "api"> & { api: FormListReadApi };
 
 /**
- * The bound element: fetches the active person's profiles through `api`
- * (the person id injected into `personParam`), reconciles the list with the
- * saved switch once per person (the saved profile when still listed, else
- * the first), and makes a picked profile active — persisted, then `reload` /
- * `navigate`.
+ * The bound element: shows the active person's profiles from the session's
+ * per-person cache (filled by Replace's Confirm, the restore, or this element's
+ * own fetch through `api` with the person id in `personParam` — only for a
+ * person not seen yet in this page session), reconciles the list with the
+ * saved switch once per person (the saved profile when still listed, else the
+ * primary / first), and makes a picked profile active — no API call on the
+ * pick — persisted, then `reload` / `navigate`.
  */
 export function SwitchProfile({ name = "switchProfile", api, personParam, stateKey, initial, keys, persist, reload, navigate, ...view }: SwitchProfileProps) {
   const session = useProfileSession({ stateKey, keys, initial, persist });
@@ -116,13 +154,26 @@ export function SwitchProfile({ name = "switchProfile", api, personParam, stateK
   // A persisted impersonation is restored by whichever profile element mounts first.
   useRestoreImpersonation(session, api, param, `${name}-restore`);
   const personId = session.activeProfile?.personId ?? "";
-  const read = useReadApi(name, api, { params: { [param]: personId }, enabled: personId !== "" });
-  const profiles = useMemo(() => {
-    const rows = Array.isArray(read.data) ? read.data : [];
-    return rows.map((row) => normalizeProfile(row, session.keys));
-  }, [read.data, session.keys]);
+  const cached = personId === "" ? undefined : session.profilesOf(personId);
+  const failed = personId !== "" && session.profilesFailed(personId);
+  const read = useReadApi(name, api, {
+    params: { [param]: personId },
+    enabled: personId !== "" && cached === undefined && !failed,
+    retry: false,
+    queryKey: profileListQueryKey(session.stateKey),
+  });
 
-  // Once per person: the saved choice when still in the list, else the first profile.
+  // Whatever this element fetched goes into the shared cache (and the slice).
+  const { setProfiles, setProfilesError } = session;
+  useEffect(() => {
+    if (personId === "" || !read.isFetched) return;
+    if (read.isError) setProfilesError(personId, read.error);
+    else if (read.isSuccess) setProfiles(personId, Array.isArray(read.data) ? read.data : []);
+  }, [personId, read.isFetched, read.isError, read.isSuccess, read.data, read.error, setProfiles, setProfilesError]);
+
+  const profiles = useMemo(() => (cached ?? []).map((row) => normalizeProfile(row, session.keys)), [cached, session.keys]);
+
+  // Once per person: the saved choice when still in the list, else the primary / first profile.
   const { activeProfile, pending, reconciledPersonId, setReconciled, apply } = session;
   useEffect(() => {
     if (!activeProfile || profiles.length === 0 || pending) return;
@@ -136,13 +187,13 @@ export function SwitchProfile({ name = "switchProfile", api, personParam, stateK
     }
   }, [activeProfile, profiles, pending, reconciledPersonId, setReconciled, apply, after, session.persist, session.stateKey]);
 
-  const status: SwitchProfileStatus = read.isError ? "error" : read.held || read.isLoading ? "loading" : "ready";
+  const status: SwitchProfileStatus = personId === "" ? "ready" : failed ? "error" : cached === undefined ? "loading" : "ready";
   return (
     <SwitchProfileView
       {...view}
       profiles={profiles}
       activeUserId={activeProfile?.userId}
-      status={personId === "" ? "ready" : status}
+      status={status}
       onSelect={(p) => {
         if (p.userId === activeProfile?.userId) return;
         session.switchTo(p.raw);

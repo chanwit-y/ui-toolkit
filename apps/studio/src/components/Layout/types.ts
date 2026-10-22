@@ -1945,7 +1945,7 @@ export function createDefaultModalConfig(id: string): ModalConfig {
     maxWidth: '',
     minWidth: '',
     maxHeight: '',
-    trigger: { label: 'Open', icon: '' },
+    trigger: { label: 'Open', icon: '', variant: 'contained' },
   }
 }
 
@@ -2013,7 +2013,7 @@ export function createDefaultPopoverConfig(): PopoverConfig {
     triggerMode: 'click',
     offset: '',
     triggerKind: 'button',
-    triggerButton: { label: 'Open popover', icon: '' },
+    triggerButton: { label: 'Open popover', icon: '', variant: 'contained' },
     triggerText: { text: 'Open popover', isLabel: false, binding: null },
   }
 }
@@ -2296,6 +2296,8 @@ export type ProfileKeysConfig = {
   department: string[]
   email: string[]
   avatar: string[]
+  /** The primary-assignment flag (`Y` / `true` / `1`): the profile picked when nobody chose one. */
+  primary: string[]
 }
 
 export const PROFILE_KEY_ROWS: { key: Exclude<keyof ProfileKeysConfig, 'nameTemplate'>; label: string }[] = [
@@ -2307,6 +2309,7 @@ export const PROFILE_KEY_ROWS: { key: Exclude<keyof ProfileKeysConfig, 'nameTemp
   { key: 'department', label: 'Department / unit' },
   { key: 'email', label: 'Email' },
   { key: 'avatar', label: 'Avatar URL' },
+  { key: 'primary', label: 'Primary assignment flag' },
 ]
 
 export function createDefaultProfileKeysConfig(): ProfileKeysConfig {
@@ -2320,6 +2323,7 @@ export function createDefaultProfileKeysConfig(): ProfileKeysConfig {
     department: ['businessUnitModel.name'],
     email: ['email'],
     avatar: [],
+    primary: ['isPrimaryAssignment'],
   }
 }
 
@@ -2352,7 +2356,13 @@ export type SwitchProfileConfig = ProfileSessionConfig & {
   title: string
   emptyText: string
   hideWhenSingle: boolean
+  /** A list with the active row checked, or a dropdown (value = userId, label = job title). */
+  display: SwitchProfileDisplay
+  /** Show "company · department" after the job title. */
+  showSubtitle: boolean
 }
+
+export type SwitchProfileDisplay = 'list' | 'dropdown'
 
 /**
  * Editable config for a Replace Profile trigger + dialog: people `search`
@@ -2398,6 +2408,8 @@ export function createDefaultSwitchProfileConfig(name: string): SwitchProfileCon
     title: '',
     emptyText: '',
     hideWhenSingle: true,
+    display: 'list',
+    showSubtitle: true,
   }
 }
 

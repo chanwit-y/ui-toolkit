@@ -23,6 +23,12 @@ export type ReadApiOptions = {
   enabled?: boolean;
   /** react-query retries (default: the client's). */
   retry?: boolean | number;
+  /**
+   * The react-query key family (default `name`): components fetching the same
+   * thing share one in-flight request and cache entry under one `queryKey`,
+   * while each still registers its refetch under its own `name`.
+   */
+  queryKey?: string;
 };
 
 export function useReadApi(name: string, api: FormListReadApi | undefined, options: ReadApiOptions = {}) {
@@ -48,7 +54,7 @@ export function useReadApi(name: string, api: FormListReadApi | undefined, optio
   }, [api, scope, stateVersion, injectSig]);
 
   const query = useQuery({
-    queryKey: [`read-${name}`, readArgs.args],
+    queryKey: [`read-${options.queryKey ?? name}`, readArgs.args],
     queryFn: async () => {
       const res = await (api!.api as (...a: unknown[]) => Promise<unknown>)(...readArgs.args);
       return drillPaths(res, api!.paths);

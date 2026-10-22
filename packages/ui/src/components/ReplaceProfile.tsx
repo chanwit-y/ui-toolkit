@@ -1,6 +1,6 @@
 import { Search, Undo2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import type { CondExpression, FormListReadApi, NavigateTarget, ReplaceProfileElement } from "./@types";
+import type { CondExpression, FormListReadApi, NavigateTarget, ProfileKeys, ReplaceProfileElement } from "./@types";
 import { Avatar } from "./Avatar";
 import { ButtonBase } from "./Button";
 import { initialsOf } from "./core/approvalSteps";
@@ -8,6 +8,8 @@ import { ConditionExpression, conditionStateKeys } from "./core/expression";
 import { useNavigateTo } from "./core/pages";
 import {
   normalizeProfile,
+  pickDefaultProfile,
+  profileListQueryKey,
   profileSubtitle,
   readImpersonation,
   useDebouncedValue,
@@ -41,17 +43,22 @@ function profileRows(data: unknown): unknown[] {
   return Array.isArray(data) ? data : [];
 }
 
+/** The raw row to make active when nobody chose one: the primary assignment, else the first. */
+function defaultProfileRow(rows: unknown[], keys: ProfileKeys): unknown {
+  return pickDefaultProfile(rows.map((row) => normalizeProfile(row, keys)))?.raw;
+}
+
 /**
  * A persisted impersonation (sessionStorage) re-fetched on load by whichever
  * profile element claims it first: the stored original is put back, the
  * replaced person's profiles are fetched again rather than trusted from
- * storage, and the first one becomes active; a failed or empty fetch drops
- * the impersonation.
+ * storage (and cached for the session), and the primary / first one becomes
+ * active; a failed or empty fetch drops the impersonation.
  */
 export function useRestoreImpersonation(session: ProfileSession, api: FormListReadApi | undefined, personParam: string, name: string): void {
   const [personId, setPersonId] = useState<string | null>(null);
   const started = useRef(false);
-  const { persist, stateKey, isImpersonating, claimRestore, setOriginal, setPending, startImpersonation, cancelImpersonation } = session;
+  const { persist, stateKey, keys, isImpersonating, claimRestore, setOriginal, setPending, startImpersonation, cancelImpersonation, setProfiles } = session;
 
   useEffect(() => {
     if (started.current || !api || !persist || isImpersonating) return;
@@ -63,7 +70,7 @@ export function useRestoreImpersonation(session: ProfileSession, api: FormListRe
     setPersonId(record.replacedPersonId);
   }, [api, persist, isImpersonating, stateKey, claimRestore, setOriginal, setPending]);
 
-  const read = useReadApi(name, api, { params: { [personParam]: personId ?? "" }, enabled: personId !== null, retry: false });
+  const read = useReadApi(name, api, { params: { [personParam]: personId ?? "" }, enabled: personId !== null, retry: false, queryKey: profileListQueryKey(stateKey) });
 
   useEffect(() => {
     if (personId === null) return;
@@ -74,10 +81,12 @@ export function useRestoreImpersonation(session: ProfileSession, api: FormListRe
       return;
     }
     if (!read.isSuccess) return;
-    startImpersonation(profileRows(read.data)[0], personId);
+    const rows = profileRows(read.data);
+    setProfiles(personId, rows);
+    startImpersonation(defaultProfileRow(rows, keys), personId);
     setPending(false);
     setPersonId(null);
-  }, [personId, read.isError, read.isSuccess, read.data, cancelImpersonation, setPending, startImpersonation]);
+  }, [personId, read.isError, read.isSuccess, read.data, keys, cancelImpersonation, setPending, startImpersonation, setProfiles]);
 }
 
 /** A config condition over global state, re-evaluated as the slices it reads change; absent ⇒ true. */
@@ -310,7 +319,12 @@ export function ReplaceProfile({
   const search = useReadApi(`${name}-search`, searchApi, { query: { [searchParam]: debounced }, enabled: open && debounced !== "" });
   const results = useMemo(() => profileRows(search.data).map((row) => normalizeProfile(row, session.keys)), [search.data, session.keys]);
 
-  const confirm = useReadApi(`${name}-confirm`, profilesApi, { params: { [param]: confirmedPersonId ?? "" }, enabled: confirmedPersonId !== null, retry: false });
+  const confirm = useReadApi(`${name}-confirm`, profilesApi, {
+    params: { [param]: confirmedPersonId ?? "" },
+    enabled: confirmedPersonId !== null,
+    retry: false,
+    queryKey: profileListQueryKey(session.stateKey),
+  });
 
   const reset = useCallback(() => {
     setPhase("idle");
@@ -327,7 +341,7 @@ export function ReplaceProfile({
   }, [reset]);
 
   // Outcome of a confirmed replacement.
-  const { startImpersonation, setPending } = session;
+  const { startImpersonation, setPending, setProfiles } = session;
   useEffect(() => {
     if (phase !== "pending" || confirmedPersonId === null) return;
     if (confirm.isError) {
@@ -338,7 +352,8 @@ export function ReplaceProfile({
       return;
     }
     if (!confirm.isSuccess) return;
-    const next = profileRows(confirm.data)[0];
+    const rows = profileRows(confirm.data);
+    const next = defaultProfileRow(rows, session.keys);
     if (next === undefined) {
       setError(NO_PROFILE);
       setPhase("empty");
@@ -346,6 +361,7 @@ export function ReplaceProfile({
       setPending(false);
       return;
     }
+    setProfiles(confirmedPersonId, rows);
     startImpersonation(next, confirmedPersonId);
     setPending(false);
     setPhase("done");
@@ -354,7 +370,7 @@ export function ReplaceProfile({
     setKeyword("");
     setPendingPersonId(null);
     after();
-  }, [phase, confirmedPersonId, confirm.isError, confirm.isSuccess, confirm.data, startImpersonation, setPending, after]);
+  }, [phase, confirmedPersonId, confirm.isError, confirm.isSuccess, confirm.data, session.keys, startImpersonation, setPending, setProfiles, after]);
 
   const onConfirm = () => {
     if (!pendingPersonId) return;

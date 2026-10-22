@@ -11,10 +11,14 @@
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
     },
-    "./styles.css": "./src/styles.css"
+    "./styles.css": "./dist/styles.css"
   },
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "build": "tsup",
+    "build": "tsup && bun run build:css",
+    "build:css": "tailwindcss -i src/styles.css -o dist/styles.css --minify",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit"
   },

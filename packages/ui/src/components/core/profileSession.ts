@@ -14,8 +14,11 @@ import { getStateStore, type StateStore } from "./stateStore";
  * own profile sits in `<stateKey>Original`. A switch is remembered in
  * localStorage (the chosen `userId`), an impersonation in sessionStorage
  * (`{ original, replacedPersonId }`, re-fetched on load) — every storage
- * access is wrapped, so the app works without storage. Pure helpers are
- * tested in `profileSession.test.ts`.
+ * access is wrapped, so the app works without storage. A person's profile
+ * list is fetched once per page session by whichever element needs it first
+ * (Replace's Confirm, the restore, Switch) and cached per person here; the
+ * active person's rows are published as the `<stateKey>List` slice. Pure
+ * helpers are tested in `profileSession.test.ts`.
  */
 
 export const DEFAULT_PROFILE_STATE_KEY = "profile";
@@ -31,6 +34,7 @@ export const DEFAULT_PROFILE_KEYS: Required<Omit<ProfileKeys, "nameTemplate">> &
   department: ["businessUnitModel.name", "department"],
   email: ["email", "Email"],
   avatar: ["avatar", "image", "photo"],
+  primary: ["isPrimaryAssignment", "IsPrimaryAssignment", "isPrimary"],
 };
 
 export type NormalizedProfile = {
@@ -43,11 +47,31 @@ export type NormalizedProfile = {
   department?: string;
   email?: string;
   avatar?: string;
+  /** The primary assignment (see `isPrimaryValue`). */
+  primary: boolean;
   raw: unknown;
 };
 
 export function originalStateKey(stateKey: string): string {
   return `${stateKey}Original`;
+}
+
+/** The slice holding the active person's profile rows (raw, as the endpoint returned them). */
+export function listStateKey(stateKey: string): string {
+  return `${stateKey}List`;
+}
+
+/** The react-query key family every profile element of one slice fetches a person's profiles under (one request per person, however many elements). */
+export function profileListQueryKey(stateKey: string): string {
+  return `profile-list:${stateKey}`;
+}
+
+/** The permissive truthiness of a primary-assignment flag: `true`, `1`, `"1"`, `"Y"`, `"true"` (case-insensitive). */
+export function isPrimaryValue(v: unknown): boolean {
+  if (v === true || v === 1) return true;
+  if (typeof v !== "string") return false;
+  const s = v.trim().toLowerCase();
+  return s === "1" || s === "y" || s === "yes" || s === "true";
 }
 
 const text = (v: unknown): string | undefined =>
@@ -80,22 +104,32 @@ export function normalizeProfile(raw: unknown, keys: ProfileKeys = {}): Normaliz
     department: read(k.department),
     email,
     avatar: read(k.avatar),
+    primary: isPrimaryValue(readKey(raw, k.primary)),
     raw,
   };
 }
 
 /** "Position · Company · Department" — what tells one profile of a person from another. */
-export function profileSubtitle(p: Pick<NormalizedProfile, "jobTitle" | "company" | "department">): string {
-  return [p.jobTitle, p.company, p.department].filter(Boolean).join(" · ");
+export function profileSubtitle(p: Pick<NormalizedProfile, "jobTitle" | "company" | "department">, showSubtitle = true): string {
+  return [p.jobTitle, ...(showSubtitle ? [p.company, p.department] : [])].filter(Boolean).join(" · ");
+}
+
+/**
+ * Which profile to make active when nobody chose one: the first primary
+ * assignment, else the first row — the replaced person's starting profile on
+ * Confirm, the fallback of a restore / an unsaved reconcile.
+ */
+export function pickDefaultProfile<T extends { primary: boolean }>(profiles: T[]): T | undefined {
+  return profiles.find((p) => p.primary) ?? profiles[0];
 }
 
 /**
  * Which of a person's profiles to make active on load: the saved one when it
- * is still in the list, else the first profile.
+ * is still in the list (the user chose it), else the default.
  */
-export function pickRestoredProfile<T extends { userId: string }>(profiles: T[], savedUserId: string | null | undefined): T | undefined {
+export function pickRestoredProfile<T extends { userId: string; primary: boolean }>(profiles: T[], savedUserId: string | null | undefined): T | undefined {
   if (profiles.length === 0) return undefined;
-  return (savedUserId && profiles.find((p) => p.userId === savedUserId)) || profiles[0];
+  return (savedUserId && profiles.find((p) => p.userId === savedUserId)) || pickDefaultProfile(profiles);
 }
 
 // ---- storage (every call wrapped: storage may be missing, full or blocked) ----
@@ -174,9 +208,15 @@ type ProfileSessionState = {
   reconciledPersonId: string | null;
   /** Whether some element already took the persisted impersonation to re-fetch. */
   restoreClaimed: boolean;
+  /** Raw profile rows per personId, as fetched once in this page session. */
+  lists: Record<string, unknown[]>;
+  /** A failed list fetch per personId (cleared by a later success). */
+  listErrors: Record<string, unknown>;
   setPending: (pending: boolean) => void;
   setReconciled: (personId: string | null) => void;
   claimRestore: () => boolean;
+  setList: (personId: string, rows: unknown[]) => void;
+  setListError: (personId: string, error: unknown) => void;
 };
 
 type ProfileSessionStore = UseBoundStore<StoreApi<ProfileSessionState>>;
@@ -190,6 +230,8 @@ export function getProfileSessionStore(stateKey: string): ProfileSessionStore {
       pending: false,
       reconciledPersonId: null,
       restoreClaimed: false,
+      lists: {},
+      listErrors: {},
       setPending: (pending) => set({ pending }),
       setReconciled: (reconciledPersonId) => set({ reconciledPersonId }),
       claimRestore: () => {
@@ -197,6 +239,12 @@ export function getProfileSessionStore(stateKey: string): ProfileSessionStore {
         set({ restoreClaimed: true });
         return true;
       },
+      setList: (personId, rows) =>
+        set((s) => {
+          const { [personId]: _dropped, ...listErrors } = s.listErrors;
+          return { lists: { ...s.lists, [personId]: rows }, listErrors };
+        }),
+      setListError: (personId, error) => set((s) => ({ listErrors: { ...s.listErrors, [personId]: error ?? new Error("Couldn't load the profiles.") } })),
     }));
     sessions.set(stateKey, store);
   }
@@ -229,6 +277,13 @@ export type ProfileSession = {
   reconciledPersonId: string | null;
   setReconciled: (personId: string | null) => void;
   claimRestore: () => boolean;
+  /** The cached raw rows of a person's profiles (`undefined` until fetched); reactive. */
+  profilesOf: (personId: string) => unknown[] | undefined;
+  /** Whether the person's list fetch failed; reactive. */
+  profilesFailed: (personId: string) => boolean;
+  /** Cache a fetched list (the whole page session reuses it). */
+  setProfiles: (personId: string, rows: unknown[]) => void;
+  setProfilesError: (personId: string, error: unknown) => void;
   /** Make `profile` the active one (no persistence). */
   apply: (profile: unknown) => void;
   /** Switch Profile: apply and remember the `userId`. */
@@ -252,12 +307,38 @@ export function useProfileSession({ stateKey = DEFAULT_PROFILE_STATE_KEY, keys, 
   const resolvedKeys = useMemo<ProfileKeys>(() => ({ ...DEFAULT_PROFILE_KEYS, ...keys }), [keysSig]);
   const activeStore = useMemo(() => getStateStore(stateKey), [stateKey]);
   const originalStore = useMemo(() => getStateStore(originalStateKey(stateKey)), [stateKey]);
+  const listStore = useMemo(() => getStateStore(listStateKey(stateKey)), [stateKey]);
   const sessionStore = useMemo(() => getProfileSessionStore(stateKey), [stateKey]);
   const active = useSliceData(activeStore);
   const original = useSliceData(originalStore);
   const pending = sessionStore((s) => s.pending);
   const reconciledPersonId = sessionStore((s) => s.reconciledPersonId);
+  const lists = sessionStore((s) => s.lists);
+  const listErrors = sessionStore((s) => s.listErrors);
   const initialValue = useDataValue(initial);
+  const activeProfile = useMemo(() => (active === undefined || active === null ? undefined : normalizeProfile(active, resolvedKeys)), [active, resolvedKeys]);
+
+  // Publish the active person's list as the `<stateKey>List` slice: the cached
+  // rows, `error` after a failed fetch, `loading` while unknown (an element is
+  // expected to fetch it), `idle` without an active profile.
+  useEffect(() => {
+    const personId = activeProfile?.personId;
+    const slice = listStore.getState();
+    if (!personId) {
+      if (slice.status !== "idle") slice.clear();
+      return;
+    }
+    const rows = lists[personId];
+    if (rows !== undefined) {
+      if (slice.data !== rows) slice.setLoad({ data: rows, status: "success" });
+      return;
+    }
+    if (personId in listErrors) {
+      if (slice.status !== "error") slice.setLoad({ data: undefined, status: "error", error: listErrors[personId] });
+      return;
+    }
+    if (slice.status !== "loading" || slice.data !== undefined) slice.setLoad({ data: undefined, status: "loading" });
+  }, [activeProfile?.personId, lists, listErrors, listStore]);
 
   // Seed the slice while it is still empty. The store is read directly, not
   // the rendered `active`: a restore may have written the replaced profile in
@@ -304,6 +385,10 @@ export function useProfileSession({ stateKey = DEFAULT_PROFILE_STATE_KEY, keys, 
     cancelImpersonation();
   }, [originalStore, sessionStore, resolvedKeys, apply, cancelImpersonation]);
 
+  const profilesOf = useCallback((personId: string) => lists[personId], [lists]);
+  const profilesFailed = useCallback((personId: string) => personId in listErrors, [listErrors]);
+  const setProfiles = useCallback((personId: string, rows: unknown[]) => sessionStore.getState().setList(personId, rows), [sessionStore]);
+  const setProfilesError = useCallback((personId: string, error: unknown) => sessionStore.getState().setListError(personId, error), [sessionStore]);
   const setPending = useCallback((p: boolean) => sessionStore.getState().setPending(p), [sessionStore]);
   const setReconciled = useCallback((id: string | null) => sessionStore.getState().setReconciled(id), [sessionStore]);
   const claimRestore = useCallback(() => sessionStore.getState().claimRestore(), [sessionStore]);
@@ -313,7 +398,7 @@ export function useProfileSession({ stateKey = DEFAULT_PROFILE_STATE_KEY, keys, 
     keys: resolvedKeys,
     persist,
     active,
-    activeProfile: useMemo(() => (active === undefined || active === null ? undefined : normalizeProfile(active, resolvedKeys)), [active, resolvedKeys]),
+    activeProfile,
     original,
     originalProfile: useMemo(() => (original === undefined || original === null ? undefined : normalizeProfile(original, resolvedKeys)), [original, resolvedKeys]),
     isImpersonating: original !== undefined,
@@ -322,6 +407,10 @@ export function useProfileSession({ stateKey = DEFAULT_PROFILE_STATE_KEY, keys, 
     reconciledPersonId,
     setReconciled,
     claimRestore,
+    profilesOf,
+    profilesFailed,
+    setProfiles,
+    setProfilesError,
     apply,
     switchTo,
     startImpersonation,

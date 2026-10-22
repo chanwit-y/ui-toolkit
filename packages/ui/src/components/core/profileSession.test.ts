@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { normalizeProfile, parseImpersonationRecord, pickRestoredProfile, profileSubtitle } from "./profileSession";
+import { isPrimaryValue, normalizeProfile, parseImpersonationRecord, pickDefaultProfile, pickRestoredProfile, profileSubtitle } from "./profileSession";
 
 const banpu = {
   personId: "p-1",
@@ -61,5 +61,38 @@ describe("parseImpersonationRecord", () => {
     expect(parseImpersonationRecord(JSON.stringify({ original: {}, replacedPersonId: "" }))).toBeNull();
     expect(parseImpersonationRecord("not json")).toBeNull();
     expect(parseImpersonationRecord(null)).toBeNull();
+  });
+});
+
+describe("primary assignment", () => {
+  it("reads the Banpu flag permissively", () => {
+    expect(normalizeProfile({ ...banpu, isPrimaryAssignment: "Y" }).primary).toBe(true);
+    expect(normalizeProfile({ ...banpu, isPrimaryAssignment: "true" }).primary).toBe(true);
+    expect(normalizeProfile({ ...banpu, isPrimaryAssignment: 1 }).primary).toBe(true);
+    expect(normalizeProfile({ ...banpu, isPrimaryAssignment: "N" }).primary).toBe(false);
+    expect(normalizeProfile(banpu).primary).toBe(false);
+    expect(isPrimaryValue("  y ")).toBe(true);
+    expect(isPrimaryValue(0)).toBe(false);
+  });
+
+  it("picks the primary profile over the first, and the first without one", () => {
+    const a = { userId: "a", primary: false };
+    const b = { userId: "b", primary: true };
+    expect(pickDefaultProfile([a, b])).toBe(b);
+    expect(pickDefaultProfile([a, { userId: "c", primary: false }])).toBe(a);
+    expect(pickDefaultProfile([])).toBeUndefined();
+  });
+
+  it("lets a saved switch win over the primary flag", () => {
+    const a = { userId: "a", primary: false };
+    const b = { userId: "b", primary: true };
+    expect(pickRestoredProfile([a, b], "a")).toBe(a);
+    expect(pickRestoredProfile([a, b], null)).toBe(b);
+    expect(pickRestoredProfile([a, b], "gone")).toBe(b);
+  });
+
+  it("drops company · department from the subtitle on request", () => {
+    const p = normalizeProfile(banpu);
+    expect(profileSubtitle(p, false)).toBe(banpu.jobTitle);
   });
 });

@@ -37,6 +37,7 @@ import {
   createDefaultCardConfig,
   createDefaultHtmlContentConfig,
   createDefaultCustomComponentConfig,
+  type CustomComponentConfig,
   createDefaultApprovalLineConfig,
   createDefaultSwitchProfileConfig,
   createDefaultReplaceProfileConfig,
@@ -573,6 +574,7 @@ export const useGridStore = create<GridState>((set, get) => {
           | DrawerConfig
           | PopoverConfig
           | DesignConfig
+          | CustomComponentConfig
           | undefined
         let nextSeq = fieldSeq
         if (type === 'textfield') {

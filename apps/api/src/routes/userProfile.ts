@@ -19,6 +19,8 @@ type Profile = {
   email: string;
   jobTitle: string;
   jobStatus: 'A' | 'T';
+  /** The primary assignment, 'Y' on one profile per person (the Banpu shape). */
+  isPrimaryAssignment: 'Y' | 'N';
   isAdmin: boolean;
   avatar: string;
   companyModel: { code: string; name: string };
@@ -50,6 +52,7 @@ const profile = (
   email: `${first.toLowerCase()}_${last[0]?.toLowerCase() ?? ''}@banpu.co.th`,
   jobTitle,
   jobStatus: 'A',
+  isPrimaryAssignment: 'N',
   isAdmin: false,
   avatar: '',
   companyModel: COMPANIES[company],
@@ -57,10 +60,10 @@ const profile = (
   ...extra,
 });
 
-/** The logged-in person: an admin with two positions. */
+/** The logged-in person: an admin with two positions — the *second* is the primary assignment. */
 const ME: Profile[] = [
   profile('p-me', 1, 'Kavisara', 'Thisakobsuk', 'Section Manager - Application Development', 'BPP', 'Digital', { isAdmin: true }),
-  profile('p-me', 2, 'Kavisara', 'Thisakobsuk', 'Product Owner - Employee Platforms', 'BPN', 'Digital', { isAdmin: true }),
+  profile('p-me', 2, 'Kavisara', 'Thisakobsuk', 'Product Owner - Employee Platforms', 'BPN', 'Digital', { isAdmin: true, isPrimaryAssignment: 'Y' }),
 ];
 
 // Everyone from the workflow demo gets one profile; a few hold more, one is
@@ -71,8 +74,13 @@ const PEOPLE: Profile[] = USERS.flatMap((u, i) => {
   const personId = `p-${u.PersonId}`;
   const company = (['BPP', 'BPN', 'BPA'] as const)[i % 3];
   const unit = UNITS[i % UNITS.length];
-  const list = [profile(personId, 1, first, last, u.JobTitle, company, unit, { email: u.Email })];
-  if (i % 4 === 1) list.push(profile(personId, 2, first, last, `${u.JobTitle} (Acting)`, 'BPN', UNITS[(i + 2) % UNITS.length], { email: u.Email }));
+  const list = [profile(personId, 1, first, last, u.JobTitle, company, unit, { email: u.Email, isPrimaryAssignment: 'Y' })];
+  // The acting position is the primary one for every other such person, so the primary pick is visibly not the first row.
+  if (i % 4 === 1) {
+    const actingPrimary = i % 8 === 1;
+    if (actingPrimary) list[0] = { ...list[0], isPrimaryAssignment: 'N' };
+    list.push(profile(personId, 2, first, last, `${u.JobTitle} (Acting)`, 'BPN', UNITS[(i + 2) % UNITS.length], { email: u.Email, isPrimaryAssignment: actingPrimary ? 'Y' : 'N' }));
+  }
   if (i % 7 === 3) list.push(profile(personId, 3, first, last, 'Committee Member', 'BPA', 'Sustainability', { email: u.Email }));
   if (i === 2) list.push(profile(personId, 9, first, last, 'Former role', 'BPP', unit, { email: u.Email, jobStatus: 'T' }));
   return list;
@@ -82,9 +90,9 @@ const PROFILES: Profile[] = [
   ...ME,
   ...PEOPLE,
   // Only a terminated profile: the "no active profile" path.
-  profile('p-gone', 1, 'Nadia', 'Samae', 'Section Manager - Sustainability Management', 'BPP', 'Sustainability', { jobStatus: 'T' }),
+  profile('p-gone', 1, 'Nadia', 'Samae', 'Section Manager - Sustainability Management', 'BPP', 'Sustainability', { jobStatus: 'T', isPrimaryAssignment: 'Y' }),
   // The profiles call fails for this person: the error path.
-  profile('p-broken', 1, 'Broken', 'Record', 'Returns a server error', 'BPP', 'Operations'),
+  profile('p-broken', 1, 'Broken', 'Record', 'Returns a server error', 'BPP', 'Operations', { isPrimaryAssignment: 'Y' }),
 ];
 
 const envelope = <T>(data: T, message: string) => ({ data, status: 200, success: true, message });

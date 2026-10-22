@@ -1,5 +1,6 @@
 import { CoreProvider, ThemeProvider } from '@gummy-ui/ui'
 import { useMemo } from 'react'
+import { CliBanner } from './cli/CliBanner'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { ApiEditor, EnvEditor, Grid, MenuEditor, ModelEditor, ThemeEditor } from './components'
 import { toThemeObjects, useThemeStore } from './components/Theme'
@@ -38,6 +39,8 @@ function App() {
       className="flex h-dvh flex-col overflow-hidden bg-surface text-[13px] text-ink"
     >
       <CoreProvider isRoot>
+        {/* Served by `gummy studio`: warns when a save to gummy/workspace.json is refused or fails. */}
+        <CliBanner />
         <LibrarySync />
         <BrowserRouter>
           <Routes>

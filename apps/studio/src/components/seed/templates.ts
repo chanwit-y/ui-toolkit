@@ -150,7 +150,7 @@ export function builtinTemplates(): TemplateDef[] {
         title: 'Add record',
         description: 'Create a record',
         maxWidth: '520px',
-        trigger: { label: 'Add record', icon: 'puls' },
+        trigger: { label: 'Add record', icon: 'puls', variant: 'contained' },
       },
       { xs: 2, sm: 2, md: 2, lg: 2 },
       {

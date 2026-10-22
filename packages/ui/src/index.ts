@@ -59,6 +59,12 @@ export { PagesProvider, usePages, useNavigateTo, buildNavigateUrl, pathParamName
 export { AppShell } from "./components/AppShell";
 export type { AppShellProps } from "./components/AppShell";
 export type { AppBarConfig, MenuItem, TMenu } from "./components/@types";
+// Runtime rendering of a studio project document (see the grilled library / CLI
+// design): <GummyApp project={json} …/> inside the consumer's router.
+export { GummyApp } from "./components/GummyApp";
+export type { GummyAppProps } from "./components/GummyApp";
+export { assertGummyProject, projectApiToEngine, GummyProjectError, GUMMY_PROJECT_SCHEMA_VERSION } from "./components/core/project";
+export type { GummyProject, GummyProjectApi, GummyProjectShell, GummyProjectTheme, GummyProjectCustomComponent } from "./components/core/project";
 export {
 	DEFAULT_CONTAINER_GRID,
 	getBinGridItemStyle,
@@ -142,7 +148,10 @@ export {
   normalizeProfile,
   profileSubtitle,
   pickRestoredProfile,
+  pickDefaultProfile,
+  isPrimaryValue,
   originalStateKey,
+  listStateKey,
   useProfileSession,
 } from "./components/core/profileSession";
 export type { NormalizedProfile, ProfileSession } from "./components/core/profileSession";

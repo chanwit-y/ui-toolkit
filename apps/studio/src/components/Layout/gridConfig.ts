@@ -1275,8 +1275,8 @@ function profileKeys(k: ProfileKeysConfig): Record<string, unknown> {
     return list.length === 0 ? undefined : list.length === 1 ? list[0] : list
   }
   const out: Record<string, unknown> = {}
-  for (const key of ['personId', 'userId', 'name', 'jobTitle', 'company', 'department', 'email', 'avatar'] as const) {
-    const v = keyPath(k[key])
+  for (const key of ['personId', 'userId', 'name', 'jobTitle', 'company', 'department', 'email', 'avatar', 'primary'] as const) {
+    const v = keyPath(k[key] ?? [])
     if (v !== undefined) out[key] = v
   }
   if (k.nameTemplate.trim()) out.nameTemplate = k.nameTemplate.trim()
@@ -1314,6 +1314,8 @@ function switchProfileElement(
     ...(c.personParam.trim() ? { personParam: c.personParam.trim() } : {}),
     ...omitEmpty({ title: c.title, emptyText: c.emptyText }),
     ...(c.hideWhenSingle ? {} : { hideWhenSingle: false }),
+    ...(c.display === 'dropdown' ? { display: 'dropdown' } : {}),
+    ...(c.showSubtitle ? {} : { showSubtitle: false }),
   }
 }
 

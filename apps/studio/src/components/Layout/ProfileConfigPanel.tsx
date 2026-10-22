@@ -13,6 +13,7 @@ import {
   BUTTON_VARIANT_OPTIONS,
   createDefaultNavigate,
   PROFILE_KEY_ROWS,
+  type SwitchProfileDisplay,
   type ButtonVariant,
   type DataCondition,
   type FormListCrudRef,
@@ -83,6 +84,9 @@ function PersonParamField({
   )
 }
 
+/** A panel's typed `set` over the shared session keys. The switch / replace configs extend `ProfileSessionConfig`, so each panel's narrower generic setter is cast to this at the call site (TS cannot relate the two generics). */
+type ProfileSessionSetter = <K extends keyof ProfileSessionConfig>(key: K, value: ProfileSessionConfig[K]) => void
+
 /** Name, state slice, the logged-in profile, the record keys, persistence, reload and navigate — the shared half of both panels. */
 function ProfileSessionFields<C extends ProfileSessionConfig>({
   config,
@@ -90,7 +94,7 @@ function ProfileSessionFields<C extends ProfileSessionConfig>({
   rows,
 }: {
   config: C
-  set: <K extends keyof ProfileSessionConfig>(key: K, value: ProfileSessionConfig[K]) => void
+  set: ProfileSessionSetter
   rows: PathFields
 }) {
   const scope = useRepeaterScope()
@@ -161,15 +165,30 @@ export function SwitchProfileConfigPanel({ itemId, config }: { itemId: string; c
       <PersonParamField value={config.personParam} onChange={(v) => set('personParam', v)} read={config.read} />
       {rows.fields !== null && <p className="text-ui-xs text-ok">Row model resolved — {rows.fields.length} fields to pick from.</p>}
 
-      <ProfileSessionFields config={config} set={set} rows={rows} />
+      <ProfileSessionFields config={config} set={set as unknown as ProfileSessionSetter} rows={rows} />
 
-      <Heading>List</Heading>
-      <Field label="Title">
+      <Heading>Control</Heading>
+      <SegmentedControl
+        aria-label="Display"
+        options={[
+          { value: 'list', label: 'List' },
+          { value: 'dropdown', label: 'Dropdown' },
+        ]}
+        value={config.display}
+        onChange={(v) => set('display', v as SwitchProfileDisplay)}
+      />
+      <p className="text-ui-xs text-ink-3">
+        {config.display === 'dropdown'
+          ? 'A select whose value is the profile id and label the job title — the shape of a profile menu.'
+          : 'One row per profile (avatar, name, job title), the active one checked.'}
+      </p>
+      <Field label={config.display === 'dropdown' ? 'Label' : 'Title'}>
         <Input value={config.title} onChange={(e) => set('title', e.target.value)} placeholder="Switch profile" />
       </Field>
       <Field label="Empty text">
         <Input value={config.emptyText} onChange={(e) => set('emptyText', e.target.value)} placeholder="No other profile." />
       </Field>
+      <Toggle label="Show company · department" checked={config.showSubtitle} onChange={(v) => set('showSubtitle', v)} />
       <Toggle label="Hide with a single profile" checked={config.hideWhenSingle} onChange={(v) => set('hideWhenSingle', v)} />
     </div>
   )
@@ -229,7 +248,7 @@ export function ReplaceProfileConfigPanel({ itemId, config }: { itemId: string; 
       <PersonParamField value={config.personParam} onChange={(v) => set('personParam', v)} read={config.read} />
       {rows.fields !== null && <p className="text-ui-xs text-ok">Row model resolved — {rows.fields.length} fields to pick from.</p>}
 
-      <ProfileSessionFields config={config} set={set} rows={rows} />
+      <ProfileSessionFields config={config} set={set as unknown as ProfileSessionSetter} rows={rows} />
 
       <Heading>Who may replace</Heading>
       <SegmentedControl
