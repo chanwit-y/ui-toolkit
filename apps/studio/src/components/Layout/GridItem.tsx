@@ -1,6 +1,8 @@
 import type { DataTableAddButton, DataType } from '@gummy-ui/ui'
 import {
   ApprovalLineView,
+  SwitchProfileView,
+  ReplaceProfileView,
   WorkflowEditorBase,
   AutocompleteBase2,
   Avatar,
@@ -28,12 +30,14 @@ import {
   UploadImageBase,
 } from '@gummy-ui/ui'
 import { IconData, groupColumns } from '@gummy-ui/ui'
-import type { ApprovalStep, TypographyProps, UploadedFile } from '@gummy-ui/ui'
+import type { ApprovalStep, NormalizedProfile, TypographyProps, UploadedFile } from '@gummy-ui/ui'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import {
   AppWindow,
   Box,
+  UserCheck,
+  UserCog,
   Calendar,
   EyeOff,
   Expand,
@@ -106,6 +110,8 @@ import type {
   HtmlContentConfig,
   CustomComponentConfig,
   ApprovalLineConfig,
+  SwitchProfileConfig,
+  ReplaceProfileConfig,
   WorkflowEditorConfig,
   PopoverConfig,
   RadioConfig,
@@ -188,6 +194,9 @@ function thresholdsForType(type: GridItemData['type']): LiveThresholds {
     type === 'custom' ||
     // An approval line is avatars on a line — it scrolls when narrow.
     type === 'approvalline' ||
+    // The profile elements are a short list / a button and a banner.
+    type === 'switchprofile' ||
+    type === 'replaceprofile' ||
     // A workflow editor is a column of cards — it reads at any width.
     type === 'workfloweditor' ||
     // Design-only kinds are the design itself — nothing heavier to gate.
@@ -305,6 +314,12 @@ function CellContent({ item }: { item: GridItemData }) {
   if (item.type === 'approvalline' && item.config) {
     return <GlyphChip Icon={Workflow} />
   }
+  if (item.type === 'switchprofile' && item.config) {
+    return <GlyphChip Icon={UserCheck} />
+  }
+  if (item.type === 'replaceprofile' && item.config) {
+    return <GlyphChip Icon={UserCog} />
+  }
   if (item.type === 'tab' && item.config) {
     return <GlyphChip Icon={PanelTop} />
   }
@@ -385,6 +400,10 @@ function ActiveBody({ item }: { item: GridItemData }) {
                                       ? Puzzle
                                     : item.type === 'approvalline'
                                       ? Workflow
+                                    : item.type === 'switchprofile'
+                                      ? UserCheck
+                                    : item.type === 'replaceprofile'
+                                      ? UserCog
                                       : item.type === 'tab'
                                         ? PanelTop
                                         : item.type === 'modal'
@@ -1488,6 +1507,52 @@ function ApprovalLineLivePreview({ config }: { config: ApprovalLineConfig }) {
   )
 }
 
+/** Two positions of one person, for the profile elements' canvas previews. */
+const PROFILE_PREVIEW: NormalizedProfile[] = [
+  {
+    personId: 'p-1',
+    userId: 'u-1',
+    name: 'Kavisara Thisakobsuk',
+    jobTitle: 'Section Manager - Application Development',
+    company: 'Banpu Public Company Limited',
+    raw: {},
+  },
+  { personId: 'p-1', userId: 'u-2', name: 'Kavisara Thisakobsuk', jobTitle: 'Product Owner - Employee Platforms', company: 'Banpu NEXT', raw: {} },
+]
+
+/** The real `SwitchProfileView` over two sample profiles (the list is fetched at runtime). Always live and inert. */
+function SwitchProfileLivePreview({ config }: { config: SwitchProfileConfig }) {
+  return (
+    <div data-grid-item-content className="pointer-events-none h-full w-full px-3 py-2">
+      <SwitchProfileView
+        title={config.title || undefined}
+        emptyText={config.emptyText || undefined}
+        hideWhenSingle={false}
+        profiles={PROFILE_PREVIEW}
+        activeUserId={PROFILE_PREVIEW[0].userId}
+      />
+    </div>
+  )
+}
+
+/** The real `ReplaceProfileView`: the trigger and, when enabled, a sample "Viewing as" banner. Always live and inert. */
+function ReplaceProfileLivePreview({ config }: { config: ReplaceProfileConfig }) {
+  return (
+    <div data-grid-item-content className="pointer-events-none h-full w-full px-3 py-2">
+      <ReplaceProfileView
+        trigger={{
+          label: config.trigger.label,
+          icon: (config.trigger.icon || undefined) as keyof typeof IconData | undefined,
+          variant: config.trigger.variant,
+        }}
+        viewingAs={config.showBanner ? PROFILE_PREVIEW[1] : undefined}
+        showBanner={config.showBanner}
+        returnLabel={config.returnLabel || undefined}
+      />
+    </div>
+  )
+}
+
 /** One card button on the canvas: the library's visual layer, like `ButtonLivePreview`. */
 function CardActionPreview({ action }: { action: CardActionConfig }) {
   return (
@@ -1798,6 +1863,12 @@ function renderLive(item: GridItemData, isLive: boolean) {
   }
   if (item.type === 'approvalline' && item.config) {
     return <ApprovalLineLivePreview config={item.config as ApprovalLineConfig} />
+  }
+  if (item.type === 'switchprofile' && item.config) {
+    return <SwitchProfileLivePreview config={item.config as SwitchProfileConfig} />
+  }
+  if (item.type === 'replaceprofile' && item.config) {
+    return <ReplaceProfileLivePreview config={item.config as ReplaceProfileConfig} />
   }
   if (item.type === 'paper' && item.config && item.childCanvases?.[0]) {
     return (

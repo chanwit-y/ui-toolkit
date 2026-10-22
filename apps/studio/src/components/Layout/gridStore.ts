@@ -38,6 +38,8 @@ import {
   createDefaultHtmlContentConfig,
   createDefaultCustomComponentConfig,
   createDefaultApprovalLineConfig,
+  createDefaultSwitchProfileConfig,
+  createDefaultReplaceProfileConfig,
   createDefaultWorkflowEditorConfig,
   createDefaultPopoverConfig,
   createDefaultRadioConfig,
@@ -71,6 +73,8 @@ import {
   type CardConfig,
   type HtmlContentConfig,
   type ApprovalLineConfig,
+  type SwitchProfileConfig,
+  type ReplaceProfileConfig,
   type WorkflowEditorConfig,
   type PopoverConfig,
   type RadioConfig,
@@ -561,6 +565,8 @@ export const useGridStore = create<GridState>((set, get) => {
           | CardConfig
           | HtmlContentConfig
           | ApprovalLineConfig
+          | SwitchProfileConfig
+          | ReplaceProfileConfig
           | WorkflowEditorConfig
           | TabConfig
           | ModalConfig
@@ -655,6 +661,12 @@ export const useGridStore = create<GridState>((set, get) => {
         } else if (type === 'approvalline') {
           nextSeq = fieldSeq + 1
           config = createDefaultApprovalLineConfig(`approval_${nextSeq}`)
+        } else if (type === 'switchprofile') {
+          nextSeq = fieldSeq + 1
+          config = createDefaultSwitchProfileConfig(`switchProfile_${nextSeq}`)
+        } else if (type === 'replaceprofile') {
+          nextSeq = fieldSeq + 1
+          config = createDefaultReplaceProfileConfig(`replaceProfile_${nextSeq}`)
         } else if (type === 'workfloweditor') {
           nextSeq = fieldSeq + 1
           config = createDefaultWorkflowEditorConfig(`workflow_${nextSeq}`)
@@ -699,6 +711,8 @@ export const useGridStore = create<GridState>((set, get) => {
           type === 'html' ||
           type === 'custom' ||
           type === 'approvalline' ||
+          type === 'switchprofile' ||
+          type === 'replaceprofile' ||
           type === 'workfloweditor' ||
           type === 'tab'
         const isUpload = type === 'uploadimage' || type === 'uploadfile'

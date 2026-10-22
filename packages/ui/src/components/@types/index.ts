@@ -1677,10 +1677,103 @@ export type TElement =
   | HtmlContentElement
   | CustomComponentElement
   | ApprovalLineElement
+  | SwitchProfileElement
+  | ReplaceProfileElement
   | WorkflowEditorElement
   | PopoverElement
   | DrawerElement
   | DividerElement;
+
+/**
+ * Paths into one profile record — each a lodash path or a list of fallback
+ * paths (see {@link ApprovalKeyPath}). The defaults fit the Banpu
+ * user-profile shape (`personId`, `userId`, `firstNameEn` + `lastNameEN`,
+ * `jobTitle`, `companyModel.name`, `businessUnitModel.name`).
+ */
+export type ProfileKeys = {
+  personId?: ApprovalKeyPath;
+  /** Unique per profile — one person holds several. Falls back to `personId`. */
+  userId?: ApprovalKeyPath;
+  name?: ApprovalKeyPath;
+  /** A `{{path}}` template for the display name; wins over `name` when it renders non-blank. */
+  nameTemplate?: string;
+  jobTitle?: ApprovalKeyPath;
+  company?: ApprovalKeyPath;
+  department?: ApprovalKeyPath;
+  email?: ApprovalKeyPath;
+  /** An image URL on the record. */
+  avatar?: ApprovalKeyPath;
+};
+
+/** What the two profile elements share (see the grilled design). */
+export type ProfileSessionElement = {
+  name?: string;
+  /**
+   * The global-state slice holding the active profile (default `"profile"`) —
+   * bind anything to it with `{ type: "state", key: "profile", path }`. While
+   * impersonating, the admin's own profile sits in `<stateKey>Original`.
+   */
+  stateKey?: string;
+  /** The logged-in profile (a page / global load slice, say): seeds the active slice while it is empty. */
+  initial?: DataValue;
+  keys?: ProfileKeys;
+  /** Remember the choice — a switch in localStorage, a replacement in sessionStorage. Default true. */
+  persist?: boolean;
+  /** Names registered for `ReloadDataTable` (tables, lists, page loads) refetched after the profile changes. */
+  reload?: string[];
+  /** Where to go after the profile changes (home, say). */
+  navigate?: NavigateTarget;
+  className?: string;
+};
+
+/**
+ * Switch Profile: the active person's profiles as a list, the active one
+ * checked; picking one makes it the active profile. On load the saved choice
+ * is restored when still in the list, else the first profile.
+ */
+export type SwitchProfileElement = ProfileSessionElement & {
+  /** The person's profiles; `personParam` (default: the URL's only `:param`) receives the active profile's personId. */
+  api: API;
+  personParam?: string;
+  title?: string;
+  emptyText?: string;
+  /** Render nothing while the person has at most one profile (default true). */
+  hideWhenSingle?: boolean;
+};
+
+/**
+ * Replace Profile: a trigger opening a search-and-confirm dialog; Confirm
+ * fetches the picked person's profiles and makes the first one active,
+ * keeping the current profile as the original — shown in a banner with
+ * "Return to my profile". Nothing changes before Confirm, nor on an empty
+ * list or a failed request (the dialog stays open and says so).
+ */
+export type ReplaceProfileElement = ProfileSessionElement & {
+  /** People search: the typed text goes to `searchParam` (default `"search"`) of its query, debounced `debounceMs` (300), never sent blank. */
+  searchApi: API;
+  searchParam?: string;
+  debounceMs?: number;
+  /** The picked person's profiles (the same shape as {@link SwitchProfileElement.api}). */
+  profilesApi: API;
+  personParam?: string;
+  /**
+   * Who may replace: a condition over global state, e.g.
+   * `{ left: { source: "state", key: "me", path: "isAdmin" }, operator: "eq", right: { val: true } }`
+   * (the *logged-in* user's slice, so it holds while impersonating). Absent ⇒ everyone.
+   */
+  canReplace?: CondExpression;
+  trigger?: { label?: string; icon?: keyof typeof IconData; variant?: ButtonVariant };
+  title?: string;
+  description?: string;
+  placeholder?: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  returnLabel?: string;
+  /** Shown when the search matched nobody / the picked person has no profile. */
+  emptyText?: string;
+  /** "Viewing as … — Return to my profile" while impersonating (default true). */
+  showBanner?: boolean;
+};
 
 export type BinType =
   | "hidden"
@@ -1713,6 +1806,8 @@ export type BinType =
   | "html"
   | "custom"
   | "approvalline"
+  | "switchprofile"
+  | "replaceprofile"
   | "workfloweditor"
   | "popover"
   | "drawer"

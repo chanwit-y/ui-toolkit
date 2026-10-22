@@ -18,6 +18,8 @@ import {
   createDefaultTypographyConfig,
   createDefaultApprovalLineConfig,
   type ApprovalLineConfig,
+  createDefaultSwitchProfileConfig,
+  createDefaultReplaceProfileConfig,
   createDefaultWorkflowEditorConfig,
   type WorkflowEditorConfig,
   createDefaultRadioConfig,
@@ -187,6 +189,7 @@ export function countrySeedModels(): ModelDef[] {
     ...pageDataSeedModels(),
     ...approvalSeedModels(),
     ...workflowSeedModels(),
+    ...profileSeedModels(),
   ]
 }
 
@@ -1550,6 +1553,7 @@ export function countrySeedEndpoints(): EndpointDef[] {
     ...pageDataSeedEndpoints(),
     ...approvalSeedEndpoints(),
     ...workflowSeedEndpoints(),
+    ...profileSeedEndpoints(),
   ]
 }
 
@@ -4578,6 +4582,163 @@ export function customComponentsDemoSeedItems(): GridItemData[] {
     {
       ...custom('seed-item-custom-components-loaded', 'badgeLoaded', COMPONENT_STAT_BADGE_ID, { label: 'Regions loaded', tone: 'green' }, { binding: { ...regions, path: 'length' } }),
       dataWhen: { loadId: LOAD_CC_REGIONS_ID, test: 'loaded', path: '', op: 'eq', value: '' },
+    },
+  ]
+}
+
+/* ------------------------------------------------ profile switcher demo */
+
+export const PROFILE_PAGE_ID = 'seed-page-profile'
+export const PROFILE_RES_MODEL_ID = 'seed-model-profile-res'
+export const PROFILE_LIST_RES_MODEL_ID = 'seed-model-profile-list-res'
+export const PROFILE_SEARCH_QUERY_MODEL_ID = 'seed-model-profile-search-query'
+export const PROFILE_PERSON_PARAMS_MODEL_ID = 'seed-model-profile-person-params'
+export const PROFILE_PERSON_QUERY_MODEL_ID = 'seed-model-profile-person-query'
+export const ME_ENDPOINT_ID = 'seed-endpoint-profile-me'
+export const SEARCH_PROFILES_ENDPOINT_ID = 'seed-endpoint-profile-search'
+export const PROFILES_BY_PERSON_ENDPOINT_ID = 'seed-endpoint-profiles-by-person'
+export const LOAD_ME_ID = 'load-seed-me'
+
+/** One Banpu-shaped profile record (the mock `/collection/profiles/*`). */
+function profileFields(): ModelField[] {
+  return [
+    field('personId'),
+    field('userId'),
+    field('firstNameEn'),
+    field('lastNameEN'),
+    field('email'),
+    field('jobTitle'),
+    field('jobStatus'),
+    field('isAdmin', 'boolean'),
+    field('avatar'),
+    field('companyModel', 'object', [field('code'), field('name')]),
+    field('businessUnitModel', 'object', [field('code'), field('name')]),
+  ]
+}
+
+/** The Profile demo's models: one profile (me), a profile list, the search query, the person param + query. */
+export function profileSeedModels(): ModelDef[] {
+  const envelope = [field('status', 'number'), field('success', 'boolean'), field('message')]
+  return [
+    { id: PROFILE_RES_MODEL_ID, name: 'profileRes', fields: [field('data', 'object', profileFields()), ...envelope] },
+    { id: PROFILE_LIST_RES_MODEL_ID, name: 'profileListRes', fields: [field('data', 'array', profileFields(), 'object'), ...envelope] },
+    { id: PROFILE_SEARCH_QUERY_MODEL_ID, name: 'profileSearchQuery', fields: [field('search')] },
+    { id: PROFILE_PERSON_PARAMS_MODEL_ID, name: 'profilePersonParams', fields: [field('personId')] },
+    { id: PROFILE_PERSON_QUERY_MODEL_ID, name: 'profilePersonQuery', fields: [field('exceptJobStatus')] },
+  ]
+}
+
+/** The Profile demo's endpoints: the logged-in profile, people search, a person's profiles. */
+export function profileSeedEndpoints(): EndpointDef[] {
+  return [
+    {
+      withOptions: false,
+      query: null,
+      id: ME_ENDPOINT_ID,
+      name: 'me',
+      description: 'The logged-in profile',
+      url: '/collection/profiles/me',
+      method: 'GET',
+      response: PROFILE_RES_MODEL_ID,
+      parameter: null,
+      body: null,
+    },
+    {
+      withOptions: false,
+      query: PROFILE_SEARCH_QUERY_MODEL_ID,
+      id: SEARCH_PROFILES_ENDPOINT_ID,
+      name: 'searchProfiles',
+      description: 'Search people by name / email (one row per person)',
+      url: '/collection/profiles/search',
+      method: 'GET',
+      response: PROFILE_LIST_RES_MODEL_ID,
+      parameter: null,
+      body: null,
+    },
+    {
+      withOptions: false,
+      query: PROFILE_PERSON_QUERY_MODEL_ID,
+      id: PROFILES_BY_PERSON_ENDPOINT_ID,
+      name: 'profilesByPerson',
+      description: 'Every profile a person holds (exceptJobStatus=T drops terminated ones)',
+      url: '/collection/profiles/person/:personId',
+      method: 'GET',
+      response: PROFILE_LIST_RES_MODEL_ID,
+      parameter: PROFILE_PERSON_PARAMS_MODEL_ID,
+      body: null,
+    },
+  ]
+}
+
+/** The Profile page's load: the logged-in profile (`me`), seeding the `profile` slice. */
+export function profileSeedLoads(): PageLoadDef[] {
+  return [seedLoad(LOAD_ME_ID, 'me', ME_ENDPOINT_ID)]
+}
+
+/**
+ * The "Profile" demo page (the example app's `/profile`): a Replace profile
+ * trigger (offered while `me.isAdmin`) and a Switch profile list over the
+ * seeded profile endpoints, both seeded from the `me` load, beside an HTML
+ * block and a typography bound to the `profile` slice they write.
+ */
+export function profileDemoSeedItems(): GridItemData[] {
+  const full = { xs: 4, sm: 6, md: 8, lg: 12 }
+  const half = { xs: 4, sm: 6, md: 4, lg: 6 }
+  const typography = (id: string, text: string, extra: Record<string, unknown> = {}): GridItemData => ({
+    id,
+    label: 'Typography',
+    type: 'typography',
+    settings: createDefaultItemSettings({ colSpan: full }),
+    config: { ...createDefaultTypographyConfig(), text, variant: 'body2', ...extra },
+  })
+  const heading = (id: string, text: string, caption: string): GridItemData[] => [
+    typography(`${id}-title`, text, { variant: 'subtitle1', weight: 'medium' }),
+    typography(`${id}-caption`, caption, { color: 'gray' }),
+  ]
+  const me = { key: LOAD_ME_ID, path: '', source: 'state' as const }
+  const profiles = { endpointId: PROFILES_BY_PERSON_ENDPOINT_ID, params: {}, extra: { exceptJobStatus: { type: 'value' as const, value: 'T' } } }
+  return [
+    typography('seed-item-profile-h', 'Replace / Switch Profile', { variant: 'h3' }),
+    typography(
+      'seed-item-profile-intro',
+      'Two elements sharing one global-state slice (profile): Replace profile lets an admin read the app as another person (search → pick → Confirm, a banner offers the way back), Switch profile lists the active person\u2019s positions. Both remember their choice and re-fetch on load.',
+      { color: 'gray' },
+    ),
+
+    ...heading('seed-item-profile-replace-h', 'Replace profile', 'Offered while the logged-in profile (me) has isAdmin — a page-data condition, so it holds while impersonating a non-admin. Search "tian", "nadia" (no active profile) or "broken" (the profiles call fails).'),
+    {
+      id: 'seed-item-profile-replace',
+      label: 'Replace profile',
+      type: 'replaceprofile',
+      settings: createDefaultItemSettings({ colSpan: full }),
+      config: {
+        ...createDefaultReplaceProfileConfig('replaceProfile'),
+        initial: me,
+        search: { endpointId: SEARCH_PROFILES_ENDPOINT_ID, params: {}, extra: {} },
+        read: profiles,
+        canReplace: { loadId: LOAD_ME_ID, test: 'compare', path: 'isAdmin', op: 'eq', value: 'true' },
+        reload: ['switchProfile'],
+      },
+    },
+
+    ...heading('seed-item-profile-switch-h', 'Switch profile', 'Every profile the active person holds — the admin\u2019s two positions, then the replaced person\u2019s. Picking one makes it active; the choice is remembered and restored on load when still listed.'),
+    {
+      id: 'seed-item-profile-switch',
+      label: 'Switch profile',
+      type: 'switchprofile',
+      settings: createDefaultItemSettings({ colSpan: half }),
+      config: { ...createDefaultSwitchProfileConfig('switchProfile'), initial: me, read: profiles, hideWhenSingle: false },
+    },
+    {
+      id: 'seed-item-profile-active',
+      label: 'HTML',
+      type: 'html',
+      settings: createDefaultItemSettings({ colSpan: half }),
+      config: {
+        ...createDefaultHtmlContentConfig('activeProfile'),
+        binding: { key: 'profile', path: '', source: 'state' },
+        html: '<p><strong>{{firstNameEn}} {{lastNameEN}}</strong> \u00b7 <span class="dt-muted">{{email}}</span></p><p>{{jobTitle}}</p><p class="dt-muted">{{companyModel.name}} \u00b7 {{businessUnitModel.name}} \u00b7 user id <code>{{userId}}</code></p>',
+      },
     },
   ]
 }

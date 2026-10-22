@@ -23,6 +23,7 @@ import { containerUploadDemo } from "./uploadDemo";
 import { containerPageDataDemo, pageDataLoads } from "./pageDataDemo";
 import { approvalLineLoads, containerApprovalLineDemo } from "./approvalLineDemo";
 import { containerWorkflowDemo, workflowLoads } from "./workflowDemo";
+import { containerProfileDemo, profileLoads } from "./profileDemo";
 
 /**
  * Router demo: the pages the example app serves, keyed by name. Navigating
@@ -185,6 +186,15 @@ export const pages = {
     title: "Custom components",
     loads: customComponentsLoads,
     containers: containerCustomComponentsDemo,
+  },
+  profileDemo: {
+    // The `replaceprofile` + `switchprofile` elements over the mock profile
+    // service, sharing the `profile` state slice (see ./profileDemo.ts).
+    path: "/profile",
+    parent: "countryList",
+    title: "Profile",
+    loads: profileLoads,
+    containers: containerProfileDemo,
   },
   uploadDemo: {
     // The `uploadfile` config on its own: single / multiple, accept presets

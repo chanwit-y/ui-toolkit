@@ -26,6 +26,8 @@ import { Card } from "../card";
 import { HtmlContent } from "../htmlContent";
 import { CustomComponent } from "../customComponent";
 import { ApprovalLine } from "../approvalLine";
+import { SwitchProfile } from "../switchProfile";
+import { ReplaceProfile } from "../replaceProfile";
 import { WorkflowEditor } from "../workflowEditor";
 import { Popover } from "../popover";
 import { Drawer } from "../drawer";
@@ -70,6 +72,8 @@ export const ElementData = {
 	html: HtmlContent,
 	custom: CustomComponent,
 	approvalline: ApprovalLine,
+	switchprofile: SwitchProfile,
+	replaceprofile: ReplaceProfile,
 	workfloweditor: WorkflowEditor,
 	popover: Popover,
 	drawer: Drawer,

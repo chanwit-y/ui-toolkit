@@ -12,6 +12,7 @@ import {
   DEFAULT_PAGE_SIZE,
   DEFAULT_PAGE_SIZE_OPTIONS,
   DEFAULT_APPROVAL_STATUSES,
+  DEFAULT_REPLACE_TRIGGER,
   DEFAULT_WORKFLOW_LABELS,
   uploadAccept,
 } from './types'
@@ -51,6 +52,10 @@ import type {
   CustomComponentConfig,
   ApprovalLineConfig,
   ApprovalLineKeyConfig,
+  ProfileKeysConfig,
+  ProfileSessionConfig,
+  SwitchProfileConfig,
+  ReplaceProfileConfig,
   WorkflowEditorConfig,
   PopoverConfig,
   RadioConfig,
@@ -1223,6 +1228,133 @@ function customComponentElement(c: CustomComponentConfig, refs: ButtonRefMaps): 
 }
 
 /**
+ * A studio read ref → the engine `API`: the endpoint name, `paths`, the
+ * URL's `:param` DataValues (minus `skipParams`, which the element fills
+ * itself) and the query extras.
+ */
+function readApiRef(
+  read: FormListCrudRef,
+  pathsText: string,
+  endpoints: EndpointRef[],
+  resolveEndpoint: ResolveEndpoint,
+  refs: Pick<ButtonRefMaps, 'loadKey'>,
+  skipParams: string[] = [],
+): Record<string, unknown> {
+  const url = endpoints.find((e) => e.id === read.endpointId)?.url
+  const dataValues = (map: Record<string, NavParamSource>, ks: string[]) =>
+    Object.fromEntries(
+      ks
+        .filter((k) => k.trim() !== '' && map[k])
+        .map((k) => [k, navParamValue(map[k], refs.loadKey)] as const)
+        .filter((e): e is readonly [string, Record<string, unknown>] => e[1] !== undefined),
+    )
+  const keys = (url != null ? urlParams(url) : Object.keys(read.params)).filter((k) => !skipParams.includes(k))
+  const params = dataValues(read.params, keys)
+  const query = dataValues(read.extra, Object.keys(read.extra))
+  const paths = pathsText.split('.').map((s) => s.trim()).filter(Boolean)
+  return {
+    name: resolveEndpoint(read.endpointId) ?? '',
+    ...(paths.length ? { paths } : {}),
+    ...(Object.keys(params).length ? { params } : {}),
+    ...(Object.keys(query).length ? { query } : {}),
+  }
+}
+
+/** The `:param` a profile element fills with a person id: the configured one, else the endpoint's only placeholder. */
+function personParamOf(personParam: string, read: FormListCrudRef, endpoints: EndpointRef[]): string | undefined {
+  if (personParam.trim()) return personParam.trim()
+  const url = endpoints.find((e) => e.id === read.endpointId)?.url
+  const names = url != null ? urlParams(url) : []
+  return names.length === 1 ? names[0] : undefined
+}
+
+/** The profile keys off the engine defaults: one path as a string, several as a list, none dropped. */
+function profileKeys(k: ProfileKeysConfig): Record<string, unknown> {
+  const keyPath = (paths: string[]) => {
+    const list = paths.map((p) => p.trim()).filter(Boolean)
+    return list.length === 0 ? undefined : list.length === 1 ? list[0] : list
+  }
+  const out: Record<string, unknown> = {}
+  for (const key of ['personId', 'userId', 'name', 'jobTitle', 'company', 'department', 'email', 'avatar'] as const) {
+    const v = keyPath(k[key])
+    if (v !== undefined) out[key] = v
+  }
+  if (k.nameTemplate.trim()) out.nameTemplate = k.nameTemplate.trim()
+  return out
+}
+
+/** What `switchprofile` and `replaceprofile` share (engine `ProfileSessionElement`), only off the defaults. */
+function profileSessionElement(c: ProfileSessionConfig, refs: ButtonRefMaps): Record<string, unknown> {
+  const keys = profileKeys(c.keys)
+  const initial = itemBindingValue(c.initial, refs)
+  const navigate = c.navigate ? navigateTarget(c.navigate, refs) : undefined
+  const reload = c.reload.map((r) => r.trim()).filter(Boolean)
+  return {
+    name: c.name,
+    ...(c.stateKey.trim() ? { stateKey: c.stateKey.trim() } : {}),
+    ...(initial ? { initial } : {}),
+    ...(Object.keys(keys).length ? { keys } : {}),
+    ...(c.persist ? {} : { persist: false }),
+    ...(reload.length ? { reload } : {}),
+    ...(navigate ? { navigate } : {}),
+  }
+}
+
+/** `switchprofile` → engine `SwitchProfileElement`. */
+function switchProfileElement(
+  c: SwitchProfileConfig,
+  endpoints: EndpointRef[],
+  resolveEndpoint: ResolveEndpoint,
+  refs: ButtonRefMaps,
+): Record<string, unknown> {
+  const person = personParamOf(c.personParam, c.read, endpoints)
+  return {
+    ...profileSessionElement(c, refs),
+    api: readApiRef(c.read, c.readPaths, endpoints, resolveEndpoint, refs, person ? [person] : []),
+    ...(c.personParam.trim() ? { personParam: c.personParam.trim() } : {}),
+    ...omitEmpty({ title: c.title, emptyText: c.emptyText }),
+    ...(c.hideWhenSingle ? {} : { hideWhenSingle: false }),
+  }
+}
+
+/** `replaceprofile` → engine `ReplaceProfileElement`: both reads, the trigger and texts only off the defaults. */
+function replaceProfileElement(
+  c: ReplaceProfileConfig,
+  endpoints: EndpointRef[],
+  resolveEndpoint: ResolveEndpoint,
+  refs: ButtonRefMaps,
+): Record<string, unknown> {
+  const person = personParamOf(c.personParam, c.read, endpoints)
+  const canReplace = c.canReplace ? dataConditionValue(c.canReplace, refs) : undefined
+  const trigger = {
+    ...(c.trigger.label !== DEFAULT_REPLACE_TRIGGER.label ? { label: c.trigger.label } : {}),
+    ...(c.trigger.icon && c.trigger.icon !== DEFAULT_REPLACE_TRIGGER.icon ? { icon: c.trigger.icon } : {}),
+    ...(c.trigger.variant !== 'contained' ? { variant: c.trigger.variant } : {}),
+  }
+  const searchParam = c.searchParam.trim()
+  return {
+    ...profileSessionElement(c, refs),
+    searchApi: readApiRef(c.search, c.searchPaths, endpoints, resolveEndpoint, refs),
+    ...(searchParam && searchParam !== 'search' ? { searchParam } : {}),
+    ...(c.debounceMs !== '' && c.debounceMs !== 300 ? { debounceMs: c.debounceMs } : {}),
+    profilesApi: readApiRef(c.read, c.readPaths, endpoints, resolveEndpoint, refs, person ? [person] : []),
+    ...(c.personParam.trim() ? { personParam: c.personParam.trim() } : {}),
+    ...(canReplace ? { canReplace } : {}),
+    ...(Object.keys(trigger).length ? { trigger } : {}),
+    ...omitEmpty({
+      title: c.title,
+      description: c.description,
+      placeholder: c.placeholder,
+      confirmLabel: c.confirmLabel,
+      cancelLabel: c.cancelLabel,
+      returnLabel: c.returnLabel,
+      emptyText: c.emptyText,
+    }),
+    ...(c.showBanner ? {} : { showBanner: false }),
+  }
+}
+
+/**
  * `approvalline` → engine `ApprovalLineElement`: each key's path list (one
  * path stays a string, several a list, none dropped), the role rules, the
  * status map / labels only when they differ from the engine defaults, the
@@ -1756,6 +1888,10 @@ function buildElement(
       return item.config ? htmlContentElement(item.config as HtmlContentConfig, refs) : undefined
     case 'custom':
       return item.config ? customComponentElement(item.config as CustomComponentConfig, refs) : undefined
+    case 'switchprofile':
+      return item.config ? switchProfileElement(item.config as SwitchProfileConfig, endpoints, resolveEndpoint, refs) : undefined
+    case 'replaceprofile':
+      return item.config ? replaceProfileElement(item.config as ReplaceProfileConfig, endpoints, resolveEndpoint, refs) : undefined
     case 'approvalline':
       return item.config ? approvalLineElement(item.config as ApprovalLineConfig, endpoints, resolveEndpoint, refs) : undefined
     case 'avatar':

@@ -17,6 +17,7 @@
 @import "./styles/htmlContent.css";
 @import "./styles/approvalLine.css";
 @import "./styles/workflowEditor.css";
+@import "./styles/profile.css";
 
 @tailwind base;
 @tailwind components;

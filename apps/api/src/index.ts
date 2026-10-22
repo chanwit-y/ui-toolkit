@@ -8,6 +8,7 @@ import { formListDemoRoutes } from './routes/formListDemo.js';
 import { regionRoutes } from './routes/regions.js';
 import { approvalRoutes } from './routes/approvals.js';
 import { workflowRoutes } from './routes/workflows.js';
+import { userProfileRoutes } from './routes/userProfile.js';
 
 const app = new Hono();
 const PORT = Number(process.env.PORT) || 9000;
@@ -32,6 +33,7 @@ app.route('/', formListDemoRoutes);
 app.route('/', regionRoutes);
 app.route('/', approvalRoutes);
 app.route('/', workflowRoutes);
+app.route('/', userProfileRoutes);
 
 // Health check
 app.get('/health', (c) => {

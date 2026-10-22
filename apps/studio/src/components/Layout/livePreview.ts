@@ -46,6 +46,8 @@ const API_PLACEHOLDER_LABEL: Record<string, string> = {
   formlist: 'Form List',
   repeater: 'Repeater',
   approvalline: 'Approval line',
+  switchprofile: 'Switch profile',
+  replaceprofile: 'Replace profile',
   workfloweditor: 'Workflow editor',
   autocomplete: 'Autocomplete',
   multiAutocomplete: 'Multi Autocomplete',
@@ -179,6 +181,14 @@ function toPreviewBin(bin: ParsedBin, wiring: LivePreviewWiring): ParsedBin {
   } else if (type === 'workfloweditor') {
     const api = (el?.users as { api?: Record<string, unknown> } | undefined)?.api
     const gap = wiringGap(api?.name, wiring)
+    if (gap) return placeholderBin(bin, `[ ${label} "${displayName}" — ${gap} ]`)
+  } else if (type === 'switchprofile' && el !== undefined) {
+    const gap = wiringGap((el.api as Record<string, unknown> | undefined)?.name, wiring)
+    if (gap) return placeholderBin(bin, `[ ${label} "${displayName}" — ${gap} ]`)
+  } else if (type === 'replaceprofile' && el !== undefined) {
+    const gap =
+      wiringGap((el.searchApi as Record<string, unknown> | undefined)?.name, wiring) ??
+      wiringGap((el.profilesApi as Record<string, unknown> | undefined)?.name, wiring)
     if (gap) return placeholderBin(bin, `[ ${label} "${displayName}" — ${gap} ]`)
   } else if ((type === 'repeater' || type === 'approvalline') && el !== undefined && 'api' in el) {
     // Only an endpoint-sourced repeater fetches; an `items` one reads its parent item.

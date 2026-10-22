@@ -2100,6 +2100,8 @@ export type GridItemData = {
     | HtmlContentConfig
     | CustomComponentConfig
     | ApprovalLineConfig
+    | SwitchProfileConfig
+    | ReplaceProfileConfig
     | WorkflowEditorConfig
     | ApprovalLineConfig
     | TabConfig
@@ -2272,5 +2274,152 @@ export function createDefaultItemSettings(
     justifySelf: { ...defaultItemSettings.justifySelf, ...overrides?.justifySelf },
     alignSelf: { ...defaultItemSettings.alignSelf, ...overrides?.alignSelf },
     order: { ...defaultItemSettings.order, ...overrides?.order },
+  }
+}
+
+/* ------------------------------------------------------ profile elements */
+
+/**
+ * Paths into one profile record — a fallback list per key, tried top to
+ * bottom (the engine `ProfileKeys`); an empty list keeps the engine default,
+ * which fits the Banpu user-profile shape.
+ */
+export type ProfileKeysConfig = {
+  personId: string[]
+  /** Unique per profile (one person holds several). */
+  userId: string[]
+  name: string[]
+  /** `{{path}}` template for the display name; `''` = the engine default (`{{firstNameEn}} {{lastNameEN}}`). */
+  nameTemplate: string
+  jobTitle: string[]
+  company: string[]
+  department: string[]
+  email: string[]
+  avatar: string[]
+}
+
+export const PROFILE_KEY_ROWS: { key: Exclude<keyof ProfileKeysConfig, 'nameTemplate'>; label: string }[] = [
+  { key: 'personId', label: 'Person id' },
+  { key: 'userId', label: 'Profile id (unique per profile)' },
+  { key: 'name', label: 'Name (when no template)' },
+  { key: 'jobTitle', label: 'Job title' },
+  { key: 'company', label: 'Company' },
+  { key: 'department', label: 'Department / unit' },
+  { key: 'email', label: 'Email' },
+  { key: 'avatar', label: 'Avatar URL' },
+]
+
+export function createDefaultProfileKeysConfig(): ProfileKeysConfig {
+  return {
+    personId: ['personId'],
+    userId: ['userId'],
+    name: [],
+    nameTemplate: '',
+    jobTitle: ['jobTitle'],
+    company: ['companyModel.name'],
+    department: ['businessUnitModel.name'],
+    email: ['email'],
+    avatar: [],
+  }
+}
+
+/** What the two profile elements share (the engine `ProfileSessionElement`). */
+export type ProfileSessionConfig = {
+  name: string
+  /** The global-state slice holding the active profile; `''` = the engine default `profile`. */
+  stateKey: string
+  /** The logged-in profile (a page load), seeding the slice while it is empty. */
+  initial: ItemBinding
+  keys: ProfileKeysConfig
+  /** Remember the choice (a switch in localStorage, a replacement in sessionStorage). */
+  persist: boolean
+  /** Names registered for reload (tables, lists, page loads) refetched after the profile changes. */
+  reload: string[]
+  /** Where to go after the profile changes; null = stay. */
+  navigate: StudioNavigate | null
+}
+
+/**
+ * Editable config for a Switch Profile list: the active person's profiles
+ * from `read` (drilled by `readPaths`; the person id fills `personParam`),
+ * the active one checked.
+ */
+export type SwitchProfileConfig = ProfileSessionConfig & {
+  read: FormListCrudRef
+  readPaths: string
+  /** The URL `:param` the element fills with the active person's id; `''` = the endpoint's only one. */
+  personParam: string
+  title: string
+  emptyText: string
+  hideWhenSingle: boolean
+}
+
+/**
+ * Editable config for a Replace Profile trigger + dialog: people `search`
+ * (the typed text in `searchParam`), the picked person's profiles from
+ * `read`, who may replace (a page-data condition), the trigger button and
+ * the dialog's texts.
+ */
+export type ReplaceProfileConfig = ProfileSessionConfig & {
+  search: FormListCrudRef
+  searchPaths: string
+  /** The query key receiving the typed text; `''` = `search`. */
+  searchParam: string
+  /** `''` = 300. */
+  debounceMs: number | ''
+  read: FormListCrudRef
+  readPaths: string
+  personParam: string
+  /** Who may replace, over the page's loads; null = everyone. */
+  canReplace: DataCondition | null
+  trigger: ButtonConfig
+  title: string
+  description: string
+  placeholder: string
+  confirmLabel: string
+  cancelLabel: string
+  returnLabel: string
+  emptyText: string
+  showBanner: boolean
+}
+
+export const DEFAULT_REPLACE_TRIGGER: ButtonConfig = { label: 'Replace profile', icon: 'userCog', variant: 'contained' }
+
+function createDefaultProfileSessionConfig(name: string): ProfileSessionConfig {
+  return { name, stateKey: '', initial: null, keys: createDefaultProfileKeysConfig(), persist: true, reload: [], navigate: null }
+}
+
+export function createDefaultSwitchProfileConfig(name: string): SwitchProfileConfig {
+  return {
+    ...createDefaultProfileSessionConfig(name),
+    read: createFormListCrudRef(),
+    readPaths: 'data',
+    personParam: '',
+    title: '',
+    emptyText: '',
+    hideWhenSingle: true,
+  }
+}
+
+export function createDefaultReplaceProfileConfig(name: string): ReplaceProfileConfig {
+  return {
+    ...createDefaultProfileSessionConfig(name),
+    search: createFormListCrudRef(),
+    searchPaths: 'data',
+    searchParam: '',
+    debounceMs: '',
+    read: createFormListCrudRef(),
+    readPaths: 'data',
+    personParam: '',
+    canReplace: null,
+    trigger: { ...DEFAULT_REPLACE_TRIGGER },
+    title: '',
+    description: '',
+    placeholder: '',
+    confirmLabel: '',
+    cancelLabel: '',
+    returnLabel: '',
+    emptyText: '',
+    showBanner: true,
   }
 }

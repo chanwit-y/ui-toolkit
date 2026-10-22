@@ -80,6 +80,9 @@ import {
   LOAD_LM_COUNTRY_ID,
   loadingModeDemoSeedItems,
   loadingModeSeedLoads,
+  PROFILE_PAGE_ID,
+  profileDemoSeedItems,
+  profileSeedLoads,
 } from '../seed/country'
 import { builtinTemplates } from '../seed/templates'
 import { useThemeStore } from '../Theme/themeStore'
@@ -623,6 +626,23 @@ export function customComponentsDemoPage(): PageDef {
   }
 }
 
+/** The "Profile" demo page (the example app's `/profile`): Replace + Switch profile over the seeded profile endpoints. */
+export function profileDemoPage(): PageDef {
+  return {
+    id: PROFILE_PAGE_ID,
+    key: 'profile',
+    name: 'Profile',
+    path: '/profile',
+    grid: {
+      items: profileDemoSeedItems(),
+      containerSettings: defaultContainerSettings,
+      fieldSeq: 0,
+    },
+    parentId: 'seed-page-countries',
+    loads: profileSeedLoads(),
+  }
+}
+
 /** The "Custom actions" demo page (the example app's `/custom-actions`). */
 export function customActionsDemoPage(): PageDef {
   return {
@@ -739,6 +759,7 @@ export const OPTION_DEMO_MENU_ICONS: Record<string, string> = {
   [CUSTOM_ACTIONS_PAGE_ID]: 'terminal',
   [CUSTOM_COMPONENTS_PAGE_ID]: 'puzzle',
   [UPLOAD_PAGE_ID]: 'upload',
+  [PROFILE_PAGE_ID]: 'userCog',
 }
 
 /** The countries example: the list page (modal + table), a detail page routed
@@ -796,6 +817,7 @@ export function countryProjectSnapshot(library: LibraryData): ProjectSnapshot {
     loadingModeDemoPage(),
     customActionsDemoPage(),
     customComponentsDemoPage(),
+    profileDemoPage(),
   ]
   // Every data table carries its two canvases (edit modal + filter form).
   for (const page of pages) ensureDataTableCanvases(page.grid.items)

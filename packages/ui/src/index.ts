@@ -134,6 +134,19 @@ export { stepsFromValue, insertStep, replaceStep, removeStep, roleAvailable, ins
 export type { WorkflowEditorElement, WorkflowEditorProps, WorkflowRole, WorkflowStepKeys, WorkflowUserKeys, WorkflowEditorLabels } from "./components/@types";
 export { normalizeApprovalSteps, normalizeApprovalStep, initialsOf, DEFAULT_STATUS_MAP, DEFAULT_STATUS_LABELS } from "./components/core/approvalSteps";
 export type { ApprovalLineElement, ApprovalLineKeys, ApprovalRoleRule, ApprovalStep, ApprovalStepState, ApprovalKeyPath } from "./components/@types";
+export * from "./components/SwitchProfile";
+export * from "./components/ReplaceProfile";
+export {
+  DEFAULT_PROFILE_KEYS,
+  DEFAULT_PROFILE_STATE_KEY,
+  normalizeProfile,
+  profileSubtitle,
+  pickRestoredProfile,
+  originalStateKey,
+  useProfileSession,
+} from "./components/core/profileSession";
+export type { NormalizedProfile, ProfileSession } from "./components/core/profileSession";
+export type { ProfileKeys, ProfileSessionElement, SwitchProfileElement, ReplaceProfileElement } from "./components/@types";
 export * from "./components/Popover";
 export type { PopoverProps } from "./components/Popover";
 export * from "./components/Drawer";

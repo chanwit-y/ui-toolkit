@@ -1,5 +1,7 @@
 import {
   AppWindow,
+  UserCheck,
+  UserCog,
   BarChart3,
   BellRing,
   Box,
@@ -89,6 +91,8 @@ export type ComponentType =
   | 'html'
   | 'custom'
   | 'approvalline'
+  | 'switchprofile'
+  | 'replaceprofile'
   | 'popover'
   | 'divider'
   | 'empty'
@@ -201,6 +205,8 @@ export const COMPONENT_GROUPS: ComponentGroup[] = [
       { type: 'html', label: 'HTML', icon: Code },
       { type: 'custom', label: 'Custom', icon: Puzzle },
       { type: 'approvalline', label: 'Approval line', icon: Workflow },
+      { type: 'switchprofile', label: 'Switch profile', icon: UserCheck },
+      { type: 'replaceprofile', label: 'Replace profile', icon: UserCog },
     ],
   },
   {

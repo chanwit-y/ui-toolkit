@@ -271,6 +271,52 @@ export const model: TModelMaster = {
     id: "string",
   },
   // Workflow editor demo.
+  // Replace / Switch Profile demo: the Banpu-shaped user profile.
+  profileRes: {
+    data: {
+      type: "object",
+      collection: {
+        personId: "string",
+        userId: "string",
+        firstNameEn: "string",
+        lastNameEN: "string",
+        email: "string",
+        jobTitle: "string",
+        jobStatus: "string",
+        isAdmin: "boolean",
+        avatar: "string",
+        companyModel: { type: "object", collection: { code: "string", name: "string" } },
+        businessUnitModel: { type: "object", collection: { code: "string", name: "string" } },
+      },
+    },
+    status: "number",
+    success: "boolean",
+    message: "string",
+  },
+  profileListRes: {
+    data: {
+      type: "array",
+      collection: {
+        personId: "string",
+        userId: "string",
+        firstNameEn: "string",
+        lastNameEN: "string",
+        email: "string",
+        jobTitle: "string",
+        jobStatus: "string",
+        isAdmin: "boolean",
+        avatar: "string",
+        companyModel: { type: "object", collection: { code: "string", name: "string" } },
+        businessUnitModel: { type: "object", collection: { code: "string", name: "string" } },
+      },
+    },
+    status: "number",
+    success: "boolean",
+    message: "string",
+  },
+  profileSearchQuery: { search: "string" },
+  profilePersonParams: { personId: "string" },
+  profilePersonQuery: { exceptJobStatus: "string" },
   userRes: {
     data: { type: "array", collection: { PersonId: "string", FullNameEN: "string", JobTitle: "string", Email: "string" } },
     status: "number",

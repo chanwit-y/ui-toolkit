@@ -4,6 +4,7 @@ import { CardConfigPanel } from './CardConfigPanel'
 import { HtmlContentConfigPanel } from './HtmlContentConfigPanel'
 import { CustomComponentConfigPanel } from './CustomComponentConfigPanel'
 import { ApprovalLineConfigPanel } from './ApprovalLineConfigPanel'
+import { ReplaceProfileConfigPanel, SwitchProfileConfigPanel } from './ProfileConfigPanel'
 import { WorkflowEditorConfigPanel } from './WorkflowEditorConfigPanel'
 import { CheckboxConfigPanel } from './CheckboxConfigPanel'
 import { SwitchConfigPanel } from './SwitchConfigPanel'
@@ -58,6 +59,8 @@ import type {
   HtmlContentConfig,
   CustomComponentConfig,
   ApprovalLineConfig,
+  SwitchProfileConfig,
+  ReplaceProfileConfig,
   WorkflowEditorConfig,
   PopoverConfig,
   RadioConfig,
@@ -302,6 +305,10 @@ export function Sidebar({ gridConfigJson, fullGridCss }: SidebarProps) {
             <CustomComponentConfigPanel itemId={selectedItem.id} config={selectedItem.config as CustomComponentConfig} />
           ) : selectedItem.type === 'approvalline' && selectedItem.config ? (
             <ApprovalLineConfigPanel itemId={selectedItem.id} config={selectedItem.config as ApprovalLineConfig} />
+          ) : selectedItem.type === 'switchprofile' && selectedItem.config ? (
+            <SwitchProfileConfigPanel itemId={selectedItem.id} config={selectedItem.config as SwitchProfileConfig} />
+          ) : selectedItem.type === 'replaceprofile' && selectedItem.config ? (
+            <ReplaceProfileConfigPanel itemId={selectedItem.id} config={selectedItem.config as ReplaceProfileConfig} />
           ) : selectedItem.type === 'workfloweditor' && selectedItem.config ? (
             <WorkflowEditorConfigPanel itemId={selectedItem.id} config={selectedItem.config as WorkflowEditorConfig} />
           ) : selectedItem.type === 'tab' && selectedItem.config ? (
