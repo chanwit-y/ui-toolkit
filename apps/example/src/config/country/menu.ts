@@ -23,12 +23,14 @@ export const menu: TMenu = [
   { label: "Drawer", icon: "panelRight", navigate: { page: "drawerDemo" } },
   { label: "Switch", icon: "toggleLeft", navigate: { page: "switchDemo" } },
   { label: "Custom actions", icon: "terminal", navigate: { page: "customActionsDemo" } },
+  { label: "Custom components", icon: "puzzle", navigate: { page: "customComponentsDemo" } },
   { label: "Upload", icon: "upload", navigate: { page: "uploadDemo" } },
   {
     label: "Approval line",
     icon: "workflow",
     navigate: { page: "approvalLineDemo", params: { id: { type: "value", key: "none", value: "req-1001" } } },
   },
+  { label: "Profile", icon: "userCog", navigate: { page: "profileDemo" } },
   {
     label: "Workflow editor",
     icon: "gitBranch",

@@ -9,10 +9,7 @@ export function walkItems(items: GridItemData[], visit: (item: GridItemData) => 
   }
 }
 
-export type PageLink =
-  | { kind: 'page'; pageId: string; via: string; buttonId: string }
-  | { kind: 'toast' | 'dialog'; targetItemId: string; via: string; buttonId: string }
-  | { kind: 'link'; href: string; via: string; buttonId: string }
+export type PageLink = { kind: 'page'; pageId: string; via: string; buttonId: string }
 
 /** True when the button's effective action list plays `Navigate`. */
 export function buttonNavigates(c: ButtonItemConfig): boolean {
@@ -23,9 +20,8 @@ export function buttonNavigates(c: ButtonItemConfig): boolean {
 /**
  * What a page's components lead to (the mockup's `pageLinks`): the Pages tree
  * nests pages under the page that links to them, and the Overview draws the
- * same edges. Page edges come from the engine navigation — a button's
- * `Navigate` action target and a data table's row click; the design-only
- * `navigation` still contributes links, toasts and dialogs.
+ * same edges — from the engine navigation: a button's `Navigate` action
+ * target and a data table's row click.
  */
 export function pageLinks(page: PageDef): PageLink[] {
   const out: PageLink[] = []
@@ -48,13 +44,6 @@ export function pageLinks(page: PageDef): PageLink[] {
     const via = c.label || 'button'
     if (buttonNavigates(c) && c.navigate?.pageId) {
       out.push({ kind: 'page', pageId: c.navigate.pageId, via, buttonId: item.id })
-    }
-    const nav = c.navigation
-    if (!nav || nav.kind === 'none') return
-    if ((nav.kind === 'toast' || nav.kind === 'dialog') && nav.targetItemId) {
-      out.push({ kind: nav.kind, targetItemId: nav.targetItemId, via, buttonId: item.id })
-    } else if (nav.kind === 'link' && nav.href) {
-      out.push({ kind: 'link', href: nav.href, via, buttonId: item.id })
     }
   })
   return out

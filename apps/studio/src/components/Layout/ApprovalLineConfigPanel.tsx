@@ -67,7 +67,7 @@ const STATE_OPTIONS: { value: ApprovalStepStateConfig; label: string }[] = [
 ]
 
 /** The flattened (dotted) fields of a model, or the free-text fallback with its reason. */
-type PathFields = { fields: PickableField[]; reason?: undefined } | { fields: null; reason: string }
+export type PathFields = { fields: PickableField[]; reason?: undefined } | { fields: null; reason: string }
 
 function flatten(model: RowModel): PathFields {
   return model.fields === null ? model : { fields: flattenModelFields(model.fields) }
@@ -121,7 +121,7 @@ function useApprovalModels(config: ApprovalLineConfig, scope: RepeaterScope): { 
  * when the picked field is `any` (the model doesn't know what's inside), and
  * add / remove. Paths are tried top to bottom.
  */
-function PathListField({
+export function PathListField({
   label,
   paths,
   onChange,

@@ -1,0 +1,449 @@
+{
+  "schemaVersion": 1,
+  "name": "Gummy demo",
+  "description": "A starter project: a countries list that opens a detail page loaded into page data. Written by the studio (gummy studio) and rendered at runtime by <GummyApp>.",
+  "env": {
+    "API_URL": ""
+  },
+  "model": {
+    "countryRes": {
+      "data": {
+        "type": "array",
+        "collection": {
+          "_id": "string",
+          "name": "string",
+          "code": "string",
+          "avatar": "any",
+          "updated_at": "string",
+          "updated_by_name": "string"
+        }
+      },
+      "status": "number",
+      "success": "boolean",
+      "message": "string"
+    },
+    "countryDetailRes": {
+      "data": {
+        "type": "object",
+        "collection": {
+          "_id": "string",
+          "name": "string",
+          "code": "string",
+          "avatar": "any",
+          "image": "string",
+          "updated_at": "string",
+          "updated_by_name": "string"
+        }
+      },
+      "status": "number",
+      "success": "boolean",
+      "message": "string"
+    },
+    "countryListBody": {
+      "collectionId": "string",
+      "offset": "number",
+      "limit": "number"
+    },
+    "countryParam": {
+      "id": "string"
+    }
+  },
+  "api": {
+    "countries": {
+      "url": "/collection/get-all",
+      "methods": "POST",
+      "description": "All countries",
+      "response": "countryRes",
+      "body": "countryListBody"
+    },
+    "countryDetail": {
+      "url": "/collection/detail/:id",
+      "methods": "GET",
+      "description": "One country by id",
+      "response": "countryDetailRes",
+      "parameter": "countryParam"
+    }
+  },
+  "pages": {
+    "countries": {
+      "path": "/",
+      "title": "Countries",
+      "breadcrumb": false,
+      "containers": [
+        {
+          "id": "countries-page",
+          "name": "Countries",
+          "isArray": false,
+          "gap": "4",
+          "justifyItems": "stretch",
+          "alignItems": "start",
+          "justifyContent": "start",
+          "alignContent": "start",
+          "gridAutoFlow": "row",
+          "bins": [
+            {
+              "sm": "12",
+              "md": "12",
+              "lg": "12",
+              "xl": "12",
+              "type": "typography",
+              "element": {
+                "text": "Countries",
+                "variant": "h4",
+                "weight": "medium"
+              }
+            },
+            {
+              "sm": "12",
+              "md": "12",
+              "lg": "12",
+              "xl": "12",
+              "type": "typography",
+              "element": {
+                "text": "Every row is a country from the mock API. Click one to open its page.",
+                "variant": "body2",
+                "color": "gray"
+              }
+            },
+            {
+              "sm": "12",
+              "md": "12",
+              "lg": "12",
+              "xl": "12",
+              "type": "datatable",
+              "element": {
+                "name": "countriesTable",
+                "title": "Countries",
+                "rowNavigate": {
+                  "page": "country",
+                  "params": {
+                    "id": {
+                      "type": "row",
+                      "key": "_id"
+                    }
+                  }
+                },
+                "columns": [
+                  {
+                    "accessor": "code",
+                    "header": "Code",
+                    "enableColumnFilter": true,
+                    "enableSorting": true,
+                    "align": "start",
+                    "size": 100
+                  },
+                  {
+                    "accessor": "name",
+                    "header": "Name",
+                    "enableColumnFilter": true,
+                    "enableSorting": true,
+                    "align": "start"
+                  },
+                  {
+                    "accessor": "updated_at",
+                    "header": "Updated",
+                    "enableColumnFilter": false,
+                    "enableSorting": true,
+                    "align": "start",
+                    "useDateFormat": "DD/MM/YYYY HH:mm"
+                  },
+                  {
+                    "accessor": "updated_by_name",
+                    "header": "Updated by",
+                    "enableColumnFilter": true,
+                    "enableSorting": true,
+                    "align": "start"
+                  }
+                ],
+                "api": {
+                  "name": "countries",
+                  "paths": [
+                    "data"
+                  ],
+                  "body": {
+                    "collectionId": {
+                      "type": "value",
+                      "key": "collectionId",
+                      "value": "691e9963992636eb1560eadb"
+                    },
+                    "offset": {
+                      "type": "value",
+                      "key": "offset",
+                      "value": 0
+                    },
+                    "limit": {
+                      "type": "value",
+                      "key": "limit",
+                      "value": 100
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "country": {
+      "path": "/countries/:id",
+      "parent": "countries",
+      "title": {
+        "type": "state",
+        "key": "country",
+        "path": "name"
+      },
+      "loads": [
+        {
+          "key": "country",
+          "loading": "skeleton",
+          "errorMessage": "Country not found.",
+          "api": {
+            "name": "countryDetail",
+            "paths": [
+              "data"
+            ],
+            "params": {
+              "id": {
+                "type": "url",
+                "key": "id"
+              }
+            }
+          }
+        }
+      ],
+      "containers": [
+        {
+          "id": "country-page",
+          "name": "Country",
+          "isArray": false,
+          "gap": "4",
+          "justifyItems": "stretch",
+          "alignItems": "start",
+          "justifyContent": "start",
+          "alignContent": "start",
+          "gridAutoFlow": "row",
+          "bins": [
+            {
+              "sm": "12",
+              "md": "6",
+              "lg": "5",
+              "xl": "4",
+              "type": "card",
+              "element": {
+                "name": "countryCard",
+                "variant": "outlined",
+                "header": {
+                  "title": "Loading…",
+                  "titleValue": {
+                    "type": "state",
+                    "key": "country",
+                    "path": "name"
+                  },
+                  "subheader": "—",
+                  "subheaderValue": {
+                    "type": "state",
+                    "key": "country",
+                    "path": "code"
+                  },
+                  "avatar": {
+                    "size": "md",
+                    "fallback": "?",
+                    "srcValue": {
+                      "type": "state",
+                      "key": "country",
+                      "path": "avatar"
+                    },
+                    "fallbackValue": {
+                      "type": "state",
+                      "key": "country",
+                      "path": "code"
+                    }
+                  }
+                },
+                "media": {
+                  "height": 160,
+                  "alt": "Flag",
+                  "srcValue": {
+                    "type": "state",
+                    "key": "country",
+                    "path": "image"
+                  }
+                },
+                "actions": [
+                  {
+                    "label": "Reload",
+                    "icon": "refresh",
+                    "variant": "text",
+                    "actions": [
+                      "ReloadDataTable"
+                    ],
+                    "reloadDataTable": "country"
+                  }
+                ],
+                "actionsAlign": "end"
+              }
+            },
+            {
+              "sm": "12",
+              "md": "6",
+              "lg": "7",
+              "xl": "8",
+              "type": "container",
+              "container": {
+                "id": "country-facts",
+                "name": "CountryFacts",
+                "isArray": false,
+                "gap": "3",
+                "justifyItems": "stretch",
+                "alignItems": "start",
+                "justifyContent": "start",
+                "alignContent": "start",
+                "gridAutoFlow": "row",
+                "bins": [
+                  {
+                    "sm": "12",
+                    "md": "12",
+                    "lg": "12",
+                    "xl": "12",
+                    "type": "typography",
+                    "element": {
+                      "text": "Last update",
+                      "variant": "subtitle1",
+                      "weight": "medium"
+                    }
+                  },
+                  {
+                    "sm": "12",
+                    "md": "12",
+                    "lg": "12",
+                    "xl": "12",
+                    "type": "typography",
+                    "element": {
+                      "text": "—",
+                      "variant": "body2",
+                      "color": "gray",
+                      "value": {
+                        "type": "state",
+                        "key": "country",
+                        "path": "updated_by_name"
+                      }
+                    }
+                  },
+                  {
+                    "sm": "12",
+                    "md": "12",
+                    "lg": "12",
+                    "xl": "12",
+                    "type": "custom",
+                    "element": {
+                      "component": "StatBadge",
+                      "props": {
+                        "label": "Code",
+                        "tone": "accent"
+                      },
+                      "value": {
+                        "type": "state",
+                        "key": "country",
+                        "path": "code"
+                      }
+                    }
+                  },
+                  {
+                    "sm": "6",
+                    "md": "4",
+                    "lg": "3",
+                    "xl": "3",
+                    "type": "button",
+                    "justifySelf": "start",
+                    "element": {
+                      "label": "Back to list",
+                      "variant": "text",
+                      "actions": [
+                        "Navigate"
+                      ],
+                      "navigate": {
+                        "page": "countries"
+                      }
+                    }
+                  },
+                  {
+                    "sm": "6",
+                    "md": "4",
+                    "lg": "3",
+                    "xl": "3",
+                    "type": "button",
+                    "justifySelf": "start",
+                    "element": {
+                      "label": "Say hello",
+                      "icon": "info",
+                      "variant": "outlined",
+                      "actions": [
+                        "fn:greet"
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "menu": [
+    {
+      "label": "Countries",
+      "icon": "globe",
+      "navigate": {
+        "page": "countries"
+      }
+    }
+  ],
+  "shell": {
+    "navigation": "sidebar",
+    "breadcrumbs": true,
+    "appBar": {
+      "title": "Gummy demo",
+      "icon": "globe"
+    }
+  },
+  "theme": {
+    "theme": {
+      "accentColor": "teal",
+      "radius": "medium"
+    },
+    "components": {
+      "button": {
+        "color": "teal"
+      }
+    }
+  },
+  "globalLoads": [],
+  "customActions": [
+    "greet"
+  ],
+  "customComponents": [
+    {
+      "name": "StatBadge",
+      "description": "A labelled pill showing the bound value.",
+      "props": [
+        {
+          "key": "label",
+          "kind": "text",
+          "label": "Label"
+        },
+        {
+          "key": "tone",
+          "kind": "select",
+          "label": "Tone",
+          "options": [
+            "accent",
+            "green",
+            "gray"
+          ],
+          "defaultValue": "gray"
+        }
+      ]
+    }
+  ]
+}

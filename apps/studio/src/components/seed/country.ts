@@ -18,6 +18,8 @@ import {
   createDefaultTypographyConfig,
   createDefaultApprovalLineConfig,
   type ApprovalLineConfig,
+  createDefaultSwitchProfileConfig,
+  createDefaultReplaceProfileConfig,
   createDefaultWorkflowEditorConfig,
   type WorkflowEditorConfig,
   createDefaultRadioConfig,
@@ -26,6 +28,7 @@ import {
   createDefaultCardConfig,
   createDefaultCardActionConfig,
   createDefaultHtmlContentConfig,
+  createDefaultCustomComponentConfig,
   createDefaultDrawerConfig,
   createDefaultDividerConfig,
   createDefaultMultiAutocompleteConfig,
@@ -40,6 +43,7 @@ import {
 } from '../Layout/types'
 import type { ModelDef, ModelField } from '../Model/types'
 import type { CustomActionDef } from '../Workspace/customActions'
+import type { CustomComponentDef } from '../Workspace/customComponents'
 import type { EnvVarDef } from '../Env/types'
 import type { StudioThemeConfig } from '../Theme/types'
 import type { PageLoadDef } from '../Workspace/pageLoads'
@@ -185,6 +189,7 @@ export function countrySeedModels(): ModelDef[] {
     ...pageDataSeedModels(),
     ...approvalSeedModels(),
     ...workflowSeedModels(),
+    ...profileSeedModels(),
   ]
 }
 
@@ -1548,6 +1553,7 @@ export function countrySeedEndpoints(): EndpointDef[] {
     ...pageDataSeedEndpoints(),
     ...approvalSeedEndpoints(),
     ...workflowSeedEndpoints(),
+    ...profileSeedEndpoints(),
   ]
 }
 
@@ -4434,5 +4440,348 @@ export function customActionsDemoSeedItems(): GridItemData[] {
 
     ...heading('seed-item-custom-actions-missing-h', 'A deleted declaration', 'This button names a custom action that no longer exists: the chip is flagged, the export writes fn:MISSING_ACTION, the engine warns and skips it — and the counter still increases.'),
     button('seed-item-custom-actions-missing', 'Skip missing, then increase', { icon: 'puls', actions: [fn('action-seed-deleted'), fn(ACTION_INCREASE_ID)] }),
+  ]
+}
+
+/* --------------------------------------------------------- custom components */
+
+export const CUSTOM_COMPONENTS_PAGE_ID = 'seed-page-custom-components'
+
+export const COMPONENT_STAT_BADGE_ID = 'component-seed-stat-badge'
+export const COMPONENT_SPARKLINE_ID = 'component-seed-sparkline'
+export const COMPONENT_COUNTRY_CHIP_ID = 'component-seed-country-chip'
+export const LOAD_CC_REGIONS_ID = 'load-seed-cc-regions'
+
+/**
+ * The seeded project's custom-component declarations (see the grilled
+ * design): the example app's `src/customComponents.ts` registry, by name and
+ * prop shape. The code isn't here — the export writes a typed stub per name
+ * and the Live Preview draws a placeholder with the resolved value.
+ */
+export function customComponentsSeedDefs(): CustomComponentDef[] {
+  return [
+    {
+      id: COMPONENT_STAT_BADGE_ID,
+      name: 'StatBadge',
+      description: 'A labelled pill; the bound value is the number it shows',
+      props: [
+        { key: 'label', kind: 'text', label: 'Label', options: [], defaultValue: '' },
+        { key: 'tone', kind: 'select', label: 'Tone', options: ['accent', 'green', 'red', 'gray'], defaultValue: 'gray' },
+        { key: 'big', kind: 'boolean', label: 'Big number', options: [], defaultValue: 'false' },
+      ],
+    },
+    {
+      id: COMPONENT_SPARKLINE_ID,
+      name: 'Sparkline',
+      description: 'A bar per item of the bound array; draws its own skeleton while loading',
+      props: [
+        { key: 'countField', kind: 'text', label: 'Count field (array length)', options: [], defaultValue: 'countries' },
+        { key: 'labelField', kind: 'text', label: 'Label field', options: [], defaultValue: 'name' },
+        { key: 'color', kind: 'select', label: 'Bar colour', options: ['accent', 'green', 'blue', 'orange'], defaultValue: 'accent' },
+        { key: 'height', kind: 'number', label: 'Bar height (px)', options: [], defaultValue: '72' },
+      ],
+    },
+    {
+      id: COMPONENT_COUNTRY_CHIP_ID,
+      name: 'CountryChip',
+      description: 'Inside a repeater: the item as a chip that opens the detail page',
+      props: [
+        { key: 'page', kind: 'text', label: 'Page key to open', options: [], defaultValue: 'countryDetail' },
+        { key: 'showCode', kind: 'boolean', label: 'Show the code', options: [], defaultValue: 'true' },
+      ],
+    },
+  ]
+}
+
+/** The regions, loaded in skeleton mode: the Sparkline shows `loading` until they land. */
+export function customComponentsSeedLoads(): PageLoadDef[] {
+  return [seedLoad(LOAD_CC_REGIONS_ID, 'regionsChart', REGIONS_ENDPOINT_ID)]
+}
+
+/**
+ * The "Custom components" demo page (the example app's `/custom-components`):
+ * three StatBadges differing in props, two Sparklines bound to the
+ * skeleton-mode `regionsChart` load, a repeater whose item template is a
+ * CountryChip (the item as `row`), a custom item whose declaration was
+ * deleted (exported as MISSING_COMPONENT — the engine's placeholder), and a
+ * badge shown only once the load succeeded.
+ */
+export function customComponentsDemoSeedItems(): GridItemData[] {
+  const full = { xs: 4, sm: 6, md: 8, lg: 12 }
+  const half = { xs: 4, sm: 6, md: 4, lg: 6 }
+  const third = { xs: 4, sm: 3, md: 4, lg: 4 }
+  const typography = (id: string, text: string, extra: Record<string, unknown> = {}): GridItemData => ({
+    id,
+    label: 'Typography',
+    type: 'typography',
+    settings: createDefaultItemSettings({ colSpan: full }),
+    config: { ...createDefaultTypographyConfig(), text, variant: 'body2', ...extra },
+  })
+  const heading = (id: string, text: string, caption: string): GridItemData[] => [
+    typography(`${id}-title`, text, { variant: 'subtitle1', weight: 'medium' }),
+    typography(`${id}-caption`, caption, { color: 'gray' }),
+  ]
+  const custom = (
+    id: string,
+    name: string,
+    componentId: string,
+    props: Record<string, string>,
+    extra: Record<string, unknown> = {},
+    colSpan: Record<'xs' | 'sm' | 'md' | 'lg', number> = third,
+  ): GridItemData => ({
+    id,
+    label: 'Custom',
+    type: 'custom',
+    settings: createDefaultItemSettings({ colSpan, alignSelf: { xs: 'center', sm: 'center', md: 'center', lg: 'center' } }),
+    config: { ...createDefaultCustomComponentConfig(name), componentId, props, ...extra },
+  })
+  const regions = { key: LOAD_CC_REGIONS_ID, path: '', source: 'state' as const }
+  return [
+    typography('seed-item-custom-components-h', 'Custom components', { variant: 'h3' }),
+    typography(
+      'seed-item-custom-components-intro',
+      'React components coded in the app, declared on the Env page (Custom components) and placed by a Custom item naming them. Each receives the props set here, one bound value, the loading flag, the repeater item and navigation. The export writes a typed components.tsx stub per name; the Live Preview draws a placeholder with the resolved value.',
+      { color: 'gray' },
+    ),
+
+    ...heading('seed-item-custom-components-static-h', 'Static props', 'Three StatBadge items differing only in their declared props (label / tone / big).'),
+    custom('seed-item-custom-components-badge-1', 'badgeCountries', COMPONENT_STAT_BADGE_ID, { label: 'Countries', tone: 'accent' }),
+    custom('seed-item-custom-components-badge-2', 'badgeRegions', COMPONENT_STAT_BADGE_ID, { label: 'Regions', tone: 'green', big: 'true' }),
+    custom('seed-item-custom-components-badge-3', 'badgeUnbound', COMPONENT_STAT_BADGE_ID, { label: 'Unbound' }),
+
+    ...heading('seed-item-custom-components-bound-h', 'Bound value + loading', 'Sparkline over the page load regionsChart (skeleton mode): loading is true until the regions land.'),
+    custom('seed-item-custom-components-spark-1', 'regionsSparkline', COMPONENT_SPARKLINE_ID, { color: 'accent' }, { binding: regions }, half),
+    custom('seed-item-custom-components-spark-2', 'regionsSparklineSmall', COMPONENT_SPARKLINE_ID, { color: 'orange', height: '40' }, { binding: regions }, half),
+
+    ...heading('seed-item-custom-components-row-h', 'Inside a repeater', 'CountryChip reads the enclosing item as row and opens the detail page through navigate.'),
+    {
+      id: 'seed-item-custom-components-countries',
+      label: 'Repeater',
+      type: 'repeater',
+      settings: createDefaultItemSettings({ colSpan: full }),
+      config: {
+        ...createDefaultRepeaterConfig('customComponentCountries'),
+        idKey: '_id',
+        read: { endpointId: COUNTRIES_ENDPOINT_ID, params: {}, extra: {} },
+        itemSpan: { xs: 6, sm: 6, md: 4, lg: 2 },
+        gap: '2',
+        emptyText: 'No countries',
+      },
+      childCanvases: [
+        {
+          ...createChildCanvas(),
+          items: [custom('seed-item-custom-components-chip', 'countryChip', COMPONENT_COUNTRY_CHIP_ID, { showCode: 'true' }, {}, full)],
+        },
+      ],
+    },
+
+    ...heading('seed-item-custom-components-missing-h', 'A deleted declaration', 'This item names a declaration that no longer exists: it exports MISSING_COMPONENT and the engine draws its placeholder.'),
+    custom('seed-item-custom-components-missing', 'missingComponent', 'component-seed-deleted', { anything: 'goes' }, {}, half),
+
+    ...heading('seed-item-custom-components-cond-h', 'Conditional', 'Shown only once regionsChart has loaded — Show when (page data) on the item.'),
+    {
+      ...custom('seed-item-custom-components-loaded', 'badgeLoaded', COMPONENT_STAT_BADGE_ID, { label: 'Regions loaded', tone: 'green' }, { binding: { ...regions, path: 'length' } }),
+      dataWhen: { loadId: LOAD_CC_REGIONS_ID, test: 'loaded', path: '', op: 'eq', value: '' },
+    },
+  ]
+}
+
+/* ------------------------------------------------ profile switcher demo */
+
+export const PROFILE_PAGE_ID = 'seed-page-profile'
+export const PROFILE_RES_MODEL_ID = 'seed-model-profile-res'
+export const PROFILE_LIST_RES_MODEL_ID = 'seed-model-profile-list-res'
+export const PROFILE_SEARCH_QUERY_MODEL_ID = 'seed-model-profile-search-query'
+export const PROFILE_PERSON_PARAMS_MODEL_ID = 'seed-model-profile-person-params'
+export const PROFILE_PERSON_QUERY_MODEL_ID = 'seed-model-profile-person-query'
+export const ME_ENDPOINT_ID = 'seed-endpoint-profile-me'
+export const SEARCH_PROFILES_ENDPOINT_ID = 'seed-endpoint-profile-search'
+export const PROFILES_BY_PERSON_ENDPOINT_ID = 'seed-endpoint-profiles-by-person'
+export const LOAD_ME_ID = 'load-seed-me'
+
+/** One Banpu-shaped profile record (the mock `/collection/profiles/*`). */
+function profileFields(): ModelField[] {
+  return [
+    field('personId'),
+    field('userId'),
+    field('firstNameEn'),
+    field('lastNameEN'),
+    field('email'),
+    field('jobTitle'),
+    field('jobStatus'),
+    field('isPrimaryAssignment'),
+    field('isAdmin', 'boolean'),
+    field('avatar'),
+    field('companyModel', 'object', [field('code'), field('name')]),
+    field('businessUnitModel', 'object', [field('code'), field('name')]),
+  ]
+}
+
+/** The Profile demo's models: one profile (me), a profile list, the search query, the person param + query. */
+export function profileSeedModels(): ModelDef[] {
+  const envelope = [field('status', 'number'), field('success', 'boolean'), field('message')]
+  return [
+    { id: PROFILE_RES_MODEL_ID, name: 'profileRes', fields: [field('data', 'object', profileFields()), ...envelope] },
+    { id: PROFILE_LIST_RES_MODEL_ID, name: 'profileListRes', fields: [field('data', 'array', profileFields(), 'object'), ...envelope] },
+    { id: PROFILE_SEARCH_QUERY_MODEL_ID, name: 'profileSearchQuery', fields: [field('search')] },
+    { id: PROFILE_PERSON_PARAMS_MODEL_ID, name: 'profilePersonParams', fields: [field('personId')] },
+    { id: PROFILE_PERSON_QUERY_MODEL_ID, name: 'profilePersonQuery', fields: [field('exceptJobStatus')] },
+  ]
+}
+
+/** The Profile demo's endpoints: the logged-in profile, people search, a person's profiles. */
+export function profileSeedEndpoints(): EndpointDef[] {
+  return [
+    {
+      withOptions: false,
+      query: null,
+      id: ME_ENDPOINT_ID,
+      name: 'me',
+      description: 'The logged-in profile',
+      url: '/collection/profiles/me',
+      method: 'GET',
+      response: PROFILE_RES_MODEL_ID,
+      parameter: null,
+      body: null,
+    },
+    {
+      withOptions: false,
+      query: PROFILE_SEARCH_QUERY_MODEL_ID,
+      id: SEARCH_PROFILES_ENDPOINT_ID,
+      name: 'searchProfiles',
+      description: 'Search people by name / email (one row per person)',
+      url: '/collection/profiles/search',
+      method: 'GET',
+      response: PROFILE_LIST_RES_MODEL_ID,
+      parameter: null,
+      body: null,
+    },
+    {
+      withOptions: false,
+      query: PROFILE_PERSON_QUERY_MODEL_ID,
+      id: PROFILES_BY_PERSON_ENDPOINT_ID,
+      name: 'profilesByPerson',
+      description: 'Every profile a person holds (exceptJobStatus=T drops terminated ones)',
+      url: '/collection/profiles/person/:personId',
+      method: 'GET',
+      response: PROFILE_LIST_RES_MODEL_ID,
+      parameter: PROFILE_PERSON_PARAMS_MODEL_ID,
+      body: null,
+    },
+  ]
+}
+
+/** The Profile page's load: the logged-in profile (`me`), seeding the `profile` slice. */
+export function profileSeedLoads(): PageLoadDef[] {
+  return [seedLoad(LOAD_ME_ID, 'me', ME_ENDPOINT_ID)]
+}
+
+/**
+ * The "Profile" demo page (the example app's `/profile`): a Replace profile
+ * trigger (offered while `me.isAdmin`) and a Switch profile list over the
+ * seeded profile endpoints, both seeded from the `me` load, beside an HTML
+ * block and a typography bound to the `profile` slice they write.
+ */
+export const PROFILE_SWITCH_DROPDOWN_ITEM_ID = 'seed-item-profile-switch-dropdown'
+
+/**
+ * The Switch Profile additions (v49): the same list as a dropdown (job title
+ * only — the shape of a profile menu) and an HTML block over the
+ * `profileList` slice, the person's rows shared by both elements.
+ */
+export function profileSwitchSeedItems(): GridItemData[] {
+  const full = { xs: 4, sm: 6, md: 8, lg: 12 }
+  const half = { xs: 4, sm: 6, md: 4, lg: 6 }
+  const me = { key: LOAD_ME_ID, path: '', source: 'state' as const }
+  const profiles = { endpointId: PROFILES_BY_PERSON_ENDPOINT_ID, params: {}, extra: { exceptJobStatus: { type: 'value' as const, value: 'T' } } }
+  return [
+    {
+      id: PROFILE_SWITCH_DROPDOWN_ITEM_ID,
+      label: 'Switch profile',
+      type: 'switchprofile',
+      settings: createDefaultItemSettings({ colSpan: half }),
+      config: {
+        ...createDefaultSwitchProfileConfig('switchProfileDropdown'),
+        initial: me,
+        read: profiles,
+        display: 'dropdown',
+        showSubtitle: false,
+        title: 'Position',
+        hideWhenSingle: false,
+      },
+    },
+    {
+      id: 'seed-item-profile-list',
+      label: 'HTML',
+      type: 'html',
+      settings: createDefaultItemSettings({ colSpan: full }),
+      config: {
+        ...createDefaultHtmlContentConfig('profileListCount'),
+        binding: { key: 'profileList', path: '', source: 'state' },
+        html: '<p class="dt-muted">The active person holds <strong>{{length}}</strong> profile(s) — the <code>profileList</code> slice, filled by whichever element fetched it first; a pick calls no API.</p>',
+      },
+    },
+  ]
+}
+
+export function profileDemoSeedItems(): GridItemData[] {
+  const full = { xs: 4, sm: 6, md: 8, lg: 12 }
+  const half = { xs: 4, sm: 6, md: 4, lg: 6 }
+  const typography = (id: string, text: string, extra: Record<string, unknown> = {}): GridItemData => ({
+    id,
+    label: 'Typography',
+    type: 'typography',
+    settings: createDefaultItemSettings({ colSpan: full }),
+    config: { ...createDefaultTypographyConfig(), text, variant: 'body2', ...extra },
+  })
+  const heading = (id: string, text: string, caption: string): GridItemData[] => [
+    typography(`${id}-title`, text, { variant: 'subtitle1', weight: 'medium' }),
+    typography(`${id}-caption`, caption, { color: 'gray' }),
+  ]
+  const me = { key: LOAD_ME_ID, path: '', source: 'state' as const }
+  const profiles = { endpointId: PROFILES_BY_PERSON_ENDPOINT_ID, params: {}, extra: { exceptJobStatus: { type: 'value' as const, value: 'T' } } }
+  return [
+    typography('seed-item-profile-h', 'Replace / Switch Profile', { variant: 'h3' }),
+    typography(
+      'seed-item-profile-intro',
+      'Two elements sharing one global-state slice (profile): Replace profile lets an admin read the app as another person (search → pick → Confirm, a banner offers the way back), Switch profile lists the active person\u2019s positions. Both remember their choice and re-fetch on load.',
+      { color: 'gray' },
+    ),
+
+    ...heading('seed-item-profile-replace-h', 'Replace profile', 'Offered while the logged-in profile (me) has isAdmin — a page-data condition, so it holds while impersonating a non-admin. Search "tian", "nadia" (no active profile) or "broken" (the profiles call fails).'),
+    {
+      id: 'seed-item-profile-replace',
+      label: 'Replace profile',
+      type: 'replaceprofile',
+      settings: createDefaultItemSettings({ colSpan: full }),
+      config: {
+        ...createDefaultReplaceProfileConfig('replaceProfile'),
+        initial: me,
+        search: { endpointId: SEARCH_PROFILES_ENDPOINT_ID, params: {}, extra: {} },
+        read: profiles,
+        canReplace: { loadId: LOAD_ME_ID, test: 'compare', path: 'isAdmin', op: 'eq', value: 'true' },
+      },
+    },
+
+    ...heading('seed-item-profile-switch-h', 'Switch profile', 'Every profile the active person holds — the admin\u2019s two positions, then the replaced person\u2019s. Picking one makes it active (no API call); the choice is remembered and restored on load when still listed, else the primary assignment wins — the admin\u2019s is the second row.'),
+    {
+      id: 'seed-item-profile-switch',
+      label: 'Switch profile',
+      type: 'switchprofile',
+      settings: createDefaultItemSettings({ colSpan: half }),
+      config: { ...createDefaultSwitchProfileConfig('switchProfile'), initial: me, read: profiles, hideWhenSingle: false },
+    },
+    ...profileSwitchSeedItems(),
+    {
+      id: 'seed-item-profile-active',
+      label: 'HTML',
+      type: 'html',
+      settings: createDefaultItemSettings({ colSpan: half }),
+      config: {
+        ...createDefaultHtmlContentConfig('activeProfile'),
+        binding: { key: 'profile', path: '', source: 'state' },
+        html: '<p><strong>{{firstNameEn}} {{lastNameEN}}</strong> \u00b7 <span class="dt-muted">{{email}}</span></p><p>{{jobTitle}}</p><p class="dt-muted">{{companyModel.name}} \u00b7 {{businessUnitModel.name}} \u00b7 user id <code>{{userId}}</code></p>',
+      },
+    },
   ]
 }

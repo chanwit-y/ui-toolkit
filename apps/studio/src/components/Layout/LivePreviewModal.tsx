@@ -1,27 +1,23 @@
 import {
-  ActionsProvider,
-  AppShell,
-  GlobalLoads,
+  CustomComponentPlaceholder,
+  GummyApp,
   HttpClientFactory,
   Modal,
-  PageRouter,
+  type GummyProject,
   type TActionMaster,
-  type TApiMaster,
-  type TMenu,
-  type TModelMaster,
-  type PageLoad,
-  type TPageMaster,
+  type TComponentMaster,
+  type CustomComponentProps,
 } from '@gummy-ui/ui'
 import { ArrowLeft, FileText, Maximize2, Minimize2, Undo2 } from 'lucide-react'
 import {
   Component,
   memo,
-  useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
   type ContextType,
+  type ReactElement,
   type ReactNode,
 } from 'react'
 import {
@@ -33,40 +29,50 @@ import {
   useLocation,
   useNavigate,
 } from 'react-router-dom'
-import { serializeEndpoints } from '../Api/serialize'
 import type { EndpointDef } from '../Api/types'
 import { useApiUrl } from '../Env'
-import { serializeModels } from '../Model/serialize'
 import { useProjectEndpoints, useProjectModels } from '../Library/scope'
 import { IconButton, Input, Select } from '../common'
 import { designThemeStyle } from '../Theme/designTheme'
 import { useThemeStore } from '../Theme/themeStore'
-import { defaultShell, pathParams } from '../Workspace/snapshots'
-import type { PageDef, PageGrid, ShellSettings } from '../Workspace/types'
+import { emptyProjectSnapshot, pathParams } from '../Workspace/snapshots'
+import type { PageDef, PageGrid } from '../Workspace/types'
 import { useActivePages, useWorkspaceStore } from '../Workspace/workspaceStore'
-import { menuToEngine, shellToEngine, type EngineShellProps } from '../Workspace/menu'
-import { enginePageMeta } from '../Workspace/pageMeta'
+import { runtimeDocument } from '../Workspace/runtimeProject'
 import type { PageLoadDef } from '../Workspace/pageLoads'
-import { DialogPreview, ToastPreview } from './DesignPreviews'
-import type { DialogConfig, OverlayAxis, ToastConfig } from './designTypes'
-import { gridConfigToJson, pageLoadsToEngine } from './gridConfig'
+import { gridConfigToJson } from './gridConfig'
 import { useGridStore } from './gridStore'
-import { buildLivePreviewContainer, collectPreviewNavigation, type LivePreviewWiring } from './livePreview'
-import { indexItems } from './pageLinks'
+import { livePreviewProject, previewWiring } from './livePreview'
 import { PreviewDevTools, PreviewDevToolsToggle, type ActionLogEntry, type ApiLogEntry } from './PreviewDevTools'
 import { isValidActionName, type CustomActionDef } from '../Workspace/customActions'
+import { isValidComponentName, type CustomComponentDef } from '../Workspace/customComponents'
 
 const NO_CUSTOM_ACTIONS: CustomActionDef[] = []
-import type { GridItemData } from './types'
+const NO_CUSTOM_COMPONENTS: CustomComponentDef[] = []
 
 /**
- * Renders the project's *exported JSON config* through the real declarative
- * engine — a round-trip test of the code-tab output (see `livePreview.ts`).
- * The engine's `ApiMaster` is built from the Model + API pages' stores with
- * the Env page's `API_URL` as the HttpClientFactory base URL, so bins whose
- * endpoint wiring resolves fetch FOR REAL; the rest are rewritten to
- * placeholders that say what's missing before rendering (see the grilled Env
- * design).
+ * The preview's stand-in for one declared custom component (see the grilled
+ * design): the library placeholder showing the props it was given and the
+ * **resolved** `value` / `row` / `loading`, so a binding can be checked
+ * before the app code exists.
+ */
+function StubComponent({ name, props, value, row, loading }: { name: string } & CustomComponentProps) {
+  return (
+    <CustomComponentPlaceholder
+      name={name}
+      note={loading ? 'loading…' : 'stub — the app\'s components.tsx renders it for real'}
+      details={{ ...props, value, ...(row !== undefined ? { row } : {}) }}
+    />
+  )
+}
+
+/**
+ * Renders the project's *runtime document* (`runtimeProject.ts` — the same
+ * `GummyProject` the CLI writes) through the library's own `<GummyApp>`, so
+ * the preview and the consumer app share one code path. The Env page's
+ * `API_URL` is the HttpClientFactory base URL, so bins whose endpoint wiring
+ * resolves fetch FOR REAL; the rest are rewritten to placeholders that say
+ * what's missing before rendering (`livePreview.ts`, the grilled Env design).
  *
  * Pages (see the grilled page-router design): the whole project renders
  * through the library's `PageRouter` — every page's exported container keyed
@@ -76,9 +82,7 @@ import type { GridItemData } from './types'
  * the page being edited (drawn from the grid store, unsaved edits included;
  * the others from their snapshots). The page bar shows the route, one input
  * per `:param` (a page opened directly has none filled — type one), a page
- * select, and back. The design-only kinds (link / toast / dialog) are still
- * played by the studio: a capture-phase click matched by button label opens
- * the link or shows the mock overlay over the page.
+ * select, and back.
  *
  * react-router forbids a `<Router>` inside another, and the studio itself is
  * a `BrowserRouter`. `NestedRouterBoundary` clears the router contexts right
@@ -153,25 +157,6 @@ function fillPath(path: string, params: Record<string, string | undefined>): str
   return path.replace(/:([A-Za-z_][A-Za-z0-9_]*)/g, (_, k: string) => params[k] || `:${k}`)
 }
 
-/** CSS placement for an overlay stack (the mockup's `posStyle`). */
-function overlayPosition(x: OverlayAxis, y: OverlayAxis): React.CSSProperties {
-  const style: React.CSSProperties = {}
-  if (x === 'start') style.left = 16
-  else if (x === 'end') style.right = 16
-  else style.left = '50%'
-  if (y === 'start') style.top = 16
-  else if (y === 'end') style.bottom = 16
-  else style.top = '50%'
-  const tx = x === 'center'
-  const ty = y === 'center'
-  if (tx && ty) style.transform = 'translate(-50%, -50%)'
-  else if (tx) style.transform = 'translateX(-50%)'
-  else if (ty) style.transform = 'translateY(-50%)'
-  return style
-}
-
-type OpenOverlay = { itemId: string; openedAt: number }
-
 /** `PageRouter`'s `notFound` — a component, so the element PreviewApp passes
  * can be created once (a fresh inline element per render would make
  * PageRouter rebuild its routes). */
@@ -184,8 +169,8 @@ function NotFoundNote() {
   )
 }
 const NOT_FOUND = <NotFoundNote />
-/** The template editor has no project, so no authored shell settings. */
-const DEFAULT_SHELL: ShellSettings = defaultShell('Template')
+/** The routed pages inside the shell, as HANDOFF wires them. Module-level so GummyApp's props stay stable. */
+const renderPages = (pages: ReactElement) => <div className="p-4">{pages}</div>
 
 /** A page with its grid resolved (the live page from the grid store). */
 type PreviewPage = PageDef & { grid: PageGrid }
@@ -203,13 +188,17 @@ export function LivePreviewModal({ onClose }: { onClose: () => void }) {
   // The declared custom actions: `fn:<id>` in a button resolves to `fn:<name>`
   // in its exported config, and the preview mounts a stub per name (below).
   const customActions = project?.snapshot.customActions ?? NO_CUSTOM_ACTIONS
+  // The declared custom components: an item's declaration id resolves to the
+  // name in its exported config, and the preview mounts a placeholder stub
+  // per name (below) that shows the resolved value.
+  const customComponents = project?.snapshot.customComponents ?? NO_CUSTOM_COMPONENTS
   // The project's attached endpoints and the models they reference — exactly
   // what its model.ts / api.ts exports contain.
   const models = useProjectModels()
   const endpoints = useProjectEndpoints()
   const apiUrl = useApiUrl()
   const themeConfig = useThemeStore((s) => s.config)
-  const frameTheme = useMemo(() => designThemeStyle(themeConfig), [themeConfig])
+  const frameTheme = useMemo(() => designThemeStyle(themeConfig) ?? {}, [themeConfig])
 
   // Dev tools (see the grilled design): closed on every open — the modal
   // mounts fresh, and so does this. The request log is captured through the
@@ -266,6 +255,21 @@ export function LivePreviewModal({ onClose }: { onClose: () => void }) {
     [customActions],
   )
 
+  // The preview's `ComponentsProvider` registry: no app code exists here, so
+  // every declared component is the placeholder with its resolved bindings. A
+  // name an item uses but nobody declared is left out, so the engine's own
+  // "not registered" placeholder shows, as it would in the app.
+  const stubComponents = useMemo<TComponentMaster>(
+    () =>
+      Object.fromEntries(
+        customComponents
+          .map((c) => c.name.trim())
+          .filter((name) => isValidComponentName(name))
+          .map((name) => [name, (p: CustomComponentProps) => <StubComponent name={name} {...p} />]),
+      ),
+    [customComponents],
+  )
+
   // The live page draws from the grid store; the others from their
   // snapshots. Outside a project (the template editor) the live canvas is the
   // only page.
@@ -314,74 +318,22 @@ export function LivePreviewModal({ onClose }: { onClose: () => void }) {
     [apiUrl],
   )
 
-  const engine = useMemo(() => {
-    // The same lowering the Model/API code tabs export — the preview's
-    // ApiMaster is exactly what a consumer pasting model.ts + api.ts would run.
-    const model = serializeModels(models) as TModelMaster
-    const api = serializeEndpoints(endpoints, models) as unknown as TApiMaster<TModelMaster>
-    const apiNames = new Set(Object.keys(api))
-    // Fetchable = the response-model ref resolves to a model that exists;
-    // without one the engine's schema conversion throws, so those bins stay
-    // placeholders (with a message) instead of crashing the preview.
-    const fetchableNames = new Set(
-      Object.keys(api).filter((n) => {
-        const response = (api as Record<string, { response?: unknown }>)[n].response
-        return typeof response === 'string' && response in model
-      }),
+  // The runtime document — what the CLI writes to gummy/projects/<key>.json —
+  // built from the live pages (the template editor gets an empty snapshot),
+  // then its unresolvable bindings swapped for placeholders and its `api`
+  // reduced to what the engine can build.
+  const doc = useMemo<GummyProject>(() => {
+    const snapshot = project?.snapshot ?? emptyProjectSnapshot('Template')
+    const raw = runtimeDocument(
+      { name: project?.name ?? 'Template', description: project?.description, snapshot: { ...snapshot, pages } },
+      endpoints,
+      models,
     )
-    // Only the fetchable entries reach the engine: an endpoint whose response
-    // model is missing (a freshly created one, say) would make its schema
-    // conversion throw and blank the whole preview, while the bins bound to it
-    // are already placeholders.
-    const fetchableApi = Object.fromEntries(
-      Object.entries(api).filter(([name]) => fetchableNames.has(name)),
-    ) as TApiMaster<TModelMaster>
-    const wiring: LivePreviewWiring = { apiUrl, apiNames, fetchableNames }
-    return { model, api: fetchableApi, wiring }
-  }, [models, endpoints, apiUrl])
-
-  // The engine's pages record: every page's exported container under its key,
-  // with its breadcrumb meta (title / parent / breadcrumb) as pages.ts emits
-  // it. PageRouter gets `documentTitle={false}` so the studio's tab keeps its name.
-  const enginePages = useMemo<TPageMaster>(
-    () =>
-      Object.fromEntries(
-        pages.map((pg) => [
-          pg.key,
-          {
-            path: pg.path,
-            ...enginePageMeta(pg, pages, globalLoads),
-            containers: [
-              buildLivePreviewContainer(
-                pg.grid.containerSettings,
-                pg.grid.items,
-                endpoints,
-                engine.wiring,
-                pages,
-                `page-${pg.key}`,
-                [...(pg.loads ?? []), ...globalLoads],
-                customActions,
-              ),
-            ],
-            ...(pg.loads?.length ? { loads: pageLoadsToEngine(pg.loads, endpoints, globalLoads) as PageLoad[] } : {}),
-          },
-        ]),
-      ),
-    [pages, endpoints, engine, globalLoads, customActions],
-  )
-  const engineGlobalLoads = useMemo(
-    () => (pageLoadsToEngine(globalLoads, endpoints) ?? []) as PageLoad[],
-    [globalLoads, endpoints],
-  )
+    return livePreviewProject(raw, previewWiring(raw, apiUrl))
+  }, [project, pages, endpoints, models, apiUrl])
 
   const projectSlug = (project?.name ?? 'project').toLowerCase().replace(/\s+/g, '-')
-  // The project's sidebar menu, as the exported menu.ts has it (no project →
-  // the template editor → no shell menu).
-  const engineMenu = useMemo<TMenu>(
-    () => (project ? menuToEngine(project.snapshot.menu, pages) : []),
-    [project, pages],
-  )
-  const engineShell = useMemo(() => shellToEngine(project?.snapshot.shell ?? DEFAULT_SHELL), [project])
+
 
   return (
     <Modal
@@ -415,19 +367,16 @@ export function LivePreviewModal({ onClose }: { onClose: () => void }) {
             pages={pages}
             livePage={livePage}
             endpoints={endpoints}
-            enginePages={enginePages}
+            doc={doc}
             globalLoads={globalLoads}
-            engineGlobalLoads={engineGlobalLoads}
-            engineMenu={engineMenu}
-            engineShell={engineShell}
             http={http}
-            model={engine.model}
-            api={engine.api}
             frameTheme={frameTheme}
             projectSlug={projectSlug}
             fullscreen={fullscreen}
             customActions={customActions}
+            customComponents={customComponents}
             stubActions={stubActions}
+            stubComponents={stubComponents}
             onConfigJson={setConfigJson}
           />
         </MemoryRouter>
@@ -451,9 +400,9 @@ export function LivePreviewModal({ onClose }: { onClose: () => void }) {
 }
 
 /**
- * The routed preview: page bar + the engine's `PageRouter`, plus the
- * design-only overlays the studio plays itself. Lives inside the
- * `MemoryRouter` so it can read and drive the preview's own location.
+ * The routed preview: page bar + the library's `<GummyApp>` over the runtime
+ * document. Lives inside the `MemoryRouter` so it can read and drive the
+ * preview's own location.
  * Memoized: the modal re-renders on every API log entry (dev tools), and
  * every prop here is stable, so the engine tree must not re-render for that.
  */
@@ -461,37 +410,31 @@ const PreviewApp = memo(function PreviewApp({
   pages,
   livePage,
   endpoints,
-  enginePages,
+  doc,
   globalLoads,
-  engineGlobalLoads,
-  engineMenu,
-  engineShell,
   http,
-  model,
-  api,
   frameTheme,
   projectSlug,
   fullscreen,
   customActions,
+  customComponents,
   stubActions,
+  stubComponents,
   onConfigJson,
 }: {
   pages: PreviewPage[]
   livePage: PreviewPage
   endpoints: EndpointDef[]
-  enginePages: TPageMaster
+  doc: GummyProject
   globalLoads: PageLoadDef[]
-  engineGlobalLoads: PageLoad[]
-  engineMenu: TMenu
-  engineShell: EngineShellProps
   http: HttpClientFactory
-  model: TModelMaster
-  api: TApiMaster<TModelMaster>
   frameTheme: React.CSSProperties
   projectSlug: string
   fullscreen: boolean
   customActions: CustomActionDef[]
+  customComponents: CustomComponentDef[]
   stubActions: TActionMaster
+  stubComponents: TComponentMaster
   onConfigJson: (json: string) => void
 }) {
   const location = useLocation()
@@ -520,8 +463,7 @@ const PreviewApp = memo(function PreviewApp({
     navigate(fillPath(current.page.path, { ...current.params, [key]: value }), { replace: true })
   }
 
-  // The current page's raw code-tab export (pre-placeholder-rewrite): the dev
-  // tools' Config tab, and the source of the design-only navigation lookup.
+  // The current page's raw code-tab export (pre-placeholder-rewrite): the dev tools' Config tab.
   const grid = current?.page.grid ?? null
   const configJson = useMemo(
     () =>
@@ -533,87 +475,12 @@ const PreviewApp = memo(function PreviewApp({
             pages,
             [...(current?.page.loads ?? []), ...globalLoads],
             customActions,
+            customComponents,
           )
         : '[]',
-    [grid, endpoints, pages, current?.page.loads, globalLoads, customActions],
+    [grid, endpoints, pages, current?.page.loads, globalLoads, customActions, customComponents],
   )
   useEffect(() => onConfigJson(configJson), [configJson, onConfigJson])
-  const navigation = useMemo(
-    () => collectPreviewNavigation(JSON.parse(configJson)),
-    [configJson],
-  )
-  const itemsById = useMemo(() => indexItems(grid?.items ?? []), [grid])
-
-  const [overlays, setOverlays] = useState<OpenOverlay[]>([])
-  const currentPageId = current?.page.id
-  useEffect(() => setOverlays([]), [currentPageId])
-
-  // Design-only navigation (link / toast / dialog): a capture-phase click on
-  // any engine button whose label carries one. The engine's own handler —
-  // including a `Navigate` action — still runs after.
-  const onCaptureClick = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
-      const target = e.target as HTMLElement | null
-      const button = target?.closest?.('button')
-      if (!button) return
-      const label = (button.textContent ?? '').trim()
-      const nav = navigation.get(label)
-      if (!nav) return
-      if (nav.kind === 'link') {
-        if (nav.href) window.open(nav.href, nav.newTab ? '_blank' : '_self', 'noopener')
-      } else if (nav.kind === 'toast' || nav.kind === 'dialog') {
-        if (!nav.targetItemId || !itemsById.has(nav.targetItemId)) return
-        setOverlays((prev) =>
-          prev.some((o) => o.itemId === nav.targetItemId)
-            ? prev
-            : [...prev, { itemId: nav.targetItemId, openedAt: Date.now() }],
-        )
-      }
-    },
-    [navigation, itemsById],
-  )
-
-  // Auto-dismiss overlays whose duration has elapsed.
-  useEffect(() => {
-    if (overlays.length === 0) return
-    const timers = overlays.flatMap((o) => {
-      const item = itemsById.get(o.itemId)
-      const duration = Number((item?.config as { duration?: number } | undefined)?.duration ?? 0)
-      if (!duration) return []
-      const remaining = Math.max(0, o.openedAt + duration * 1000 - Date.now())
-      return [
-        setTimeout(
-          () => setOverlays((prev) => prev.filter((x) => x.itemId !== o.itemId)),
-          remaining,
-        ),
-      ]
-    })
-    return () => timers.forEach(clearTimeout)
-  }, [overlays, itemsById])
-
-  const dismiss = (itemId: string) =>
-    setOverlays((prev) => prev.filter((o) => o.itemId !== itemId))
-
-  // Overlay stacks by corner, plus the topmost dimming dialog's backdrop.
-  const stacks = new Map<string, GridItemData[]>()
-  let scrim: { color: string; opacity: number; itemId: string; closes: boolean } | null = null
-  for (const o of overlays) {
-    const item = itemsById.get(o.itemId)
-    if (!item?.config) continue
-    const c = item.config as ToastConfig | DialogConfig
-    const key = `${c.posX}|${c.posY}`
-    stacks.set(key, [...(stacks.get(key) ?? []), item])
-    if (item.type === 'dialog' && (c as DialogConfig).backdrop === 'Dim the page') {
-      const d = c as DialogConfig
-      scrim = {
-        color: d.backdropColor || '#14161a',
-        opacity: Math.max(0, Math.min(90, Number(d.backdropOpacity) || 20)) / 100,
-        itemId: item.id,
-        closes: d.backdropClose,
-      }
-    }
-  }
-
   const paramKeys = current ? pathParams(current.page.path) : []
 
   return (
@@ -668,72 +535,24 @@ const PreviewApp = memo(function PreviewApp({
         </div>
       </div>
 
-      <div className="relative overflow-hidden rounded-md border border-line" style={frameTheme} onClickCapture={onCaptureClick}>
+      <div className="relative overflow-hidden rounded-md border border-line" style={frameTheme}>
         <PreviewErrorBoundary key={current?.page.id ?? 'none'}>
-          {/* The exported app's chrome: AppShell around PageRouter, exactly as
-              HANDOFF.md wires it. Its height is bounded to the modal (85vh,
-              or the viewport in full screen) minus the modal and page-bar chrome. */}
-          {/* The custom-action stubs, mounted where HANDOFF.md mounts the real registry. */}
-          <ActionsProvider actions={stubActions}>
-            <AppShell
-              pages={enginePages}
-              menu={engineMenu}
-              {...engineShell}
-              sidebarWidth="13rem"
-              height={fullscreen ? 'calc(100vh - 11rem)' : 'calc(85vh - 11rem)'}
-            >
-              <div className="p-4">
-                {engineGlobalLoads.length > 0 && (
-                  <GlobalLoads http={http} model={model} api={api} loads={engineGlobalLoads} />
-                )}
-                <PageRouter
-                  http={http}
-                  model={model}
-                  api={api}
-                  pages={enginePages}
-                  notFound={NOT_FOUND}
-                  documentTitle={false}
-                />
-              </div>
-            </AppShell>
-          </ActionsProvider>
+          {/* The library's own runtime entry, exactly as HANDOFF.md wires it: the
+              stub registries where the app passes its real ones, the shell's height
+              bounded to the modal (85vh, or the viewport in full screen) minus the
+              modal and page-bar chrome. */}
+          <GummyApp
+            project={doc}
+            http={http}
+            actions={stubActions}
+            components={stubComponents}
+            shell={{ sidebarWidth: '13rem', height: fullscreen ? 'calc(100vh - 11rem)' : 'calc(85vh - 11rem)' }}
+            notFound={NOT_FOUND}
+            documentTitle={false}
+            renderPages={renderPages}
+          />
         </PreviewErrorBoundary>
 
-        {scrim && (
-          <div
-            aria-hidden={!scrim.closes}
-            role={scrim.closes ? 'button' : undefined}
-            onClick={scrim.closes ? () => dismiss(scrim!.itemId) : undefined}
-            className="absolute inset-0 z-[20] rounded-md"
-            style={{ background: scrim.color, opacity: scrim.opacity }}
-          />
-        )}
-        {[...stacks.entries()].map(([key, list]) => {
-          const [x, y] = key.split('|') as [OverlayAxis, OverlayAxis]
-          return (
-            <div
-              key={key}
-              className="absolute z-[24] flex w-[min(340px,72%)] flex-col gap-2.5"
-              style={overlayPosition(x, y)}
-            >
-              {list.map((item) =>
-                item.type === 'dialog' ? (
-                  <DialogPreview
-                    key={item.id}
-                    config={item.config as DialogConfig}
-                    onDismiss={() => dismiss(item.id)}
-                  />
-                ) : (
-                  <ToastPreview
-                    key={item.id}
-                    config={item.config as ToastConfig}
-                    onDismiss={() => dismiss(item.id)}
-                  />
-                ),
-              )}
-            </div>
-          )
-        })}
       </div>
     </>
   )

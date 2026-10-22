@@ -15,7 +15,7 @@ import {
   Text as RadixText,
 } from "@radix-ui/themes";
 import { type ThemeProps } from "@radix-ui/themes";
-import type { MouseEvent as ReactMouseEvent, ReactNode } from "react";
+import type { ComponentType, MouseEvent as ReactMouseEvent, ReactNode } from "react";
 import type { LucideIcon, LucideProps } from "lucide-react";
 import type { IconData } from "../core/const/iconData";
 import type {
@@ -1675,11 +1675,115 @@ export type TElement =
   | PaperElement
   | CardElement
   | HtmlContentElement
+  | CustomComponentElement
   | ApprovalLineElement
+  | SwitchProfileElement
+  | ReplaceProfileElement
   | WorkflowEditorElement
   | PopoverElement
   | DrawerElement
   | DividerElement;
+
+/**
+ * Paths into one profile record — each a lodash path or a list of fallback
+ * paths (see {@link ApprovalKeyPath}). The defaults fit the Banpu
+ * user-profile shape (`personId`, `userId`, `firstNameEn` + `lastNameEN`,
+ * `jobTitle`, `companyModel.name`, `businessUnitModel.name`).
+ */
+export type ProfileKeys = {
+  personId?: ApprovalKeyPath;
+  /** Unique per profile — one person holds several. Falls back to `personId`. */
+  userId?: ApprovalKeyPath;
+  name?: ApprovalKeyPath;
+  /** A `{{path}}` template for the display name; wins over `name` when it renders non-blank. */
+  nameTemplate?: string;
+  jobTitle?: ApprovalKeyPath;
+  company?: ApprovalKeyPath;
+  department?: ApprovalKeyPath;
+  email?: ApprovalKeyPath;
+  /** An image URL on the record. */
+  avatar?: ApprovalKeyPath;
+  /**
+   * The primary-assignment flag (default `isPrimaryAssignment`): `true`, `1`,
+   * `"1"`, `"Y"` or `"true"` mark the profile picked when nobody chose one —
+   * the replaced person's starting profile, the fallback of a restore.
+   */
+  primary?: ApprovalKeyPath;
+};
+
+/** What the two profile elements share (see the grilled design). */
+export type ProfileSessionElement = {
+  name?: string;
+  /**
+   * The global-state slice holding the active profile (default `"profile"`) —
+   * bind anything to it with `{ type: "state", key: "profile", path }`. While
+   * impersonating, the admin's own profile sits in `<stateKey>Original`.
+   */
+  stateKey?: string;
+  /** The logged-in profile (a page / global load slice, say): seeds the active slice while it is empty. */
+  initial?: DataValue;
+  keys?: ProfileKeys;
+  /** Remember the choice — a switch in localStorage, a replacement in sessionStorage. Default true. */
+  persist?: boolean;
+  /** Names registered for `ReloadDataTable` (tables, lists, page loads) refetched after the profile changes. */
+  reload?: string[];
+  /** Where to go after the profile changes (home, say). */
+  navigate?: NavigateTarget;
+  className?: string;
+};
+
+/**
+ * Switch Profile: the active person's profiles as a list, the active one
+ * checked; picking one makes it the active profile. On load the saved choice
+ * is restored when still in the list, else the first profile.
+ */
+export type SwitchProfileElement = ProfileSessionElement & {
+  /** The person's profiles; `personParam` (default: the URL's only `:param`) receives the active profile's personId. */
+  api: API;
+  personParam?: string;
+  title?: string;
+  emptyText?: string;
+  /** Render nothing while the person has at most one profile (default true). */
+  hideWhenSingle?: boolean;
+  /** A vertical list with the active row checked (default), or a dropdown whose value is the `userId` and label the job title. */
+  display?: "list" | "dropdown";
+  /** Show "company · department" after the job title (default true). */
+  showSubtitle?: boolean;
+};
+
+/**
+ * Replace Profile: a trigger opening a search-and-confirm dialog; Confirm
+ * fetches the picked person's profiles and makes the first one active,
+ * keeping the current profile as the original — shown in a banner with
+ * "Return to my profile". Nothing changes before Confirm, nor on an empty
+ * list or a failed request (the dialog stays open and says so).
+ */
+export type ReplaceProfileElement = ProfileSessionElement & {
+  /** People search: the typed text goes to `searchParam` (default `"search"`) of its query, debounced `debounceMs` (300), never sent blank. */
+  searchApi: API;
+  searchParam?: string;
+  debounceMs?: number;
+  /** The picked person's profiles (the same shape as {@link SwitchProfileElement.api}). */
+  profilesApi: API;
+  personParam?: string;
+  /**
+   * Who may replace: a condition over global state, e.g.
+   * `{ left: { source: "state", key: "me", path: "isAdmin" }, operator: "eq", right: { val: true } }`
+   * (the *logged-in* user's slice, so it holds while impersonating). Absent ⇒ everyone.
+   */
+  canReplace?: CondExpression;
+  trigger?: { label?: string; icon?: keyof typeof IconData; variant?: ButtonVariant };
+  title?: string;
+  description?: string;
+  placeholder?: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  returnLabel?: string;
+  /** Shown when the search matched nobody / the picked person has no profile. */
+  emptyText?: string;
+  /** "Viewing as … — Return to my profile" while impersonating (default true). */
+  showBanner?: boolean;
+};
 
 export type BinType =
   | "hidden"
@@ -1710,7 +1814,10 @@ export type BinType =
   | "paper"
   | "card"
   | "html"
+  | "custom"
   | "approvalline"
+  | "switchprofile"
+  | "replaceprofile"
   | "workfloweditor"
   | "popover"
   | "drawer"
@@ -2440,6 +2547,47 @@ export type HtmlContentElement = {
   className?: string;
   style?: CSSProperties;
 };
+
+/**
+ * The `custom` element (see the grilled custom-components design): a React
+ * component the consumer coded in the app and registered under `component`
+ * in `<ComponentsProvider components={…}>`. Display-only — not a field of the
+ * enclosing form (`schema.ts` skips it), allowed inside a repeater.
+ */
+export type CustomComponentElement = {
+  name?: string;
+  /** The registry key (`components[component]`). */
+  component: string;
+  /** Static configuration, passed through verbatim as `props`. */
+  props?: Record<string, unknown>;
+  /** The one bound value (`{ type: "row" }` inside a repeater, `state`, `url`, `value`). */
+  value?: DataValue;
+  className?: string;
+  style?: CSSProperties;
+};
+
+/** What the engine hands a custom component (see {@link CustomComponentElement}). */
+export type CustomComponentProps<P = Record<string, unknown>, V = unknown> = {
+  /** The element's `props` object, untouched. */
+  props: P;
+  /** The resolved `value` binding; `undefined` when unbound or not loaded yet. */
+  value: V | undefined;
+  /** `true` while a `skeleton`-mode page load the binding reads has no data yet — draw your own placeholder. */
+  loading: boolean;
+  /** The nearest enclosing `repeater` item, `undefined` outside one. */
+  row: unknown;
+  /** Config-driven page change through the enclosing `PageRouter`. */
+  navigate: (target: NavigateTarget) => void;
+  /** Read-only access to the page / global data slices. */
+  state: { get: (key: string, path?: string) => unknown };
+};
+
+/**
+ * The consumer's registry of custom components, keyed by the name a config
+ * references as `element.component` — the rendering counterpart of
+ * `TActionMaster`.
+ */
+export type TComponentMaster = Record<string, ComponentType<CustomComponentProps<any, any>>>;
 
 export type Modals = Record<string, ModalElement>;
 

@@ -1,7 +1,6 @@
 import type { DataType } from '@gummy-ui/ui'
 import type { Breakpoint } from './breakpoints'
 import type { ComponentType } from './componentCatalog'
-import type { DesignConfig, ElementStyle } from './designTypes'
 
 export type { Breakpoint } from './breakpoints'
 export { MAX_GRID_COLUMNS } from './breakpoints'
@@ -1458,21 +1457,6 @@ export function createDefaultNavigate(): StudioNavigate {
 }
 export type ButtonSnackbarVariant = 'success' | 'error' | 'info' | 'warning' | 'neutral'
 
-/**
- * A button's design-only navigation (see the grilled design): the engine has
- * no link, toast or dialog concept, so this rides beside the engine
- * `actions` untouched, exports into project.json, and is played by the
- * studio itself in the Live Preview (link, mock overlay). Page changes are
- * NOT design-only any more — they are the engine `Navigate` action with a
- * `navigate` target (see {@link StudioNavigate}).
- */
-export type DesignNavigation =
-  | { kind: 'none' }
-  | { kind: 'link'; href: string; newTab: boolean }
-  | { kind: 'toast'; targetItemId: string }
-  | { kind: 'dialog'; targetItemId: string }
-
-export const NO_NAVIGATION: DesignNavigation = { kind: 'none' }
 
 /**
  * Full editable config for a *standalone* button item — the visual slice plus
@@ -1506,8 +1490,6 @@ export type ButtonItemConfig = ButtonConfig & {
   /** Exports `snackbarError: "$exception"` — the only form the engine reads
    * (it shows the thrown API error's message). */
   snackbarErrorException: boolean
-  /** Design-only navigation; absent on configs saved before it existed. */
-  navigation?: DesignNavigation
   /** Target of the `Navigate` action (engine `ButtonElement.navigate`);
    * absent until the action is added. */
   navigate?: StudioNavigate
@@ -1554,6 +1536,16 @@ export function createDefaultHiddenConfig(name: string): HiddenConfig {
  * canvas — see `ChildCanvas`). `elevation` is ignored by the component when
  * `variant` is `'outlined'`.
  */
+/** A plain nested container: the engine `Container.surface` flags — a themed panel background and / or a border. */
+export type ContainerConfig = {
+  background: boolean
+  border: boolean
+}
+
+export function createDefaultContainerConfig(): ContainerConfig {
+  return { background: false, border: false }
+}
+
 export type PaperConfig = {
   elevation: number
   variant: 'elevation' | 'outlined'
@@ -1676,6 +1668,24 @@ export function createDefaultHtmlContentConfig(name: string): HtmlContentConfig 
     binding: null,
     prose: true,
   }
+}
+
+/**
+ * Editable config for a custom component (see the grilled design). Maps onto
+ * the engine `CustomComponentElement`: `componentId` is the project
+ * declaration (`Workspace/customComponents.ts`) resolved to its `name` at
+ * export, `props` the authored text per declared prop key (parsed to the
+ * prop's kind at export), `binding` the one bound `value`.
+ */
+export type CustomComponentConfig = {
+  name: string
+  componentId: string
+  props: Record<string, string>
+  binding: ItemBinding
+}
+
+export function createDefaultCustomComponentConfig(name: string): CustomComponentConfig {
+  return { name, componentId: '', props: {}, binding: null }
 }
 
 /** One key of an approval line's row mapping: paths tried in order (see the engine `ApprovalKeyPath`). */
@@ -1927,7 +1937,7 @@ export function createDefaultModalConfig(id: string): ModalConfig {
     maxWidth: '',
     minWidth: '',
     maxHeight: '',
-    trigger: { label: 'Open', icon: '' },
+    trigger: { label: 'Open', icon: '', variant: 'contained' },
   }
 }
 
@@ -1995,7 +2005,7 @@ export function createDefaultPopoverConfig(): PopoverConfig {
     triggerMode: 'click',
     offset: '',
     triggerKind: 'button',
-    triggerButton: { label: 'Open popover', icon: '' },
+    triggerButton: { label: 'Open popover', icon: '', variant: 'contained' },
     triggerText: { text: 'Open popover', isLabel: false, binding: null },
   }
 }
@@ -2029,8 +2039,6 @@ export type GridItemData = {
   /** Which palette component this cell represents (set on drop). */
   type: ComponentType
   settings: GridItemSettings
-  /** Per-element colours from the Style tab — design-only (see `designTypes.ts`). */
-  style?: ElementStyle
   /** Inside a data table's modal canvas only: adding / editing visibility (see `ShowWhen`). */
   showWhen?: ShowWhen
   /** Show only while a page-data condition holds (any canvas); `null` / absent = always. */
@@ -2080,14 +2088,17 @@ export type GridItemData = {
     | PaperConfig
     | CardConfig
     | HtmlContentConfig
+    | CustomComponentConfig
     | ApprovalLineConfig
+    | SwitchProfileConfig
+    | ReplaceProfileConfig
     | WorkflowEditorConfig
     | ApprovalLineConfig
     | TabConfig
     | ModalConfig
     | DrawerConfig
     | PopoverConfig
-    | DesignConfig
+    | ContainerConfig
   /**
    * Child canvases for the container-hosting types (see the grilled design:
    * drill-in editing, arbitrary depth). `container`/`paper`/`modal`/`popover`
@@ -2158,28 +2169,6 @@ export type ButtonRefTargets = {
  * its modal's child canvas, so enumeration must be cross-canvas. Used by the
  * button inspector's dropdowns and by the export's id → name resolution.
  */
-/** The toasts / dialogs a button can show, across every canvas of a page. */
-export function collectOverlayTargets(
-  items: GridItemData[],
-): { itemId: string; type: 'toast' | 'dialog'; title: string }[] {
-  const out: { itemId: string; type: 'toast' | 'dialog'; title: string }[] = []
-  const walk = (list: GridItemData[]) => {
-    for (const item of list) {
-      if ((item.type === 'toast' || item.type === 'dialog') && item.config) {
-        const c = item.config as { title?: string; person?: string; variant?: string }
-        out.push({
-          itemId: item.id,
-          type: item.type,
-          title: (c.variant === 'Person' ? c.person : c.title) || item.label,
-        })
-      }
-      item.childCanvases?.forEach((canvas) => walk(canvas.items))
-    }
-  }
-  walk(items)
-  return out
-}
-
 export function collectButtonTargets(items: GridItemData[]): ButtonRefTargets {
   const modals: ButtonRefTargets['modals'] = []
   const tables: ButtonRefTargets['tables'] = []
@@ -2253,5 +2242,164 @@ export function createDefaultItemSettings(
     justifySelf: { ...defaultItemSettings.justifySelf, ...overrides?.justifySelf },
     alignSelf: { ...defaultItemSettings.alignSelf, ...overrides?.alignSelf },
     order: { ...defaultItemSettings.order, ...overrides?.order },
+  }
+}
+
+/* ------------------------------------------------------ profile elements */
+
+/**
+ * Paths into one profile record — a fallback list per key, tried top to
+ * bottom (the engine `ProfileKeys`); an empty list keeps the engine default,
+ * which fits the Banpu user-profile shape.
+ */
+export type ProfileKeysConfig = {
+  personId: string[]
+  /** Unique per profile (one person holds several). */
+  userId: string[]
+  name: string[]
+  /** `{{path}}` template for the display name; `''` = the engine default (`{{firstNameEn}} {{lastNameEN}}`). */
+  nameTemplate: string
+  jobTitle: string[]
+  company: string[]
+  department: string[]
+  email: string[]
+  avatar: string[]
+  /** The primary-assignment flag (`Y` / `true` / `1`): the profile picked when nobody chose one. */
+  primary: string[]
+}
+
+export const PROFILE_KEY_ROWS: { key: Exclude<keyof ProfileKeysConfig, 'nameTemplate'>; label: string }[] = [
+  { key: 'personId', label: 'Person id' },
+  { key: 'userId', label: 'Profile id (unique per profile)' },
+  { key: 'name', label: 'Name (when no template)' },
+  { key: 'jobTitle', label: 'Job title' },
+  { key: 'company', label: 'Company' },
+  { key: 'department', label: 'Department / unit' },
+  { key: 'email', label: 'Email' },
+  { key: 'avatar', label: 'Avatar URL' },
+  { key: 'primary', label: 'Primary assignment flag' },
+]
+
+export function createDefaultProfileKeysConfig(): ProfileKeysConfig {
+  return {
+    personId: ['personId'],
+    userId: ['userId'],
+    name: [],
+    nameTemplate: '',
+    jobTitle: ['jobTitle'],
+    company: ['companyModel.name'],
+    department: ['businessUnitModel.name'],
+    email: ['email'],
+    avatar: [],
+    primary: ['isPrimaryAssignment'],
+  }
+}
+
+/** What the two profile elements share (the engine `ProfileSessionElement`). */
+export type ProfileSessionConfig = {
+  name: string
+  /** The global-state slice holding the active profile; `''` = the engine default `profile`. */
+  stateKey: string
+  /** The logged-in profile (a page load), seeding the slice while it is empty. */
+  initial: ItemBinding
+  keys: ProfileKeysConfig
+  /** Remember the choice (a switch in localStorage, a replacement in sessionStorage). */
+  persist: boolean
+  /** Names registered for reload (tables, lists, page loads) refetched after the profile changes. */
+  reload: string[]
+  /** Where to go after the profile changes; null = stay. */
+  navigate: StudioNavigate | null
+}
+
+/**
+ * Editable config for a Switch Profile list: the active person's profiles
+ * from `read` (drilled by `readPaths`; the person id fills `personParam`),
+ * the active one checked.
+ */
+export type SwitchProfileConfig = ProfileSessionConfig & {
+  read: FormListCrudRef
+  readPaths: string
+  /** The URL `:param` the element fills with the active person's id; `''` = the endpoint's only one. */
+  personParam: string
+  title: string
+  emptyText: string
+  hideWhenSingle: boolean
+  /** A list with the active row checked, or a dropdown (value = userId, label = job title). */
+  display: SwitchProfileDisplay
+  /** Show "company · department" after the job title. */
+  showSubtitle: boolean
+}
+
+export type SwitchProfileDisplay = 'list' | 'dropdown'
+
+/**
+ * Editable config for a Replace Profile trigger + dialog: people `search`
+ * (the typed text in `searchParam`), the picked person's profiles from
+ * `read`, who may replace (a page-data condition), the trigger button and
+ * the dialog's texts.
+ */
+export type ReplaceProfileConfig = ProfileSessionConfig & {
+  search: FormListCrudRef
+  searchPaths: string
+  /** The query key receiving the typed text; `''` = `search`. */
+  searchParam: string
+  /** `''` = 300. */
+  debounceMs: number | ''
+  read: FormListCrudRef
+  readPaths: string
+  personParam: string
+  /** Who may replace, over the page's loads; null = everyone. */
+  canReplace: DataCondition | null
+  trigger: ButtonConfig
+  title: string
+  description: string
+  placeholder: string
+  confirmLabel: string
+  cancelLabel: string
+  returnLabel: string
+  emptyText: string
+  showBanner: boolean
+}
+
+export const DEFAULT_REPLACE_TRIGGER: ButtonConfig = { label: 'Replace profile', icon: 'userCog', variant: 'contained' }
+
+function createDefaultProfileSessionConfig(name: string): ProfileSessionConfig {
+  return { name, stateKey: '', initial: null, keys: createDefaultProfileKeysConfig(), persist: true, reload: [], navigate: null }
+}
+
+export function createDefaultSwitchProfileConfig(name: string): SwitchProfileConfig {
+  return {
+    ...createDefaultProfileSessionConfig(name),
+    read: createFormListCrudRef(),
+    readPaths: 'data',
+    personParam: '',
+    title: '',
+    emptyText: '',
+    hideWhenSingle: true,
+    display: 'list',
+    showSubtitle: true,
+  }
+}
+
+export function createDefaultReplaceProfileConfig(name: string): ReplaceProfileConfig {
+  return {
+    ...createDefaultProfileSessionConfig(name),
+    search: createFormListCrudRef(),
+    searchPaths: 'data',
+    searchParam: '',
+    debounceMs: '',
+    read: createFormListCrudRef(),
+    readPaths: 'data',
+    personParam: '',
+    canReplace: null,
+    trigger: { ...DEFAULT_REPLACE_TRIGGER },
+    title: '',
+    description: '',
+    placeholder: '',
+    confirmLabel: '',
+    cancelLabel: '',
+    returnLabel: '',
+    emptyText: '',
+    showBanner: true,
   }
 }

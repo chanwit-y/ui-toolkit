@@ -9,16 +9,6 @@ function blockHeight(item: GridItemData): number {
     case 'datatable':
     case 'datatableeditable':
       return 46
-    case 'hero':
-    case 'barchart':
-    case 'linechart':
-    case 'piechart':
-    case 'people':
-    case 'orgchart':
-    case 'gallery':
-    case 'video':
-    case 'image':
-      return 34
     case 'container':
     case 'paper':
     case 'card':
@@ -26,7 +16,6 @@ function blockHeight(item: GridItemData): number {
       return 30
     case 'typography':
     case 'divider':
-    case 'spacer':
       return 8
     default:
       return 14
@@ -35,18 +24,13 @@ function blockHeight(item: GridItemData): number {
 
 /**
  * A wireframe of a template's page grid (the mockup's `tplThumb`): every
- * root block at its lg span, taller for tables and charts, dashed for
- * containers, so the card is recognisable at a glance. Modals and
- * click-only overlays are not on the page, so they are left out.
+ * root block at its lg span, taller for tables, dashed for containers, so
+ * the card is recognisable at a glance. Modals and popovers are not on the
+ * page, so they are left out.
  */
 export function TemplateThumb({ grid, className }: { grid: PageGrid; className?: string }) {
   const cols = grid.containerSettings.columns.lg || 12
-  const blocks = grid.items.filter(
-    (i) =>
-      i.type !== 'modal' &&
-      i.type !== 'popover' &&
-      !((i.type === 'toast' || i.type === 'dialog') && (i.config as { trigger?: string })?.trigger === 'button'),
-  )
+  const blocks = grid.items.filter((i) => i.type !== 'modal' && i.type !== 'popover')
   return (
     <div
       className={cn(

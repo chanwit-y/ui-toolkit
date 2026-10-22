@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   ActionsProvider,
+  ComponentsProvider,
   AppShell,
   DataProvider,
   GlobalLoads,
@@ -18,6 +19,7 @@ import { pages } from "./config/country/pages";
 import { menu } from "./config/country/menu";
 import { globalLoads } from "./config/country/pageDataDemo";
 import { actions } from "./actions";
+import { components as customComponents } from "./customComponents";
 import { theme, components } from "./config/theme";
 
 const http = new HttpClientFactory(
@@ -150,7 +152,11 @@ export function App() {
         {/* Custom button actions: the app's coded functions (src/actions.ts),
             registered once here and named inline in configs as "fn:<name>". */}
         <ActionsProvider actions={actions}>
-          <AppContent />
+          {/* Custom components: the app's coded React components
+              (src/customComponents.ts), placed by `custom` Bins by name. */}
+          <ComponentsProvider components={customComponents}>
+            <AppContent />
+          </ComponentsProvider>
         </ActionsProvider>
       </ThemeProvider>
     </DataProvider>

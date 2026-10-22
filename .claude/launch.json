@@ -60,6 +60,16 @@
       ],
       "port": 3312,
       "autoPort": false
+    },
+    {
+      "name": "demo",
+      "comment": "The consumer starter in demo/ (GummyApp over gummy/projects/demo.json), port 3400. Needs the api server and a built packages/ui.",
+      "runtimeExecutable": "/bin/bash",
+      "runtimeArgs": [
+        "-c",
+        "PATH=/opt/homebrew/bin:$PATH exec bun run --cwd demo dev"
+      ],
+      "port": 3400
     }
   ]
 }

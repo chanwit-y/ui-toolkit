@@ -45,13 +45,26 @@ export { GlobalLoads } from "./components/core/GlobalLoads";
 // inline in a button's action chain as "fn:<name>" (see core/actions.tsx).
 export { ActionsProvider, useActions, isCustomAction, customActionName, customAction, resolveCustomAction, CUSTOM_ACTION_PREFIX } from "./components/core/actions";
 export type { ActionsProviderProps } from "./components/core/actions";
+// Custom components: the consumer's registry of coded React components, placed
+// by a `custom` Bin's `element.component` (see core/components.tsx).
+export { ComponentsProvider, useComponents, resolveCustomComponent } from "./components/core/components";
+export type { ComponentsProviderProps } from "./components/core/components";
+export { CustomComponent, CustomComponentPlaceholder, CustomComponentBoundary, previewJson } from "./components/CustomComponent";
+export type { CustomComponentPlaceholderProps, CustomComponentHostProps } from "./components/CustomComponent";
 export type { ActionContext, ActionFn, TActionMaster, CustomActionName, ButtonAction } from "./components/@types";
+export type { CustomComponentElement, CustomComponentProps, TComponentMaster } from "./components/@types";
 export type { GlobalLoadsProps } from "./components/core/GlobalLoads";
 export type { PageRouterProps } from "./components/core/PageRouter";
 export { PagesProvider, usePages, useNavigateTo, buildNavigateUrl, pathParamNames, matchPageKey, matchPage, breadcrumbTrail, usePageTitle } from "./components/core/pages";
 export { AppShell } from "./components/AppShell";
 export type { AppShellProps } from "./components/AppShell";
 export type { AppBarConfig, MenuItem, TMenu } from "./components/@types";
+// Runtime rendering of a studio project document (see the grilled library / CLI
+// design): <GummyApp project={json} …/> inside the consumer's router.
+export { GummyApp } from "./components/GummyApp";
+export type { GummyAppProps, GummyAppShell } from "./components/GummyApp";
+export { assertGummyProject, projectApiToEngine, GummyProjectError, GUMMY_PROJECT_SCHEMA_VERSION } from "./components/core/project";
+export type { GummyProject, GummyProjectApi, GummyProjectShell, GummyProjectTheme, GummyProjectCustomComponent } from "./components/core/project";
 export {
 	DEFAULT_CONTAINER_GRID,
 	getBinGridItemStyle,
@@ -127,6 +140,22 @@ export { stepsFromValue, insertStep, replaceStep, removeStep, roleAvailable, ins
 export type { WorkflowEditorElement, WorkflowEditorProps, WorkflowRole, WorkflowStepKeys, WorkflowUserKeys, WorkflowEditorLabels } from "./components/@types";
 export { normalizeApprovalSteps, normalizeApprovalStep, initialsOf, DEFAULT_STATUS_MAP, DEFAULT_STATUS_LABELS } from "./components/core/approvalSteps";
 export type { ApprovalLineElement, ApprovalLineKeys, ApprovalRoleRule, ApprovalStep, ApprovalStepState, ApprovalKeyPath } from "./components/@types";
+export * from "./components/SwitchProfile";
+export * from "./components/ReplaceProfile";
+export {
+  DEFAULT_PROFILE_KEYS,
+  DEFAULT_PROFILE_STATE_KEY,
+  normalizeProfile,
+  profileSubtitle,
+  pickRestoredProfile,
+  pickDefaultProfile,
+  isPrimaryValue,
+  originalStateKey,
+  listStateKey,
+  useProfileSession,
+} from "./components/core/profileSession";
+export type { NormalizedProfile, ProfileSession } from "./components/core/profileSession";
+export type { ProfileKeys, ProfileSessionElement, SwitchProfileElement, ReplaceProfileElement } from "./components/@types";
 export * from "./components/Popover";
 export type { PopoverProps } from "./components/Popover";
 export * from "./components/Drawer";

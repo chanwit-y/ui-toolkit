@@ -10,11 +10,17 @@ import {
   PanelLeft,
   Plug,
   Redo2,
+  Save,
   SlidersHorizontal,
   Sun,
   Undo2,
 } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
+import { cliInfo, isCliMode } from '../cli/cliStorage'
+import { canPickFolder, pickedFolderName, saveToProject, type SaveResult } from '../cli/saveToProject'
+import { runtimeProjectsFromPayload } from './Workspace/runtimeProject'
+import { currentPayload } from '../cli/cliStorage'
 import { useProjectEndpoints } from './Library/scope'
 import { cn, IconButton, Tooltip, TooltipProvider } from './common'
 import { useGridStore } from './Layout/gridStore'
@@ -25,7 +31,7 @@ import { ExportDialog } from './Workspace/ExportDialog'
 import { OverviewDialog } from './Workspace/OverviewDialog'
 import type { ProjectDef } from './Workspace/types'
 import { UserButton } from './Workspace/UserButton'
-import { useWorkspaceStore } from './Workspace/workspaceStore'
+import { useWorkspaceStore, WORKSPACE_STORAGE_KEY } from './Workspace/workspaceStore'
 
 // Relative to the `/p/:projectId` route the shell is rendered under. Layout's
 // target is filled in per render (`pages/<live page>`), so the tab keeps you on
@@ -52,6 +58,75 @@ const TAB_CLASS = ({ isActive }: { isActive: boolean }) =>
 const TAB_GLYPH = 'grid h-7 w-7 place-items-center rounded-md'
 
 const SAVE_LABEL = { saved: 'saved locally', pending: 'saving…', error: 'not saved' } as const
+/** Served by `gummy studio`, the autosave lands in the project folder, not the browser. */
+const CLI_SAVE_LABEL = { saved: 'saved to project', pending: 'saving…', error: 'not saved' } as const
+
+/** One line of feedback after Save to project, in the topbar for a few seconds. */
+function saveMessage(r: SaveResult): string {
+  switch (r.mode) {
+    case 'cli':
+      return `Saved ${r.files.length} files to ${r.where}`
+    case 'folder':
+      return `Saved ${r.files.length} files to ${r.where}`
+    case 'download':
+      return `Downloaded ${r.files.length} files — drop them into your project's gummy/ folder`
+    case 'cancelled':
+      return ''
+    case 'error':
+      return `Could not save: ${r.message}`
+  }
+}
+
+/**
+ * The Save to project button: writes `gummy/workspace.json` + `gummy/projects/<key>.json`
+ * where the consumer app reads them (see `cli/saveToProject.ts`). Under the
+ * CLI it flushes the autosave; elsewhere it asks for the project folder once
+ * (File System Access API), or downloads the files where no picker exists.
+ * Shift-click asks for the folder again.
+ */
+function SaveToProjectButton() {
+  const [message, setMessage] = useState('')
+  const [busy, setBusy] = useState(false)
+  useEffect(() => {
+    if (!message) return
+    const t = setTimeout(() => setMessage(''), 6000)
+    return () => clearTimeout(t)
+  }, [message])
+  const cli = isCliMode()
+  const folder = pickedFolderName()
+  const label = cli
+    ? `Save to project — write now to ${cliInfo()?.dir ?? 'gummy'}/ (autosaved on every change)`
+    : canPickFolder()
+      ? folder
+        ? `Save to project — write gummy/ into "${folder}" (shift-click to pick another folder)`
+        : 'Save to project — pick your app\'s folder and write gummy/ into it'
+      : 'Save to project — download gummy/workspace.json and projects/*.json'
+  const run = async (repick: boolean) => {
+    const payload = currentPayload(WORKSPACE_STORAGE_KEY)
+    if (!payload) {
+      setMessage('Could not save: nothing is persisted yet')
+      return
+    }
+    setBusy(true)
+    try {
+      setMessage(saveMessage(await saveToProject(payload, runtimeProjectsFromPayload(payload), { repick })))
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <>
+      {message && (
+        <span role="status" className={cn('max-w-[28rem] truncate font-mono text-ui-xs', message.startsWith('Could not') ? 'text-danger' : 'text-ink-3')}>
+          {message}
+        </span>
+      )}
+      <IconButton label={label} disabled={busy} onClick={(e) => void run(e.shiftKey)}>
+        <Save size={15} aria-hidden="true" />
+      </IconButton>
+    </>
+  )
+}
 
 /**
  * The studio topbar shared by every project page (the mockup's studio
@@ -140,8 +215,9 @@ export function AppShell({ project }: { project: ProjectDef }) {
               saveState === 'saved' ? 'bg-ink-2' : saveState === 'error' ? 'bg-danger' : 'bg-line-strong',
             )}
           />
-          {SAVE_LABEL[saveState]}
+          {(isCliMode() ? CLI_SAVE_LABEL : SAVE_LABEL)[saveState]}
         </span>
+        <SaveToProjectButton />
 
         <IconButton label="Undo (⌘Z)" disabled={undoDepth === 0} onClick={undo}>
           <Undo2 size={15} aria-hidden="true" />

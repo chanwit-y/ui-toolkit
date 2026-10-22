@@ -1,7 +1,10 @@
 {
   "name": "@gummy-ui/studio",
-  "private": true,
   "version": "0.0.0",
+  "description": "Gummy Studio \u2014 the visual builder for @gummy-ui/ui projects, as a prebuilt static app served by `gummy studio` (@gummy-ui/cli)",
+  "files": [
+    "dist"
+  ],
   "type": "module",
   "scripts": {
     "dev": "vite --port 3300",

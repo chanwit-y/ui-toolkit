@@ -199,6 +199,31 @@ export const api = {
     parameter: "approvalParam",
     withOptions: false,
   },
+  // Replace / Switch Profile demo.
+  me: {
+    url: "/collection/profiles/me",
+    description: "The logged-in profile",
+    methods: "GET" as const,
+    response: "profileRes",
+    withOptions: false,
+  },
+  searchProfiles: {
+    url: "/collection/profiles/search",
+    description: "Search people by name / email (one row per person)",
+    methods: "GET" as const,
+    response: "profileListRes",
+    query: "profileSearchQuery",
+    withOptions: false,
+  },
+  profilesByPerson: {
+    url: "/collection/profiles/person/:personId",
+    description: "Every profile a person holds (`exceptJobStatus=T` drops terminated ones)",
+    methods: "GET" as const,
+    response: "profileListRes",
+    parameter: "profilePersonParams",
+    query: "profilePersonQuery",
+    withOptions: false,
+  },
   // Workflow editor demo.
   users: {
     url: "/collection/users",

@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { Expand, Plus, Trash2 } from 'lucide-react'
 import { IconButton, IconPicker, Input, Select, SegmentedControl } from '../common'
 import { useGridStore } from './gridStore'
-import { BUTTON_VARIANT_OPTIONS } from './types'
+import { BUTTON_VARIANT_OPTIONS, createDefaultContainerConfig, type ContainerConfig } from './types'
 import type {
   ButtonConfig,
   ButtonVariant,
@@ -87,7 +87,10 @@ export function EditContentsButton({
  * its grid settings live in the Layout tab while drilled in — so the panel is
  * the drill-in affordance plus that pointer.
  */
-export function ContainerConfigPanel({ itemId }: { itemId: string }) {
+export function ContainerConfigPanel({ itemId, config }: { itemId: string; config?: ContainerConfig }) {
+  const updateItemConfig = useGridStore((s) => s.updateItemConfig)
+  const c = config ?? createDefaultContainerConfig()
+  const set = (patch: Partial<ContainerConfig>) => updateItemConfig(itemId, { ...c, ...patch })
   return (
     <div className="space-y-3">
       <Heading>Container</Heading>
@@ -96,7 +99,20 @@ export function ContainerConfigPanel({ itemId }: { itemId: string }) {
         edits this container&rsquo;s own grid settings.
       </p>
       <EditContentsButton itemId={itemId} />
+      <Heading>Surface</Heading>
+      <p className="text-ui-sm text-ink-3">The engine&rsquo;s themed panel around the grid (follows the Theme page).</p>
+      <SurfaceToggle label="Panel background" checked={c.background} onChange={(v) => set({ background: v })} />
+      <SurfaceToggle label="Border" checked={c.border} onChange={(v) => set({ border: v })} />
     </div>
+  )
+}
+
+function SurfaceToggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <label className="flex items-center gap-2 text-ui text-ink-2">
+      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="accent-[var(--accent-9)]" />
+      {label}
+    </label>
   )
 }
 

@@ -1,16 +1,12 @@
-import { toApiTs } from '../Api/serialize'
 import type { EndpointDef } from '../Api/types'
-import { buildBins, pageLoadsToEngine, rootContainer } from '../Layout/gridConfig'
-import { buttonNavigates, pageLinks, walkItems } from '../Layout/pageLinks'
+import { buttonNavigates, walkItems } from '../Layout/pageLinks'
 import type { ButtonItemConfig, DataTableConfig, GridItemData } from '../Layout/types'
-import { toModelTs } from '../Model/serialize'
 import type { ModelDef } from '../Model/types'
-import { toThemeTs } from '../Theme/serialize'
-import { appWiringSnippet, toMenuTs } from './menu'
-import { enginePageMeta } from './pageMeta'
 import { pathParams } from './snapshots'
 import type { PageDef, ProjectDef } from './types'
 import { makeActionKeyResolver, toActionsTs, type CustomActionRef } from './customActions'
+import { toComponentsTsx } from './customComponents'
+import { projectKey, runtimeDocument } from './runtimeProject'
 
 export type ExportFile = { name: string; lang: 'json' | 'ts' | 'md'; body: string }
 
@@ -58,22 +54,17 @@ function pageButtons(
     if (c.mode === 'confirm') parts.push('confirm first')
     if (actions.length) parts.push(actions.map(actionKey).join(' → '))
     if (buttonNavigates(c) && c.navigate?.pageId) parts.push(`go to ${pageName(c.navigate.pageId)}`)
-    const nav = c.navigation
-    if (nav?.kind === 'link') parts.push(`open ${nav.href || 'a link'}`)
-    else if (nav?.kind === 'toast' || nav?.kind === 'dialog') parts.push(`show a ${nav.kind}`)
     if (parts.length) out.push({ label: c.label || 'button', does: parts.join(', ') })
   })
   return out
 }
 
 /**
- * The hand-off bundle (the mockup's `exportFiles`): the whole project as
- * data, the contracts in the shape the team already writes (`api.ts`,
- * `model.ts`, `theme.ts`), a `pages.ts` the library's `PageRouter` takes as
- * is (keyed pages with their route and engine containers), and a README a
- * developer can actually read. `project.json` carries every page's engine
- * bins as the code tab exports them, design-only items and navigation
- * included, so a runtime (or a person) has everything in one file.
+ * The hand-off bundle (see the grilled library / CLI design): the runtime
+ * project document `<GummyApp>` renders — the same file `gummy studio`
+ * writes to `gummy/projects/<key>.json` — plus the typed stubs for the
+ * custom actions / components the app still has to code, and a README. No
+ * generated TypeScript configs: the engine renders the JSON as is.
  */
 export function buildExportFiles(
   project: ProjectDef,
@@ -83,115 +74,51 @@ export function buildExportFiles(
   const { snapshot } = project
   const globalLoads = snapshot.globalLoads ?? []
   const customActions = snapshot.customActions ?? []
-  const engineGlobalLoads = pageLoadsToEngine(globalLoads, endpoints) ?? []
-  const pages = snapshot.pages.map((pg) => ({
-    id: pg.id,
-    key: pg.key,
-    name: pg.name,
-    path: pg.path,
-    params: pathParams(pg.path),
-    endpoints: pageEndpointNames(pg, endpoints),
-    links: pageLinks(pg).map((l) =>
-      l.kind === 'page'
-        ? { via: l.via, to: snapshot.pages.find((p) => p.id === l.pageId)?.path ?? null }
-        : l.kind === 'link'
-          ? { via: l.via, href: l.href }
-          : { via: l.via, shows: l.kind },
-    ),
-    grid: {
-      columns: pg.grid.containerSettings.columns,
-      gap: pg.grid.containerSettings.gap,
-    },
-    bins: buildBins(
-      pg.grid.containerSettings,
-      pg.grid.items,
-      endpoints,
-      snapshot.pages,
-      undefined,
-      undefined,
-      [...(pg.loads ?? []), ...globalLoads],
-      customActions,
-    ),
-    loads: pageLoadsToEngine(pg.loads, endpoints, globalLoads),
-  }))
+  const customComponents = snapshot.customComponents ?? []
+  const key = projectKey(project.name)
+  const doc = runtimeDocument(project, endpoints, models)
 
   const out: ExportFile[] = []
-
-  out.push({
-    name: 'project.json',
-    lang: 'json',
-    body: JSON.stringify(
-      {
-        name: project.name,
-        description: project.description,
-        env: snapshot.env.map((e) => ({ key: e.name, value: e.value })),
-        theme: snapshot.theme,
-        pages,
-        endpoints: endpoints.map((a) => ({
-          name: a.name,
-          url: a.url,
-          method: a.method,
-          description: a.description,
-          response: models.find((m) => m.id === a.response)?.name ?? null,
-          query: models.find((m) => m.id === a.query)?.name ?? null,
-          parameter: models.find((m) => m.id === a.parameter)?.name ?? null,
-          body: models.find((m) => m.id === a.body)?.name ?? null,
-        })),
-      },
-      null,
-      2,
-    ),
-  })
-
-  out.push({ name: 'api.ts', lang: 'ts', body: toApiTs(endpoints, models) })
-  out.push({ name: 'model.ts', lang: 'ts', body: toModelTs(models) })
-  out.push({ name: 'theme.ts', lang: 'ts', body: toThemeTs(snapshot.theme) })
+  out.push({ name: `${key}.json`, lang: 'json', body: JSON.stringify(doc, null, 2) + '\n' })
   // The custom-action stubs the app's developer fills in (see customActions.ts).
-  out.push({ name: 'actions.ts', lang: 'ts', body: toActionsTs(customActions) })
+  if (customActions.length) out.push({ name: 'actions.ts', lang: 'ts', body: toActionsTs(customActions) })
+  // The custom-component stubs the app's developer fills in (see customComponents.ts).
+  if (customComponents.length) out.push({ name: 'components.tsx', lang: 'ts', body: toComponentsTsx(customComponents) })
 
-  // The keyed pages record the library's `PageRouter` renders:
-  //   <PageRouter http={http} model={model} api={api} pages={pages} />
-  const indent = (text: string, spaces: number) =>
-    text
-      .split('\n')
-      .map((line, i) => (i === 0 ? line : ' '.repeat(spaces) + line))
-      .join('\n')
-  out.push({
-    name: 'pages.ts',
-    lang: 'ts',
-    body:
-      'import type { PageLoad, TPageMaster } from "@gummy-ui/ui";\n\n' +
-      'export const pages = {\n' +
-      snapshot.pages
-        .map((pg, i) => {
-          const container = rootContainer(pg.key, pg.grid.containerSettings, pages[i].bins)
-          const meta = enginePageMeta(pg, snapshot.pages, globalLoads)
-          const loads = pages[i].loads
-          return (
-            `  ${pg.key}: {\n` +
-            `    path: ${JSON.stringify(pg.path)},\n` +
-            `    title: ${JSON.stringify(meta.title)},\n` +
-            (meta.parent !== undefined ? `    parent: ${JSON.stringify(meta.parent)},\n` : '') +
-            (meta.breadcrumb === false ? `    breadcrumb: false,\n` : '') +
-            (loads ? `    loads: ${indent(JSON.stringify(loads, null, 2), 4)},\n` : '') +
-            `    containers: [${indent(JSON.stringify(container, null, 2), 4)}],\n` +
-            `  },`
-          )
-        })
-        .join('\n') +
-      '\n} satisfies TPageMaster;\n' +
-      '\n/** App-wide loads: fetched once, kept across pages — `<GlobalLoads loads={globalLoads} …/>`. */\n' +
-      `export const globalLoads: PageLoad[] = ${JSON.stringify(engineGlobalLoads, null, 2)};\n`,
-  })
-
-  // The sidebar menu the exported `AppShell` takes (page ids → keys).
-  out.push({ name: 'menu.ts', lang: 'ts', body: toMenuTs(snapshot.menu, snapshot.pages, snapshot.shell) })
-
-  const lines: string[] = [`# ${project.name}`, '', project.description || '', '', '## Pages', '']
+  const lines: string[] = [`# ${project.name}`, '', project.description || '', '']
+  lines.push(
+    '## Run it',
+    '',
+    `\`${key}.json\` is the whole app as data. Install \`@gummy-ui/ui\`, import its stylesheet, and render the document inside your router:`,
+    '',
+    '```tsx',
+    'import { BrowserRouter } from "react-router-dom";',
+    'import { GummyApp } from "@gummy-ui/ui";',
+    'import "@gummy-ui/ui/styles.css";',
+    `import project from "./gummy/projects/${key}.json";`,
+    ...(customActions.length ? ['import { actions } from "./actions";'] : []),
+    ...(customComponents.length ? ['import { components } from "./components";'] : []),
+    '',
+    '<BrowserRouter>',
+    '  <GummyApp',
+    '    project={project}',
+    '    getToken={async () => "<bearer token>"}',
+    '    env={{ API_URL: import.meta.env.VITE_API_URL }}',
+    ...(customActions.length ? ['    actions={actions}'] : []),
+    ...(customComponents.length ? ['    components={components}'] : []),
+    '  />',
+    '</BrowserRouter>',
+    '```',
+    '',
+    'With `@gummy-ui/studio` installed, `gummy studio` keeps this file in `gummy/projects/` on every save, so nothing here needs to be copied by hand.',
+    '',
+    '## Pages',
+    '',
+  )
   for (const pg of snapshot.pages) {
     const params = pathParams(pg.path)
     lines.push(`### ${pg.name}  \`${pg.path}\``)
-    lines.push(`- key: \`${pg.key}\` (in pages.ts)`)
+    lines.push(`- key: \`${pg.key}\``)
     if (params.length) lines.push(`- expects: ${params.map((x) => `\`${x}\``).join(', ')}`)
     if (pg.parentId) {
       const parent = snapshot.pages.find((x) => x.id === pg.parentId)
@@ -207,7 +134,7 @@ export function buildExportFiles(
     lines.push(`- ${pageItemCount(pg)} component(s)`, '')
   }
   if (globalLoads.length) {
-    lines.push('## Global loads', '', 'Fetched once by `<GlobalLoads>` and kept across pages:', '')
+    lines.push('## Global loads', '', 'Fetched once when the app starts and kept across pages:', '')
     for (const l of globalLoads) lines.push(`- \`${l.key}\``)
     lines.push('')
   }
@@ -215,11 +142,24 @@ export function buildExportFiles(
     lines.push(
       '## Custom actions',
       '',
-      'Named in button action chains as `fn:<name>`; the code lives in `actions.ts` (typed stubs to fill in), mounted once through `<ActionsProvider actions={actions}>`:',
+      'Named in button action chains as `fn:<name>`; the code lives in `actions.ts` (typed stubs to fill in), passed to `<GummyApp actions={actions}>`:',
       '',
     )
     for (const a of customActions)
       lines.push(`- \`${a.name.trim() || '(unnamed)'}\`${a.description.trim() ? ` — ${a.description.trim()}` : ''}`)
+    lines.push('')
+  }
+  if (customComponents.length) {
+    lines.push(
+      '## Custom components',
+      '',
+      'Placed by `custom` bins naming them; the code lives in `components.tsx` (typed stubs to fill in — copy it, it is re-generated on every export), passed to `<GummyApp components={components}>`:',
+      '',
+    )
+    for (const c of customComponents) {
+      const props = c.props.filter((p) => p.key.trim()).map((p) => `\`${p.key.trim()}\` (${p.kind})`)
+      lines.push(`- \`${c.name.trim() || '(unnamed)'}\`${c.description.trim() ? ` — ${c.description.trim()}` : ''}${props.length ? ` · props: ${props.join(', ')}` : ''}`)
+    }
     lines.push('')
   }
   lines.push('## Endpoints', '')
@@ -229,9 +169,9 @@ export function buildExportFiles(
       .filter(Boolean)
     lines.push(`- \`${a.method} ${a.url}\` — ${a.name}${refs.length ? `  · models: ${refs.join(', ')}` : ''}`)
   }
-  lines.push('', '## Environment', '')
-  for (const e of snapshot.env) lines.push(`- \`VITE_${e.name}\` = ${e.value}`)
-  lines.push('', '## App wiring', '', 'pages.ts + menu.ts drop straight into `AppShell` / `PageRouter`:', '', '```tsx', appWiringSnippet(), '```', '')
+  lines.push('', '## Environment', '', 'The document carries these as `env`; `API_URL` is the HTTP base URL. Override any of them per environment with the `env` prop:', '')
+  for (const e of snapshot.env) lines.push(`- \`${e.name}\` = ${e.value}`)
+  lines.push('')
   out.push({ name: 'HANDOFF.md', lang: 'md', body: lines.join('\n') })
 
   return out

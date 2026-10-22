@@ -1,0 +1,22 @@
+{
+  "name": "@gummy-ui/cli",
+  "version": "0.0.1",
+  "description": "The `gummy` command line: `gummy init` scaffolds a starter app, `gummy studio` serves Gummy Studio over your app's ./gummy/ folder",
+  "type": "module",
+  "bin": {
+    "gummy": "bin/gummy.mjs"
+  },
+  "files": [
+    "bin",
+    "template"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "check": "node --check bin/gummy.mjs"
+  },
+  "dependencies": {
+    "@gummy-ui/studio": "workspace:*"
+  }
+}

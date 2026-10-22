@@ -21,6 +21,16 @@
         "typescript": "^5.4.5",
       },
     },
+    "apps/cli": {
+      "name": "@gummy-ui/cli",
+      "version": "0.0.1",
+      "bin": {
+        "gummy": "bin/gummy.mjs",
+      },
+      "dependencies": {
+        "@gummy-ui/studio": "workspace:*",
+      },
+    },
     "apps/example": {
       "name": "@gummy-ui/example",
       "version": "0.0.1",
@@ -74,6 +84,24 @@
         "typescript": "~6.0.2",
         "typescript-eslint": "^8.59.2",
         "vite": "^8.0.12",
+      },
+    },
+    "demo": {
+      "name": "gummy-demo",
+      "version": "0.0.1",
+      "dependencies": {
+        "@gummy-ui/ui": "workspace:*",
+        "react": "^18.3.1",
+        "react-dom": "^18.3.1",
+        "react-router-dom": "^6.30.1",
+      },
+      "devDependencies": {
+        "@gummy-ui/cli": "workspace:*",
+        "@types/react": "^18.3.3",
+        "@types/react-dom": "^18.3.0",
+        "@vitejs/plugin-react": "^4.3.1",
+        "typescript": "^5.4.5",
+        "vite": "^5.3.1",
       },
     },
     "packages/ui": {
@@ -271,6 +299,8 @@
     "@floating-ui/utils": ["@floating-ui/utils@0.2.11", "", {}, "sha512-RiB/yIh78pcIxl6lLMG0CgBXAZ2Y0eVHqMPYugu+9U0AeT6YBeiJpf7lbdJNIugFP5SIjwNRgo4DhR1Qxi26Gg=="],
 
     "@gummy-ui/api": ["@gummy-ui/api@workspace:apps/api"],
+
+    "@gummy-ui/cli": ["@gummy-ui/cli@workspace:apps/cli"],
 
     "@gummy-ui/example": ["@gummy-ui/example@workspace:apps/example"],
 
@@ -791,6 +821,8 @@
     "gopd": ["gopd@1.2.0", "", {}, "sha512-ZUKRh6/kUFoAiTAtTYPZJ3hw9wNxx+BIBOijnlG9PnrJsCcSjs1wyyD6vJpaYtgnzDrKYRSqf3OO6Rfa93xsRg=="],
 
     "graceful-fs": ["graceful-fs@4.2.11", "", {}, "sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ=="],
+
+    "gummy-demo": ["gummy-demo@workspace:demo"],
 
     "has-flag": ["has-flag@3.0.0", "", {}, "sha512-sKJf1+ceQBr4SMkvQnBDNDtf4TXpVhVGateu0t918bl30FnbE2m4vNLX+VWe/dpjlb+HugGYzW7uQXH98HPEYw=="],
 

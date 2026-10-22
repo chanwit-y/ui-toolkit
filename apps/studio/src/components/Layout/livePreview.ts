@@ -1,24 +1,15 @@
-import type { Bin, Container } from '@gummy-ui/ui'
-import { gridConfigToJson, MISSING_ENDPOINT, rootContainer, type EndpointRef, type PageRef } from './gridConfig'
-import { isClickOnlyOverlay } from './designTypes'
-import type { DesignNavigation, GridContainerSettings, GridItemData } from './types'
-import type { PageLoadDef } from '../Workspace/pageLoads'
-import type { CustomActionRef } from '../Workspace/customActions'
+import type { GummyProject, TModelMaster } from '@gummy-ui/ui'
+import { MISSING_ENDPOINT } from './gridConfig'
 
 /**
- * Builds the `Container` the live-preview modal feeds to the real engine
- * (`ContainerBuilder`). Deliberately round-trips through the exported JSON
- * *string* (`gridConfigToJson` → `JSON.parse`) rather than reusing `buildBins`'
- * objects — the preview renders exactly what a consumer pasting the code-tab
- * JSON would get, so serializer bugs surface here instead of in their app.
- *
- * API-dependent bins render FOR REAL when their wiring resolves (see the
- * grilled Env design): the modal builds an ApiMaster from the Model + API
- * stores with the Env page's API_URL as base URL, so a bin whose `api` name
- * exists in that master fetches live. A bin whose wiring doesn't resolve is
- * rewritten to an engine `text` placeholder that keeps its spans (so the
- * layout stays truthful) and says *why*: no endpoint picked, endpoint missing
- * (deleted/renamed on the API page), or API_URL unset on the Env page.
+ * The Live Preview's placeholder pass over the runtime document (see the
+ * grilled Env design): `livePreviewProject` takes the `GummyProject` the CLI
+ * writes and swaps every bin whose wiring cannot fetch for an engine `text`
+ * placeholder that keeps its spans (so the layout stays truthful) and says
+ * *why* — no endpoint picked, endpoint missing (deleted / renamed on the API
+ * page), a model reference the engine's schema conversion would throw on, or
+ * API_URL unset on the Env page — and drops those endpoints from `api`. The
+ * rest renders FOR REAL through `<GummyApp>`, against the Env page's API_URL.
  *
  * Element-less bins (types studio can't author) are placeholder-rewritten too;
  * `empty`/`container` pass through: the engine renders them as an empty cell /
@@ -45,6 +36,8 @@ const API_PLACEHOLDER_LABEL: Record<string, string> = {
   formlist: 'Form List',
   repeater: 'Repeater',
   approvalline: 'Approval line',
+  switchprofile: 'Switch profile',
+  replaceprofile: 'Replace profile',
   workfloweditor: 'Workflow editor',
   autocomplete: 'Autocomplete',
   multiAutocomplete: 'Multi Autocomplete',
@@ -94,73 +87,14 @@ function toPreviewContainer(
   return { ...container, bins: previewBins(bins as ParsedBin[], wiring) }
 }
 
-/** A toast/dialog that only appears on a button click is not on the page. */
-function isClickOnlyBin(bin: ParsedBin): boolean {
-  const design = bin.designOnly as { type?: string; config?: unknown } | undefined
-  return !!design && isClickOnlyOverlay(String(design.type), design.config)
-}
-
 function previewBins(bins: ParsedBin[], wiring: LivePreviewWiring): ParsedBin[] {
-  return bins.filter((b) => !isClickOnlyBin(b)).map((b) => toPreviewBin(b, wiring))
-}
-
-/** A button's design-only navigation as exported on its bin, keyed by label. */
-export type PreviewNavigation = DesignNavigation & { label: string }
-
-/**
- * Collect every button's design-only navigation across the exported bins
- * (nested containers, papers, tabs and modals included). The Live Preview
- * matches a clicked engine button back to its navigation by label — the engine
- * `ButtonElement` carries no id, so the label is the only handle; two buttons
- * sharing a label share the first one's navigation.
- */
-export function collectPreviewNavigation(bins: ParsedBin[]): Map<string, PreviewNavigation> {
-  const out = new Map<string, PreviewNavigation>()
-  const visit = (list: unknown) => {
-    if (!Array.isArray(list)) return
-    for (const bin of list as ParsedBin[]) {
-      const nav = bin.designNavigation as PreviewNavigation | undefined
-      if (nav && nav.kind !== 'none' && !out.has(nav.label)) out.set(nav.label, nav)
-      const el = bin.element
-      if (bin.container && typeof bin.container === 'object')
-        visit((bin.container as Record<string, unknown>).bins)
-      if (el?.container && typeof el.container === 'object')
-        visit((el.container as Record<string, unknown>).bins)
-      if (el?.rowContainer && typeof el.rowContainer === 'object')
-        visit((el.rowContainer as Record<string, unknown>).bins)
-      if (el?.itemContainer && typeof el.itemContainer === 'object')
-        visit((el.itemContainer as Record<string, unknown>).bins)
-      // A card's two slots of bins.
-      for (const key of ['content', 'collapse'] as const)
-        if (el?.[key] && typeof el[key] === 'object')
-          visit((el[key] as Record<string, unknown>).bins)
-      if (Array.isArray(el?.tabs))
-        for (const tab of el.tabs as Record<string, unknown>[])
-          if (tab.container && typeof tab.container === 'object')
-            visit((tab.container as Record<string, unknown>).bins)
-    }
-  }
-  visit(bins)
-  return out
+  return bins.map((b) => toPreviewBin(b, wiring))
 }
 
 function toPreviewBin(bin: ParsedBin, wiring: LivePreviewWiring): ParsedBin {
   const type = String(bin.type)
   const el = bin.element
 
-  // Design-only kinds (see `designTypes.ts`): the library has no component
-  // yet, so the preview shows where it goes and says so.
-  const design = bin.designOnly as
-    | { type?: string; label?: string; config?: Record<string, unknown> }
-    | undefined
-  if (design) {
-    const cfg = design.config ?? {}
-    const name = String(cfg.title ?? cfg.label ?? cfg.text ?? design.label ?? '')
-    return placeholderBin(
-      bin,
-      `[ ${design.label ?? design.type}${name && name !== design.label ? ` "${name}"` : ''} — design only, not in @gummy-ui/ui yet ]`,
-    )
-  }
   const displayName = el ? String(el.title ?? el.name ?? '') : ''
   const label = API_PLACEHOLDER_LABEL[type] ?? type
 
@@ -178,6 +112,14 @@ function toPreviewBin(bin: ParsedBin, wiring: LivePreviewWiring): ParsedBin {
   } else if (type === 'workfloweditor') {
     const api = (el?.users as { api?: Record<string, unknown> } | undefined)?.api
     const gap = wiringGap(api?.name, wiring)
+    if (gap) return placeholderBin(bin, `[ ${label} "${displayName}" — ${gap} ]`)
+  } else if (type === 'switchprofile' && el !== undefined) {
+    const gap = wiringGap((el.api as Record<string, unknown> | undefined)?.name, wiring)
+    if (gap) return placeholderBin(bin, `[ ${label} "${displayName}" — ${gap} ]`)
+  } else if (type === 'replaceprofile' && el !== undefined) {
+    const gap =
+      wiringGap((el.searchApi as Record<string, unknown> | undefined)?.name, wiring) ??
+      wiringGap((el.profilesApi as Record<string, unknown> | undefined)?.name, wiring)
     if (gap) return placeholderBin(bin, `[ ${label} "${displayName}" — ${gap} ]`)
   } else if ((type === 'repeater' || type === 'approvalline') && el !== undefined && 'api' in el) {
     // Only an endpoint-sourced repeater fetches; an `items` one reads its parent item.
@@ -266,24 +208,43 @@ function toPreviewBin(bin: ParsedBin, wiring: LivePreviewWiring): ParsedBin {
   return bin
 }
 
-/** Serialize the canvas to its exported JSON, parse it back, swap in
- * placeholders for unresolvable wiring, and wrap it all in a synthetic engine
- * Container carrying the authored (lg) grid settings. The engine's Container
- * isn't responsive for these — one value each — mirroring how the export
- * collapses xl onto lg. */
-export function buildLivePreviewContainer(
-  settings: GridContainerSettings,
-  items: GridItemData[],
-  endpoints: EndpointRef[],
-  wiring: LivePreviewWiring,
-  pages: PageRef[] = [],
-  name = 'studio-live-preview',
-  loads: Pick<PageLoadDef, 'id' | 'key'>[] = [],
-  customActions: CustomActionRef[] = [],
-): Container {
-  const bins = previewBins(
-    JSON.parse(gridConfigToJson(settings, items, endpoints, pages, loads, customActions)) as ParsedBin[],
-    wiring,
+/**
+ * The runtime document with every unresolvable binding replaced by a
+ * placeholder (see the module doc) and `api` reduced to the endpoints the
+ * engine can build — so the Live Preview renders the same `GummyProject`
+ * the CLI writes, minus what would crash or fetch nothing.
+ */
+export function livePreviewProject(doc: GummyProject, wiring: LivePreviewWiring): GummyProject {
+  const pages = Object.fromEntries(
+    Object.entries(doc.pages).map(([key, page]) => [
+      key,
+      {
+        ...page,
+        containers: page.containers.map((c) => toPreviewContainer(c as unknown as Record<string, unknown>, wiring) as unknown as typeof c),
+      },
+    ]),
   )
-  return rootContainer(name, settings, bins as unknown as Bin[]) as unknown as Container
+  const api = Object.fromEntries(Object.entries(doc.api).filter(([name]) => wiring.fetchableNames.has(name)))
+  return { ...doc, pages, api }
+}
+
+/**
+ * What a document can fetch: an endpoint is fetchable when every model it
+ * references exists (the engine's schema conversion throws otherwise) — the
+ * rest become placeholders that say so.
+ */
+export function previewWiring(doc: Pick<GummyProject, 'api' | 'model'>, apiUrl: string): LivePreviewWiring {
+  const model = doc.model as TModelMaster
+  const apiNames = new Set(Object.keys(doc.api))
+  const fetchableNames = new Set(
+    Object.entries(doc.api)
+      .filter(([, entry]) =>
+        (['response', 'query', 'parameter', 'body'] as const).every((ref) => {
+          const m = entry[ref]
+          return m === undefined || m === null || (typeof m === 'string' && m in model)
+        }),
+      )
+      .map(([name]) => name),
+  )
+  return { apiUrl, apiNames, fetchableNames }
 }

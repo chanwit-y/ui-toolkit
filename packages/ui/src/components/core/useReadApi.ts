@@ -15,7 +15,23 @@ import { useStord } from "./stord";
  * `api.paths`, and the refetch registered under `name` for `ReloadDataTable`.
  * `undefined` `api` ⇒ nothing fetched (the component reads something in scope).
  */
-export function useReadApi(name: string, api: FormListReadApi | undefined) {
+export type ReadApiOptions = {
+  /** Values merged over the resolved `query` / `params` (a typed search text, a picked person's id). */
+  query?: Record<string, unknown>;
+  params?: Record<string, unknown>;
+  /** `false` holds the call like an unresolved `:param` (default true). */
+  enabled?: boolean;
+  /** react-query retries (default: the client's). */
+  retry?: boolean | number;
+  /**
+   * The react-query key family (default `name`): components fetching the same
+   * thing share one in-flight request and cache entry under one `queryKey`,
+   * while each still registers its refetch under its own `name`.
+   */
+  queryKey?: string;
+};
+
+export function useReadApi(name: string, api: FormListReadApi | undefined, options: ReadApiOptions = {}) {
   const route = useRouteScope();
   const parent = useRowScope();
   const updateFnCtxs = useStord((state) => state.updateFnCtxs);
@@ -26,23 +42,25 @@ export function useReadApi(name: string, api: FormListReadApi | undefined) {
   );
   const stateVersion = useStateVersion(stateKeys(api?.params, api?.query, api?.body));
 
+  const injectSig = JSON.stringify([options.query ?? null, options.params ?? null]);
   const readArgs = useMemo(() => {
     if (!api) return { args: [] as unknown[], ready: false };
-    const q = resolveDataValues(api.query, scope);
-    const p = resolveDataValues(api.params, scope);
+    const q = { ...resolveDataValues(api.query, scope), ...options.query };
+    const p = { ...resolveDataValues(api.params, scope), ...options.params };
     const b = resolveDataValues(api.body, scope);
     const ready = (api.urlParams ?? []).every((k) => p[k] !== undefined && p[k] !== "");
     return { args: callArgs(api.segments, q, p, api.segments?.body || api.body ? b : undefined), ready };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [api, scope, stateVersion]);
+  }, [api, scope, stateVersion, injectSig]);
 
   const query = useQuery({
-    queryKey: [`read-${name}`, readArgs.args],
+    queryKey: [`read-${options.queryKey ?? name}`, readArgs.args],
     queryFn: async () => {
       const res = await (api!.api as (...a: unknown[]) => Promise<unknown>)(...readArgs.args);
       return drillPaths(res, api!.paths);
     },
-    enabled: !!api && readArgs.ready,
+    enabled: !!api && readArgs.ready && options.enabled !== false,
+    ...(options.retry !== undefined ? { retry: options.retry } : {}),
   });
 
   const { refetch } = query;
@@ -50,5 +68,5 @@ export function useReadApi(name: string, api: FormListReadApi | undefined) {
     if (api) updateFnCtxs(name, refetch);
   }, [api, name, updateFnCtxs, refetch]);
 
-  return { ...query, held: !!api && !readArgs.ready };
+  return { ...query, held: !!api && (!readArgs.ready || options.enabled === false) };
 }

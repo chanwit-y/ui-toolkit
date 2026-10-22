@@ -66,48 +66,6 @@ export function serializeEndpoints(
   return master
 }
 
-const IDENTIFIER = /^[A-Za-z_$][A-Za-z0-9_$]*$/
-
-/** A key is emitted bare when it's a valid JS identifier, else quoted. */
-function emitKey(key: string): string {
-  return IDENTIFIER.test(key) ? key : JSON.stringify(key)
-}
-
-/** Pretty-print one endpoint entry as a TS object literal. */
-function emitEntry(entry: TApiEntry, indent: number): string {
-  const pad = '  '.repeat(indent + 1)
-  const close = '  '.repeat(indent)
-  const lines = [
-    `url: ${JSON.stringify(entry.url)},`,
-    `description: ${JSON.stringify(entry.description)},`,
-    `methods: ${JSON.stringify(entry.methods)},`,
-    // `response` is a required key of the entry type, so an unset ref is
-    // emitted as an explicit `undefined` rather than dropped.
-    `response: ${entry.response === undefined ? 'undefined' : JSON.stringify(entry.response)},`,
-  ]
-  if (entry.query !== undefined) lines.push(`query: ${JSON.stringify(entry.query)},`)
-  if (entry.parameter !== undefined) {
-    lines.push(`parameter: ${JSON.stringify(entry.parameter)},`)
-  }
-  if (entry.body !== undefined) lines.push(`body: ${JSON.stringify(entry.body)},`)
-  lines.push(`withOptions: ${entry.withOptions},`)
-  return `{\n${lines.map((l) => pad + l).join('\n')}\n${close}}`
-}
-
-/**
- * The paste-ready `api.ts` source. Typed as `TApiMaster<typeof model>` against
- * the sibling `model.ts` (the `config/<feature>/` convention), so TypeScript
- * verifies every model reference at the paste destination.
- */
-export function toApiTs(endpoints: EndpointDef[], models: ModelDef[]): string {
-  const master = serializeEndpoints(endpoints, models)
-  const names = Object.keys(master)
-  const body = names
-    .map((name) => `  ${emitKey(name)}: ${emitEntry(master[name], 1)},`)
-    .join('\n')
-  const inner = names.length === 0 ? '{}' : `{\n${body}\n}`
-  return `import type { TApiMaster } from "@gummy-ui/ui";\n\nimport { model } from "./model";\n\nexport const api: TApiMaster<typeof model> = ${inner};\n`
-}
 
 /** The same value as raw JSON (an unset `response` is dropped by JSON). */
 export function toApiJson(endpoints: EndpointDef[], models: ModelDef[]): string {

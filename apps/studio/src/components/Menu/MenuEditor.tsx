@@ -12,7 +12,7 @@ import {
   cn,
 } from '../common'
 import { NavigateEditor, WiringHint } from '../Layout/ButtonConfigPanel'
-import { createMenuItem, toMenuTs } from '../Workspace/menu'
+import { createMenuItem, menuToEngine, shellToEngine } from '../Workspace/menu'
 import type { AppBarSettings, MenuItemDef, ShellSettings } from '../Workspace/types'
 import { defaultShell } from '../Workspace/snapshots'
 import { useActiveProject, useWorkspaceStore } from '../Workspace/workspaceStore'
@@ -207,7 +207,10 @@ export function MenuEditor() {
   const menu = project?.snapshot.menu ?? []
   const pages = project?.snapshot.pages ?? []
   const shell = project?.snapshot.shell ?? defaultShell()
-  const menuTs = useMemo(() => toMenuTs(menu, pages, shell), [menu, pages, shell])
+  const menuJson = useMemo(
+    () => JSON.stringify({ menu: menuToEngine(menu, pages), shell: shellToEngine(shell) }, null, 2),
+    [menu, pages, shell],
+  )
 
   if (!project) return null
   const set = (next: MenuItemDef[]) => updateProjectMenu(project.id, next)
@@ -334,10 +337,10 @@ export function MenuEditor() {
         )}
 
         <section className="mt-8">
-          <span className="sec-label mb-2 block">Export</span>
+          <span className="sec-label mb-2 block">In the project JSON</span>
           <CodeViewer
             maxHeightClassName="max-h-[50vh]"
-            tabs={[{ id: 'menu', label: 'menu.ts', language: 'text', code: menuTs }]}
+            tabs={[{ id: 'menu', label: 'menu + shell', language: 'json', code: menuJson }]}
           />
         </section>
       </div>

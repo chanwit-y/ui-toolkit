@@ -37,7 +37,9 @@ export class Schema {
 			// A form list's rows are independent forms (see FormListElement): its
 			// `name` is a binding key, not a field of the enclosing form.
 			// A repeater's template is read-only display, rendered once per item.
-			if (box.type === "formlist" || box.type === "repeater") return;
+			// A custom component is display-only: not a field of the form.
+			// The profile elements own their state (a global slice), not a form field.
+			if (box.type === "formlist" || box.type === "repeater" || box.type === "custom" || box.type === "switchprofile" || box.type === "replaceprofile") return;
 			if (box.element) {
 				if (this.isTabElement(box.element)) {
 					box.element.tabs.forEach((tab) => {

@@ -1,6 +1,8 @@
 import type { DataTableAddButton, DataType } from '@gummy-ui/ui'
 import {
   ApprovalLineView,
+  SwitchProfileView,
+  ReplaceProfileView,
   WorkflowEditorBase,
   AutocompleteBase2,
   Avatar,
@@ -10,6 +12,7 @@ import {
   SwitchBase,
   DataTable2,
   HtmlCell,
+  CustomComponentPlaceholder,
   DataTableEditable,
   DatePickerBase,
   DateRangePickerBase,
@@ -27,12 +30,14 @@ import {
   UploadImageBase,
 } from '@gummy-ui/ui'
 import { IconData, groupColumns } from '@gummy-ui/ui'
-import type { ApprovalStep, TypographyProps, UploadedFile } from '@gummy-ui/ui'
+import type { ApprovalStep, NormalizedProfile, TypographyProps, UploadedFile } from '@gummy-ui/ui'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import {
   AppWindow,
   Box,
+  UserCheck,
+  UserCog,
   Calendar,
   EyeOff,
   Expand,
@@ -58,6 +63,7 @@ import {
   StickyNote,
   CreditCard,
   Code,
+  Puzzle,
   Workflow,
   GitBranch,
   Table,
@@ -72,12 +78,11 @@ import dayjs from 'dayjs'
 import { memo, useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { cn, IconButton } from '../common'
 import { COMPONENT_BY_TYPE } from './componentCatalog'
-import { renderDesignPreview } from './DesignPreviews'
-import { elementStyleVars, hasElementStyle, isDesignOnly } from './designTypes'
 import { ENTER_DURATION_MS, prefersReducedMotion, UPGRADE_FADE_MS } from './gridAnimation'
 import { useGridStore, useIsEntering } from './gridStore'
 import { buildDataTablePreviewRows, buildHtmlPreviewValue, DATATABLE_PREVIEW_ROW_COUNT } from './dataTablePreview'
 import { useBindingToken } from './ItemBindingField'
+import { useActiveProject } from '../Workspace/workspaceStore'
 import type {
   AvatarConfig,
   ButtonConfig,
@@ -101,7 +106,10 @@ import type {
   CardConfig,
   CardActionConfig,
   HtmlContentConfig,
+  CustomComponentConfig,
   ApprovalLineConfig,
+  SwitchProfileConfig,
+  ReplaceProfileConfig,
   WorkflowEditorConfig,
   PopoverConfig,
   RadioConfig,
@@ -180,12 +188,15 @@ function thresholdsForType(type: GridItemData['type']): LiveThresholds {
     type === 'card' ||
     // An HTML block is markup — legible at any width.
     type === 'html' ||
+    // A custom component previews as its placeholder box — any width.
+    type === 'custom' ||
     // An approval line is avatars on a line — it scrolls when narrow.
     type === 'approvalline' ||
+    // The profile elements are a short list / a button and a banner.
+    type === 'switchprofile' ||
+    type === 'replaceprofile' ||
     // A workflow editor is a column of cards — it reads at any width.
-    type === 'workfloweditor' ||
-    // Design-only kinds are the design itself — nothing heavier to gate.
-    isDesignOnly(type)
+    type === 'workfloweditor'
   ) {
     return ALWAYS_LIVE
   }
@@ -293,8 +304,17 @@ function CellContent({ item }: { item: GridItemData }) {
   if (item.type === 'html' && item.config) {
     return <GlyphChip Icon={Code} />
   }
+  if (item.type === 'custom' && item.config) {
+    return <GlyphChip Icon={Puzzle} />
+  }
   if (item.type === 'approvalline' && item.config) {
     return <GlyphChip Icon={Workflow} />
+  }
+  if (item.type === 'switchprofile' && item.config) {
+    return <GlyphChip Icon={UserCheck} />
+  }
+  if (item.type === 'replaceprofile' && item.config) {
+    return <GlyphChip Icon={UserCog} />
   }
   if (item.type === 'tab' && item.config) {
     return <GlyphChip Icon={PanelTop} />
@@ -307,9 +327,6 @@ function CellContent({ item }: { item: GridItemData }) {
   }
   if (item.type === 'popover' && item.config) {
     return <GlyphChip Icon={MessageSquare} />
-  }
-  if (isDesignOnly(item.type)) {
-    return <GlyphChip Icon={COMPONENT_BY_TYPE[item.type].icon} />
   }
   return (
     <div
@@ -372,8 +389,14 @@ function ActiveBody({ item }: { item: GridItemData }) {
                                       ? CreditCard
                                     : item.type === 'html'
                                       ? Code
+                                    : item.type === 'custom'
+                                      ? Puzzle
                                     : item.type === 'approvalline'
                                       ? Workflow
+                                    : item.type === 'switchprofile'
+                                      ? UserCheck
+                                    : item.type === 'replaceprofile'
+                                      ? UserCog
                                       : item.type === 'tab'
                                         ? PanelTop
                                         : item.type === 'modal'
@@ -382,9 +405,7 @@ function ActiveBody({ item }: { item: GridItemData }) {
                                             ? PanelRight
                                           : item.type === 'popover'
                                             ? MessageSquare
-                                            : isDesignOnly(item.type)
-                                              ? COMPONENT_BY_TYPE[item.type].icon
-                                              : null
+                                            : null
   if (!Icon) return null
   return (
     <div
@@ -1369,6 +1390,38 @@ function HtmlContentLivePreview({ config }: { config: HtmlContentConfig }) {
   )
 }
 
+/**
+ * A custom component on the canvas: the library's placeholder box — the one
+ * the engine draws for an unregistered name — with the declared name, the
+ * binding token and the set props. The real component lives in the app; the
+ * Live Preview's stub shows the resolved value.
+ */
+function CustomComponentLivePreview({ config }: { config: CustomComponentConfig }) {
+  const def = useActiveProject()?.snapshot.customComponents?.find((d) => d.id === config.componentId)
+  const toToken = useBindingToken()
+  const token = config.binding ? toToken(config.binding) : ''
+  const details = useMemo(() => {
+    const out: Record<string, unknown> = {}
+    for (const p of def?.props ?? []) {
+      const text = config.props[p.key] ?? ''
+      if (text.trim() !== '') out[p.key] = text
+    }
+    if (token) out.value = token
+    return out
+  }, [def, config.props, token])
+  const name = def ? def.name.trim() || '(unnamed)' : config.componentId ? 'MISSING_COMPONENT' : ''
+  return (
+    <div data-grid-item-content className="pointer-events-none h-full w-full px-3 py-2">
+      <CustomComponentPlaceholder
+        name={name || 'Custom component'}
+        note={!config.componentId ? 'pick a declared component' : !def ? 'declaration deleted' : 'rendered by the app'}
+        details={details}
+        error={!!config.componentId && !def}
+      />
+    </div>
+  )
+}
+
 /** The mock line every workflow editor previews with (the user's e-memo screen). */
 const WORKFLOW_PREVIEW_STEPS = [
   { actionType: 'inputter', sequence: 1, inchargeUsers: [{ id: '1', name: 'Sigang Liang' }, { id: '2', name: 'Sai Cao' }], ccUsers: [] },
@@ -1440,6 +1493,55 @@ function ApprovalLineLivePreview({ config }: { config: ApprovalLineConfig }) {
         showIndex={config.showIndex}
         stepMinWidth={config.stepMinWidth === '' ? undefined : config.stepMinWidth}
         verticalBelow={config.verticalBelow || undefined}
+      />
+    </div>
+  )
+}
+
+/** Two positions of one person, for the profile elements' canvas previews. */
+const PROFILE_PREVIEW: NormalizedProfile[] = [
+  {
+    personId: 'p-1',
+    userId: 'u-1',
+    name: 'Kavisara Thisakobsuk',
+    jobTitle: 'Section Manager - Application Development',
+    company: 'Banpu Public Company Limited',
+    primary: false,
+    raw: {},
+  },
+  { personId: 'p-1', userId: 'u-2', name: 'Kavisara Thisakobsuk', jobTitle: 'Product Owner - Employee Platforms', company: 'Banpu NEXT', primary: true, raw: {} },
+]
+
+/** The real `SwitchProfileView` over two sample profiles (the list is fetched at runtime). Always live and inert. */
+function SwitchProfileLivePreview({ config }: { config: SwitchProfileConfig }) {
+  return (
+    <div data-grid-item-content className="pointer-events-none h-full w-full px-3 py-2">
+      <SwitchProfileView
+        title={config.title || undefined}
+        emptyText={config.emptyText || undefined}
+        hideWhenSingle={false}
+        display={config.display}
+        showSubtitle={config.showSubtitle}
+        profiles={PROFILE_PREVIEW}
+        activeUserId={PROFILE_PREVIEW[0].userId}
+      />
+    </div>
+  )
+}
+
+/** The real `ReplaceProfileView`: the trigger and, when enabled, a sample "Viewing as" banner. Always live and inert. */
+function ReplaceProfileLivePreview({ config }: { config: ReplaceProfileConfig }) {
+  return (
+    <div data-grid-item-content className="pointer-events-none h-full w-full px-3 py-2">
+      <ReplaceProfileView
+        trigger={{
+          label: config.trigger.label,
+          icon: (config.trigger.icon || undefined) as keyof typeof IconData | undefined,
+          variant: config.trigger.variant,
+        }}
+        viewingAs={config.showBanner ? PROFILE_PREVIEW[1] : undefined}
+        showBanner={config.showBanner}
+        returnLabel={config.returnLabel || undefined}
       />
     </div>
   )
@@ -1750,8 +1852,17 @@ function renderLive(item: GridItemData, isLive: boolean) {
   if (item.type === 'html' && item.config) {
     return <HtmlContentLivePreview config={item.config as HtmlContentConfig} />
   }
+  if (item.type === 'custom' && item.config) {
+    return <CustomComponentLivePreview config={item.config as CustomComponentConfig} />
+  }
   if (item.type === 'approvalline' && item.config) {
     return <ApprovalLineLivePreview config={item.config as ApprovalLineConfig} />
+  }
+  if (item.type === 'switchprofile' && item.config) {
+    return <SwitchProfileLivePreview config={item.config as SwitchProfileConfig} />
+  }
+  if (item.type === 'replaceprofile' && item.config) {
+    return <ReplaceProfileLivePreview config={item.config as ReplaceProfileConfig} />
   }
   if (item.type === 'paper' && item.config && item.childCanvases?.[0]) {
     return (
@@ -1777,11 +1888,6 @@ function renderLive(item: GridItemData, isLive: boolean) {
   }
   if (item.type === 'popover' && item.config) {
     return <PopoverLivePreview config={item.config as PopoverConfig} />
-  }
-  // Design-only kinds render their design (see `DesignPreviews.tsx` — the seam
-  // a real component slots into once the library gains one).
-  if (isDesignOnly(item.type)) {
-    return <div className="pointer-events-none w-full">{renderDesignPreview(item)}</div>
   }
   // `hidden` intentionally has no live render — it renders nothing at runtime,
   // so its chip is the honest representation at any width.
@@ -1866,12 +1972,7 @@ export function GridItem({ item, isSelected }: GridItemProps) {
     }
   }, [isEntering])
 
-  // Style-tab colours (design-only) ride along as CSS variables on the cell so
-  // the chrome tokens and design renders inside re-tint; the values are
-  // author-chosen hex colours, so inline is the only place they can live.
-  const styleVars = hasElementStyle(item.style) ? elementStyleVars(item.style) : undefined
   const style = {
-    ...styleVars,
     transform: CSS.Translate.toString(transform),
     transition,
   } as React.CSSProperties
@@ -1880,7 +1981,6 @@ export function GridItem({ item, isSelected }: GridItemProps) {
     <div
       ref={setRefs}
       style={style}
-      data-styled={styleVars ? '' : undefined}
       data-grid-item={item.id}
       onClick={(e) => {
         // Select this cell; stop the canvas click that would clear selection.

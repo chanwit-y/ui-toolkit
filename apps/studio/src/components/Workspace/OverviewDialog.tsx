@@ -3,7 +3,7 @@ import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { cn } from '../common'
 import { useProjectEndpoints } from '../Library/scope'
-import { indexItems, pageLinks } from '../Layout/pageLinks'
+import { pageLinks } from '../Layout/pageLinks'
 import { pageEndpointNames, pageItemCount } from './exportFiles'
 import type { PageDef, ProjectDef } from './types'
 import { useWorkspaceStore } from './workspaceStore'
@@ -14,12 +14,8 @@ const RG = 18
 const PAD = 2
 const H_PAGE = 82
 const H_PAGE_API = 112
-const H_ACT = 32
-const ACT_GAP = 9
-const ACT_STEP = 37
 const R = 9
 
-type Act = { kind: 'toast' | 'dialog' | 'link'; name: string; via: string; note: string }
 type Node = {
   key: string
   kind: 'page' | 'link'
@@ -28,7 +24,6 @@ type Node = {
   sub: string
   empty: boolean
   chips: string[]
-  acts: Act[]
   h: number
   blockH: number
   depth: number
@@ -38,7 +33,7 @@ type Node = {
   y: number
 }
 
-const KIND_HUE: Record<string, number> = { page: 212, link: 220, toast: 152, dialog: 320 }
+const KIND_HUE: Record<string, number> = { page: 212, link: 220 }
 
 /**
  * "See the whole project" (the mockup's overview): every page as a card,
@@ -59,20 +54,6 @@ export function OverviewDialog({ project, onClose }: { project: ProjectDef; onCl
     const mkPage = (pg: PageDef, depth: number): Node => {
       const chips = pageEndpointNames(pg, endpoints)
       const els = pageItemCount(pg)
-      const items = indexItems(pg.grid.items)
-      const acts: Act[] = pageLinks(pg)
-        .filter((l) => l.kind !== 'page')
-        .map((l) => {
-          if (l.kind === 'link') return { kind: 'link', name: l.href, via: l.via, note: 'link' }
-          const target = items.get(l.targetItemId)
-          const c = target?.config as { title?: string; person?: string; variant?: string } | undefined
-          return {
-            kind: l.kind,
-            name: (c?.variant === 'Person' ? c.person : c?.title) || target?.label || l.kind,
-            via: l.via,
-            note: c?.variant ? String(c.variant).toLowerCase() : l.kind,
-          }
-        })
       const h = chips.length ? H_PAGE_API : H_PAGE
       return {
         key: `p${pg.id}`,
@@ -82,9 +63,8 @@ export function OverviewDialog({ project, onClose }: { project: ProjectDef; onCl
         empty: els === 0,
         sub: els ? `${els} element${els === 1 ? '' : 's'}` : 'nothing on it yet',
         chips,
-        acts,
         h,
-        blockH: h + (acts.length ? ACT_GAP + acts.length * ACT_STEP - 4 : 0),
+        blockH: h,
         depth,
         kids: [],
         x: 0,
@@ -109,7 +89,6 @@ export function OverviewDialog({ project, onClose }: { project: ProjectDef; onCl
             sub: 'opened from another page',
             empty: false,
             chips: [],
-            acts: [],
             h: H_PAGE,
             blockH: H_PAGE,
             depth: depth + 1,
@@ -166,7 +145,6 @@ export function OverviewDialog({ project, onClose }: { project: ProjectDef; onCl
     }
   }, [pages, endpoints])
 
-  const actCount = flat.reduce((n, x) => n + x.acts.length, 0)
 
   const edgePath = (e: { a: Node; b: Node }) => {
     const x1 = e.a.x + NW
@@ -192,14 +170,14 @@ export function OverviewDialog({ project, onClose }: { project: ProjectDef; onCl
         if (!o) onClose()
       }}
       title={`${project.name} — whole project`}
-      description={`${pages.length} page(s) · ${edges.length} page jump(s) · ${actCount} action(s) · ${endpoints.length} endpoint(s)`}
+      description={`${pages.length} page(s) · ${edges.length} page jump(s) · ${endpoints.length} endpoint(s)`}
       width="min(94vw, 1180px)"
     >
       <div className="mb-3 flex flex-wrap items-center gap-4 pt-1 text-ui-sm text-ink-3">
         <span className="inline-flex items-center gap-1.5">
           <i className="block w-[22px] border-t-2 border-line-strong" /> page to page
         </span>
-        {(['page', 'dialog', 'toast', 'link'] as const).map((k) => (
+        {(['page', 'link'] as const).map((k) => (
           <span key={k} className="inline-flex items-center gap-1.5">
             <i
               className="block h-[11px] w-[11px] rounded-[3px] border"
@@ -209,7 +187,7 @@ export function OverviewDialog({ project, onClose }: { project: ProjectDef; onCl
                 background: `hsl(${KIND_HUE[k]} 65% 50% / 0.18)`,
               }}
             />
-            {k === 'page' ? 'page' : `${k} action`}
+            {k === 'page' ? 'page' : 'opened from another page'}
           </span>
         ))}
         <span className="flex-1" />
@@ -293,7 +271,6 @@ export function OverviewDialog({ project, onClose }: { project: ProjectDef; onCl
                   <b className="block truncate text-[13px] font-[650] tracking-[-0.01em] text-ink">{n.name}</b>
                   <em className="mt-0.5 block font-mono text-[11px] not-italic text-ink-3">
                     {n.sub}
-                    {n.acts.length > 0 && ` · ${n.acts.length} action${n.acts.length === 1 ? '' : 's'}`}
                   </em>
                   {n.chips.length > 0 && (
                     <span className="mt-2 flex gap-1 overflow-hidden">
@@ -306,39 +283,6 @@ export function OverviewDialog({ project, onClose }: { project: ProjectDef; onCl
                     </span>
                   )}
                 </button>
-                {n.acts.length > 0 && (
-                  <>
-                    <div
-                      className="absolute border-l border-dashed border-line-strong"
-                      style={{
-                        left: n.x + 16,
-                        top: n.y + n.h,
-                        height: ACT_GAP + (n.acts.length - 1) * ACT_STEP + H_ACT / 2,
-                      }}
-                    />
-                    {n.acts.map((a, i) => {
-                      const ah = KIND_HUE[a.kind] ?? 220
-                      return (
-                        <div
-                          key={`${n.key}-a${i}`}
-                          title={`${a.name} — ${a.kind}, from “${a.via}”`}
-                          className="absolute box-border flex h-8 items-center gap-2 overflow-hidden rounded-lg border border-dashed px-[11px] text-[11.5px]"
-                          style={{
-                            left: n.x + 26,
-                            top: n.y + n.h + ACT_GAP + i * ACT_STEP,
-                            width: NW - 26,
-                            borderColor: `hsl(${ah} 55% 50% / 0.45)`,
-                            background: `hsl(${ah} 65% 50% / 0.07)`,
-                          }}
-                        >
-                          <span className="h-[7px] w-[7px] shrink-0 rounded-full" style={{ background: `hsl(${ah} 58% 48%)` }} />
-                          <span className="min-w-0 flex-1 truncate font-semibold text-ink">{a.name}</span>
-                          <span className="whitespace-nowrap font-mono text-[9.5px] text-ink-3">{a.kind}</span>
-                        </div>
-                      )
-                    })}
-                  </>
-                )}
               </div>
             )
           })}

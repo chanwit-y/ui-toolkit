@@ -1,10 +1,12 @@
 import { useDraggable } from '@dnd-kit/core'
-import { Blocks, Database, Files, Layers, LayoutTemplate, Search, type LucideIcon } from 'lucide-react'
+import { Blocks, Database, Files, Layers, LayoutTemplate, Puzzle, Search, type LucideIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { cn } from '../common'
 import { childCanvasCount } from './types'
-import { COMPONENT_GROUPS, type ComponentDef } from './componentCatalog'
+import { COMPONENT_GROUPS, type ComponentDef, type ComponentGroup } from './componentCatalog'
 import { useGridStore } from './gridStore'
+import { isValidComponentName } from '../Workspace/customComponents'
+import { useActiveProject } from '../Workspace/workspaceStore'
 import { DataPanel } from './DataPanel'
 import { LayersPanel } from './LayersPanel'
 import { PagesPanel } from './PagesPanel'
@@ -33,7 +35,7 @@ function ToolboxItem({ def }: ToolboxItemProps) {
     (s) => isBlockedInRepeater(def.type) && ancestorRepeaters(s.items, s.activePath).length > 0,
   )
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-    id: `${TOOLBOX_DRAG_PREFIX}${def.type}`,
+    id: `${TOOLBOX_DRAG_PREFIX}${def.componentId ? `${def.type}:${def.componentId}` : def.type}`,
     data: { from: 'toolbox', def } satisfies ToolboxDragData,
     disabled: blocked,
   })
@@ -46,11 +48,11 @@ function ToolboxItem({ def }: ToolboxItemProps) {
       title={
         blocked
           ? BLOCKED_IN_REPEATER_HINT
-          : def.designOnly
-          ? `${def.label} — design only (no library component yet). Drag onto the canvas, or click to append it`
+          : def.componentId
+          ? `${def.hint ? `${def.hint}. ` : ''}Drag ${def.label} onto the canvas, or click to append it (mapped onto the declared component)`
           : `Drag ${def.label} onto the canvas, or click to append it`
       }
-      onClick={() => addItem({ type: def.type, label: def.label })}
+      onClick={() => addItem({ type: def.type, label: def.label, componentId: def.componentId })}
       {...listeners}
       {...attributes}
       className={cn(
@@ -61,18 +63,11 @@ function ToolboxItem({ def }: ToolboxItemProps) {
         blocked && 'cursor-not-allowed opacity-40 hover:border-line hover:text-ink-2 active:scale-100',
       )}
     >
-      {def.designOnly && (
-        <span
-          aria-hidden="true"
-          title="Design only"
-          className="absolute right-1 top-1 block h-1.5 w-1.5 rounded-full bg-warn"
-        />
-      )}
       <Icon
         className="h-[15px] w-[15px] text-ink-3 transition-colors group-hover:text-ink"
         aria-hidden="true"
       />
-      <span>{def.label}</span>
+      <span className="max-w-full truncate px-0.5">{def.label}</span>
     </button>
   )
 }
@@ -130,7 +125,7 @@ export function Toolbox({ templateMode = false }: { templateMode?: boolean }) {
       </div>
 
       {current === 'components' ? (
-        <Palette />
+        <Palette templateMode={templateMode} />
       ) : current === 'layers' ? (
         <LayersPanel />
       ) : current === 'pages' ? (
@@ -144,21 +139,49 @@ export function Toolbox({ templateMode = false }: { templateMode?: boolean }) {
   )
 }
 
-function Palette() {
+/**
+ * One palette tile per custom component declared on the Env page (valid names
+ * only — an unnamed / invalid declaration can't be mapped), so a declared
+ * component is dropped onto the page like any built-in. Empty outside a
+ * project (the master-layout editor has no registry).
+ */
+function useCustomComponentGroup(enabled: boolean): ComponentGroup | null {
+  const defs = useActiveProject()?.snapshot.customComponents
+  return useMemo(() => {
+    if (!enabled || !defs) return null
+    const items: ComponentDef[] = defs
+      .filter((d) => isValidComponentName(d.name))
+      .map((d) => ({
+        type: 'custom' as const,
+        label: d.name,
+        icon: Puzzle,
+        componentId: d.id,
+        hint: d.description.trim() || undefined,
+      }))
+    return items.length > 0 ? { category: 'Custom components', items } : null
+  }, [enabled, defs])
+}
+
+function Palette({ templateMode }: { templateMode: boolean }) {
   const [query, setQuery] = useState('')
+  const customGroup = useCustomComponentGroup(!templateMode)
 
   const groups = useMemo(() => {
+    const all = customGroup ? [...COMPONENT_GROUPS, customGroup] : COMPONENT_GROUPS
     const q = query.trim().toLowerCase()
-    if (!q) return COMPONENT_GROUPS
-    return COMPONENT_GROUPS.map((group) => ({
-      ...group,
-      items: group.items.filter(
-        (item) =>
-          item.label.toLowerCase().includes(q) ||
-          item.type.toLowerCase().includes(q),
-      ),
-    })).filter((group) => group.items.length > 0)
-  }, [query])
+    if (!q) return all
+    return all
+      .map((group) => ({
+        ...group,
+        items: group.items.filter(
+          (item) =>
+            item.label.toLowerCase().includes(q) ||
+            item.type.toLowerCase().includes(q) ||
+            (item.hint?.toLowerCase().includes(q) ?? false),
+        ),
+      }))
+      .filter((group) => group.items.length > 0)
+  }, [query, customGroup])
 
   return (
     <>
@@ -190,7 +213,7 @@ function Palette() {
               <h3 className="sec-label block px-1 pb-1.5 pt-1">{group.category}</h3>
               <div className="grid grid-cols-2 gap-1.5">
                 {group.items.map((def) => (
-                  <ToolboxItem key={def.type} def={def} />
+                  <ToolboxItem key={def.componentId ? `${def.type}:${def.componentId}` : def.type} def={def} />
                 ))}
               </div>
             </div>

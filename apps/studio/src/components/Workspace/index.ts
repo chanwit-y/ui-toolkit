@@ -20,7 +20,7 @@ export {
 } from './workspaceStore'
 export { pathParams, slugPath, normalizePath, createPage, pageKey, uniquePageKey, isValidPageKey, defaultShell } from './snapshots'
 export { enginePageMeta } from './pageMeta'
-export { createMenuItem, defaultMenu, menuToEngine, toMenuTs } from './menu'
+export { createMenuItem, defaultMenu, menuToEngine, shellToEngine } from './menu'
 export type {
   ProjectDef,
   ProjectSnapshot,

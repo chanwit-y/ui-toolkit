@@ -12,6 +12,7 @@ import {
   DEFAULT_PAGE_SIZE,
   DEFAULT_PAGE_SIZE_OPTIONS,
   DEFAULT_APPROVAL_STATUSES,
+  DEFAULT_REPLACE_TRIGGER,
   DEFAULT_WORKFLOW_LABELS,
   uploadAccept,
 } from './types'
@@ -48,8 +49,13 @@ import type {
   CardConfig,
   CardActionConfig,
   HtmlContentConfig,
+  CustomComponentConfig,
   ApprovalLineConfig,
   ApprovalLineKeyConfig,
+  ProfileKeysConfig,
+  ProfileSessionConfig,
+  SwitchProfileConfig,
+  ReplaceProfileConfig,
   WorkflowEditorConfig,
   PopoverConfig,
   RadioConfig,
@@ -64,7 +70,7 @@ import type {
   UploadFileConfig,
   UploadImageConfig,
 } from './types'
-import { hasElementStyle, isDesignOnly } from './designTypes'
+import type { ContainerConfig } from './types'
 import { isBlockedInRepeater } from './repeaterRules'
 import type { DataCondition } from './types'
 import {
@@ -76,6 +82,7 @@ import {
   type PageLoadDef,
 } from '../Workspace/pageLoads'
 import { makeActionKeyResolver, type CustomActionRef } from '../Workspace/customActions'
+import { exportProps, makeComponentNameResolver, type CustomComponentDef } from '../Workspace/customComponents'
 
 /**
  * Serializes the studio canvas into the declarative engine's `Bin[]` shape — the
@@ -151,6 +158,10 @@ type ButtonRefMaps = {
   loadKey: LoadKeyResolver
   /** A button action key as stored (`fn:<action id>`) → the engine's `fn:<name>`; built-ins pass through. */
   actionKey: (key: string) => string
+  /** A custom component declaration id → the engine `component` name (`MISSING_COMPONENT` when gone). */
+  componentName: (id: string) => string
+  /** The declarations themselves, for the props' kinds. */
+  componentDefs: CustomComponentDef[]
 }
 
 function makeButtonRefMaps(
@@ -158,6 +169,7 @@ function makeButtonRefMaps(
   pages: PageRef[],
   loads: Pick<PageLoadDef, 'id' | 'key'>[] = [],
   customActions: CustomActionRef[] = [],
+  customComponents: CustomComponentDef[] = [],
 ): ButtonRefMaps {
   const targets = collectButtonTargets(rootItems)
   return {
@@ -166,6 +178,8 @@ function makeButtonRefMaps(
     pageKeyById: new Map(pages.map((p) => [p.id, p.key])),
     loadKey: makeLoadKeyResolver(loads),
     actionKey: makeActionKeyResolver(customActions),
+    componentName: makeComponentNameResolver(customComponents),
+    componentDefs: customComponents,
   }
 }
 
@@ -1196,6 +1210,153 @@ function htmlContentElement(c: HtmlContentConfig, refs: ButtonRefMaps): Record<s
 }
 
 /**
+ * `custom` → engine `CustomComponentElement`: the declaration resolved to its
+ * registry name (`MISSING_COMPONENT` when deleted / unpicked), the authored
+ * props parsed to their declared kinds (only those set and off the default),
+ * the binding as the one `value`.
+ */
+function customComponentElement(c: CustomComponentConfig, refs: ButtonRefMaps): Record<string, unknown> {
+  const def = refs.componentDefs.find((d) => d.id === c.componentId)
+  const props = exportProps(def, c.props)
+  const value = itemBindingValue(c.binding, refs)
+  return {
+    name: c.name,
+    component: refs.componentName(c.componentId),
+    ...(Object.keys(props).length ? { props } : {}),
+    ...(value ? { value } : {}),
+  }
+}
+
+/**
+ * A studio read ref → the engine `API`: the endpoint name, `paths`, the
+ * URL's `:param` DataValues (minus `skipParams`, which the element fills
+ * itself) and the query extras.
+ */
+function readApiRef(
+  read: FormListCrudRef,
+  pathsText: string,
+  endpoints: EndpointRef[],
+  resolveEndpoint: ResolveEndpoint,
+  refs: Pick<ButtonRefMaps, 'loadKey'>,
+  skipParams: string[] = [],
+): Record<string, unknown> {
+  const url = endpoints.find((e) => e.id === read.endpointId)?.url
+  const dataValues = (map: Record<string, NavParamSource>, ks: string[]) =>
+    Object.fromEntries(
+      ks
+        .filter((k) => k.trim() !== '' && map[k])
+        .map((k) => [k, navParamValue(map[k], refs.loadKey)] as const)
+        .filter((e): e is readonly [string, Record<string, unknown>] => e[1] !== undefined),
+    )
+  const keys = (url != null ? urlParams(url) : Object.keys(read.params)).filter((k) => !skipParams.includes(k))
+  const params = dataValues(read.params, keys)
+  const query = dataValues(read.extra, Object.keys(read.extra))
+  const paths = pathsText.split('.').map((s) => s.trim()).filter(Boolean)
+  return {
+    name: resolveEndpoint(read.endpointId) ?? '',
+    ...(paths.length ? { paths } : {}),
+    ...(Object.keys(params).length ? { params } : {}),
+    ...(Object.keys(query).length ? { query } : {}),
+  }
+}
+
+/** The `:param` a profile element fills with a person id: the configured one, else the endpoint's only placeholder. */
+function personParamOf(personParam: string, read: FormListCrudRef, endpoints: EndpointRef[]): string | undefined {
+  if (personParam.trim()) return personParam.trim()
+  const url = endpoints.find((e) => e.id === read.endpointId)?.url
+  const names = url != null ? urlParams(url) : []
+  return names.length === 1 ? names[0] : undefined
+}
+
+/** The profile keys off the engine defaults: one path as a string, several as a list, none dropped. */
+function profileKeys(k: ProfileKeysConfig): Record<string, unknown> {
+  const keyPath = (paths: string[]) => {
+    const list = paths.map((p) => p.trim()).filter(Boolean)
+    return list.length === 0 ? undefined : list.length === 1 ? list[0] : list
+  }
+  const out: Record<string, unknown> = {}
+  for (const key of ['personId', 'userId', 'name', 'jobTitle', 'company', 'department', 'email', 'avatar', 'primary'] as const) {
+    const v = keyPath(k[key] ?? [])
+    if (v !== undefined) out[key] = v
+  }
+  if (k.nameTemplate.trim()) out.nameTemplate = k.nameTemplate.trim()
+  return out
+}
+
+/** What `switchprofile` and `replaceprofile` share (engine `ProfileSessionElement`), only off the defaults. */
+function profileSessionElement(c: ProfileSessionConfig, refs: ButtonRefMaps): Record<string, unknown> {
+  const keys = profileKeys(c.keys)
+  const initial = itemBindingValue(c.initial, refs)
+  const navigate = c.navigate ? navigateTarget(c.navigate, refs) : undefined
+  const reload = c.reload.map((r) => r.trim()).filter(Boolean)
+  return {
+    name: c.name,
+    ...(c.stateKey.trim() ? { stateKey: c.stateKey.trim() } : {}),
+    ...(initial ? { initial } : {}),
+    ...(Object.keys(keys).length ? { keys } : {}),
+    ...(c.persist ? {} : { persist: false }),
+    ...(reload.length ? { reload } : {}),
+    ...(navigate ? { navigate } : {}),
+  }
+}
+
+/** `switchprofile` → engine `SwitchProfileElement`. */
+function switchProfileElement(
+  c: SwitchProfileConfig,
+  endpoints: EndpointRef[],
+  resolveEndpoint: ResolveEndpoint,
+  refs: ButtonRefMaps,
+): Record<string, unknown> {
+  const person = personParamOf(c.personParam, c.read, endpoints)
+  return {
+    ...profileSessionElement(c, refs),
+    api: readApiRef(c.read, c.readPaths, endpoints, resolveEndpoint, refs, person ? [person] : []),
+    ...(c.personParam.trim() ? { personParam: c.personParam.trim() } : {}),
+    ...omitEmpty({ title: c.title, emptyText: c.emptyText }),
+    ...(c.hideWhenSingle ? {} : { hideWhenSingle: false }),
+    ...(c.display === 'dropdown' ? { display: 'dropdown' } : {}),
+    ...(c.showSubtitle ? {} : { showSubtitle: false }),
+  }
+}
+
+/** `replaceprofile` → engine `ReplaceProfileElement`: both reads, the trigger and texts only off the defaults. */
+function replaceProfileElement(
+  c: ReplaceProfileConfig,
+  endpoints: EndpointRef[],
+  resolveEndpoint: ResolveEndpoint,
+  refs: ButtonRefMaps,
+): Record<string, unknown> {
+  const person = personParamOf(c.personParam, c.read, endpoints)
+  const canReplace = c.canReplace ? dataConditionValue(c.canReplace, refs) : undefined
+  const trigger = {
+    ...(c.trigger.label !== DEFAULT_REPLACE_TRIGGER.label ? { label: c.trigger.label } : {}),
+    ...(c.trigger.icon && c.trigger.icon !== DEFAULT_REPLACE_TRIGGER.icon ? { icon: c.trigger.icon } : {}),
+    ...(c.trigger.variant !== 'contained' ? { variant: c.trigger.variant } : {}),
+  }
+  const searchParam = c.searchParam.trim()
+  return {
+    ...profileSessionElement(c, refs),
+    searchApi: readApiRef(c.search, c.searchPaths, endpoints, resolveEndpoint, refs),
+    ...(searchParam && searchParam !== 'search' ? { searchParam } : {}),
+    ...(c.debounceMs !== '' && c.debounceMs !== 300 ? { debounceMs: c.debounceMs } : {}),
+    profilesApi: readApiRef(c.read, c.readPaths, endpoints, resolveEndpoint, refs, person ? [person] : []),
+    ...(c.personParam.trim() ? { personParam: c.personParam.trim() } : {}),
+    ...(canReplace ? { canReplace } : {}),
+    ...(Object.keys(trigger).length ? { trigger } : {}),
+    ...omitEmpty({
+      title: c.title,
+      description: c.description,
+      placeholder: c.placeholder,
+      confirmLabel: c.confirmLabel,
+      cancelLabel: c.cancelLabel,
+      returnLabel: c.returnLabel,
+      emptyText: c.emptyText,
+    }),
+    ...(c.showBanner ? {} : { showBanner: false }),
+  }
+}
+
+/**
  * `approvalline` → engine `ApprovalLineElement`: each key's path list (one
  * path stays a string, several a list, none dropped), the role rules, the
  * status map / labels only when they differ from the engine defaults, the
@@ -1727,6 +1888,12 @@ function buildElement(
       return item.config ? typographyElement(item.config as TypographyConfig, refs) : undefined
     case 'html':
       return item.config ? htmlContentElement(item.config as HtmlContentConfig, refs) : undefined
+    case 'custom':
+      return item.config ? customComponentElement(item.config as CustomComponentConfig, refs) : undefined
+    case 'switchprofile':
+      return item.config ? switchProfileElement(item.config as SwitchProfileConfig, endpoints, resolveEndpoint, refs) : undefined
+    case 'replaceprofile':
+      return item.config ? replaceProfileElement(item.config as ReplaceProfileConfig, endpoints, resolveEndpoint, refs) : undefined
     case 'approvalline':
       return item.config ? approvalLineElement(item.config as ApprovalLineConfig, endpoints, resolveEndpoint, refs) : undefined
     case 'avatar':
@@ -1772,6 +1939,12 @@ function buildElement(
  * API page's list, threaded through so refs resolve id → current name.
  * `refs` carries the button targets collected from the ROOT items; omitted at
  * the top-level call, where `items` IS the root and the maps are built here. */
+/** The engine `surface` of a plain container, from its Props panel flags (nothing when both are off). */
+function containerSurface(c: ContainerConfig | undefined): { surface?: { background: boolean; border: boolean } } {
+  if (!c || (!c.background && !c.border)) return {}
+  return { surface: { background: c.background, border: c.border } }
+}
+
 export function buildBins(
   container: GridContainerSettings,
   items: GridItemData[],
@@ -1783,10 +1956,12 @@ export function buildBins(
   loads: Pick<PageLoadDef, 'id' | 'key'>[] = [],
   /** The project's declared custom actions, so a button's `fn:<id>` exports as `fn:<name>` (top-level call only). */
   customActions: CustomActionRef[] = [],
+  /** The project's declared custom components, so a `custom` item's declaration id exports as its name (top-level call only). */
+  customComponents: CustomComponentDef[] = [],
 ): Record<string, unknown>[] {
   const cols = container.columns
   const resolveEndpoint = makeEndpointResolver(endpoints)
-  const buttonRefs = refs ?? makeButtonRefMaps(items, pages, loads, customActions)
+  const buttonRefs = refs ?? makeButtonRefMaps(items, pages, loads, customActions, customComponents)
   return items.map((item) => {
     const span = item.settings.colSpan
     const lg = toBoxRange(span.lg, cols.lg)
@@ -1813,8 +1988,8 @@ export function buildBins(
         ? { left: modalCondition, operator: 'and', right: dataCondition }
         : (modalCondition ?? dataCondition)
     // A plain `container` Bin nests via the Bin-level `container` key (not an
-    // element) — the engine renders it as a nested grid. Style-tab background /
-    // border (design-only otherwise) turn on the engine's themed surface.
+    // element) — the engine renders it as a nested grid; its Props panel's
+    // background / border flags are the engine's themed `surface`.
     const nested =
       item.type === 'container'
         ? {
@@ -1824,16 +1999,9 @@ export function buildBins(
               endpoints,
               buttonRefs,
             ),
-            ...(hasElementStyle(item.style) && (item.style.bg || item.style.line)
-              ? { surface: { background: !!item.style.bg, border: !!item.style.line } }
-              : {}),
+            ...containerSurface(item.config as ContainerConfig | undefined),
           }
         : undefined
-    // Design-only kinds (see `designTypes.ts`) have no engine element: they
-    // export as an `empty` bin carrying their design config under `designOnly`,
-    // which the Live Preview turns into a labelled placeholder and a developer
-    // can read from project.json.
-    const designOnly = isDesignOnly(item.type)
     return {
       sm: toBoxRange(span.sm, cols.sm),
       md: toBoxRange(span.md, cols.md),
@@ -1841,30 +2009,12 @@ export function buildBins(
       // The engine has no `xs`; `xl` mirrors `lg` (studio's widest breakpoint).
       xl: lg,
       // Studio's `select` is the engine's `autocomplete`; everything else passes through.
-      type: designOnly ? 'empty' : item.type === 'select' ? 'autocomplete' : item.type,
+      type: item.type === 'select' ? 'autocomplete' : item.type,
       justifySelf: item.settings.justifySelf.lg,
       alignSelf: item.settings.alignSelf.lg,
       ...(condition ? { condition } : {}),
       ...(element ? { element } : {}),
       ...(nested ? { container: nested } : {}),
-      ...(designOnly
-        ? { designOnly: { type: item.type, label: item.label, config: item.config ?? {} } }
-        : {}),
-      // A button's design-only navigation (link / toast / dialog) rides beside
-      // the engine element: read by the Live Preview and project.json. Page
-      // navigation is the engine `navigate` on the element itself.
-      ...(item.type === 'button' &&
-      item.config &&
-      (item.config as ButtonItemConfig).navigation &&
-      (item.config as ButtonItemConfig).navigation!.kind !== 'none'
-        ? {
-            designNavigation: {
-              label: (item.config as ButtonItemConfig).label,
-              ...(item.config as ButtonItemConfig).navigation!,
-            },
-          }
-        : {}),
-      ...(hasElementStyle(item.style) ? { style: item.style } : {}),
     }
   })
 }
@@ -1876,8 +2026,9 @@ export function gridConfigToJson(
   pages: PageRef[] = [],
   loads: Pick<PageLoadDef, 'id' | 'key'>[] = [],
   customActions: CustomActionRef[] = [],
+  customComponents: CustomComponentDef[] = [],
 ): string {
-  return JSON.stringify(buildBins(container, items, endpoints, pages, undefined, undefined, loads, customActions), null, 2)
+  return JSON.stringify(buildBins(container, items, endpoints, pages, undefined, undefined, loads, customActions, customComponents), null, 2)
 }
 
 /**

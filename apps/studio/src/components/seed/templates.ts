@@ -1,4 +1,3 @@
-import { createDefaultDesignConfig, type ChartConfig, type StatConfig } from '../Layout/designTypes'
 import {
   createChildCanvas,
   createDefaultAutocompleteConfig,
@@ -69,20 +68,6 @@ function table(name: string, title: string): GridItemData {
   return item('datatable', 'Data Table', { ...createDefaultDataTableConfig(name), title }, full)
 }
 
-function stat(label: string): GridItemData {
-  return item(
-    'stat',
-    'Stat',
-    { ...(createDefaultDesignConfig('stat') as StatConfig), label, value: '—' },
-    { xs: 2, sm: 3, md: 2, lg: 3 },
-  )
-}
-
-function chart(type: 'barchart' | 'piechart' | 'linechart', title: string, span: Span): GridItemData {
-  return item(type, type === 'barchart' ? 'Bar chart' : type === 'piechart' ? 'Pie / donut' : 'Line chart',
-    { ...(createDefaultDesignConfig(type) as ChartConfig), title }, span)
-}
-
 function grid(items: GridItemData[]): PageGrid {
   return { items, containerSettings: defaultContainerSettings, fieldSeq: 0 }
 }
@@ -150,7 +135,7 @@ export function builtinTemplates(): TemplateDef[] {
         title: 'Add record',
         description: 'Create a record',
         maxWidth: '520px',
-        trigger: { label: 'Add record', icon: 'puls' },
+        trigger: { label: 'Add record', icon: 'puls', variant: 'contained' },
       },
       { xs: 2, sm: 2, md: 2, lg: 2 },
       {
@@ -165,24 +150,6 @@ export function builtinTemplates(): TemplateDef[] {
         ],
       },
     ),
-  ])
-
-  const dashboard = grid([
-    heading('Overview'),
-    stat('Total records'),
-    stat('Active'),
-    stat('This month'),
-    stat('Pending'),
-    chart('barchart', 'By category', { lg: 6 }),
-    chart('piechart', 'Share', { lg: 6 }),
-    table('dtActivity', 'Latest activity'),
-  ])
-
-  const report = grid([
-    heading('Monthly report'),
-    text('Figures refresh from the bound endpoint.'),
-    chart('linechart', 'Trend', full),
-    table('dtBreakdown', 'Breakdown'),
   ])
 
   const formPage = grid([
@@ -221,22 +188,6 @@ export function builtinTemplates(): TemplateDef[] {
       description: 'CRUD page — filters, table and a form modal.',
       category: 'Data',
       grid: createManage,
-      ...base,
-    },
-    {
-      id: 'seed-tpl-dashboard',
-      name: 'Dashboard',
-      description: 'Four stats, two charts and a table.',
-      category: 'Data',
-      grid: dashboard,
-      ...base,
-    },
-    {
-      id: 'seed-tpl-report',
-      name: 'Report',
-      description: 'Trend line over a data table.',
-      category: 'Data',
-      grid: report,
       ...base,
     },
     {
