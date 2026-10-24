@@ -17,7 +17,7 @@ import {
   useParams,
   useSearchParams,
 } from "react-router-dom";
-import type { AppBarConfig, MenuItem, NavigateTarget, TMenu, TPageMaster } from "./@types";
+import type { AppBarConfig, MenuItem, NavigateTarget, TMenu, TPageEntries } from "./@types";
 import { appBarStyle, appBarTone, type AppBarTone } from "./core/appBarStyle";
 import { useTheme } from "./context";
 import { Icon } from "./Icon";
@@ -25,7 +25,7 @@ import { breadcrumbTrail, buildNavigateUrl, matchPage, PagesProvider, pathParamN
 
 export type AppShellProps = {
   /** The same record `PageRouter` gets — menu items resolve their page keys against it. */
-  pages: TPageMaster;
+  pages: TPageEntries;
   menu: TMenu;
   /** Top-left of the top bar (logo / app name). Wins over `appBar`'s title/icon/logo. */
   brand?: ReactNode;
@@ -80,7 +80,7 @@ const isExternal = (i: MenuItem): i is Extract<MenuItem, { href: string }> => "h
  * fixed (`value`) param equals the matched one. Params read from the URL or
  * state can't be compared statically and are treated as matching.
  */
-function isTargetActive(target: NavigateTarget, pages: TPageMaster, pathname: string): boolean {
+function isTargetActive(target: NavigateTarget, pages: TPageEntries, pathname: string): boolean {
   const page = pages[target.page];
   if (!page) return false;
   const m = matchPath({ path: page.path, end: true }, pathname);
@@ -91,7 +91,7 @@ function isTargetActive(target: NavigateTarget, pages: TPageMaster, pathname: st
   return true;
 }
 
-function containsActive(items: MenuItem[], pages: TPageMaster, pathname: string): boolean {
+function containsActive(items: MenuItem[], pages: TPageEntries, pathname: string): boolean {
   return items.some((i) =>
     isGroup(i)
       ? containsActive(i.items, pages, pathname)
@@ -150,7 +150,7 @@ type ItemProps = {
   item: MenuItem;
   depth: number;
   rail: boolean;
-  pages: TPageMaster;
+  pages: TPageEntries;
   pathname: string;
   onNavigated: () => void;
 };
@@ -282,7 +282,7 @@ function MenuGroup({ item, depth, rail, pages, pathname, onNavigated }: ItemProp
   );
 }
 
-function SidebarNav({ menu, pages, rail, onNavigated, footer }: { menu: TMenu; pages: TPageMaster; rail: boolean; onNavigated: () => void; footer?: ReactNode }) {
+function SidebarNav({ menu, pages, rail, onNavigated, footer }: { menu: TMenu; pages: TPageEntries; rail: boolean; onNavigated: () => void; footer?: ReactNode }) {
   const { pathname } = useLocation();
   const { components } = useTheme();
   const color = components.sidebar?.color;
@@ -327,7 +327,7 @@ const TOP_LINK_ACTIVE_CLASS: Record<AppBarTone, string> = {
   custom: TOP_LINK_CUSTOM_ACTIVE,
 };
 
-type TopEntryProps = { item: MenuItem; pages: TPageMaster; pathname: string; tone?: AppBarTone };
+type TopEntryProps = { item: MenuItem; pages: TPageEntries; pathname: string; tone?: AppBarTone };
 
 /** One top-strip entry: link, external link, dropdown group or vertical divider. */
 function TopEntry({ item, pages, pathname, tone = "panel" }: TopEntryProps) {
@@ -453,7 +453,7 @@ function TopDropdownEntry({ item, pages, pathname }: TopEntryProps) {
 }
 
 /** The horizontal strip of `menu` in the top bar (`navigation="top"`), desktop only. */
-function TopNav({ menu, pages, tone }: { menu: TMenu; pages: TPageMaster; tone: AppBarTone }) {
+function TopNav({ menu, pages, tone }: { menu: TMenu; pages: TPageEntries; tone: AppBarTone }) {
   const { pathname } = useLocation();
   const { components } = useTheme();
   // On an accent or custom bar the strip must stay in the bar's own colour.
@@ -484,7 +484,7 @@ function Crumb({
   current,
 }: {
   pageKey: string;
-  pages: TPageMaster;
+  pages: TPageEntries;
   /** The current route's params (the strip renders above the routed element, so `useParams()` is empty here). */
   params: Record<string, string | undefined>;
   current: boolean;
@@ -531,7 +531,7 @@ function Crumb({
  * nothing when no page matches, the page opts out (`breadcrumb: false`), or the
  * trail is empty.
  */
-function Breadcrumbs({ pages }: { pages: TPageMaster }) {
+function Breadcrumbs({ pages }: { pages: TPageEntries }) {
   const { pathname } = useLocation();
   const match = useMemo(() => matchPage(pages, pathname), [pages, pathname]);
   const key = match?.key ?? null;

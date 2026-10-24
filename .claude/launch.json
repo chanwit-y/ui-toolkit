@@ -63,11 +63,21 @@
     },
     {
       "name": "demo",
-      "comment": "The consumer starter in demo/ (GummyApp over gummy/projects/demo.json), port 3400. Needs the api server and a built packages/ui.",
+      "comment": "The consumer starter in demo/ (GummyApp over the picked gummy/projects/<key>/), port 3400. Needs the api server and a built packages/ui.",
       "runtimeExecutable": "/bin/bash",
       "runtimeArgs": [
         "-c",
         "PATH=/opt/homebrew/bin:$PATH exec bun run --cwd demo dev"
+      ],
+      "port": 3400
+    },
+    {
+      "name": "demo-sample",
+      "comment": "The demo starter forced onto the tracked split sample gummy/projects/demo/ (VITE_GUMMY_PROJECT=demo), port 3400.",
+      "runtimeExecutable": "/bin/bash",
+      "runtimeArgs": [
+        "-c",
+        "PATH=/opt/homebrew/bin:$PATH VITE_GUMMY_PROJECT=demo exec bun run --cwd demo dev"
       ],
       "port": 3400
     }

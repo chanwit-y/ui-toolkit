@@ -3,17 +3,20 @@
 The smallest app that uses Gummy UI the way an external team would: install the
 library, let the studio write the project document, render it with the engine.
 Nothing in `src/` describes a screen; the screens live in
-`gummy/projects/demo.json`.
+`gummy/projects/demo/` — the routes, menu, models and endpoints in
+`project.json`, each page in `pages/<page>.json`, loaded on its first visit.
 
 ```
 demo/
 ├─ gummy/
 │  ├─ workspace.json       the studio's state (written by `gummy studio`; absent until the first save)
-│  └─ projects/demo.json   a project document — what `gummy studio` writes per project on save
+│  └─ projects/demo/       a project document — what `gummy studio` writes per project on save
+│     ├─ project.json      the manifest: routes (each page's `src`), menu, shell, model, api, theme
+│     └─ pages/*.json      one file per page, its own chunk, fetched on the page's first visit
 ├─ src/
 │  ├─ main.tsx             BrowserRouter + the library stylesheet
 │  ├─ App.tsx              <GummyApp project={…} …/>
-│  ├─ project.ts           picks which gummy/projects/*.json to render
+│  ├─ project.ts           picks which gummy/projects/<key>/ to render, and its page loader
 │  ├─ actions.ts           custom button actions the configs name as "fn:<name>"
 │  └─ components.tsx       custom React components the configs place by name
 ├─ index.html
@@ -49,9 +52,12 @@ A real app does the same with `npm install @gummy-ui/ui` and its own API.
   - `actions` — the functions behind `"fn:<name>"` button actions;
   - `components` — the React components behind `type: "custom"` bins;
   - `header` / `footer` / `brand` — the shell slots; `shell={false}` drops the shell.
-- **`gummy/projects/demo.json`** is validated at mount (`schemaVersion`, model
-  references, page paths); a broken document throws with the reason instead of
-  rendering blank. Names in `customActions` / `customComponents` that the app
+- **`gummy/projects/demo/project.json`** is validated at mount (`schemaVersion`,
+  model references, page paths); a broken document throws with the reason
+  instead of rendering blank. A page file is checked when it loads; one that
+  fails to load shows a Retry card inside the shell. `loadPage` (from
+  `src/project.ts`) is a lazy `import.meta.glob`, so the first screen downloads
+  the manifest and one page, not the whole app. Names in `customActions` / `customComponents` that the app
   forgot to register are reported with a console warning.
 
 ## Editing the screens
@@ -67,9 +73,11 @@ bun run studio          # = gummy studio → http://127.0.0.1:3300
 
 - `gummy/workspace.json` — the studio's own state (projects, shared library,
   activity). Commit it; it is what your teammates open.
-- `gummy/projects/<key>.json` — one runtime document per project, rewritten on
-  every save (`<key>` is the project name as a slug). The app imports the one it
-  renders; Vite reloads on change.
+- `gummy/projects/<key>/` — one runtime document per project (`<key>` is the
+  project name as a slug): `project.json` and `pages/<page>.json`. A save
+  rewrites only the files of the project you edited whose content changed, and
+  removes page files of deleted pages. The app imports the one it renders;
+  Vite reloads on change.
 
 A fresh folder starts with one empty project named after this package
 (`gummy-demo`). Pass `--demo` on the first run to start from the Country demo
@@ -79,11 +87,13 @@ Saves are version-checked: if `workspace.json` changes on disk under an open
 studio (a `git pull`, another tab), the studio pauses saving and shows a
 Reload banner instead of overwriting the file.
 
-Every `gummy/projects/*.json` is picked up automatically (`src/project.ts`):
+Every project under `gummy/projects/` is picked up automatically
+(`src/project.ts`) — the `<key>/` folders and older single-file `<key>.json`
+documents (pages inline; when both exist the folder wins):
 `VITE_GUMMY_PROJECT=<key>` wins when set, else the project named after this
 package (`gummy-demo`, what a fresh `gummy studio` creates), else the first
 exported project, else the shipped `demo` sample. The console says which one
-is rendering. Delete `demo.json` once your own project is there.
+is rendering. Delete `projects/demo/` once your own project is there.
 
 ## What the demo shows
 

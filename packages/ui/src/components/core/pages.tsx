@@ -1,19 +1,19 @@
 import { createContext, useCallback, useContext, useMemo, useSyncExternalStore, type ReactNode } from "react";
 import { generatePath, matchRoutes, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import type { DataValue, NavigateTarget, PageElement, TPageMaster } from "../@types";
+import type { DataValue, NavigateTarget, PageEntry, TPageEntries } from "../@types";
 import { resolveDataValue } from "./dataValue";
 import { useRowScope } from "./rowScope";
 import { getStateStore } from "./stateStore";
 
-const PagesContext = createContext<TPageMaster | null>(null);
+const PagesContext = createContext<TPageEntries | null>(null);
 
 /** Supplies the page record `PageRouter` was given to every navigating element beneath it. */
-export function PagesProvider({ pages, children }: { pages: TPageMaster; children: ReactNode }) {
+export function PagesProvider({ pages, children }: { pages: TPageEntries; children: ReactNode }) {
   return <PagesContext.Provider value={pages}>{children}</PagesContext.Provider>;
 }
 
 /** The enclosing `PageRouter`'s pages, or `null` outside one. */
-export function usePages(): TPageMaster | null {
+export function usePages(): TPageEntries | null {
   return useContext(PagesContext);
 }
 
@@ -36,7 +36,7 @@ export type NavigateScope = { row?: unknown };
  */
 export function buildNavigateUrl(
   target: NavigateTarget,
-  pages: TPageMaster | null,
+  pages: TPageEntries | null,
   scope: { params?: Record<string, string | undefined>; searchParams?: URLSearchParams } & NavigateScope,
   /** Skip the console warnings (for render-time lookups that already warned once). */
   silent = false
@@ -104,14 +104,14 @@ export function useNavigateTo() {
  * `PageRouter`'s `useRoutes` ranks them (so `/country/new` beats `/country/:id`),
  * or `null` when none does.
  */
-export function matchPageKey(pages: TPageMaster, pathname: string): string | null {
+export function matchPageKey(pages: TPageEntries, pathname: string): string | null {
   return matchPage(pages, pathname)?.key ?? null;
 }
 
 /** Like {@link matchPageKey}, with the `:params` the match filled — for code
  * rendered above the routed element, where `useParams()` is empty. */
 export function matchPage(
-  pages: TPageMaster,
+  pages: TPageEntries,
   pathname: string
 ): { key: string; params: Record<string, string | undefined> } | null {
   const routes = Object.entries(pages).map(([key, p]) => ({ path: p.path, id: key }));
@@ -125,7 +125,7 @@ export function matchPage(
  * (and warns, unless `silent`) at an unknown parent or a cycle, so a broken
  * hierarchy still yields the partial trail above the break.
  */
-export function breadcrumbTrail(key: string, pages: TPageMaster, silent = false): string[] {
+export function breadcrumbTrail(key: string, pages: TPageEntries, silent = false): string[] {
   const trail: string[] = [];
   const seen = new Set<string>();
   let cur: string | undefined = key;
@@ -134,7 +134,7 @@ export function breadcrumbTrail(key: string, pages: TPageMaster, silent = false)
       if (!silent) console.warn(`[gummy-ui] breadcrumb cycle through page "${cur}".`);
       break;
     }
-    const page: PageElement | undefined = pages[cur];
+    const page: PageEntry | undefined = pages[cur];
     if (!page) {
       if (!silent) console.warn(`[gummy-ui] page "${trail[0] ?? key}" has unknown parent "${cur}".`);
       break;

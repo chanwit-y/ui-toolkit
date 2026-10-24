@@ -2094,6 +2094,27 @@ export type PageElement = {
 export type TPageMaster = { [K: string]: PageElement };
 
 /**
+ * A page as a project document lists it (see the grilled design
+ * `split-pages-lazy-load`): the route meta, and either the body inline
+ * (`containers` / `loads`, a {@link PageElement}) or `src`, the page file the
+ * body is loaded from on the first visit (`PageRouter`'s `loadPage`). Anything
+ * that only routes — the shell, the menu, breadcrumbs, `Navigate` — reads the
+ * meta and takes either kind.
+ */
+export type PageEntry = Omit<PageElement, "containers" | "loads"> & {
+  containers?: Container[];
+  loads?: PageLoad[];
+  /** The page body file, relative to the project document (`pages/<key>.json`). */
+  src?: string;
+};
+
+/** Pages as a project lists them: inline, split into page files, or a mix. A {@link TPageMaster} is one. */
+export type TPageEntries = { [K: string]: PageEntry };
+
+/** A page file's content: the part of a {@link PageElement} the route meta leaves out. */
+export type GummyPageBody = { containers: Container[]; loads?: PageLoad[] };
+
+/**
  * One entry of an `AppShell` menu. The kind is read off the fields present:
  * a page link (`navigate`, active when its page — and any fixed `value`
  * params — match the current route), an external link (`href`), a group

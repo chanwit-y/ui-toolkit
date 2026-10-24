@@ -65,7 +65,8 @@ const CLI_SAVE_LABEL = { saved: 'saved to project', pending: 'saving…', error:
 function saveMessage(r: SaveResult): string {
   switch (r.mode) {
     case 'cli':
-      return `Saved ${r.files.length} files to ${r.where}`
+      // The CLI rewrites only what changed, so a file count would overstate it.
+      return `Saved to ${r.where}`
     case 'folder':
       return `Saved ${r.files.length} files to ${r.where}`
     case 'download':
@@ -78,7 +79,7 @@ function saveMessage(r: SaveResult): string {
 }
 
 /**
- * The Save to project button: writes `gummy/workspace.json` + `gummy/projects/<key>.json`
+ * The Save to project button: writes `gummy/workspace.json` + `gummy/projects/<key>/` (a downloaded copy: `<key>.json`)
  * where the consumer app reads them (see `cli/saveToProject.ts`). Under the
  * CLI it flushes the autosave; elsewhere it asks for the project folder once
  * (File System Access API), or downloads the files where no picker exists.

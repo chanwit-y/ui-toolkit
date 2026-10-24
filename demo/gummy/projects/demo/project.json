@@ -1,0 +1,202 @@
+{
+  "schemaVersion": 1,
+  "name": "Gummy demo",
+  "description": "A starter project: a countries list that opens a detail page loaded into page data. Written by the studio (gummy studio) and rendered at runtime by <GummyApp>.",
+  "env": {
+    "API_URL": ""
+  },
+  "model": {
+    "countryRes": {
+      "data": {
+        "type": "array",
+        "collection": {
+          "_id": "string",
+          "name": "string",
+          "code": "string",
+          "avatar": "any",
+          "updated_at": "string",
+          "updated_by_name": "string"
+        }
+      },
+      "status": "number",
+      "success": "boolean",
+      "message": "string"
+    },
+    "countryDetailRes": {
+      "data": {
+        "type": "object",
+        "collection": {
+          "_id": "string",
+          "name": "string",
+          "code": "string",
+          "avatar": "any",
+          "image": "string",
+          "updated_at": "string",
+          "updated_by_name": "string"
+        }
+      },
+      "status": "number",
+      "success": "boolean",
+      "message": "string"
+    },
+    "countryListBody": {
+      "collectionId": "string",
+      "offset": "number",
+      "limit": "number"
+    },
+    "countryParam": {
+      "id": "string"
+    },
+    "profileEmailQuery": {
+      "email": "string"
+    },
+    "profileRes": {
+      "data": {
+        "type": "object",
+        "collection": {
+          "personId": "string",
+          "userId": "string",
+          "firstNameEn": "string",
+          "lastNameEN": "string",
+          "email": "string",
+          "jobTitle": "string",
+          "jobStatus": "string",
+          "isPrimaryAssignment": "string",
+          "isAdmin": "boolean",
+          "avatar": "string",
+          "companyModel": {
+            "type": "object",
+            "collection": {
+              "code": "string",
+              "name": "string"
+            }
+          },
+          "businessUnitModel": {
+            "type": "object",
+            "collection": {
+              "code": "string",
+              "name": "string"
+            }
+          }
+        }
+      },
+      "status": "number",
+      "success": "boolean",
+      "message": "string"
+    }
+  },
+  "api": {
+    "countries": {
+      "url": "/collection/get-all",
+      "methods": "POST",
+      "description": "All countries",
+      "response": "countryRes",
+      "body": "countryListBody"
+    },
+    "countryDetail": {
+      "url": "/collection/detail/:id",
+      "methods": "GET",
+      "description": "One country by id",
+      "response": "countryDetailRes",
+      "parameter": "countryParam"
+    },
+    "profileByEmail": {
+      "url": "/collection/profiles/email",
+      "methods": "GET",
+      "response": "profileRes",
+      "query": "profileEmailQuery",
+      "description": "The signed-in user's profile by email (the Azure SSO profile fetch)"
+    }
+  },
+  "pages": {
+    "countries": {
+      "path": "/",
+      "title": "Countries",
+      "breadcrumb": false,
+      "src": "pages/countries.json"
+    },
+    "country": {
+      "path": "/countries/:id",
+      "parent": "countries",
+      "title": {
+        "type": "state",
+        "key": "country",
+        "path": "name"
+      },
+      "src": "pages/country.json"
+    }
+  },
+  "menu": [
+    {
+      "label": "Countries",
+      "icon": "globe",
+      "navigate": {
+        "page": "countries"
+      }
+    }
+  ],
+  "shell": {
+    "navigation": "sidebar",
+    "breadcrumbs": true,
+    "appBar": {
+      "title": "Gummy demo",
+      "icon": "globe"
+    }
+  },
+  "theme": {
+    "theme": {
+      "accentColor": "teal",
+      "radius": "medium"
+    },
+    "components": {
+      "button": {
+        "color": "teal"
+      }
+    }
+  },
+  "globalLoads": [],
+  "auth": {
+    "provider": "azure",
+    "profile": {
+      "api": {
+        "name": "profileByEmail",
+        "paths": [
+          "data"
+        ]
+      },
+      "emailParam": "email"
+    },
+    "screens": {
+      "landing": {
+        "message": "Sign in with your organisation account to open the demo."
+      }
+    }
+  },
+  "customActions": [
+    "greet"
+  ],
+  "customComponents": [
+    {
+      "name": "StatBadge",
+      "description": "A labelled pill showing the bound value.",
+      "props": [
+        {
+          "key": "label",
+          "kind": "text",
+          "label": "Label"
+        },
+        {
+          "key": "tone",
+          "kind": "select",
+          "label": "Tone",
+          "options": [
+            "accent",
+            "green",
+            "gray"
+          ],
+          "defaultValue": "gray"
+        }
+      ]
+    }
+  ]
+}

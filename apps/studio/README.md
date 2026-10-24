@@ -70,9 +70,9 @@ Open <http://localhost:3300>. The portal shows one seeded project, **Country man
 
 ### Where your work is saved
 
-Served by the `gummy studio` CLI (`@gummy-ui/cli`: `npx gummy studio` in your app's folder), everything is written to `gummy/` in that folder on every change: `workspace.json` is the studio's own state and `projects/<key>.json` is the runtime document each project renders through `<GummyApp>`. Commit that folder.
+Served by the `gummy studio` CLI (`@gummy-ui/cli`: `npx gummy studio` in your app's folder), everything is written to `gummy/` in that folder on every change: `workspace.json` is the studio's own state and `projects/<key>/` is the runtime document each project renders through `<GummyApp>` — `project.json` plus one `pages/<page>.json` per page, which the app loads on the page's first visit. Only the project you edit is re-serialized, only changed files are rewritten, and page files of deleted pages are removed. Commit that folder.
 
-Served any other way (the monorepo's `bun run studio`, a static host), the workspace lives in your browser's localStorage. The **Save to project** button in the topbar (the floppy icon beside the save status) writes the same files out: in Chrome or Edge it asks once for your app's folder (pick the project root or its `gummy/` folder) and writes `gummy/workspace.json` and `gummy/projects/*.json` into it — shift-click to pick another folder; in other browsers it downloads the files for you to drop into `gummy/`. Under the CLI the same button just flushes the pending autosave.
+Served any other way (the monorepo's `bun run studio`, a static host), the workspace lives in your browser's localStorage. The **Save to project** button in the topbar (the floppy icon beside the save status) writes the same files out: in Chrome or Edge it asks once for your app's folder (pick the project root or its `gummy/` folder) and writes `gummy/workspace.json` and `gummy/projects/<key>/` into it — shift-click to pick another folder; in other browsers it downloads `workspace.json` and a single-file `<key>.json` per project (every page inline — a browser can't download a folder; the starter renders both forms) for you to drop into `gummy/`. Under the CLI the same button just flushes the pending autosave.
 
 ### Troubleshooting
 
@@ -227,7 +227,7 @@ The network icon opens the **Overview**, a map of every page with the jumps betw
 
 ![The Overview](docs/images/overview.png)
 
-The download icon opens **Export**: the project document the engine renders, plus the stubs for the code only the app can supply. **Export to project** writes the whole bundle into your app's `gummy/` folder — `projects/<key>.json` where `<GummyApp>` reads it, `actions.ts` / `components.tsx` / `HANDOFF.md` beside it, never into `src/` — through the `gummy studio` CLI when the studio runs under it, else the folder picker (Chrome / Edge; shift-click to pick another folder) or downloads. **Download all** saves the files to your downloads folder instead.
+The download icon opens **Export**: the project document the engine renders, plus the stubs for the code only the app can supply. **Export to project** writes the whole bundle into your app's `gummy/` folder — `projects/<key>/` where `<GummyApp>` reads it, `actions.ts` / `components.tsx` / `HANDOFF.md` beside it, never into `src/` — through the `gummy studio` CLI when the studio runs under it, else the folder picker (Chrome / Edge; shift-click to pick another folder) or downloads. **Download all** saves the files to your downloads folder instead.
 
 ![The Export dialog](docs/images/export.png)
 

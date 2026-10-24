@@ -218,10 +218,13 @@ export function livePreviewProject(doc: GummyProject, wiring: LivePreviewWiring)
   const pages = Object.fromEntries(
     Object.entries(doc.pages).map(([key, page]) => [
       key,
-      {
-        ...page,
-        containers: page.containers.map((c) => toPreviewContainer(c as unknown as Record<string, unknown>, wiring) as unknown as typeof c),
-      },
+      // The studio builds every page inline; a split entry (none today) would pass through untouched.
+      page.containers
+        ? {
+            ...page,
+            containers: page.containers.map((c) => toPreviewContainer(c as unknown as Record<string, unknown>, wiring) as unknown as typeof c),
+          }
+        : page,
     ]),
   )
   const api = Object.fromEntries(Object.entries(doc.api).filter(([name]) => wiring.fetchableNames.has(name)))

@@ -43,7 +43,7 @@ export function ExportDialog({ project, onClose }: { project: ProjectDef; onClos
   }
 
   // "Export to project": the bundle into the app's gummy/ folder — the
-  // document where <GummyApp> reads it (projects/<key>.json, with every other
+  // document where <GummyApp> reads it (projects/<key>/ split into page files, with every other
   // project's), the stubs and HANDOFF beside it (never in src/, so they can't
   // overwrite the app's real code). Under the CLI that folder is the served
   // one; elsewhere the folder picker / downloads (see cli/saveToProject.ts).
@@ -70,8 +70,8 @@ export function ExportDialog({ project, onClose }: { project: ProjectDef; onClos
       else {
         setSaveMsg(
           r.mode === 'download'
-            ? `Downloaded ${r.files.length} files — drop them into your project's gummy/ folder`
-            : `Wrote ${r.files.length} files to ${r.where} (projects/${key}.json is what the app renders)`,
+            ? `Downloaded ${r.files.length} files — drop them into your project's gummy/ folder (projects/${key}.json is the single-file form)`
+            : `Wrote ${r.files.length} files to ${r.where} (projects/${key}/ is what the app renders)`,
         )
         logActivity('exported', 'project', project.name, `${r.files.length} files to ${r.where}`, project.id)
       }

@@ -16,19 +16,26 @@
  *
  *   GET  /__gummy/info            { dir, name, demo, version }
  *   GET  /__gummy/workspace       { revision, workspace | null }   — workspace.json
- *   PUT  /__gummy/workspace       { revision, workspace, projects } → { revision }
- *                                  409 when `revision` is not the file's current one
+ *   PUT  /__gummy/workspace       { revision, workspace, projectFolders } → { revision }
+ *                                  409 when `revision` is not the file's current one;
+ *                                  `projectFolders: { <key>: { project, pages } }` holds the
+ *                                  projects that changed (an older studio sends `projects`,
+ *                                  written as single files)
  *   PUT  /__gummy/files           { files: { "<relative path>": text } }  — written under ./gummy/ (the
  *                                  Export dialog's stubs and HANDOFF); plain path segments only
  *   GET  /__gummy/events          server-sent `changed` events when the file changes on disk
  *
  * The studio serialises everything in the browser; the CLI only stores files:
  * `workspace.json` (the studio's own state, migrated by the studio on load)
- * and `projects/<key>.json` (the runtime documents `<GummyApp>` renders).
+ * and `projects/<key>/` (the runtime documents `<GummyApp>` renders:
+ * `project.json` + one `pages/<page>.json` per page, loaded on first visit).
+ * A file whose content didn't change is not rewritten (no needless dev-server
+ * reload); page files the manifest no longer names are removed; a project
+ * folder or file is never deleted.
  * Node 18+, no dependencies, localhost only by default.
  */
 import { createHash } from 'node:crypto'
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, watch, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, unlinkSync, watch, writeFileSync } from 'node:fs'
 import { createServer } from 'node:http'
 import { createRequire } from 'node:module'
 import { basename, dirname, extname, join, resolve } from 'node:path'
@@ -69,7 +76,7 @@ function usage() {
   console.log(`gummy ${pkg.version}
 
 Usage:
-  gummy init [dir] [options]   scaffold a starter app that renders gummy/projects/*.json with <GummyApp>
+  gummy init [dir] [options]   scaffold a starter app that renders gummy/projects/<key>/ with <GummyApp>
   gummy studio [options]       serve the studio over ./gummy in the current folder
 
 init options:
@@ -189,11 +196,56 @@ function init(opts) {
   console.log(`
 Next:
   ${rel === '.' ? '' : `cd ${rel}\n  `}npm install
-  npm run dev        # the app at http://localhost:5173 (renders gummy/projects/${key}.json)
-  npm run studio     # the studio at http://127.0.0.1:3300 — every save rewrites gummy/projects/${key}.json`)
+  npm run dev        # the app at http://localhost:5173 (renders gummy/projects/${key}/)
+  npm run studio     # the studio at http://127.0.0.1:3300 — every save updates gummy/projects/${key}/`)
 }
 
 const hash = (text) => createHash('sha1').update(text).digest('hex').slice(0, 16)
+
+/** Write `text` unless the file already holds exactly that; true when it wrote. */
+function writeIfChanged(file, text) {
+  if (existsSync(file) && readFileSync(file, 'utf8') === text) return false
+  mkdirSync(dirname(file), { recursive: true })
+  writeFileSync(file, text)
+  return true
+}
+
+const PROJECT_KEY = /^[a-z0-9][a-z0-9-]*$/
+const PAGE_FILE = /^[A-Za-z0-9_-]+$/
+
+/**
+ * One project as a folder (see the grilled design `split-pages-lazy-load`):
+ * `projects/<key>/project.json` + `pages/<name>.json`, unchanged files left
+ * alone, page files the manifest no longer names removed. Returns the files
+ * written and removed (relative to `projectsDir`).
+ */
+function writeProjectFolder(projectsDir, key, folder) {
+  const out = { written: [], removed: [] }
+  if (!folder || typeof folder !== 'object' || !folder.project || typeof folder.project !== 'object') return out
+  const dir = join(projectsDir, key)
+  const pagesDir = join(dir, 'pages')
+  const pages = folder.pages && typeof folder.pages === 'object' ? folder.pages : {}
+  const keep = new Set()
+  for (const [name, body] of Object.entries(pages)) {
+    if (!PAGE_FILE.test(name)) continue
+    keep.add(`${name}.json`)
+    if (writeIfChanged(join(pagesDir, `${name}.json`), JSON.stringify(body, null, 2) + '\n')) out.written.push(`${key}/pages/${name}.json`)
+  }
+  // A page the manifest still points at but that came without a body (already split) is kept too.
+  for (const page of Object.values(folder.project.pages ?? {})) {
+    const m = typeof page?.src === 'string' ? /^pages\/([A-Za-z0-9_-]+\.json)$/.exec(page.src) : null
+    if (m) keep.add(m[1])
+  }
+  if (writeIfChanged(join(dir, 'project.json'), JSON.stringify(folder.project, null, 2) + '\n')) out.written.push(`${key}/project.json`)
+  if (existsSync(pagesDir)) {
+    for (const file of readdirSync(pagesDir)) {
+      if (!file.endsWith('.json') || keep.has(file)) continue
+      unlinkSync(join(pagesDir, file))
+      out.removed.push(`${key}/pages/${file}`)
+    }
+  }
+  return out
+}
 
 function readJson(req) {
   return new Promise((resolveBody, reject) => {
@@ -236,6 +288,7 @@ function studio(opts) {
   const diskRevision = () => (existsSync(workspaceFile) ? hash(readFileSync(workspaceFile, 'utf8')) : '')
   let lastWritten = diskRevision()
   const clients = new Set()
+  const warnedLegacy = new Set()
 
   // Pushes a `changed` event when someone else writes the file (a git pull,
   // an editor); our own writes update `lastWritten` first and are skipped.
@@ -281,12 +334,27 @@ function studio(opts) {
         const revision = hash(text)
         lastWritten = revision
         writeFileSync(workspaceFile, text)
-        const projects = body.projects && typeof body.projects === 'object' ? body.projects : {}
-        for (const [key, project] of Object.entries(projects)) {
-          if (!/^[a-z0-9][a-z0-9-]*$/.test(key)) continue
-          writeFileSync(join(projectsDir, `${key}.json`), JSON.stringify(project, null, 2) + '\n')
+        const folders = body.projectFolders && typeof body.projectFolders === 'object' ? body.projectFolders : {}
+        const written = []
+        const removed = []
+        for (const [key, folder] of Object.entries(folders)) {
+          if (!PROJECT_KEY.test(key)) continue
+          const r = writeProjectFolder(projectsDir, key, folder)
+          written.push(...r.written)
+          removed.push(...r.removed)
+          // The single file of an earlier version shadows nothing (the folder wins in the starter's picker), but it is stale.
+          if (existsSync(join(projectsDir, `${key}.json`)) && !warnedLegacy.has(key)) {
+            warnedLegacy.add(key)
+            console.log(`  note: ${opts.dir}/projects/${key}.json is superseded by ${opts.dir}/projects/${key}/ — delete it when you're ready.`)
+          }
         }
-        return send(res, 200, { revision, projects: Object.keys(projects) })
+        // An older studio build: one single-file document per project, as before.
+        const legacy = body.projects && typeof body.projects === 'object' ? body.projects : {}
+        for (const [key, project] of Object.entries(legacy)) {
+          if (!PROJECT_KEY.test(key)) continue
+          if (writeIfChanged(join(projectsDir, `${key}.json`), JSON.stringify(project, null, 2) + '\n')) written.push(`${key}.json`)
+        }
+        return send(res, 200, { revision, projects: [...Object.keys(folders), ...Object.keys(legacy)], written, removed })
       }
       if (path === '/__gummy/files' && req.method === 'PUT') {
         const body = await readJson(req)
@@ -333,7 +401,7 @@ function studio(opts) {
     const origin = `http://${opts.host === '0.0.0.0' ? 'localhost' : opts.host}:${opts.port}`
     console.log(`gummy studio ${pkg.version}`)
     console.log(`  workspace  ${workspaceFile}${existsSync(workspaceFile) ? '' : '  (new — starts with ' + (opts.demo ? 'the Country demo' : `an empty project "${name}"`) + ')'}`)
-    console.log(`  projects   ${projectsDir}/<key>.json`)
+    console.log(`  projects   ${projectsDir}/<key>/  (project.json + pages/*.json)`)
     console.log(`  studio     ${origin}`)
     if (opts.open) {
       const cmd = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open'

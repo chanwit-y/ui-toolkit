@@ -63,8 +63,9 @@ function pageButtons(
 
 /**
  * The hand-off bundle (see the grilled library / CLI design): the runtime
- * project document `<GummyApp>` renders — the same file `gummy studio`
- * writes to `gummy/projects/<key>.json` — plus the typed stubs for the
+ * project document `<GummyApp>` renders — single-file here (every page
+ * inline, `<key>.json`); `gummy studio` and Export to project write the same
+ * document split into `gummy/projects/<key>/` — plus the typed stubs for the
  * custom actions / components the app still has to code, and a README. No
  * generated TypeScript configs: the engine renders the JSON as is.
  */
@@ -93,19 +94,23 @@ export function buildExportFiles(
   lines.push(
     '## Run it',
     '',
-    `\`${key}.json\` is the whole app as data. Install \`@gummy-ui/ui\`, import its stylesheet, and render the document inside your router:`,
+    `The app is data. \`gummy studio\` (and Export to project) write it as the folder \`gummy/projects/${key}/\` — \`project.json\` with the routes, menu, models and endpoints, and one \`pages/<page>.json\` per page, loaded on its first visit so a large app starts with only what the first page needs. \`${key}.json\` in this bundle is the same project with every page inline; both render. Install \`@gummy-ui/ui\`, import its stylesheet, and render the document inside your router:`,
     '',
     '```tsx',
     'import { BrowserRouter } from "react-router-dom";',
-    'import { GummyApp } from "@gummy-ui/ui";',
+    'import { GummyApp, globPageLoader } from "@gummy-ui/ui";',
     'import "@gummy-ui/ui/styles.css";',
-    `import project from "./gummy/projects/${key}.json";`,
+    `import project from "./gummy/projects/${key}/project.json";`,
+    '',
+    '// Each page file becomes its own chunk, fetched on the first visit.',
+    `const loadPage = globPageLoader(import.meta.glob("./gummy/projects/*/pages/*.json", { import: "default" }), "./gummy/projects/${key}");`,
     ...(customActions.length ? ['import { actions } from "./actions";'] : []),
     ...(customComponents.length ? ['import { components } from "./components";'] : []),
     '',
     '<BrowserRouter>',
     '  <GummyApp',
     '    project={project}',
+    '    loadPage={loadPage}',
     ...(doc.auth ? [] : ['    getToken={async () => "<bearer token>"}']),
     '    env={{ API_URL: import.meta.env.VITE_API_URL }}',
     ...(customActions.length ? ['    actions={actions}'] : []),
@@ -114,7 +119,7 @@ export function buildExportFiles(
     '</BrowserRouter>',
     '```',
     '',
-    'With `@gummy-ui/studio` installed, `gummy studio` keeps this file in `gummy/projects/` on every save, so nothing here needs to be copied by hand.',
+    'With `@gummy-ui/studio` installed, `gummy studio` keeps `gummy/projects/` up to date on every save (only the pages that changed are rewritten, and page files of deleted pages are removed), so nothing here needs to be copied by hand. Without a bundler, serve `gummy/` statically and pass `projectUrl="/gummy/projects/' + key + '/"` instead of `loadPage`.',
     '',
     '## Pages',
     '',

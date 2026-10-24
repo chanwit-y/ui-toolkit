@@ -334,7 +334,7 @@ export function LivePreviewModal({ onClose }: { onClose: () => void }) {
     [apiUrl],
   )
 
-  // The runtime document — what the CLI writes to gummy/projects/<key>.json —
+  // The runtime document — what the CLI writes to gummy/projects/<key>/ (split into page files; inline here) —
   // built from the live pages (the template editor gets an empty snapshot),
   // then its unresolvable bindings swapped for placeholders and its `api`
   // reduced to what the engine can build.
