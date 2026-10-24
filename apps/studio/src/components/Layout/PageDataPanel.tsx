@@ -1,17 +1,22 @@
-import { Input, Select } from '../common'
+import { FieldPicker, Input, Select } from '../common'
 import { WiringHint } from './ButtonConfigPanel'
 import { useGridStore } from './gridStore'
 import { LoadFieldPicker, usePageLoads } from './pageData'
+import { useRepeaterScope } from './repeaterScope'
 import { isBlockedInRepeater } from './repeaterRules'
-import { createDataCondition, type DataCondition, type GridItemData } from './types'
+import { createDataCondition, ITEM_CONDITION_SOURCE, type DataCondition, type GridItemData } from './types'
 
-const TEST_OPTIONS: { value: DataCondition['test'] | 'always'; label: string }[] = [
+type TestOption = DataCondition['test'] | 'always' | 'item'
+
+const TEST_OPTIONS: { value: TestOption; label: string }[] = [
   { value: 'always', label: 'Always' },
   { value: 'loaded', label: 'When a load succeeded' },
   { value: 'loading', label: 'While a load is loading' },
   { value: 'failed', label: 'When a load failed' },
   { value: 'compare', label: 'When a field…' },
 ]
+/** Inside a repeater's template only: a field of the item being drawn. */
+const ITEM_OPTION: { value: TestOption; label: string } = { value: 'item', label: 'When this item’s field…' }
 const OP_OPTIONS: { value: DataCondition['op']; label: string }[] = [
   { value: 'eq', label: 'equals' },
   { value: 'neq', label: 'does not equal' },
@@ -28,18 +33,24 @@ const OP_OPTIONS: { value: DataCondition['op']; label: string }[] = [
  * a generic "Show when" over the page's loads — a load's status, or one of
  * its fields compared to a value (exported as a `source: "state"` engine
  * condition, combined with a table modal's adding / editing one) — and, on
- * form fields, the initial value read from a load. Renders nothing while the
- * page has no loads and the item carries no such wiring.
+ * form fields, the initial value read from a load. Inside a repeater's
+ * template the condition may instead compare a field of the item being drawn
+ * (`ITEM_CONDITION_SOURCE`, the engine's `{ key: "row" }`). Renders nothing
+ * while the page has no loads, the item sits in no repeater and carries no
+ * such wiring.
  */
 export function PageDataPanel({ item }: { item: GridItemData }) {
   const loads = usePageLoads()
+  const scope = useRepeaterScope()
   const update = useGridStore((s) => s.updateItemPageData)
   const when = item.dataWhen ?? null
   const initial = item.initialValue ?? null
   const isField = isBlockedInRepeater(item.type)
-  if (loads.length === 0 && !when && !initial) return null
+  if (loads.length === 0 && !scope && !when && !initial) return null
   const setWhen = (patch: Partial<DataCondition>) => when && update(item.id, { dataWhen: { ...when, ...patch } })
-  const dangling = (id: string) => id !== '' && !loads.some((l) => l.id === id)
+  const onItem = when?.loadId === ITEM_CONDITION_SOURCE
+  const dangling = (id: string) => id !== '' && id !== ITEM_CONDITION_SOURCE && !loads.some((l) => l.id === id)
+  const testOptions = scope || onItem ? [...TEST_OPTIONS, ITEM_OPTION] : TEST_OPTIONS
 
   return (
     <div className="mb-3 space-y-2 rounded-lg border border-line bg-panel p-2">
@@ -47,18 +58,31 @@ export function PageDataPanel({ item }: { item: GridItemData }) {
         <span className="text-ui-sm font-medium text-ink-2">Show when (page data)</span>
         <Select
           aria-label="Show when page data"
-          options={TEST_OPTIONS}
-          value={when ? when.test : 'always'}
-          onChange={(test) =>
-            update(item.id, {
-              dataWhen:
-                test === 'always'
-                  ? null
-                  : { ...(when ?? createDataCondition(loads[0]?.id ?? '')), test: test as DataCondition['test'] },
-            })
-          }
+          options={testOptions}
+          value={!when ? 'always' : onItem ? 'item' : when.test}
+          onChange={(test) => {
+            const next = test as TestOption
+            if (next === 'always') return update(item.id, { dataWhen: null })
+            if (next === 'item')
+              return update(item.id, { dataWhen: { ...createDataCondition(ITEM_CONDITION_SOURCE), test: 'compare', path: onItem ? (when?.path ?? '') : '' } })
+            // Back to a page load: an item condition's field means nothing there.
+            const base = !when || onItem ? createDataCondition(loads[0]?.id ?? '') : when
+            update(item.id, { dataWhen: { ...base, test: next } })
+          }}
         />
-        {when && (
+        {onItem && (
+          <div className="space-y-1">
+            <span className="text-ui-xs text-ink-3">Field of the repeater item</span>
+            <FieldPicker
+              aria-label="Item field"
+              fields={scope?.itemFields.fields ?? null}
+              fallbackHint={scope ? scope.itemFields.reason : undefined}
+              value={when.path}
+              onChange={(path) => setWhen({ path })}
+            />
+          </div>
+        )}
+        {when && !onItem && (
           <LoadFieldPicker
             label="Condition"
             loadId={when.loadId}
@@ -92,6 +116,9 @@ export function PageDataPanel({ item }: { item: GridItemData }) {
           </div>
         )}
         {when && dangling(when.loadId) && <WiringHint>The load this condition reads was deleted.</WiringHint>}
+        {onItem && !scope && (
+          <WiringHint>This condition reads the enclosing repeater’s item, but the item is no longer inside a repeater.</WiringHint>
+        )}
       </div>
 
       {isField && (

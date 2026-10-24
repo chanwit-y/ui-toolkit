@@ -17,19 +17,28 @@ import {
   useParams,
   useSearchParams,
 } from "react-router-dom";
-import type { AppBarConfig, MenuItem, NavigateTarget, TMenu, TPageMaster } from "./@types";
+import type { AppBarConfig, MenuItem, NavigateTarget, PageTransition, TMenu, TPageEntries } from "./@types";
+import { PageTransitionContext } from "./core/pageTransition";
+import { appBarStyle, appBarTone, type AppBarTone } from "./core/appBarStyle";
 import { useTheme } from "./context";
 import { Icon } from "./Icon";
 import { breadcrumbTrail, buildNavigateUrl, matchPage, PagesProvider, pathParamNames, usePageTitle } from "./core/pages";
 
 export type AppShellProps = {
   /** The same record `PageRouter` gets — menu items resolve their page keys against it. */
-  pages: TPageMaster;
+  pages: TPageEntries;
   menu: TMenu;
   /** Top-left of the top bar (logo / app name). Wins over `appBar`'s title/icon/logo. */
   brand?: ReactNode;
   /** The top bar as config: title, icon or logo, panel/accent variant, height. */
   appBar?: AppBarConfig;
+  /**
+   * Text (and icon) colour of the active sidebar / drawer menu item, any CSS
+   * colour, on its accent background. Default: the accent's contrast colour.
+   */
+  menuActiveColor?: string;
+  /** How a page enters on a pathname change — read by the `PageRouter` inside (which may override it). Default: none. */
+  pageTransition?: PageTransition;
   /**
    * Show the icons of menu items (sidebar, drawer and top strip). Default
    * `true`. With `false` the icon rail shows label initials instead.
@@ -79,7 +88,7 @@ const isExternal = (i: MenuItem): i is Extract<MenuItem, { href: string }> => "h
  * fixed (`value`) param equals the matched one. Params read from the URL or
  * state can't be compared statically and are treated as matching.
  */
-function isTargetActive(target: NavigateTarget, pages: TPageMaster, pathname: string): boolean {
+function isTargetActive(target: NavigateTarget, pages: TPageEntries, pathname: string): boolean {
   const page = pages[target.page];
   if (!page) return false;
   const m = matchPath({ path: page.path, end: true }, pathname);
@@ -90,7 +99,7 @@ function isTargetActive(target: NavigateTarget, pages: TPageMaster, pathname: st
   return true;
 }
 
-function containsActive(items: MenuItem[], pages: TPageMaster, pathname: string): boolean {
+function containsActive(items: MenuItem[], pages: TPageEntries, pathname: string): boolean {
   return items.some((i) =>
     isGroup(i)
       ? containsActive(i.items, pages, pathname)
@@ -117,10 +126,16 @@ function readCollapsed(): boolean {
 
 // Literal class strings (Tailwind only emits what it can scan). Surfaces use
 // Radix theme vars so they follow the accent and flip with appearance.
-const ITEM_BASE =
-  "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-[var(--gray-11)] no-underline transition-colors hover:bg-[var(--gray-3)] hover:text-[var(--gray-12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-8)]";
+// Idle and active colours are alternatives, never stacked: both `text-*`
+// utilities on one element resolve by their order in the compiled stylesheet,
+// not in the class list, and the grey won — the active label vanished into the
+// accent bar. The active text follows `menuActiveColor` (the
+// `--gummy-menu-active-fg` var the shell sets), else the accent's contrast.
+const ITEM_LAYOUT =
+  "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm no-underline transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-8)]";
+const ITEM_IDLE = "text-[var(--gray-11)] hover:bg-[var(--gray-3)] hover:text-[var(--gray-12)]";
 const ITEM_ACTIVE =
-  "bg-[var(--accent-9)] text-[var(--accent-contrast)] hover:bg-[var(--accent-10)] hover:text-[var(--accent-contrast)]";
+  "bg-[var(--accent-9)] text-[var(--gummy-menu-active-fg,var(--accent-contrast))] hover:bg-[var(--accent-10)] hover:text-[var(--gummy-menu-active-fg,var(--accent-contrast))]";
 const GROUP_HEADER =
   "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--gray-10)] hover:text-[var(--gray-12)]";
 const TOP_BUTTON =
@@ -133,12 +148,23 @@ const BAR_PANEL = "border-[var(--gray-6)] bg-[var(--color-panel-solid)]";
 const BAR_ACCENT = "border-[var(--accent-10)] bg-[var(--accent-9)] text-[var(--accent-contrast)]";
 const BAR_DIVIDER = "border-[var(--gray-6)]";
 const BAR_DIVIDER_ACCENT = "border-[var(--accent-contrast)] opacity-40";
+// `appBar.variant: "custom"` paints the bar with `background` / `gradient`;
+// its chrome reads the `--gummy-bar-*` vars `appBarStyle` sets (the text
+// colour and white- or black-alpha tints picked from its luminance).
+const TOP_BUTTON_CUSTOM =
+  "inline-flex h-8 w-8 items-center justify-center rounded-md text-[var(--gummy-bar-fg)] hover:bg-[var(--gummy-bar-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gummy-bar-fg)]";
+const BAR_CUSTOM = "border-[var(--gummy-bar-line)]";
+const BAR_DIVIDER_CUSTOM = "border-[var(--gummy-bar-fg)] opacity-40";
+
+const BAR_CLASS: Record<AppBarTone, string> = { panel: BAR_PANEL, accent: BAR_ACCENT, custom: BAR_CUSTOM };
+const TOP_BUTTON_CLASS: Record<AppBarTone, string> = { panel: TOP_BUTTON, accent: TOP_BUTTON_ACCENT, custom: TOP_BUTTON_CUSTOM };
+const BAR_DIVIDER_CLASS: Record<AppBarTone, string> = { panel: BAR_DIVIDER, accent: BAR_DIVIDER_ACCENT, custom: BAR_DIVIDER_CUSTOM };
 
 type ItemProps = {
   item: MenuItem;
   depth: number;
   rail: boolean;
-  pages: TPageMaster;
+  pages: TPageEntries;
   pathname: string;
   onNavigated: () => void;
 };
@@ -192,7 +218,7 @@ function MenuEntry({ item, depth, rail, pages, pathname, onNavigated }: ItemProp
         href={item.href}
         target={item.newTab ? "_blank" : undefined}
         rel={item.newTab ? "noopener noreferrer" : undefined}
-        className={`${ITEM_BASE} ${railClass}`}
+        className={`${ITEM_LAYOUT} ${ITEM_IDLE} ${railClass}`}
         style={indent}
         aria-label={rail ? item.label : undefined}
       >
@@ -212,7 +238,7 @@ function MenuEntry({ item, depth, rail, pages, pathname, onNavigated }: ItemProp
       aria-current={active ? "page" : undefined}
       aria-disabled={url ? undefined : true}
       aria-label={rail ? item.label : undefined}
-      className={`${ITEM_BASE} ${railClass} ${active ? ITEM_ACTIVE : ""} ${url ? "" : "opacity-50"}`}
+      className={`${ITEM_LAYOUT} ${active ? ITEM_ACTIVE : ITEM_IDLE} ${railClass} ${url ? "" : "opacity-50"}`}
       style={indent}
       onClick={(e) => {
         e.preventDefault();
@@ -270,7 +296,7 @@ function MenuGroup({ item, depth, rail, pages, pathname, onNavigated }: ItemProp
   );
 }
 
-function SidebarNav({ menu, pages, rail, onNavigated, footer }: { menu: TMenu; pages: TPageMaster; rail: boolean; onNavigated: () => void; footer?: ReactNode }) {
+function SidebarNav({ menu, pages, rail, onNavigated, footer }: { menu: TMenu; pages: TPageEntries; rail: boolean; onNavigated: () => void; footer?: ReactNode }) {
   const { pathname } = useLocation();
   const { components } = useTheme();
   const color = components.sidebar?.color;
@@ -298,27 +324,34 @@ function SidebarNav({ menu, pages, rail, onNavigated, footer }: { menu: TMenu; p
   );
 }
 
-const TOP_LINK =
-  "inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-sm text-[var(--gray-11)] no-underline transition-colors hover:bg-[var(--gray-3)] hover:text-[var(--gray-12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-8)]";
-const TOP_LINK_ACTIVE =
-  "bg-[var(--accent-3)] text-[var(--accent-11)] hover:bg-[var(--accent-4)] hover:text-[var(--accent-11)]";
-const TOP_LINK_ACCENT =
-  "inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-sm text-[var(--accent-contrast)] no-underline transition-colors hover:bg-[var(--accent-10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-contrast)]";
-const TOP_LINK_ACCENT_ACTIVE = "bg-[var(--accent-11)] font-semibold hover:bg-[var(--accent-11)]";
+// Like the sidebar: each class string is a whole state (layout + colours), the
+// active one used *instead of* the idle one, so their text colours never stack.
+const TOP_LINK_LAYOUT = "inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-sm no-underline transition-colors focus-visible:outline-none focus-visible:ring-2";
+const TOP_LINK = `${TOP_LINK_LAYOUT} text-[var(--gray-11)] hover:bg-[var(--gray-3)] hover:text-[var(--gray-12)] focus-visible:ring-[var(--accent-8)]`;
+const TOP_LINK_ACTIVE = `${TOP_LINK_LAYOUT} bg-[var(--accent-3)] text-[var(--accent-11)] hover:bg-[var(--accent-4)] hover:text-[var(--accent-11)] focus-visible:ring-[var(--accent-8)]`;
+const TOP_LINK_ACCENT = `${TOP_LINK_LAYOUT} text-[var(--accent-contrast)] hover:bg-[var(--accent-10)] focus-visible:ring-[var(--accent-contrast)]`;
+const TOP_LINK_ACCENT_ACTIVE = `${TOP_LINK_LAYOUT} bg-[var(--accent-11)] font-semibold text-[var(--accent-contrast)] hover:bg-[var(--accent-11)] focus-visible:ring-[var(--accent-contrast)]`;
+const TOP_LINK_CUSTOM = `${TOP_LINK_LAYOUT} text-[var(--gummy-bar-fg)] hover:bg-[var(--gummy-bar-hover)] focus-visible:ring-[var(--gummy-bar-fg)]`;
+const TOP_LINK_CUSTOM_ACTIVE = `${TOP_LINK_LAYOUT} bg-[var(--gummy-bar-active)] font-semibold text-[var(--gummy-bar-fg)] hover:bg-[var(--gummy-bar-active)] focus-visible:ring-[var(--gummy-bar-fg)]`;
+const TOP_LINK_CLASS: Record<AppBarTone, string> = { panel: TOP_LINK, accent: TOP_LINK_ACCENT, custom: TOP_LINK_CUSTOM };
+const TOP_LINK_ACTIVE_CLASS: Record<AppBarTone, string> = {
+  panel: TOP_LINK_ACTIVE,
+  accent: TOP_LINK_ACCENT_ACTIVE,
+  custom: TOP_LINK_CUSTOM_ACTIVE,
+};
 
-type TopEntryProps = { item: MenuItem; pages: TPageMaster; pathname: string; onAccent?: boolean };
+type TopEntryProps = { item: MenuItem; pages: TPageEntries; pathname: string; tone?: AppBarTone };
 
 /** One top-strip entry: link, external link, dropdown group or vertical divider. */
-function TopEntry({ item, pages, pathname, onAccent }: TopEntryProps) {
+function TopEntry({ item, pages, pathname, tone = "panel" }: TopEntryProps) {
   const showIcons = useContext(MenuIconsContext);
   const navigate = useNavigate();
   const params = useParams();
   const [searchParams] = useSearchParams();
-  const link = onAccent ? TOP_LINK_ACCENT : TOP_LINK;
-  const linkActive = onAccent ? TOP_LINK_ACCENT_ACTIVE : TOP_LINK_ACTIVE;
+  const link = TOP_LINK_CLASS[tone];
+  const linkActive = TOP_LINK_ACTIVE_CLASS[tone];
 
-  if (isDivider(item))
-    return <li role="separator" className={`mx-1 h-5 border-l ${onAccent ? BAR_DIVIDER_ACCENT : BAR_DIVIDER}`} />;
+  if (isDivider(item)) return <li role="separator" className={`mx-1 h-5 border-l ${BAR_DIVIDER_CLASS[tone]}`} />;
 
   const icon = showIcons && item.icon ? <Icon icon={item.icon} size={16} className="shrink-0" /> : null;
 
@@ -328,7 +361,7 @@ function TopEntry({ item, pages, pathname, onAccent }: TopEntryProps) {
       <li>
         <DropdownMenu.Root>
           <DropdownMenu.Trigger>
-            <button type="button" className={`${link} ${holdsActive ? linkActive : ""}`} aria-current={holdsActive ? "true" : undefined}>
+            <button type="button" className={holdsActive ? linkActive : link} aria-current={holdsActive ? "true" : undefined}>
               {icon}
               <span className="truncate">{item.label}</span>
               <Icon icon="chevronDown" size={14} className="shrink-0 opacity-70" />
@@ -369,7 +402,7 @@ function TopEntry({ item, pages, pathname, onAccent }: TopEntryProps) {
         href={url ?? "#"}
         aria-current={active ? "page" : undefined}
         aria-disabled={url ? undefined : true}
-        className={`${link} ${active ? linkActive : ""} ${url ? "" : "opacity-50"}`}
+        className={`${active ? linkActive : link} ${url ? "" : "opacity-50"}`}
         onClick={(e) => {
           e.preventDefault();
           if (url) navigate(url, { replace: !!item.navigate.replace });
@@ -433,16 +466,16 @@ function TopDropdownEntry({ item, pages, pathname }: TopEntryProps) {
 }
 
 /** The horizontal strip of `menu` in the top bar (`navigation="top"`), desktop only. */
-function TopNav({ menu, pages, onAccent }: { menu: TMenu; pages: TPageMaster; onAccent?: boolean }) {
+function TopNav({ menu, pages, tone }: { menu: TMenu; pages: TPageEntries; tone: AppBarTone }) {
   const { pathname } = useLocation();
   const { components } = useTheme();
-  // On an accent bar the strip must stay in the bar's own colour.
-  const color = onAccent ? undefined : components.sidebar?.color;
+  // On an accent or custom bar the strip must stay in the bar's own colour.
+  const color = tone === "panel" ? components.sidebar?.color : undefined;
   const nav = (
     <nav aria-label="Main" className="hidden min-w-0 flex-1 md:flex">
       <ul className="flex min-w-0 items-center gap-0.5 overflow-x-auto">
         {menu.map((item, i) => (
-          <TopEntry key={i} item={item} pages={pages} pathname={pathname} onAccent={onAccent} />
+          <TopEntry key={i} item={item} pages={pages} pathname={pathname} tone={tone} />
         ))}
       </ul>
     </nav>
@@ -464,7 +497,7 @@ function Crumb({
   current,
 }: {
   pageKey: string;
-  pages: TPageMaster;
+  pages: TPageEntries;
   /** The current route's params (the strip renders above the routed element, so `useParams()` is empty here). */
   params: Record<string, string | undefined>;
   current: boolean;
@@ -511,7 +544,7 @@ function Crumb({
  * nothing when no page matches, the page opts out (`breadcrumb: false`), or the
  * trail is empty.
  */
-function Breadcrumbs({ pages }: { pages: TPageMaster }) {
+function Breadcrumbs({ pages }: { pages: TPageEntries }) {
   const { pathname } = useLocation();
   const match = useMemo(() => matchPage(pages, pathname), [pages, pathname]);
   const key = match?.key ?? null;
@@ -536,7 +569,7 @@ function BrandMark({ bar }: { bar: AppBarConfig }) {
   return (
     <>
       {bar.logo ? (
-        <img src={bar.logo} alt="" className="h-6 w-6 shrink-0 rounded object-contain" />
+        <img src={bar.logo} alt="" className="w-auto shrink-0 rounded object-contain" style={{ height: bar.logoSize ?? "1.5rem" }} />
       ) : bar.icon ? (
         <Icon icon={bar.icon} size={20} className="shrink-0" />
       ) : null}
@@ -562,6 +595,8 @@ export function AppShell({
   menu,
   brand,
   appBar,
+  menuActiveColor,
+  pageTransition,
   menuIcons = true,
   header,
   footer,
@@ -602,15 +637,16 @@ export function AppShell({
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
 
   const bar = appBar ?? {};
-  const accentBar = bar.variant === "accent";
-  const topButton = accentBar ? TOP_BUTTON_ACCENT : TOP_BUTTON;
+  const tone = appBarTone(bar);
+  const accentBar = tone === "accent";
+  const topButton = TOP_BUTTON_CLASS[tone];
   const brandNode = brand ?? (bar.title || bar.icon || bar.logo ? <BrandMark bar={bar} /> : null);
-  const barStyle = useMemo<CSSProperties>(() => ({ height: bar.height ?? "3rem" }), [bar.height]);
+  const barStyle = useMemo<CSSProperties>(() => appBarStyle(bar), [bar]);
   const topBar = (
     <header
-      className={`flex shrink-0 items-center gap-2 border-b px-3 ${accentBar ? BAR_ACCENT : BAR_PANEL}`}
+      className={`flex shrink-0 items-center gap-2 border-b ${bar.padding ? "" : "px-3"} ${BAR_CLASS[tone]}`}
       style={barStyle}
-      data-variant={bar.variant ?? "panel"}
+      data-variant={tone}
     >
       <button
         type="button"
@@ -638,9 +674,9 @@ export function AppShell({
       {!sidebar && (
         <>
           {brandNode && (
-            <span className={`mx-1 hidden h-5 border-l md:block ${accentBar ? BAR_DIVIDER_ACCENT : BAR_DIVIDER}`} />
+            <span className={`mx-1 hidden h-5 border-l md:block ${BAR_DIVIDER_CLASS[tone]}`} />
           )}
-          <TopNav menu={menu} pages={pages} onAccent={accentBar} />
+          <TopNav menu={menu} pages={pages} tone={tone} />
         </>
       )}
       <div className="ml-auto flex shrink-0 items-center gap-2">{header}</div>
@@ -652,7 +688,7 @@ export function AppShell({
       <MenuIconsContext.Provider value={menuIcons}>
       <div
         className={`flex w-full flex-col bg-[var(--color-background)] text-[var(--gray-12)] ${className ?? ""}`}
-        style={{ height }}
+        style={{ height, ...(menuActiveColor ? ({ "--gummy-menu-active-fg": menuActiveColor } as CSSProperties) : {}) }}
       >
         {accentBar && bar.color ? (
           <Theme accentColor={bar.color} hasBackground={false} asChild>
@@ -673,7 +709,9 @@ export function AppShell({
               <SidebarNav menu={menu} pages={pages} rail={rail} onNavigated={closeDrawer} footer={footer} />
             </aside>
           )}
-          <main className="min-w-0 flex-1 overflow-auto">{children}</main>
+          <main className="min-w-0 flex-1 overflow-auto">
+            <PageTransitionContext.Provider value={pageTransition}>{children}</PageTransitionContext.Provider>
+          </main>
         </div>
 
         {drawerOpen && (

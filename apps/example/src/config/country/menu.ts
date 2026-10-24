@@ -31,6 +31,7 @@ export const menu: TMenu = [
     navigate: { page: "approvalLineDemo", params: { id: { type: "value", key: "none", value: "req-1001" } } },
   },
   { label: "Profile", icon: "userCog", navigate: { page: "profileDemo" } },
+  { label: "Auth", icon: "shieldCheck", navigate: { page: "authDemo" } },
   {
     label: "Workflow editor",
     icon: "gitBranch",

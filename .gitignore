@@ -10,8 +10,11 @@ coverage/
 *.log
 
 # The demo starter's own studio session: workspace + exported projects stay local.
-# Only the shipped sample (demo/gummy/projects/demo.json) is tracked.
+# The Book shop demo's studio workspace and its exported project are tracked;
+# anything else a local studio session writes there (other projects, HANDOFF,
+# the .local-backup of an earlier session) is not.
 demo/gummy/*
+!demo/gummy/workspace.json
 !demo/gummy/projects/
 demo/gummy/projects/*
-!demo/gummy/projects/demo.json
+!demo/gummy/projects/book-shop/

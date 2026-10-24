@@ -25,7 +25,8 @@ const ConfirmBox = forwardRef<HTMLDivElement, ConfirmBoxProps>(
 	) => {
 		const theme = useTheme()
 
-		const buttonColor = useMemo(() => (theme.components.button?.color as ThemeProps["accentColor"]) || "blue", [])
+		// The theme's button colour, else the accent (Radix's default when unset).
+		const buttonColor = useMemo(() => (theme.components.button?.color as ThemeProps["accentColor"]) || undefined, [])
 
 		const confirmButtonStyle = useMemo<CSSProperties>(() => {
 			return {

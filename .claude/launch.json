@@ -63,13 +63,35 @@
     },
     {
       "name": "demo",
-      "comment": "The consumer starter in demo/ (GummyApp over gummy/projects/demo.json), port 3400. Needs the api server and a built packages/ui.",
+      "comment": "The demo app (GummyApp over gummy/projects/book-shop/), port 3400. Needs demo-api and a built packages/ui.",
       "runtimeExecutable": "/bin/bash",
       "runtimeArgs": [
         "-c",
-        "PATH=/opt/homebrew/bin:$PATH exec bun run --cwd demo dev"
+        "PATH=/opt/homebrew/bin:$PATH exec bun run --cwd demo app"
       ],
       "port": 3400
+    },
+    {
+      "name": "demo-api",
+      "comment": "The Book shop mock API (demo/api, Hono on Bun), port 9100.",
+      "runtimeExecutable": "/bin/bash",
+      "runtimeArgs": [
+        "-c",
+        "exec bun run --cwd demo api"
+      ],
+      "port": 9100,
+      "autoPort": false
+    },
+    {
+      "name": "demo-studio",
+      "comment": "`gummy studio` over demo/gummy (the Book shop workspace), port 3398 \u2014 edits rewrite demo/gummy/projects/book-shop/.",
+      "runtimeExecutable": "/bin/bash",
+      "runtimeArgs": [
+        "-c",
+        "cd demo && exec /opt/homebrew/bin/node ../apps/cli/bin/gummy.mjs studio --port 3398"
+      ],
+      "port": 3398,
+      "autoPort": false
     }
   ]
 }

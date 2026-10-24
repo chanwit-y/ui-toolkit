@@ -45,13 +45,13 @@ async function boot() {
   ])
 
   if (cli) {
-    setDeriveProjects(runtime.runtimeProjectsFromPayload)
+    setDeriveProjects(runtime.createProjectFolderDeriver())
     // A fresh folder: one empty project named after the consumer package
     // (the Country demo seeds only on `--demo`).
     if (cli.workspace === null) {
       if (!cli.info.demo) store.useWorkspaceStore.getState().resetWorkspace(cli.info.name)
       // Write the files at once (persist only saves on a change), so the app
-      // has `projects/<key>.json` to import before anything is edited.
+      // has `projects/<key>/project.json` to import before anything is edited.
       else store.useWorkspaceStore.setState({})
     }
   }

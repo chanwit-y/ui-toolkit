@@ -4,6 +4,7 @@ import { FieldPicker, Input, Select, type PickableField } from '../common'
 import type { ModelField } from '../Model/types'
 import { loadShape, type LoadShape, type PageLoadDef } from '../Workspace/pageLoads'
 import { useActivePage, useActiveProject, useWorkspaceStore } from '../Workspace/workspaceStore'
+import { authProfileLoad, type AuthDef } from '../Workspace/auth'
 
 const NO_LOADS: PageLoadDef[] = []
 
@@ -25,7 +26,28 @@ export function useGlobalLoads(): PageLoadDef[] {
 export function usePageLoads(): PageLoadDef[] {
   const own = useOwnPageLoads()
   const global = useGlobalLoads()
-  return useMemo(() => (global.length ? [...own, ...global] : own), [own, global])
+  const auth = useAuthProfileLoad()
+  return useMemo(() => {
+    const list = global.length ? [...own, ...global] : own
+    return auth ? [...list, auth] : list
+  }, [own, global, auth])
+}
+
+/** The shared auth entry the active project signs in with (null = none / deleted). */
+export function useProjectAuth(): AuthDef | null {
+  const authId = useActiveProject()?.snapshot.authId ?? null
+  const entries = useWorkspaceStore((s) => s.library.auth)
+  return useMemo(() => (authId ? (entries ?? []).find((a) => a.id === authId) ?? null : null), [authId, entries])
+}
+
+/**
+ * The sign-in's profile fetch as a read-only pseudo-load (see the grilled
+ * design `azure-sso-auth`): the signed-in profile lands in its slice without
+ * a page load, so bindings pick it here like a global one.
+ */
+export function useAuthProfileLoad(): PageLoadDef | null {
+  const auth = useProjectAuth()
+  return useMemo(() => authProfileLoad(auth ?? undefined), [auth])
 }
 
 /** Replace the project's global loads. */

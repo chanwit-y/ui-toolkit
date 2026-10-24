@@ -315,6 +315,7 @@ export const model: TModelMaster = {
     success: "boolean",
     message: "string",
   },
+  profileEmailQuery: { email: "string" },
   profileSearchQuery: { search: "string" },
   profilePersonParams: { personId: "string" },
   profilePersonQuery: { exceptJobStatus: "string" },

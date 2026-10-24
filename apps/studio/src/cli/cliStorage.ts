@@ -6,7 +6,8 @@ import type { StateStorage } from 'zustand/middleware'
  *
  * Served by the `gummy studio` CLI, the studio keeps `./gummy/workspace.json`
  * on disk through the CLI's file API (`/__gummy/…`) instead of localStorage,
- * and writes every project's runtime document to `./gummy/projects/<key>.json`
+ * and writes each changed project's runtime document as the folder
+ * `./gummy/projects/<key>/` (`project.json` + `pages/*.json`)
  * beside it. Served any other way (the monorepo's `vite` dev server, a static
  * host) nothing answers under `/__gummy/`, and the workspace stays in
  * localStorage as before.
@@ -43,7 +44,9 @@ let status: CliStatus = 'saved'
 let dirty = false
 let inFlight = false
 let timer: ReturnType<typeof setTimeout> | null = null
-let deriveProjects: ((payload: string) => Record<string, unknown>) | null = null
+/** The derived project folders of one save, and the hook that marks them written. */
+export type DerivedProjects = { projectFolders: Record<string, unknown>; commit: () => void }
+let deriveProjects: ((payload: string) => DerivedProjects) | null = null
 const listeners = new Set<Listener>()
 
 const SAVE_DEBOUNCE_MS = 500
@@ -89,7 +92,7 @@ export function installCli(next: CliInfo, loaded: { revision: string; workspace:
  * documents written beside the workspace. Registered after the app is
  * imported (it needs the serializers, which need the stores).
  */
-export function setDeriveProjects(fn: (payload: string) => Record<string, unknown>) {
+export function setDeriveProjects(fn: (payload: string) => DerivedProjects) {
   deriveProjects = fn
 }
 
@@ -107,9 +110,11 @@ async function flush() {
   inFlight = true
   setStatus('saving')
   try {
-    let projects: Record<string, unknown> = {}
+    // Only the projects changed since the last write (the deriver tracks it), as folders —
+    // `projectFolders`, a field an older CLI ignores rather than writing a folder payload into `<key>.json`.
+    let derived: DerivedProjects = { projectFolders: {}, commit: () => {} }
     try {
-      projects = deriveProjects ? deriveProjects(cache) : {}
+      if (deriveProjects) derived = deriveProjects(cache)
     } catch (err) {
       // A serializer bug must not lose the workspace itself: save it, skip the projects.
       console.error('[gummy studio] could not derive the runtime projects:', err)
@@ -117,7 +122,7 @@ async function flush() {
     const res = await fetch(`${WORKSPACE_API}/workspace`, {
       method: 'PUT',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ revision, workspace: JSON.parse(cache), projects }),
+      body: JSON.stringify({ revision, workspace: JSON.parse(cache), projectFolders: derived.projectFolders }),
     })
     if (res.status === 409) {
       setStatus('stale')
@@ -126,6 +131,7 @@ async function flush() {
     if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
     const body = (await res.json()) as { revision: string }
     revision = body.revision
+    derived.commit()
     setStatus('saved')
   } catch (err) {
     console.error('[gummy studio] could not save the workspace:', err)

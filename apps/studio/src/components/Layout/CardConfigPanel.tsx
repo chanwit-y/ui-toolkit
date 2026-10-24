@@ -4,6 +4,7 @@ import { IconButton, IconPicker, Input, SegmentedControl, SortableCardList } fro
 import { NavigateEditor } from './ButtonConfigPanel'
 import { EditContentsButton } from './ContainerHostConfigPanel'
 import { useGridStore } from './gridStore'
+import { ColorField } from '../Theme/ThemeEditor'
 import { ItemBindingField } from './ItemBindingField'
 import { useRepeaterScope } from './repeaterScope'
 import { IMAGE_KINDS, TEXT_KINDS } from './rowFields'
@@ -93,6 +94,7 @@ function CardActionFields({
         onChange={(v) => patch({ variant: v as ButtonVariant })}
         aria-label="Variant"
       />
+      <ColorField label="Color" value={action.color ?? ''} onChange={(color) => patch({ color })} unsetLabel="Theme (button colour, else accent)" />
       <Toggle
         label="Go to a page"
         checked={!!action.navigate}

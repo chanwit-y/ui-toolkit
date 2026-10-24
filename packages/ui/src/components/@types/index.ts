@@ -375,6 +375,13 @@ export type AutocompleteProps2<T extends Record<string, any> = {}> =
       // apiCanSearch?: boolean;
       api?: APIFunction;
       apiInfo?: API;
+      /**
+       * Which of (query, URL params, body) the endpoint declares — the order
+       * its built caller takes them in. Set by the engine's builder; without it
+       * the call falls back to `(query, params)`, which mis-slots the params of
+       * an endpoint that declares no query.
+       */
+      apiSegments?: ApiSegments;
       // enabledWhen?: ConditionTerm;
       enabledWhen?: CondExpression;
       isSingleLoad?: boolean;
@@ -415,6 +422,8 @@ export type MultiAutocompleteProps<T extends Record<string, any> = {}> =
       observeTo?: string;
       api?: APIFunction;
       apiInfo?: API;
+      /** See `AutocompleteProps2.apiSegments`. */
+      apiSegments?: ApiSegments;
       enabledWhen?: CondExpression;
       maxSelections?: number;
       showSelectedCount?: boolean;
@@ -1963,6 +1972,10 @@ export type ButtonAction =
   | "CloseModal"
   /** Go to the page named by the element's `navigate` target (see {@link NavigateTarget}). */
   | "Navigate"
+  /** Azure SSO (see `AzureAuth`): start the sign-in / sign out. Warn and skip without a mounted provider. */
+  | "SignIn"
+  | "SignOut"
+| "Navigate"
   /**
    * A consumer-coded function, by registry name (see {@link CustomActionName}):
    * `"fn:increase"` calls `actions.increase(ctx)` from the enclosing
@@ -2015,10 +2028,23 @@ export type ActionContext = {
   startLoading: () => string;
   stopLoading: (id: string) => void;
   navigate: (target: NavigateTarget) => void;
+  /** The mounted Azure SSO (`AzureAuth` / `GummyApp` with `project.auth`), `undefined` without one. */
+  auth?: AuthActionContext;
   /** The button's config, as authored. */
   element: Pick<ButtonElement, "label" | "actions" | "modalId" | "reloadDataTable" | "navigate" | "confirmBox">;
   /** The click that started the chain, when there was one (a confirm branch has none). */
   event?: ReactMouseEvent<HTMLButtonElement>;
+};
+
+/** What a custom action gets of the signed-in session (see `AzureAuth`). */
+export type AuthActionContext = {
+  status: "signedOut" | "signingIn" | "signedIn" | "denied";
+  email?: string;
+  name?: string;
+  signIn: () => Promise<void>;
+  signOut: () => Promise<void>;
+  /** The bearer token for the configured API scope (`""` in mock mode). */
+  getToken: () => Promise<string>;
 };
 
 /** One consumer-coded button action. `false` ends the action chain. */
@@ -2077,6 +2103,27 @@ export type PageElement = {
 export type TPageMaster = { [K: string]: PageElement };
 
 /**
+ * A page as a project document lists it (see the grilled design
+ * `split-pages-lazy-load`): the route meta, and either the body inline
+ * (`containers` / `loads`, a {@link PageElement}) or `src`, the page file the
+ * body is loaded from on the first visit (`PageRouter`'s `loadPage`). Anything
+ * that only routes — the shell, the menu, breadcrumbs, `Navigate` — reads the
+ * meta and takes either kind.
+ */
+export type PageEntry = Omit<PageElement, "containers" | "loads"> & {
+  containers?: Container[];
+  loads?: PageLoad[];
+  /** The page body file, relative to the project document (`pages/<key>.json`). */
+  src?: string;
+};
+
+/** Pages as a project lists them: inline, split into page files, or a mix. A {@link TPageMaster} is one. */
+export type TPageEntries = { [K: string]: PageEntry };
+
+/** A page file's content: the part of a {@link PageElement} the route meta leaves out. */
+export type GummyPageBody = { containers: Container[]; loads?: PageLoad[] };
+
+/**
  * One entry of an `AppShell` menu. The kind is read off the fields present:
  * a page link (`navigate`, active when its page — and any fixed `value`
  * params — match the current route), an external link (`href`), a group
@@ -2091,6 +2138,22 @@ export type MenuItem =
 /** The sidebar menu `AppShell` renders, top to bottom. */
 export type TMenu = MenuItem[];
 
+/** The enter animations a page change can play (see {@link PageTransition}). */
+export type PageTransitionType = "none" | "fade" | "fade-up" | "slide" | "scale";
+
+/**
+ * How a page enters when the route's pathname changes (see the grilled design
+ * `page-transition`): enter-only, transform / opacity, replayed on the page's
+ * wrapper without remounting it, off under `prefers-reduced-motion`.
+ */
+export type PageTransition = {
+  type: PageTransitionType;
+  /** Milliseconds. Default 250. */
+  duration?: number;
+  /** Default `ease-out`. */
+  easing?: "ease-out" | "ease-in-out" | "linear";
+};
+
 /**
  * The `AppShell` top bar, as plain config (so a studio export can author it).
  * `brand` on the shell, when given, replaces the title/icon/logo mark.
@@ -2100,12 +2163,33 @@ export type AppBarConfig = {
   title?: string;
   /** Glyph before the title (`IconData` key). */
   icon?: keyof typeof IconData;
-  /** Logo image URL before the title (wins over `icon`). */
+  /** Logo image URL (or a `data:` URL of an uploaded image) before the title (wins over `icon`). */
   logo?: string;
-  /** `"panel"` (default): the neutral panel surface. `"accent"`: painted in the accent colour. */
-  variant?: "panel" | "accent";
+  /** CSS height of the logo image; the width follows its aspect ratio. Default `1.5rem`. */
+  logoSize?: string;
+  /**
+   * `"panel"` (default): the neutral panel surface. `"accent"`: painted in the
+   * accent colour. `"custom"`: painted with `background` / `gradient`, text in
+   * `foreground` (implied when either is set and `variant` is absent).
+   */
+  variant?: "panel" | "accent" | "custom";
   /** Accent for `variant: "accent"`. Unset → the theme accent. */
   color?: ThemeProps["accentColor"];
+  /** Any CSS colour painting a `custom` bar (`#0f766e`, `rgb(…)`, `var(--teal-9)`). */
+  background?: string;
+  /**
+   * A linear gradient painting a `custom` bar (wins over `background`):
+   * `from` → `to` at `angle` degrees (default `90`, left to right).
+   */
+  gradient?: { from: string; to: string; angle?: number };
+  /**
+   * Text / icon colour on a `custom` bar: `"light"` (white), `"dark"` (near
+   * black) or any CSS colour. Default: chosen from the luminance of
+   * `background` / `gradient.from` when it is a hex / rgb value, else light.
+   */
+  foreground?: "light" | "dark" | (string & {});
+  /** CSS padding of the bar (the inset of its content). Default `0 0.75rem`. */
+  padding?: string;
   /** CSS height. Default `3rem`. */
   height?: string;
   /**
@@ -2125,6 +2209,8 @@ export type ButtonElement = {
   icon?: keyof typeof IconData;
   /** Visual weight: "contained" (default), "outlined" or "text". */
   variant?: ButtonVariant;
+  /** A Radix colour for this button. Unset: the theme's button colour, else the theme accent. */
+  color?: ThemeProps["accentColor"];
   confirmBox?: ConfirmBoxElement;
   reloadDataTable?: string;
   actions: ButtonAction[];

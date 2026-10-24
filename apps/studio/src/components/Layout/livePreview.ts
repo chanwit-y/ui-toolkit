@@ -218,14 +218,22 @@ export function livePreviewProject(doc: GummyProject, wiring: LivePreviewWiring)
   const pages = Object.fromEntries(
     Object.entries(doc.pages).map(([key, page]) => [
       key,
-      {
-        ...page,
-        containers: page.containers.map((c) => toPreviewContainer(c as unknown as Record<string, unknown>, wiring) as unknown as typeof c),
-      },
+      // The studio builds every page inline; a split entry (none today) would pass through untouched.
+      page.containers
+        ? {
+            ...page,
+            containers: page.containers.map((c) => toPreviewContainer(c as unknown as Record<string, unknown>, wiring) as unknown as typeof c),
+          }
+        : page,
     ]),
   )
   const api = Object.fromEntries(Object.entries(doc.api).filter(([name]) => wiring.fetchableNames.has(name)))
-  return { ...doc, pages, api }
+  // A sign-in whose profile endpoint can't be built keeps the gate but skips the fetch (signed-in is enough).
+  const auth =
+    doc.auth?.profile && !wiring.fetchableNames.has(doc.auth.profile.api.name)
+      ? (({ profile: _profile, ...rest }) => rest)(doc.auth)
+      : doc.auth
+  return { ...doc, pages, api, ...(auth ? { auth } : {}) }
 }
 
 /**

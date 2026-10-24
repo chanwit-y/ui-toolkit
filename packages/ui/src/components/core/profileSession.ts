@@ -429,3 +429,21 @@ export function useDebouncedValue<T>(value: T, delay: number): T {
   }, [value, delay]);
   return debounced;
 }
+
+/**
+ * Forget everything of one `stateKey`'s profile session — the active /
+ * original / list slices, the persisted impersonation and the remembered
+ * switch, the coordination store — before a sign-out, so the next account
+ * starts clean.
+ */
+export function clearProfileSession(stateKey: string = DEFAULT_PROFILE_STATE_KEY): void {
+  getStateStore(stateKey).getState().clear();
+  getStateStore(originalStateKey(stateKey)).getState().clear();
+  getStateStore(listStateKey(stateKey)).getState().clear();
+  clearImpersonation(stateKey);
+  writeItem(local, switchedKey(stateKey), null);
+  const session = sessions.get(stateKey);
+  if (session) {
+    session.setState({ pending: false, reconciledPersonId: null, restoreClaimed: false, lists: {}, listErrors: {} });
+  }
+}

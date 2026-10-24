@@ -4,8 +4,8 @@ import { isPrimaryValue, normalizeProfile, parseImpersonationRecord, pickDefault
 const banpu = {
   personId: "p-1",
   userId: "u-1",
-  firstNameEn: "Kavisara",
-  lastNameEN: "Thisakobsuk",
+  firstNameEn: "Chanwit",
+  lastNameEN: "Yimneam",
   jobTitle: "Section Manager - Application Development",
   companyModel: { name: "Banpu Public Company Limited" },
   businessUnitModel: { name: "Digital" },
@@ -17,7 +17,7 @@ describe("normalizeProfile", () => {
     const p = normalizeProfile(banpu);
     expect(p.personId).toBe("p-1");
     expect(p.userId).toBe("u-1");
-    expect(p.name).toBe("Kavisara Thisakobsuk");
+    expect(p.name).toBe("Chanwit Yimneam");
     expect(p.jobTitle).toBe(banpu.jobTitle);
     expect(p.company).toBe("Banpu Public Company Limited");
     expect(p.department).toBe("Digital");

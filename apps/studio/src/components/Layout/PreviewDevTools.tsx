@@ -1,6 +1,7 @@
 import {
   getStateStore,
   loadingModeOf,
+  mountedAuth,
   stateStoreKeys,
   useEngineDebugStore,
   useStord,
@@ -52,8 +53,54 @@ const TABS = [
   { value: 'stores', label: 'Stores' },
   { value: 'api', label: 'API' },
   { value: 'actions', label: 'Actions' },
+  { value: 'auth', label: 'Auth' },
   { value: 'config', label: 'Config' },
 ]
+
+/** What the Auth tab needs of the previewed document's `auth` block. */
+export type AuthDevInfo = { profileKey: string; hasProfile: boolean }
+
+/**
+ * The sign-in state (see the grilled design `azure-sso-auth`): the mock
+ * account from the `auth` slice, the profile slice's status, and three
+ * buttons forcing the landing / loading-free app / denied screens through the
+ * mounted provider's mock-mode `force`.
+ */
+function AuthTab({ info }: { info: AuthDevInfo | null }) {
+  useStateSlicesVersion()
+  const [, bump] = useReducer((x: number) => x + 1, 0)
+  if (!info) return <p className="p-2 text-ui-sm text-ink-3">No sign-in on this project — pick an Azure SSO entry on the Env page.</p>
+  const auth = getStateStore('auth').getState().data as { status?: string; email?: string; name?: string } | undefined
+  const profile = getStateStore(info.profileKey).getState()
+  const force = (state: 'signedOut' | 'signedIn' | 'denied' | null) => {
+    mountedAuth()?.force?.(state)
+    bump()
+  }
+  return (
+    <div className="space-y-3 p-1">
+      <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 font-mono text-ui-sm">
+        <dt className="text-ink-3">status</dt>
+        <dd className={auth?.status === 'signedIn' ? 'text-ok' : auth?.status === 'denied' ? 'text-danger' : 'text-ink'}>{auth?.status ?? '—'}</dd>
+        <dt className="text-ink-3">email</dt>
+        <dd className="truncate text-ink">{auth?.email ?? '—'}</dd>
+        <dt className="text-ink-3">name</dt>
+        <dd className="truncate text-ink">{auth?.name ?? '—'}</dd>
+        <dt className="text-ink-3">{info.profileKey}</dt>
+        <dd className={STATUS_CLASS[profile.status] ?? 'text-ink-3'}>{info.hasProfile ? profile.status : 'no profile fetch'}</dd>
+      </dl>
+      <p className="text-ui-sm text-ink-3">The studio user is signed in without Microsoft (mock mode); the profile fetch runs for real. Force a screen:</p>
+      <div className="flex flex-wrap gap-1.5">
+        <button type="button" className="btn" onClick={() => force('signedOut')}>Signed out</button>
+        <button type="button" className="btn" onClick={() => force('signedIn')}>Signed in</button>
+        <button type="button" className="btn" onClick={() => force('denied')}>Denied</button>
+        <button type="button" className="btn" onClick={() => force(null)}>Real state</button>
+      </div>
+      {profile.status !== 'idle' && (
+        <JsonBlock id="auth-profile" label={`${info.profileKey} data`} value={profile.data} />
+      )}
+    </div>
+  )
+}
 
 /** JSON.stringify that survives circular refs, Files, and functions. */
 function safeJson(value: unknown): string {
@@ -361,11 +408,13 @@ export function PreviewDevTools({
   log,
   actionLog,
   configJson,
+  auth,
   onClose,
 }: {
   log: ApiLogEntry[]
   actionLog: ActionLogEntry[]
   configJson: string
+  auth: AuthDevInfo | null
   onClose: () => void
 }) {
   const [tab, setTab] = useState('form')
@@ -401,6 +450,7 @@ export function PreviewDevTools({
         {tab === 'stores' && <StoresTab />}
         {tab === 'api' && <ApiTab log={log} />}
         {tab === 'actions' && <ActionsTab log={actionLog} />}
+        {tab === 'auth' && <AuthTab info={auth} />}
         {tab === 'config' && (
           <JsonBlock id="config" label="bins JSON" value={JSON.parse(configJson)} />
         )}

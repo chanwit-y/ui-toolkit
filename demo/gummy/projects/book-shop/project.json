@@ -1,0 +1,1083 @@
+{
+  "schemaVersion": 1,
+  "name": "Book shop",
+  "description": "Gummy Books — a staff back office for a book shop, designed in the studio and rendered from JSON by the demo app.",
+  "env": {
+    "API_URL": "http://localhost:9100",
+    "AZURE_TENANT_ID": "",
+    "AZURE_CLIENT_ID": "",
+    "AZURE_REDIRECT_URL": "",
+    "AZURE_API_SCOPE": ""
+  },
+  "model": {
+    "genreListRes": {
+      "data": {
+        "type": "array",
+        "collection": {
+          "_id": "string",
+          "name": "string",
+          "color": "string"
+        }
+      },
+      "total": "number"
+    },
+    "authorListRes": {
+      "data": {
+        "type": "array",
+        "collection": {
+          "_id": "string",
+          "name": "string",
+          "country": "string",
+          "born": "number",
+          "bio": "string",
+          "avatar": "string",
+          "bookCount": "number"
+        }
+      },
+      "total": "number"
+    },
+    "authorDetailRes": {
+      "data": {
+        "type": "object",
+        "collection": {
+          "_id": "string",
+          "name": "string",
+          "country": "string",
+          "born": "number",
+          "bio": "string",
+          "avatar": "string",
+          "bookCount": "number",
+          "books": {
+            "type": "array",
+            "collection": {
+              "_id": "string",
+              "title": "string",
+              "isbn": "string",
+              "authorId": "string",
+              "authorName": "string",
+              "genreId": "string",
+              "genreName": "string",
+              "genreColor": "string",
+              "price": "number",
+              "priceText": "string",
+              "stock": "number",
+              "publishedAt": "string",
+              "pages": "number",
+              "cover": "string",
+              "description": "string",
+              "featured": "boolean",
+              "rating": "number",
+              "reviewCount": "number",
+              "updatedAt": "string",
+              "publishedAtText": "string"
+            }
+          }
+        }
+      }
+    },
+    "authorQuery": {
+      "genre": "string",
+      "search": "string"
+    },
+    "bookListRes": {
+      "data": {
+        "type": "array",
+        "collection": {
+          "_id": "string",
+          "title": "string",
+          "isbn": "string",
+          "authorId": "string",
+          "authorName": "string",
+          "genreId": "string",
+          "genreName": "string",
+          "genreColor": "string",
+          "price": "number",
+          "priceText": "string",
+          "stock": "number",
+          "publishedAt": "string",
+          "pages": "number",
+          "cover": "string",
+          "description": "string",
+          "featured": "boolean",
+          "rating": "number",
+          "reviewCount": "number",
+          "updatedAt": "string",
+          "publishedAtText": "string"
+        }
+      },
+      "total": "number"
+    },
+    "bookRes": {
+      "data": {
+        "type": "object",
+        "collection": {
+          "_id": "string",
+          "title": "string",
+          "isbn": "string",
+          "authorId": "string",
+          "authorName": "string",
+          "genreId": "string",
+          "genreName": "string",
+          "genreColor": "string",
+          "price": "number",
+          "priceText": "string",
+          "stock": "number",
+          "publishedAt": "string",
+          "pages": "number",
+          "cover": "string",
+          "description": "string",
+          "featured": "boolean",
+          "rating": "number",
+          "reviewCount": "number",
+          "updatedAt": "string",
+          "publishedAtText": "string"
+        }
+      }
+    },
+    "bookPageQuery": {
+      "offset": "number",
+      "limit": "number",
+      "search": "string",
+      "sortBy": "string",
+      "sortDir": "string",
+      "genre": "string",
+      "author": "string",
+      "inStock": "string",
+      "featured": "string"
+    },
+    "bookBody": {
+      "title": "string",
+      "isbn": "string",
+      "authorId": "string",
+      "genreId": "string",
+      "price": "number",
+      "stock": "number",
+      "publishedAt": "string",
+      "pages": "number",
+      "cover": "string",
+      "description": "string",
+      "featured": "boolean"
+    },
+    "editionListRes": {
+      "data": {
+        "type": "array",
+        "collection": {
+          "_id": "string",
+          "format": "string",
+          "isbn": "string",
+          "price": "number",
+          "priceText": "string"
+        }
+      },
+      "total": "number"
+    },
+    "editionRes": {
+      "data": {
+        "type": "object",
+        "collection": {
+          "_id": "string",
+          "format": "string",
+          "isbn": "string",
+          "price": "number",
+          "priceText": "string"
+        }
+      }
+    },
+    "editionBody": {
+      "format": "string",
+      "isbn": "string",
+      "price": "number"
+    },
+    "reviewListRes": {
+      "data": {
+        "type": "array",
+        "collection": {
+          "_id": "string",
+          "reviewer": "string",
+          "rating": "number",
+          "title": "string",
+          "body": "string",
+          "createdAt": "string",
+          "createdAtText": "string"
+        }
+      },
+      "total": "number"
+    },
+    "linkListRes": {
+      "data": {
+        "type": "array",
+        "collection": {
+          "_id": "string",
+          "label": "string",
+          "url": "string"
+        }
+      },
+      "total": "number"
+    },
+    "linkRes": {
+      "data": {
+        "type": "object",
+        "collection": {
+          "_id": "string",
+          "label": "string",
+          "url": "string"
+        }
+      }
+    },
+    "linkBody": {
+      "label": "string",
+      "url": "string"
+    },
+    "customerListRes": {
+      "data": {
+        "type": "array",
+        "collection": {
+          "_id": "string",
+          "name": "string",
+          "email": "string",
+          "phone": "string",
+          "city": "string",
+          "joinedAt": "string",
+          "joinedAtText": "string",
+          "orderCount": "number",
+          "totalSpent": "number",
+          "totalSpentText": "string",
+          "avatar": "string"
+        }
+      },
+      "total": "number"
+    },
+    "customerRes": {
+      "data": {
+        "type": "object",
+        "collection": {
+          "_id": "string",
+          "name": "string",
+          "email": "string",
+          "phone": "string",
+          "city": "string",
+          "joinedAt": "string",
+          "joinedAtText": "string",
+          "orderCount": "number",
+          "totalSpent": "number",
+          "totalSpentText": "string",
+          "avatar": "string"
+        }
+      }
+    },
+    "customerDetailRes": {
+      "data": {
+        "type": "object",
+        "collection": {
+          "_id": "string",
+          "name": "string",
+          "email": "string",
+          "phone": "string",
+          "city": "string",
+          "joinedAt": "string",
+          "joinedAtText": "string",
+          "orderCount": "number",
+          "totalSpent": "number",
+          "totalSpentText": "string",
+          "avatar": "string",
+          "orders": {
+            "type": "array",
+            "collection": {
+              "_id": "string",
+              "number": "string",
+              "customerId": "string",
+              "customerName": "string",
+              "customerCity": "string",
+              "status": "string",
+              "statusLabel": "string",
+              "placedAt": "string",
+              "placedAtText": "string",
+              "itemCount": "number",
+              "subtotal": "number",
+              "subtotalText": "string",
+              "shipping": "number",
+              "shippingText": "string",
+              "total": "number",
+              "totalText": "string",
+              "paymentMethod": "string",
+              "handledBy": "string"
+            }
+          }
+        }
+      }
+    },
+    "customerPageQuery": {
+      "offset": "number",
+      "limit": "number",
+      "search": "string",
+      "sortBy": "string",
+      "sortDir": "string",
+      "city": "string"
+    },
+    "customerBody": {
+      "name": "string",
+      "email": "string",
+      "phone": "string",
+      "city": "string"
+    },
+    "orderListRes": {
+      "data": {
+        "type": "array",
+        "collection": {
+          "_id": "string",
+          "number": "string",
+          "customerId": "string",
+          "customerName": "string",
+          "customerCity": "string",
+          "status": "string",
+          "statusLabel": "string",
+          "placedAt": "string",
+          "placedAtText": "string",
+          "itemCount": "number",
+          "subtotal": "number",
+          "subtotalText": "string",
+          "shipping": "number",
+          "shippingText": "string",
+          "total": "number",
+          "totalText": "string",
+          "paymentMethod": "string",
+          "handledBy": "string"
+        }
+      },
+      "total": "number"
+    },
+    "orderDetailRes": {
+      "data": {
+        "type": "object",
+        "collection": {
+          "_id": "string",
+          "number": "string",
+          "customerId": "string",
+          "customerName": "string",
+          "customerCity": "string",
+          "status": "string",
+          "statusLabel": "string",
+          "placedAt": "string",
+          "placedAtText": "string",
+          "itemCount": "number",
+          "subtotal": "number",
+          "subtotalText": "string",
+          "shipping": "number",
+          "shippingText": "string",
+          "total": "number",
+          "totalText": "string",
+          "paymentMethod": "string",
+          "handledBy": "string",
+          "items": {
+            "type": "array",
+            "collection": {
+              "_id": "string",
+              "bookId": "string",
+              "title": "string",
+              "authorName": "string",
+              "cover": "string",
+              "qty": "number",
+              "price": "number",
+              "priceText": "string",
+              "lineTotal": "number",
+              "lineTotalText": "string"
+            }
+          },
+          "refund": {
+            "type": "object",
+            "collection": {
+              "reason": "string",
+              "requestedAt": "string",
+              "requestedAtText": "string",
+              "requestedBy": "string",
+              "steps": {
+                "type": "array",
+                "collection": {
+                  "sequence": "number",
+                  "role": "string",
+                  "name": "string",
+                  "jobTitle": "string",
+                  "status": "number",
+                  "actionDate": "string",
+                  "remark": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "orderPageQuery": {
+      "offset": "number",
+      "limit": "number",
+      "search": "string",
+      "sortBy": "string",
+      "sortDir": "string",
+      "status": "string",
+      "from": "string",
+      "to": "string",
+      "customer": "string"
+    },
+    "refundBody": {
+      "remark": "string"
+    },
+    "staffListRes": {
+      "data": {
+        "type": "array",
+        "collection": {
+          "_id": "string",
+          "employeeId": "string",
+          "email": "string",
+          "firstNameEn": "string",
+          "lastNameEN": "string",
+          "name": "string",
+          "jobTitle": "string",
+          "role": "string",
+          "avatar": "string",
+          "companyModel": {
+            "type": "object",
+            "collection": {
+              "name": "string"
+            }
+          },
+          "active": "boolean"
+        }
+      },
+      "total": "number"
+    },
+    "staffRes": {
+      "data": {
+        "type": "object",
+        "collection": {
+          "_id": "string",
+          "employeeId": "string",
+          "email": "string",
+          "firstNameEn": "string",
+          "lastNameEN": "string",
+          "name": "string",
+          "jobTitle": "string",
+          "role": "string",
+          "avatar": "string",
+          "companyModel": {
+            "type": "object",
+            "collection": {
+              "name": "string"
+            }
+          },
+          "active": "boolean"
+        }
+      }
+    },
+    "emailQuery": {
+      "email": "string"
+    },
+    "settingsRes": {
+      "data": {
+        "type": "object",
+        "collection": {
+          "currency": "string",
+          "notifyOrders": "boolean",
+          "notifyLowStock": "boolean",
+          "lowStockDaily": "boolean",
+          "lowStockThreshold": "number",
+          "refundLine": {
+            "type": "array",
+            "collection": {
+              "sequence": "number",
+              "actionType": "string",
+              "inchargeUsers": "any",
+              "ccUsers": "any"
+            }
+          }
+        }
+      }
+    },
+    "settingsBody": {
+      "currency": "string",
+      "notifyOrders": "boolean",
+      "notifyLowStock": "boolean",
+      "lowStockDaily": "boolean",
+      "lowStockThreshold": "number",
+      "refundLine": {
+        "type": "array",
+        "collection": {
+          "sequence": "number",
+          "actionType": "string",
+          "inchargeUsers": "any",
+          "ccUsers": "any"
+        }
+      }
+    },
+    "summaryRes": {
+      "data": {
+        "type": "object",
+        "collection": {
+          "bookCount": "number",
+          "customerCount": "number",
+          "ordersThisMonth": "number",
+          "revenueThisMonth": "number",
+          "revenueThisMonthText": "string",
+          "lowStockCount": "number",
+          "refundRequests": "number",
+          "salesByDay": {
+            "type": "array",
+            "collection": {
+              "date": "string",
+              "total": "number",
+              "orders": "number"
+            }
+          },
+          "lowStock": {
+            "type": "array",
+            "collection": {
+              "_id": "string",
+              "title": "string",
+              "isbn": "string",
+              "authorId": "string",
+              "authorName": "string",
+              "genreId": "string",
+              "genreName": "string",
+              "genreColor": "string",
+              "price": "number",
+              "priceText": "string",
+              "stock": "number",
+              "publishedAt": "string",
+              "pages": "number",
+              "cover": "string",
+              "description": "string",
+              "featured": "boolean",
+              "rating": "number",
+              "reviewCount": "number",
+              "updatedAt": "string",
+              "publishedAtText": "string"
+            }
+          },
+          "recentOrders": {
+            "type": "array",
+            "collection": {
+              "_id": "string",
+              "number": "string",
+              "customerId": "string",
+              "customerName": "string",
+              "customerCity": "string",
+              "status": "string",
+              "statusLabel": "string",
+              "placedAt": "string",
+              "placedAtText": "string",
+              "itemCount": "number",
+              "subtotal": "number",
+              "subtotalText": "string",
+              "shipping": "number",
+              "shippingText": "string",
+              "total": "number",
+              "totalText": "string",
+              "paymentMethod": "string",
+              "handledBy": "string"
+            }
+          }
+        }
+      }
+    },
+    "deletedRes": {
+      "data": {
+        "type": "object",
+        "collection": {
+          "_id": "string"
+        }
+      }
+    },
+    "idParam": {
+      "id": "string"
+    },
+    "genreParam": {
+      "genre": "string"
+    },
+    "bookIdParam": {
+      "bookId": "string"
+    },
+    "bookItemParam": {
+      "bookId": "string",
+      "id": "string"
+    },
+    "authorIdParam": {
+      "authorId": "string"
+    },
+    "authorItemParam": {
+      "authorId": "string",
+      "id": "string"
+    }
+  },
+  "api": {
+    "listGenres": {
+      "url": "/api/genres",
+      "description": "Every genre, by name",
+      "methods": "GET",
+      "response": "genreListRes",
+      "withOptions": false
+    },
+    "listAuthors": {
+      "url": "/api/authors",
+      "description": "Authors (optionally of one genre, or matching a name)",
+      "methods": "GET",
+      "response": "authorListRes",
+      "query": "authorQuery",
+      "withOptions": false
+    },
+    "genreAuthors": {
+      "url": "/api/genres/:genre/authors",
+      "description": "Authors with a book in one genre (the dependent filter)",
+      "methods": "GET",
+      "response": "authorListRes",
+      "parameter": "genreParam",
+      "withOptions": false
+    },
+    "getAuthor": {
+      "url": "/api/authors/:id",
+      "description": "One author with their books",
+      "methods": "GET",
+      "response": "authorDetailRes",
+      "parameter": "idParam",
+      "withOptions": false
+    },
+    "listAuthorLinks": {
+      "url": "/api/authors/:authorId/links",
+      "description": "An author's links",
+      "methods": "GET",
+      "response": "linkListRes",
+      "parameter": "authorIdParam",
+      "withOptions": false
+    },
+    "createAuthorLink": {
+      "url": "/api/authors/:authorId/links",
+      "description": "Add a link to an author",
+      "methods": "POST",
+      "response": "linkRes",
+      "parameter": "authorIdParam",
+      "body": "linkBody",
+      "withOptions": false
+    },
+    "updateAuthorLink": {
+      "url": "/api/authors/:authorId/links/:id",
+      "description": "Change one link",
+      "methods": "PATCH",
+      "response": "linkRes",
+      "parameter": "authorItemParam",
+      "body": "linkBody",
+      "withOptions": false
+    },
+    "deleteAuthorLink": {
+      "url": "/api/authors/:authorId/links/:id",
+      "description": "Remove one link",
+      "methods": "DELETE",
+      "response": "deletedRes",
+      "parameter": "authorItemParam",
+      "withOptions": false
+    },
+    "listBooks": {
+      "url": "/api/books",
+      "description": "A page of books (search, genre, author, stock, sort)",
+      "methods": "GET",
+      "response": "bookListRes",
+      "query": "bookPageQuery",
+      "withOptions": false
+    },
+    "getBook": {
+      "url": "/api/books/:id",
+      "description": "One book",
+      "methods": "GET",
+      "response": "bookRes",
+      "parameter": "idParam",
+      "withOptions": false
+    },
+    "createBook": {
+      "url": "/api/books",
+      "description": "Add a book",
+      "methods": "POST",
+      "response": "bookRes",
+      "body": "bookBody",
+      "withOptions": false
+    },
+    "updateBook": {
+      "url": "/api/books/:id",
+      "description": "Change a book",
+      "methods": "PATCH",
+      "response": "bookRes",
+      "parameter": "idParam",
+      "body": "bookBody",
+      "withOptions": false
+    },
+    "deleteBook": {
+      "url": "/api/books/:id/delete",
+      "description": "Delete a book (a form button can only POST / PATCH)",
+      "methods": "POST",
+      "response": "deletedRes",
+      "parameter": "idParam",
+      "body": "bookBody",
+      "withOptions": false
+    },
+    "listEditions": {
+      "url": "/api/books/:bookId/editions",
+      "description": "A book's editions",
+      "methods": "GET",
+      "response": "editionListRes",
+      "parameter": "bookIdParam",
+      "withOptions": false
+    },
+    "createEdition": {
+      "url": "/api/books/:bookId/editions",
+      "description": "Add an edition",
+      "methods": "POST",
+      "response": "editionRes",
+      "parameter": "bookIdParam",
+      "body": "editionBody",
+      "withOptions": false
+    },
+    "updateEdition": {
+      "url": "/api/books/:bookId/editions/:id",
+      "description": "Change an edition",
+      "methods": "PATCH",
+      "response": "editionRes",
+      "parameter": "bookItemParam",
+      "body": "editionBody",
+      "withOptions": false
+    },
+    "deleteEdition": {
+      "url": "/api/books/:bookId/editions/:id",
+      "description": "Remove an edition",
+      "methods": "DELETE",
+      "response": "deletedRes",
+      "parameter": "bookItemParam",
+      "withOptions": false
+    },
+    "listReviews": {
+      "url": "/api/books/:bookId/reviews",
+      "description": "A book's reviews, newest first",
+      "methods": "GET",
+      "response": "reviewListRes",
+      "parameter": "bookIdParam",
+      "withOptions": false
+    },
+    "listCustomers": {
+      "url": "/api/customers",
+      "description": "A page of customers",
+      "methods": "GET",
+      "response": "customerListRes",
+      "query": "customerPageQuery",
+      "withOptions": false
+    },
+    "getCustomer": {
+      "url": "/api/customers/:id",
+      "description": "One customer with their orders",
+      "methods": "GET",
+      "response": "customerDetailRes",
+      "parameter": "idParam",
+      "withOptions": false
+    },
+    "createCustomer": {
+      "url": "/api/customers",
+      "description": "Add a customer",
+      "methods": "POST",
+      "response": "customerRes",
+      "body": "customerBody",
+      "withOptions": false
+    },
+    "listOrders": {
+      "url": "/api/orders",
+      "description": "A page of orders (status, dates, sort)",
+      "methods": "GET",
+      "response": "orderListRes",
+      "query": "orderPageQuery",
+      "withOptions": false
+    },
+    "getOrder": {
+      "url": "/api/orders/:id",
+      "description": "One order with its lines and refund request",
+      "methods": "GET",
+      "response": "orderDetailRes",
+      "parameter": "idParam",
+      "withOptions": false
+    },
+    "refundOrder": {
+      "url": "/api/orders/:id/refund",
+      "description": "Approve the refund request of an order",
+      "methods": "POST",
+      "response": "orderDetailRes",
+      "parameter": "idParam",
+      "body": "refundBody",
+      "withOptions": false
+    },
+    "listStaff": {
+      "url": "/api/staff",
+      "description": "Active staff (the refund approval line picker)",
+      "methods": "GET",
+      "response": "staffListRes",
+      "withOptions": false
+    },
+    "staffByEmail": {
+      "url": "/api/staff/by-email",
+      "description": "The signed-in person (the sign-in profile lookup)",
+      "methods": "GET",
+      "response": "staffRes",
+      "query": "emailQuery",
+      "withOptions": false
+    },
+    "getSettings": {
+      "url": "/api/settings",
+      "description": "The shop settings",
+      "methods": "GET",
+      "response": "settingsRes",
+      "withOptions": false
+    },
+    "updateSettings": {
+      "url": "/api/settings",
+      "description": "Change the shop settings",
+      "methods": "PATCH",
+      "response": "settingsRes",
+      "body": "settingsBody",
+      "withOptions": false
+    },
+    "getSummary": {
+      "url": "/api/summary",
+      "description": "The dashboard numbers",
+      "methods": "GET",
+      "response": "summaryRes",
+      "withOptions": false
+    }
+  },
+  "pages": {
+    "dashboard": {
+      "path": "/",
+      "title": "Dashboard",
+      "src": "pages/dashboard.json"
+    },
+    "catalogue": {
+      "path": "/catalogue",
+      "title": "Catalogue",
+      "src": "pages/catalogue.json"
+    },
+    "books": {
+      "path": "/books",
+      "title": "Books",
+      "src": "pages/books.json"
+    },
+    "bookDetail": {
+      "path": "/books/:id",
+      "title": {
+        "type": "state",
+        "key": "book",
+        "path": "title"
+      },
+      "parent": "books",
+      "src": "pages/bookDetail.json"
+    },
+    "authors": {
+      "path": "/authors",
+      "title": "Authors",
+      "src": "pages/authors.json"
+    },
+    "authorDetail": {
+      "path": "/authors/:id",
+      "title": {
+        "type": "state",
+        "key": "author",
+        "path": "name"
+      },
+      "parent": "authors",
+      "src": "pages/authorDetail.json"
+    },
+    "orders": {
+      "path": "/orders",
+      "title": "Orders",
+      "src": "pages/orders.json"
+    },
+    "orderDetail": {
+      "path": "/orders/:id",
+      "title": {
+        "type": "state",
+        "key": "order",
+        "path": "number"
+      },
+      "parent": "orders",
+      "src": "pages/orderDetail.json"
+    },
+    "customers": {
+      "path": "/customers",
+      "title": "Customers",
+      "src": "pages/customers.json"
+    },
+    "customerDetail": {
+      "path": "/customers/:id",
+      "title": {
+        "type": "state",
+        "key": "customer",
+        "path": "name"
+      },
+      "parent": "customers",
+      "src": "pages/customerDetail.json"
+    },
+    "settings": {
+      "path": "/settings",
+      "title": "Settings",
+      "src": "pages/settings.json"
+    }
+  },
+  "menu": [
+    {
+      "label": "Dashboard",
+      "icon": "layoutDashboard",
+      "navigate": {
+        "page": "dashboard"
+      }
+    },
+    {
+      "label": "Catalogue",
+      "icon": "library",
+      "navigate": {
+        "page": "catalogue"
+      }
+    },
+    {
+      "divider": true
+    },
+    {
+      "label": "Books",
+      "icon": "bookOpen",
+      "navigate": {
+        "page": "books"
+      }
+    },
+    {
+      "label": "Authors",
+      "icon": "users",
+      "navigate": {
+        "page": "authors"
+      }
+    },
+    {
+      "label": "Orders",
+      "icon": "shoppingCart",
+      "navigate": {
+        "page": "orders"
+      }
+    },
+    {
+      "label": "Customers",
+      "icon": "user",
+      "navigate": {
+        "page": "customers"
+      }
+    },
+    {
+      "divider": true
+    },
+    {
+      "label": "Settings",
+      "icon": "settings",
+      "navigate": {
+        "page": "settings"
+      }
+    }
+  ],
+  "shell": {
+    "navigation": "sidebar",
+    "breadcrumbs": true,
+    "appBar": {
+      "title": "Gummy Books",
+      "icon": "bookOpen",
+      "variant": "custom",
+      "gradient": {
+        "from": "#1e1b4b",
+        "to": "#4f46e5"
+      },
+      "foreground": "light"
+    },
+    "menuActiveColor": "#fde68a",
+    "pageTransition": {
+      "type": "fade-up"
+    }
+  },
+  "theme": {
+    "theme": {
+      "appearance": "light",
+      "accentColor": "iris",
+      "radius": "medium",
+      "panelBackground": "solid"
+    },
+    "components": {
+      "dataTable": {
+        "headerFontSize": "sm",
+        "headerFontWeight": "semibold",
+        "deleteButtonColor": "red"
+      }
+    }
+  },
+  "globalLoads": [],
+  "auth": {
+    "provider": "azure",
+    "profile": {
+      "api": {
+        "name": "staffByEmail",
+        "paths": [
+          "data"
+        ]
+      },
+      "emailParam": "email"
+    },
+    "screens": {
+      "landing": {
+        "title": "Gummy Books back office",
+        "message": "Sign in with your work account to run the shop.",
+        "buttonLabel": "Sign in with Microsoft"
+      },
+      "denied": {
+        "title": "No access",
+        "message": "Your account is not an active member of the shop staff. Ask a manager to add you.",
+        "buttonLabel": "Try another account"
+      },
+      "loading": {
+        "message": "Signing you in…"
+      }
+    }
+  },
+  "customActions": [
+    "printOrder"
+  ],
+  "customComponents": [
+    {
+      "name": "SalesChart",
+      "description": "A bar per day of the bound array (date + total); draws its own skeleton while loading",
+      "props": [
+        {
+          "key": "labelField",
+          "kind": "text",
+          "label": "Label field",
+          "defaultValue": "date"
+        },
+        {
+          "key": "valueField",
+          "kind": "text",
+          "label": "Value field",
+          "defaultValue": "total"
+        },
+        {
+          "key": "color",
+          "kind": "select",
+          "label": "Bar colour",
+          "options": [
+            "accent",
+            "green",
+            "blue",
+            "orange"
+          ],
+          "defaultValue": "accent"
+        },
+        {
+          "key": "height",
+          "kind": "number",
+          "label": "Height (px)",
+          "defaultValue": "200"
+        }
+      ]
+    }
+  ]
+}

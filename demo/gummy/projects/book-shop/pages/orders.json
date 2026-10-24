@@ -1,0 +1,296 @@
+{
+  "containers": [
+    {
+      "id": "page-orders",
+      "name": "page-orders",
+      "isArray": false,
+      "bins": [
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "Orders",
+            "variant": "h3",
+            "weight": "bold"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "Newest first, paged by the API. Filter by status and dates; the order number is the row header, Customer and Amount are header groups, and when there is no shipping the subtotal and total share one cell.",
+            "variant": "body2",
+            "color": "gray"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "datatable",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "orders",
+            "title": "Orders",
+            "rowNavigate": {
+              "page": "orderDetail",
+              "params": {
+                "id": {
+                  "type": "row",
+                  "key": "_id"
+                }
+              }
+            },
+            "columns": [
+              {
+                "accessor": "number",
+                "header": "Order",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "rowHeader": true,
+                "size": 120
+              },
+              {
+                "accessor": "placedAt",
+                "header": "Placed",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "useDateFormat": "DD/MM/YYYY HH:mm"
+              },
+              {
+                "accessor": "customerName",
+                "header": "Name",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "group": "Customer"
+              },
+              {
+                "accessor": "customerCity",
+                "header": "City",
+                "enableSorting": false,
+                "enableColumnFilter": false,
+                "align": "start",
+                "group": "Customer"
+              },
+              {
+                "accessor": "statusLabel",
+                "header": "Status",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "html": "<span class=\"dt-badge\">{{statusLabel}}</span>",
+                "sortField": "status"
+              },
+              {
+                "accessor": "itemCount",
+                "header": "Items",
+                "enableSorting": false,
+                "enableColumnFilter": false,
+                "align": "end"
+              },
+              {
+                "accessor": "subtotalText",
+                "header": "Subtotal",
+                "enableSorting": false,
+                "enableColumnFilter": false,
+                "align": "end",
+                "mergeColumns": true,
+                "group": "Amount"
+              },
+              {
+                "accessor": "totalText",
+                "header": "Total",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "end",
+                "sortField": "total",
+                "mergeColumns": true,
+                "group": "Amount"
+              }
+            ],
+            "api": {
+              "name": "listOrders",
+              "paths": [
+                "data"
+              ],
+              "query": {
+                "status": {
+                  "type": "filter",
+                  "key": "status"
+                },
+                "from": {
+                  "type": "filter",
+                  "key": "from"
+                },
+                "to": {
+                  "type": "filter",
+                  "key": "to"
+                }
+              },
+              "pagination": {
+                "offsetKey": "offset",
+                "limitKey": "limit",
+                "searchKey": "search",
+                "totalPath": [
+                  "total"
+                ],
+                "pageSizeOptions": [
+                  10,
+                  20,
+                  50
+                ]
+              },
+              "sort": {
+                "sortKey": "sortBy",
+                "orderKey": "sortDir",
+                "default": {
+                  "field": "placedAt",
+                  "order": "desc"
+                }
+              }
+            },
+            "cellLines": 1,
+            "filterContainer": {
+              "id": "datatable-bs-item--filter",
+              "name": "datatable-bs-item--filter",
+              "isArray": false,
+              "bins": [
+                {
+                  "sm": "6",
+                  "md": "6",
+                  "lg": "6",
+                  "xl": "6",
+                  "type": "multiAutocomplete",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "status",
+                    "dataType": "array",
+                    "label": "Status",
+                    "isRequired": false,
+                    "errorMessage": "",
+                    "canObserve": false,
+                    "observeTo": "",
+                    "isSingleLoad": false,
+                    "keys": {
+                      "id": "value",
+                      "search": "label",
+                      "display": "label"
+                    },
+                    "defaultData": {},
+                    "options": [
+                      {
+                        "value": "pending",
+                        "label": "Pending"
+                      },
+                      {
+                        "value": "paid",
+                        "label": "Paid"
+                      },
+                      {
+                        "value": "shipped",
+                        "label": "Shipped"
+                      },
+                      {
+                        "value": "delivered",
+                        "label": "Delivered"
+                      },
+                      {
+                        "value": "refund_requested",
+                        "label": "Refund requested"
+                      },
+                      {
+                        "value": "refunded",
+                        "label": "Refunded"
+                      },
+                      {
+                        "value": "cancelled",
+                        "label": "Cancelled"
+                      }
+                    ],
+                    "placeholder": "Any status",
+                    "showSelectedCount": true
+                  }
+                },
+                {
+                  "sm": "6",
+                  "md": "6",
+                  "lg": "3",
+                  "xl": "3",
+                  "type": "datepicker",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "from",
+                    "dataType": "string",
+                    "label": "From",
+                    "isRequired": false,
+                    "errorMessage": "",
+                    "variant": "surface",
+                    "size": "2",
+                    "radius": "medium",
+                    "clearable": true,
+                    "displayFormat": "DD/MM/YYYY",
+                    "weekStartsOn": 0
+                  }
+                },
+                {
+                  "sm": "6",
+                  "md": "6",
+                  "lg": "3",
+                  "xl": "3",
+                  "type": "datepicker",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "to",
+                    "dataType": "string",
+                    "label": "To",
+                    "isRequired": false,
+                    "errorMessage": "",
+                    "variant": "surface",
+                    "size": "2",
+                    "radius": "medium",
+                    "clearable": true,
+                    "displayFormat": "DD/MM/YYYY",
+                    "weekStartsOn": 0
+                  }
+                }
+              ],
+              "gap": "16px",
+              "justifyItems": "stretch",
+              "alignItems": "stretch",
+              "justifyContent": "start",
+              "alignContent": "start",
+              "gridAutoFlow": "row"
+            },
+            "filterDisplay": "inline",
+            "canEdit": false,
+            "canDelete": false
+          }
+        }
+      ],
+      "gap": "16px",
+      "justifyItems": "stretch",
+      "alignItems": "stretch",
+      "justifyContent": "start",
+      "alignContent": "start",
+      "gridAutoFlow": "row"
+    }
+  ]
+}

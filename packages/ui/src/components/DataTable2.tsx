@@ -24,7 +24,7 @@ import { DataTableFilter } from "./DataTableFilter"
 import { ClampedCell, DEFAULT_CELL_LINES } from "./ClampedCell"
 import { SkeletonBlock } from "./Skeleton"
 import { useSkeleton } from "./core/rowScope"
-import { columnMeta, computeSpans, headerPinStyle, headerRows, headerTopStyle, spanKey, useHeaderRowTops } from "./dataTableLayout"
+import { columnMeta, computeSpans, headerPinStyle, headerRows, headerTopStyle, spanKey, useHeaderRowTops, displayedLeafColumns } from "./dataTableLayout"
 
 // Utility function to highlight matching text
 const highlightText = (text: string, searchTerm: string) => {
@@ -520,7 +520,11 @@ export const DataTable2 = <T extends Record<string, any>>({
 	const filterNote = !filterContainer || data.length > 0
 		? null
 		: !request.ready ? 'Choose the filters to load rows.' : 'No rows match the filters.'
-	const visibleColumns = table.getVisibleLeafColumns()
+	// In the order the cells are drawn — left-pinned, centre, right-pinned — which
+	// is what the <colgroup> widths and the merged-cell spans must follow. The
+	// plain getVisibleLeafColumns() keeps the definition order and put a pinned
+	// column's width on whichever column sat in its slot.
+	const visibleColumns = displayedLeafColumns(table)
 	const isResizing = !!table.getState().columnSizingInfo.isResizingColumn
 	const headerCellClass = `${dtHeaderBgClass(theme.components.dataTable?.headerColor)}
 		${dtHeaderTextClass(theme.components.dataTable?.headerTextColor, theme.components.dataTable?.headerColor)}
@@ -760,7 +764,7 @@ export const DataTable2 = <T extends Record<string, any>>({
 									? <th key={header.id} colSpan={colSpan} className={`datatable-header-cell datatable-group-header ${pinClass(header.column)} ${headerCellClass}`} style={{ ...headerPinStyle(header.column), ...headerTopStyle(rowIndex) }}>
 										<div className="datatable-header-content">{flexRender(header.column.columnDef.header, header.getContext())}</div>
 									</th>
-									: header.column.columnDef.header && <th key={header.id} data-column-id={header.column.id} colSpan={colSpan} rowSpan={rowSpan} className={`datatable-header-cell ${pinClass(header.column)}
+									: <th key={header.id} data-column-id={header.column.id} colSpan={colSpan} rowSpan={rowSpan} className={`datatable-header-cell ${pinClass(header.column)}
 									 ${headerCellClass}
 									 ${dtHeaderHoverClass(theme.components.dataTable?.headerHoverColor)} cursor-pointer`}
 									style={{ ...sizeStyle(header.column), ...pinStyle(header.column), ...headerTopStyle(rowIndex) }}>

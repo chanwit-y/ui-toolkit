@@ -1,0 +1,129 @@
+{
+  "containers": [
+    {
+      "id": "page-authors",
+      "name": "page-authors",
+      "isArray": false,
+      "bins": [
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "Authors",
+            "variant": "h3",
+            "weight": "bold"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "Every author, filtered and sorted in the browser. The name stays pinned while the table scrolls sideways; drag a header edge to resize a column.",
+            "variant": "body2",
+            "color": "gray"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "datatable",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "authors",
+            "title": "Authors",
+            "rowNavigate": {
+              "page": "authorDetail",
+              "params": {
+                "id": {
+                  "type": "row",
+                  "key": "_id"
+                }
+              }
+            },
+            "columns": [
+              {
+                "accessor": "avatar",
+                "header": "",
+                "enableSorting": false,
+                "enableColumnFilter": false,
+                "align": "start",
+                "html": "<img src=\"{{avatar}}\" alt=\"\" style=\"width:28px;height:28px;border-radius:9999px;display:block\">",
+                "size": 56,
+                "enableResizing": false
+              },
+              {
+                "accessor": "name",
+                "header": "Name",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "pin": "left",
+                "size": 220
+              },
+              {
+                "accessor": "country",
+                "header": "Country",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "size": 160
+              },
+              {
+                "accessor": "born",
+                "header": "Born",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "end",
+                "size": 100
+              },
+              {
+                "accessor": "bookCount",
+                "header": "Books",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "end",
+                "size": 100
+              },
+              {
+                "accessor": "bio",
+                "header": "About",
+                "enableSorting": false,
+                "enableColumnFilter": false,
+                "align": "start",
+                "minSize": 240
+              }
+            ],
+            "api": {
+              "name": "listAuthors",
+              "paths": [
+                "data"
+              ]
+            },
+            "cellLines": 1,
+            "canEdit": false,
+            "canDelete": false
+          }
+        }
+      ],
+      "gap": "16px",
+      "justifyItems": "stretch",
+      "alignItems": "stretch",
+      "justifyContent": "start",
+      "alignContent": "start",
+      "gridAutoFlow": "row"
+    }
+  ]
+}

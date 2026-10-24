@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "name": "__NAME__",
+  "description": "Starter project written by `gummy init`. Open the studio (`npm run studio`) to design it; every save updates this folder (project.json + pages/).",
+  "env": {
+    "API_URL": ""
+  },
+  "model": {},
+  "api": {},
+  "pages": {
+    "home": {
+      "path": "/",
+      "title": "Home",
+      "breadcrumb": false,
+      "src": "pages/home.json"
+    }
+  },
+  "menu": [
+    {
+      "label": "Home",
+      "icon": "home",
+      "navigate": {
+        "page": "home"
+      }
+    }
+  ],
+  "shell": {
+    "navigation": "sidebar",
+    "breadcrumbs": true,
+    "appBar": {
+      "title": "__NAME__"
+    }
+  },
+  "theme": {
+    "theme": {
+      "accentColor": "teal",
+      "radius": "medium"
+    },
+    "components": {
+      "button": {
+        "color": "teal"
+      }
+    }
+  },
+  "globalLoads": [],
+  "customActions": [
+    "greet"
+  ],
+  "customComponents": [
+    {
+      "name": "StatBadge",
+      "description": "A labelled pill showing the bound value.",
+      "props": [
+        {
+          "key": "label",
+          "kind": "text",
+          "label": "Label"
+        },
+        {
+          "key": "tone",
+          "kind": "select",
+          "label": "Tone",
+          "options": [
+            "accent",
+            "green",
+            "gray"
+          ],
+          "defaultValue": "gray"
+        }
+      ]
+    }
+  ]
+}

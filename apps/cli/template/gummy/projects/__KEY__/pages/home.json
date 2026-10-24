@@ -1,0 +1,41 @@
+{
+  "containers": [
+    {
+      "id": "home-page",
+      "name": "Home",
+      "isArray": false,
+      "gap": "4",
+      "justifyItems": "stretch",
+      "alignItems": "start",
+      "justifyContent": "start",
+      "alignContent": "start",
+      "gridAutoFlow": "row",
+      "bins": [
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "element": {
+            "text": "Welcome to __NAME__",
+            "variant": "h4",
+            "weight": "medium"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "element": {
+            "text": "This page is gummy/projects/__KEY__.json, rendered by <GummyApp>. Run `npm run studio` to design it; the file is rewritten on every save and Vite reloads.",
+            "variant": "body2",
+            "color": "gray"
+          }
+        }
+      ]
+    }
+  ]
+}

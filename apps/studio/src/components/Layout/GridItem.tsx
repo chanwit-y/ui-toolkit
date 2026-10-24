@@ -1,3 +1,4 @@
+import type { ThemeProps } from '@radix-ui/themes'
 import type { DataTableAddButton, DataType } from '@gummy-ui/ui'
 import {
   ApprovalLineView,
@@ -1175,6 +1176,7 @@ function ButtonLivePreview({ config }: { config: ButtonConfig }) {
         label={config.label}
         icon={(config.icon || undefined) as keyof typeof IconData | undefined}
         variant={config.variant}
+        color={(config.color || undefined) as ThemeProps['accentColor']}
       />
     </div>
   )
@@ -1503,13 +1505,13 @@ const PROFILE_PREVIEW: NormalizedProfile[] = [
   {
     personId: 'p-1',
     userId: 'u-1',
-    name: 'Kavisara Thisakobsuk',
+    name: 'Chanwit Yimneam',
     jobTitle: 'Section Manager - Application Development',
     company: 'Banpu Public Company Limited',
     primary: false,
     raw: {},
   },
-  { personId: 'p-1', userId: 'u-2', name: 'Kavisara Thisakobsuk', jobTitle: 'Product Owner - Employee Platforms', company: 'Banpu NEXT', primary: true, raw: {} },
+  { personId: 'p-1', userId: 'u-2', name: 'Chanwit Yimneam', jobTitle: 'Product Owner - Employee Platforms', company: 'Banpu NEXT', primary: true, raw: {} },
 ]
 
 /** The real `SwitchProfileView` over two sample profiles (the list is fetched at runtime). Always live and inert. */
@@ -1554,6 +1556,7 @@ function CardActionPreview({ action }: { action: CardActionConfig }) {
       label={action.label}
       icon={(action.icon || undefined) as keyof typeof IconData | undefined}
       variant={action.variant}
+      color={(action.color || undefined) as ThemeProps['accentColor']}
     />
   )
 }
@@ -1697,6 +1700,7 @@ function ModalLivePreview({ config }: { config: ModalConfig }) {
         label={config.trigger.label}
         icon={(config.trigger.icon || undefined) as keyof typeof IconData | undefined}
         variant={config.trigger.variant}
+        color={(config.trigger.color || undefined) as ThemeProps['accentColor']}
       />
     </div>
   )
@@ -1713,6 +1717,7 @@ function DrawerLivePreview({ config }: { config: DrawerConfig }) {
         label={config.trigger.label}
         icon={(config.trigger.icon || undefined) as keyof typeof IconData | undefined}
         variant={config.trigger.variant}
+        color={(config.trigger.color || undefined) as ThemeProps['accentColor']}
       />
     </div>
   )
@@ -1736,6 +1741,7 @@ function PopoverLivePreview({ config }: { config: PopoverConfig }) {
             (config.triggerButton.icon || undefined) as keyof typeof IconData | undefined
           }
           variant={config.triggerButton.variant}
+          color={(config.triggerButton.color || undefined) as ThemeProps['accentColor']}
         />
       ) : (
         <Text text={config.triggerText.text} isLabel={config.triggerText.isLabel} />

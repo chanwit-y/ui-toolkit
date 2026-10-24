@@ -1,13 +1,14 @@
 import { useEffect, useMemo, type ReactElement } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { ApiFactory, type HttpClientFactory } from "../../api";
-import { ApiMaster, type TApiMaster } from "../../api/APIMaster";
+import type { HttpClientFactory } from "../../api";
+import type { ApiMaster, TApiMaster } from "../../api/APIMaster";
 import type { TModelMaster } from "../../model/master";
 import type { PageLoad } from "../@types";
 import { LoadingProvider } from "../context";
 import { SnackbarProvider } from "../Snackbar";
 import { queryClient } from "./context";
 import { loadCycles, loadingMode } from "./pageLoads";
+import { sharedApiMaster } from "./sharedApiMaster";
 import { StateLoader } from "./stateLoader";
 import { setLoadingMode } from "./stateStore";
 
@@ -31,10 +32,8 @@ export type GlobalLoadsProps = {
  * literals and other slices do. Renders nothing.
  */
 export function GlobalLoads({ http, model, api, loads }: GlobalLoadsProps): ReactElement {
-  const apis = useMemo(
-    () => new ApiMaster(model, api as TApiMaster<TModelMaster>, new ApiFactory(http, {})),
-    [http, model, api],
-  );
+  // The same instance the pages use when given the same config objects.
+  const apis = useMemo(() => sharedApiMaster(http, model, api), [http, model, api]);
 
   // The loading modes are known before anything bound to the slices renders.
   useMemo(() => loads.forEach((l) => setLoadingMode(l.key, loadingMode(l))), [loads]);

@@ -6,7 +6,9 @@ import { pathParams } from './snapshots'
 import type { PageDef, ProjectDef } from './types'
 import { makeActionKeyResolver, toActionsTs, type CustomActionRef } from './customActions'
 import { toComponentsTsx } from './customComponents'
-import { projectKey, runtimeDocument } from './runtimeProject'
+import { pickedAuth, projectKey, runtimeDocument } from './runtimeProject'
+import { useWorkspaceStore } from './workspaceStore'
+import { DEFAULT_AUTH_ENV_NAMES } from '@gummy-ui/ui'
 
 export type ExportFile = { name: string; lang: 'json' | 'ts' | 'md'; body: string }
 
@@ -61,8 +63,9 @@ function pageButtons(
 
 /**
  * The hand-off bundle (see the grilled library / CLI design): the runtime
- * project document `<GummyApp>` renders — the same file `gummy studio`
- * writes to `gummy/projects/<key>.json` — plus the typed stubs for the
+ * project document `<GummyApp>` renders — single-file here (every page
+ * inline, `<key>.json`); `gummy studio` and Export to project write the same
+ * document split into `gummy/projects/<key>/` — plus the typed stubs for the
  * custom actions / components the app still has to code, and a README. No
  * generated TypeScript configs: the engine renders the JSON as is.
  */
@@ -76,7 +79,9 @@ export function buildExportFiles(
   const customActions = snapshot.customActions ?? []
   const customComponents = snapshot.customComponents ?? []
   const key = projectKey(project.name)
-  const doc = runtimeDocument(project, endpoints, models)
+  // The picked sign-in entry lives in the shared library (not on the project).
+  const auth = pickedAuth(project.snapshot, useWorkspaceStore.getState().library)
+  const doc = runtimeDocument({ ...project, auth }, endpoints, models)
 
   const out: ExportFile[] = []
   out.push({ name: `${key}.json`, lang: 'json', body: JSON.stringify(doc, null, 2) + '\n' })
@@ -89,20 +94,24 @@ export function buildExportFiles(
   lines.push(
     '## Run it',
     '',
-    `\`${key}.json\` is the whole app as data. Install \`@gummy-ui/ui\`, import its stylesheet, and render the document inside your router:`,
+    `The app is data. \`gummy studio\` (and Export to project) write it as the folder \`gummy/projects/${key}/\` — \`project.json\` with the routes, menu, models and endpoints, and one \`pages/<page>.json\` per page, loaded on its first visit so a large app starts with only what the first page needs. \`${key}.json\` in this bundle is the same project with every page inline; both render. Install \`@gummy-ui/ui\`, import its stylesheet, and render the document inside your router:`,
     '',
     '```tsx',
     'import { BrowserRouter } from "react-router-dom";',
-    'import { GummyApp } from "@gummy-ui/ui";',
+    'import { GummyApp, globPageLoader } from "@gummy-ui/ui";',
     'import "@gummy-ui/ui/styles.css";',
-    `import project from "./gummy/projects/${key}.json";`,
+    `import project from "./gummy/projects/${key}/project.json";`,
+    '',
+    '// Each page file becomes its own chunk, fetched on the first visit.',
+    `const loadPage = globPageLoader(import.meta.glob("./gummy/projects/*/pages/*.json", { import: "default" }), "./gummy/projects/${key}");`,
     ...(customActions.length ? ['import { actions } from "./actions";'] : []),
     ...(customComponents.length ? ['import { components } from "./components";'] : []),
     '',
     '<BrowserRouter>',
     '  <GummyApp',
     '    project={project}',
-    '    getToken={async () => "<bearer token>"}',
+    '    loadPage={loadPage}',
+    ...(doc.auth ? [] : ['    getToken={async () => "<bearer token>"}']),
     '    env={{ API_URL: import.meta.env.VITE_API_URL }}',
     ...(customActions.length ? ['    actions={actions}'] : []),
     ...(customComponents.length ? ['    components={components}'] : []),
@@ -110,7 +119,7 @@ export function buildExportFiles(
     '</BrowserRouter>',
     '```',
     '',
-    'With `@gummy-ui/studio` installed, `gummy studio` keeps this file in `gummy/projects/` on every save, so nothing here needs to be copied by hand.',
+    'With `@gummy-ui/studio` installed, `gummy studio` keeps `gummy/projects/` up to date on every save (only the pages that changed are rewritten, and page files of deleted pages are removed), so nothing here needs to be copied by hand. Without a bundler, serve `gummy/` statically and pass `projectUrl="/gummy/projects/' + key + '/"` instead of `loadPage`.',
     '',
     '## Pages',
     '',
@@ -161,6 +170,25 @@ export function buildExportFiles(
       lines.push(`- \`${c.name.trim() || '(unnamed)'}\`${c.description.trim() ? ` — ${c.description.trim()}` : ''}${props.length ? ` · props: ${props.join(', ')}` : ''}`)
     }
     lines.push('')
+  }
+  if (doc.auth) {
+    const names = { ...DEFAULT_AUTH_ENV_NAMES, ...doc.auth.env }
+    lines.push(
+      '## Azure SSO',
+      '',
+      'The document carries `auth` (an Azure SSO entry from the shared library): `<GummyApp>` shows the sign-in screen until the user signs in, passes the bearer token on every request, and' +
+        (doc.auth.profile ? ` loads the profile through \`${doc.auth.profile.api.name}\` into the \`${doc.auth.profile.stateKey ?? 'me'}\` state slice (a failed fetch shows the denied screen).` : ' fetches no profile.'),
+      '',
+      'Set these env vars per environment (names from the entry; blank ⇒ the app warns and sign-in cannot work):',
+      '',
+      `- \`${names.tenantId}\` — the Azure AD tenant id`,
+      `- \`${names.clientId}\` — the app registration (client) id`,
+      `- \`${names.redirectUri}\` — the redirect URL (blank ⇒ the page origin)`,
+      `- \`${names.scope}\` — the API scope (\`api://<client-id>/.default\`)`,
+      '',
+      'Without a tenant yet, sign a mock account in: `<GummyApp auth={{ mock: { email: "you@example.com" } }} />` (the profile fetch still runs). Remove the `mock` before shipping.',
+      '',
+    )
   }
   lines.push('## Endpoints', '')
   for (const a of endpoints) {

@@ -31,10 +31,12 @@ const me = { type: "state", key: "me" } as const;
 const profile = { type: "state", key: "profile" } as const;
 const isAdmin = { left: { source: "state", key: "me", path: "isAdmin" }, operator: "eq", right: { val: true } } as const;
 
-/** The logged-in profile, loaded for the page (the app would load it once, globally). */
-export const profileLoads: PageLoad[] = [
-  { key: "me", loading: "skeleton", api: { name: "me", paths: ["data"] } },
-];
+/**
+ * The logged-in profile is the `me` slice the app's `AzureAuth` fills from
+ * its profile fetch (config/country/auth.ts) — no page load here: a page
+ * load on the same key would clear it when the page unmounts.
+ */
+export const profileLoads: PageLoad[] = [];
 
 export const containerProfileDemo: Container[] = [
   {

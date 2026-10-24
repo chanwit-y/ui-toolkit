@@ -1,4 +1,7 @@
-import { ChevronDown, ChevronRight, Lock, Plus, Trash2 } from 'lucide-react'
+import { ChevronDown, ChevronRight, Lock, Plus, ShieldCheck, Trash2 } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { authEnvName, authEnvRows, AUTH_ENV_ROLES, type AuthDef } from '../Workspace/auth'
+import { useScopedEndpoints } from '../Library/scope'
 import { useMemo, useState } from 'react'
 import { CodeViewer, IconButton, Input, Select } from '../common'
 import { useEnvStore } from './envStore'
@@ -251,6 +254,91 @@ function CustomActionsSection() {
   )
 }
 
+const NO_AUTH: AuthDef[] = []
+
+/**
+ * The project's sign-in (see the grilled design `azure-sso-auth`): a select
+ * over the shared library's Azure SSO entries. Picking one seeds its four env
+ * var rows above (locked, with the entry's dev values) and attaches its
+ * profile endpoint; *None* unlocks the rows and never deletes them.
+ */
+function AuthSection() {
+  const project = useActiveProject()
+  const entries = useWorkspaceStore((s) => s.library.auth ?? NO_AUTH)
+  const setProjectAuth = useWorkspaceStore((s) => s.setProjectAuth)
+  const endpoints = useScopedEndpoints()
+  const navigate = useNavigate()
+  if (!project) return null
+  const authId = project.snapshot.authId ?? null
+  const picked = authId ? entries.find((a) => a.id === authId) : undefined
+  const dangling = !!authId && !picked
+  const pick = (next: string | null) => {
+    const def = next ? entries.find((a) => a.id === next) ?? null : null
+    setProjectAuth(project.id, next)
+    // The Env rows live in the live store while the project is open (autosaved from there).
+    useEnvStore.getState().hydrate(authEnvRows(def, useEnvStore.getState().vars, picked ?? null))
+  }
+  const endpointName = picked?.profile.enabled ? endpoints.find((e) => e.id === picked.profile.read.endpointId)?.name : undefined
+  return (
+    <div className="mt-8">
+      <h2 className="text-base font-[650] tracking-[-0.01em] text-ink">Sign-in</h2>
+      <p className="mb-4 mt-1 text-ui text-ink-2">
+        Azure SSO from the shared library: the app shows a sign-in screen until the user signs in, passes the bearer token on
+        every request, loads the profile into a state slice and shows the user menu — exported as the document's{' '}
+        <span className="font-mono">auth</span>, no app code. The Live Preview signs the studio user in as a mock account.
+      </p>
+      <div className="flex items-center gap-2">
+        <div className="w-[260px] shrink-0">
+          <Select
+            aria-label="Sign-in entry"
+            value={authId ?? ''}
+            onChange={(v) => pick(v === '' ? null : v)}
+            options={[
+              { value: '', label: '— none (no sign-in) —' },
+              ...(dangling ? [{ value: authId!, label: '⚠ missing entry' }] : []),
+              ...entries.map((a) => ({ value: a.id, label: a.name.trim() || '(unnamed)' })),
+            ]}
+          />
+        </div>
+        <button type="button" className="btn" onClick={() => navigate('/library/auth')}>
+          <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
+          Manage entries
+        </button>
+      </div>
+      {dangling && (
+        <p className="mt-2 text-ui-sm text-warn">The picked entry was deleted — the export carries no sign-in until another one is picked.</p>
+      )}
+      {picked && (
+        <ul className="mt-3 space-y-1 text-ui-sm text-ink-2">
+          <li>
+            Env vars (locked above):{' '}
+            {AUTH_ENV_ROLES.map((r) => (
+              <span key={r.role} className="mr-1.5 font-mono">
+                {authEnvName(picked, r.role)}
+              </span>
+            ))}
+          </li>
+          <li>
+            Profile:{' '}
+            {picked.profile.enabled ? (
+              endpointName ? (
+                <>
+                  <span className="font-mono">{endpointName}</span> → state slice <span className="font-mono">{picked.profile.stateKey.trim() || 'me'}</span> (bindable as page data under “Sign-in”)
+                </>
+              ) : (
+                <span className="text-warn">the entry's endpoint is missing — signed-in is enough, no profile.</span>
+              )
+            ) : (
+              'none (signed-in is enough).'
+            )}
+          </li>
+          <li>User menu: {picked.userMenu.show ? 'shown in the app bar' : 'hidden'} · login: {picked.loginMode}</li>
+        </ul>
+      )}
+    </div>
+  )
+}
+
 /**
  * The Env page — environment variables the exported app config consumes.
  * One centered column (the mockup's detail page): the var table, then the
@@ -352,6 +440,7 @@ export function EnvEditor() {
           </button>
         </div>
 
+        <AuthSection />
         <CustomActionsSection />
         <CustomComponentsSection />
 

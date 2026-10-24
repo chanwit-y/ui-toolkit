@@ -1,0 +1,332 @@
+{
+  "containers": [
+    {
+      "id": "page-settings",
+      "name": "page-settings",
+      "isArray": false,
+      "bins": [
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "Settings",
+            "variant": "h3",
+            "weight": "bold"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "One form over the settings load, saved with a single PATCH. The daily summary switch only works while low-stock alerts are on. Who approves a refund is the line at the bottom.",
+            "variant": "body2",
+            "color": "gray"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "condition": {
+            "left": {
+              "source": "state",
+              "key": "me",
+              "path": "role"
+            },
+            "operator": "eq",
+            "right": {
+              "val": "clerk"
+            }
+          },
+          "element": {
+            "text": "You can look, but only a manager can save changes here.",
+            "variant": "body2",
+            "weight": "medium",
+            "color": "amber"
+          }
+        },
+        {
+          "sm": "6",
+          "md": "6",
+          "lg": "6",
+          "xl": "6",
+          "type": "autocomplete",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "currency",
+            "dataType": "string",
+            "label": "Currency",
+            "isRequired": false,
+            "errorMessage": "",
+            "canObserve": false,
+            "observeTo": "",
+            "isSingleLoad": false,
+            "keys": {
+              "id": "value",
+              "search": "label",
+              "display": "label"
+            },
+            "defaultData": {},
+            "options": [
+              {
+                "value": "THB",
+                "label": "Thai baht (THB)"
+              },
+              {
+                "value": "USD",
+                "label": "US dollar (USD)"
+              },
+              {
+                "value": "EUR",
+                "label": "Euro (EUR)"
+              }
+            ],
+            "placeholder": "Any currency",
+            "value": {
+              "type": "state",
+              "key": "settings",
+              "path": "currency"
+            }
+          }
+        },
+        {
+          "sm": "6",
+          "md": "6",
+          "lg": "6",
+          "xl": "6",
+          "type": "textfield",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "lowStockThreshold",
+            "dataType": "number",
+            "label": "Low-stock threshold",
+            "isRequired": false,
+            "errorMessage": "",
+            "variant": "surface",
+            "size": "3",
+            "radius": "medium",
+            "isFullWidth": true,
+            "isFixedHeight": true,
+            "helperText": "A book at or below this stock is low.",
+            "value": {
+              "type": "state",
+              "key": "settings",
+              "path": "lowStockThreshold"
+            }
+          }
+        },
+        {
+          "sm": "6",
+          "md": "6",
+          "lg": "6",
+          "xl": "6",
+          "type": "switch",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "notifyOrders",
+            "dataType": "boolean",
+            "label": "Email me about new orders",
+            "isRequired": false,
+            "errorMessage": "",
+            "value": {
+              "type": "state",
+              "key": "settings",
+              "path": "notifyOrders"
+            }
+          }
+        },
+        {
+          "sm": "6",
+          "md": "6",
+          "lg": "6",
+          "xl": "6",
+          "type": "switch",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "notifyLowStock",
+            "dataType": "boolean",
+            "label": "Low-stock alerts",
+            "isRequired": false,
+            "errorMessage": "",
+            "canObserve": true,
+            "value": {
+              "type": "state",
+              "key": "settings",
+              "path": "notifyLowStock"
+            }
+          }
+        },
+        {
+          "sm": "6",
+          "md": "6",
+          "lg": "6",
+          "xl": "6",
+          "type": "switch",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "lowStockDaily",
+            "dataType": "boolean",
+            "label": "Send them as one daily summary",
+            "isRequired": false,
+            "errorMessage": "",
+            "enabledWhen": {
+              "left": {
+                "key": "notifyLowStock",
+                "type": "observe"
+              },
+              "operator": "eq",
+              "right": {
+                "val": true
+              }
+            },
+            "helperText": "Needs low-stock alerts on.",
+            "value": {
+              "type": "state",
+              "key": "settings",
+              "path": "lowStockDaily"
+            }
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "workfloweditor",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "refundLine",
+            "dataType": "array",
+            "isRequired": true,
+            "errorMessage": "Add at least one step",
+            "label": "Refund approval line",
+            "helperText": "Who reviews and who approves a refund request. The approver is always last.",
+            "roles": [
+              {
+                "value": "Reviewer",
+                "label": "Reviewer"
+              },
+              {
+                "value": "Approver",
+                "label": "Approver",
+                "max": 1,
+                "position": "last"
+              }
+            ],
+            "users": {
+              "api": {
+                "name": "listStaff",
+                "paths": [
+                  "data"
+                ]
+              },
+              "keys": {
+                "id": "_id",
+                "display": "name",
+                "subtitle": "jobTitle",
+                "avatar": "avatar",
+                "search": "name"
+              }
+            },
+            "stepKeys": {
+              "role": "actionType",
+              "sequence": "sequence",
+              "incharge": "inchargeUsers",
+              "cc": "ccUsers"
+            },
+            "labels": {
+              "add": "Add step",
+              "dialogTitle": "Add step",
+              "editTitle": "Edit step",
+              "roleField": "Role",
+              "incharge": "Who",
+              "cc": "Copy to"
+            },
+            "value": {
+              "type": "state",
+              "key": "settings",
+              "path": "refundLine"
+            }
+          }
+        },
+        {
+          "sm": "4",
+          "md": "3",
+          "lg": "2",
+          "xl": "2",
+          "type": "button",
+          "justifySelf": "start",
+          "alignSelf": "stretch",
+          "condition": {
+            "left": {
+              "source": "state",
+              "key": "me",
+              "path": "role"
+            },
+            "operator": "eq",
+            "right": {
+              "val": "manager"
+            }
+          },
+          "element": {
+            "label": "Save settings",
+            "icon": "save",
+            "actions": [
+              "StartLoading",
+              "SubmitFormToPatchAPI",
+              "StopLoading"
+            ],
+            "api": {
+              "name": "updateSettings"
+            },
+            "reloadDataTable": "settings",
+            "snackbarSuccess": {
+              "type": "success",
+              "message": "Settings saved"
+            },
+            "snackbarError": "$exception"
+          }
+        }
+      ],
+      "gap": "16px",
+      "justifyItems": "stretch",
+      "alignItems": "stretch",
+      "justifyContent": "start",
+      "alignContent": "start",
+      "gridAutoFlow": "row"
+    }
+  ],
+  "loads": [
+    {
+      "key": "settings",
+      "api": {
+        "name": "getSettings",
+        "paths": [
+          "data"
+        ]
+      },
+      "loading": "skeleton",
+      "errorMessage": "Could not load the settings"
+    }
+  ]
+}

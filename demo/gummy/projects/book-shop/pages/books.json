@@ -1,0 +1,738 @@
+{
+  "containers": [
+    {
+      "id": "page-books",
+      "name": "page-books",
+      "isArray": false,
+      "bins": [
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "Books",
+            "variant": "h3",
+            "weight": "bold"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "The catalogue, paged and sorted by the API. Filter by genre, then by one of that genre’s authors. Edit opens the book form; only a manager sees Delete in it. Click a row for the book page.",
+            "variant": "body2",
+            "color": "gray"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "datatable",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "books",
+            "title": "Catalogue",
+            "rowNavigate": {
+              "page": "bookDetail",
+              "params": {
+                "id": {
+                  "type": "row",
+                  "key": "_id"
+                }
+              }
+            },
+            "columns": [
+              {
+                "accessor": "cover",
+                "header": "",
+                "enableSorting": false,
+                "enableColumnFilter": false,
+                "align": "start",
+                "html": "<img src=\"{{cover}}\" alt=\"\" style=\"width:36px;height:54px;object-fit:cover;border-radius:4px;display:block\">",
+                "size": 64,
+                "enableResizing": false
+              },
+              {
+                "accessor": "title",
+                "header": "Title",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "pin": "left",
+                "size": 240
+              },
+              {
+                "accessor": "authorName",
+                "header": "Author",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start"
+              },
+              {
+                "accessor": "genreName",
+                "header": "Genre",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start"
+              },
+              {
+                "accessor": "priceText",
+                "header": "Price",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "end",
+                "sortField": "price"
+              },
+              {
+                "accessor": "stock",
+                "header": "Stock",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "end"
+              },
+              {
+                "accessor": "publishedAt",
+                "header": "Published",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "useDateFormat": "DD/MM/YYYY"
+              },
+              {
+                "accessor": "rating",
+                "header": "Rating",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "end"
+              }
+            ],
+            "api": {
+              "name": "listBooks",
+              "paths": [
+                "data"
+              ],
+              "query": {
+                "genre": {
+                  "type": "filter",
+                  "key": "genre"
+                },
+                "author": {
+                  "type": "filter",
+                  "key": "author"
+                },
+                "inStock": {
+                  "type": "filter",
+                  "key": "inStock"
+                }
+              },
+              "pagination": {
+                "offsetKey": "offset",
+                "limitKey": "limit",
+                "searchKey": "search",
+                "totalPath": [
+                  "total"
+                ],
+                "pageSizeOptions": [
+                  10,
+                  20,
+                  50
+                ]
+              },
+              "sort": {
+                "sortKey": "sortBy",
+                "orderKey": "sortDir",
+                "default": {
+                  "field": "title",
+                  "order": "asc"
+                }
+              }
+            },
+            "canAdd": true,
+            "addButton": {
+              "label": "Add book"
+            },
+            "filterContainer": {
+              "id": "datatable-bs-item--filter",
+              "name": "datatable-bs-item--filter",
+              "isArray": false,
+              "bins": [
+                {
+                  "sm": "12",
+                  "md": "12",
+                  "lg": "12",
+                  "xl": "12",
+                  "type": "autocomplete",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "genre",
+                    "dataType": "string",
+                    "label": "Genre",
+                    "isRequired": false,
+                    "errorMessage": "",
+                    "canObserve": true,
+                    "observeTo": "",
+                    "isSingleLoad": false,
+                    "keys": {
+                      "id": "_id",
+                      "search": "name",
+                      "display": "name"
+                    },
+                    "defaultData": {},
+                    "options": [],
+                    "placeholder": "Choose genre",
+                    "api": {
+                      "name": "listGenres",
+                      "paths": [
+                        "data"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "sm": "12",
+                  "md": "12",
+                  "lg": "12",
+                  "xl": "12",
+                  "type": "autocomplete",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "author",
+                    "dataType": "string",
+                    "label": "Author",
+                    "isRequired": false,
+                    "errorMessage": "",
+                    "canObserve": false,
+                    "observeTo": "genre",
+                    "isSingleLoad": false,
+                    "keys": {
+                      "id": "_id",
+                      "search": "name",
+                      "display": "name"
+                    },
+                    "defaultData": {},
+                    "options": [],
+                    "placeholder": "Pick a genre first",
+                    "itemAvatar": "avatar",
+                    "api": {
+                      "name": "genreAuthors",
+                      "paths": [
+                        "data"
+                      ],
+                      "params": {
+                        "genre": {
+                          "type": "observe",
+                          "key": "genre"
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "sm": "12",
+                  "md": "12",
+                  "lg": "12",
+                  "xl": "12",
+                  "type": "autocomplete",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "inStock",
+                    "dataType": "string",
+                    "label": "Stock",
+                    "isRequired": false,
+                    "errorMessage": "",
+                    "canObserve": false,
+                    "observeTo": "",
+                    "isSingleLoad": false,
+                    "keys": {
+                      "id": "value",
+                      "search": "label",
+                      "display": "label"
+                    },
+                    "defaultData": {},
+                    "options": [
+                      {
+                        "value": "true",
+                        "label": "In stock"
+                      },
+                      {
+                        "value": "false",
+                        "label": "Out of stock"
+                      }
+                    ],
+                    "placeholder": "Any stock"
+                  }
+                }
+              ],
+              "gap": "16px",
+              "justifyItems": "stretch",
+              "alignItems": "stretch",
+              "justifyContent": "start",
+              "alignContent": "start",
+              "gridAutoFlow": "row"
+            },
+            "modalContainer": {
+              "id": "datatable-bs-item-",
+              "name": "datatable-bs-item-",
+              "isArray": false,
+              "bins": [
+                {
+                  "sm": "12",
+                  "md": "12",
+                  "lg": "12",
+                  "xl": "12",
+                  "type": "hidden",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "_id",
+                    "dataType": "string"
+                  }
+                },
+                {
+                  "sm": "12",
+                  "md": "12",
+                  "lg": "12",
+                  "xl": "12",
+                  "type": "textfield",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "title",
+                    "dataType": "string",
+                    "label": "Title",
+                    "isRequired": true,
+                    "errorMessage": "",
+                    "variant": "surface",
+                    "size": "3",
+                    "radius": "medium",
+                    "isFullWidth": true,
+                    "isFixedHeight": true,
+                    "placeholder": "The book title"
+                  }
+                },
+                {
+                  "sm": "6",
+                  "md": "6",
+                  "lg": "6",
+                  "xl": "6",
+                  "type": "autocomplete",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "authorId",
+                    "dataType": "string",
+                    "label": "Author",
+                    "isRequired": true,
+                    "errorMessage": "",
+                    "canObserve": false,
+                    "observeTo": "",
+                    "isSingleLoad": false,
+                    "keys": {
+                      "id": "_id",
+                      "search": "name",
+                      "display": "name"
+                    },
+                    "defaultData": {},
+                    "options": [],
+                    "placeholder": "Choose author",
+                    "itemSubtitle": "country",
+                    "itemAvatar": "avatar",
+                    "api": {
+                      "name": "listAuthors",
+                      "paths": [
+                        "data"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "sm": "6",
+                  "md": "6",
+                  "lg": "6",
+                  "xl": "6",
+                  "type": "autocomplete",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "genreId",
+                    "dataType": "string",
+                    "label": "Genre",
+                    "isRequired": true,
+                    "errorMessage": "",
+                    "canObserve": false,
+                    "observeTo": "",
+                    "isSingleLoad": false,
+                    "keys": {
+                      "id": "_id",
+                      "search": "name",
+                      "display": "name"
+                    },
+                    "defaultData": {},
+                    "options": [],
+                    "placeholder": "Choose genre",
+                    "api": {
+                      "name": "listGenres",
+                      "paths": [
+                        "data"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "sm": "6",
+                  "md": "6",
+                  "lg": "3",
+                  "xl": "3",
+                  "type": "textfield",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "price",
+                    "dataType": "number",
+                    "label": "Price (THB)",
+                    "isRequired": true,
+                    "errorMessage": "",
+                    "variant": "surface",
+                    "size": "3",
+                    "radius": "medium",
+                    "isFullWidth": true,
+                    "isFixedHeight": true
+                  }
+                },
+                {
+                  "sm": "6",
+                  "md": "6",
+                  "lg": "3",
+                  "xl": "3",
+                  "type": "textfield",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "stock",
+                    "dataType": "number",
+                    "label": "In stock",
+                    "isRequired": false,
+                    "errorMessage": "",
+                    "variant": "surface",
+                    "size": "3",
+                    "radius": "medium",
+                    "isFullWidth": true,
+                    "isFixedHeight": true
+                  }
+                },
+                {
+                  "sm": "6",
+                  "md": "6",
+                  "lg": "3",
+                  "xl": "3",
+                  "type": "textfield",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "pages",
+                    "dataType": "number",
+                    "label": "Pages",
+                    "isRequired": false,
+                    "errorMessage": "",
+                    "variant": "surface",
+                    "size": "3",
+                    "radius": "medium",
+                    "isFullWidth": true,
+                    "isFixedHeight": true
+                  }
+                },
+                {
+                  "sm": "6",
+                  "md": "6",
+                  "lg": "3",
+                  "xl": "3",
+                  "type": "datepicker",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "publishedAt",
+                    "dataType": "string",
+                    "label": "Published",
+                    "isRequired": false,
+                    "errorMessage": "",
+                    "variant": "surface",
+                    "size": "2",
+                    "radius": "medium",
+                    "clearable": true,
+                    "displayFormat": "DD/MM/YYYY",
+                    "weekStartsOn": 0
+                  }
+                },
+                {
+                  "sm": "6",
+                  "md": "6",
+                  "lg": "6",
+                  "xl": "6",
+                  "type": "textfield",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "isbn",
+                    "dataType": "string",
+                    "label": "ISBN",
+                    "isRequired": false,
+                    "errorMessage": "",
+                    "variant": "surface",
+                    "size": "3",
+                    "radius": "medium",
+                    "isFullWidth": true,
+                    "isFixedHeight": true,
+                    "placeholder": "978-…"
+                  }
+                },
+                {
+                  "sm": "6",
+                  "md": "6",
+                  "lg": "6",
+                  "xl": "6",
+                  "type": "switch",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "featured",
+                    "dataType": "boolean",
+                    "label": "Featured in the catalogue",
+                    "isRequired": false,
+                    "errorMessage": ""
+                  }
+                },
+                {
+                  "sm": "12",
+                  "md": "6",
+                  "lg": "4",
+                  "xl": "4",
+                  "type": "uploadimage",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "cover",
+                    "dataType": "string",
+                    "label": "Cover",
+                    "isRequired": false,
+                    "errorMessage": "",
+                    "accept": "image/*",
+                    "shape": "square",
+                    "previewHeight": 180,
+                    "valueFormat": "api",
+                    "helperText": "PNG, JPEG, GIF or WebP up to 5 MB. Leave empty for a drawn cover.",
+                    "maxSizeMB": 5,
+                    "uploadApi": {
+                      "uploadUrl": "http://localhost:9100/api/upload",
+                      "fieldName": "file",
+                      "responsePath": "data.url"
+                    }
+                  }
+                },
+                {
+                  "sm": "12",
+                  "md": "12",
+                  "lg": "8",
+                  "xl": "8",
+                  "type": "textarea",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "description",
+                    "dataType": "string",
+                    "label": "Description",
+                    "isRequired": false,
+                    "errorMessage": "",
+                    "rows": 7,
+                    "resize": "vertical",
+                    "autoResize": false,
+                    "showCharCount": false
+                  }
+                },
+                {
+                  "sm": "4",
+                  "md": "3",
+                  "lg": "2",
+                  "xl": "2",
+                  "type": "button",
+                  "justifySelf": "start",
+                  "alignSelf": "stretch",
+                  "condition": {
+                    "right": {
+                      "key": "books",
+                      "path": "_id"
+                    },
+                    "operator": "eq",
+                    "left": {}
+                  },
+                  "element": {
+                    "label": "Create",
+                    "icon": "save",
+                    "actions": [
+                      "ConfirmBox"
+                    ],
+                    "confirmBox": {
+                      "title": "Create",
+                      "description": "Create this book?",
+                      "True": [
+                        "StartLoading",
+                        "SubmitFormToPostAPI",
+                        "StopLoading",
+                        "CloseModal"
+                      ],
+                      "False": []
+                    },
+                    "api": {
+                      "name": "createBook"
+                    },
+                    "reloadDataTable": "books",
+                    "snackbarSuccess": {
+                      "type": "success",
+                      "message": "Book added"
+                    },
+                    "snackbarError": "$exception"
+                  }
+                },
+                {
+                  "sm": "4",
+                  "md": "3",
+                  "lg": "2",
+                  "xl": "2",
+                  "type": "button",
+                  "justifySelf": "start",
+                  "alignSelf": "stretch",
+                  "condition": {
+                    "right": {
+                      "key": "books",
+                      "path": "_id"
+                    },
+                    "operator": "neq",
+                    "left": {}
+                  },
+                  "element": {
+                    "label": "Save",
+                    "icon": "save",
+                    "actions": [
+                      "ConfirmBox"
+                    ],
+                    "confirmBox": {
+                      "title": "Save",
+                      "description": "Save this book?",
+                      "True": [
+                        "StartLoading",
+                        "SubmitFormToPatchAPI",
+                        "StopLoading",
+                        "CloseModal"
+                      ],
+                      "False": []
+                    },
+                    "api": {
+                      "name": "updateBook"
+                    },
+                    "reloadDataTable": "books",
+                    "snackbarSuccess": {
+                      "type": "success",
+                      "message": "Book saved"
+                    },
+                    "snackbarError": "$exception"
+                  }
+                },
+                {
+                  "sm": "4",
+                  "md": "3",
+                  "lg": "2",
+                  "xl": "2",
+                  "type": "button",
+                  "justifySelf": "start",
+                  "alignSelf": "stretch",
+                  "condition": {
+                    "left": {
+                      "right": {
+                        "key": "books",
+                        "path": "_id"
+                      },
+                      "operator": "neq",
+                      "left": {}
+                    },
+                    "operator": "and",
+                    "right": {
+                      "left": {
+                        "source": "state",
+                        "key": "me",
+                        "path": "role"
+                      },
+                      "operator": "eq",
+                      "right": {
+                        "val": "manager"
+                      }
+                    }
+                  },
+                  "element": {
+                    "label": "Delete",
+                    "icon": "trash",
+                    "variant": "outlined",
+                    "color": "red",
+                    "actions": [
+                      "ConfirmBox"
+                    ],
+                    "confirmBox": {
+                      "title": "Delete book",
+                      "description": "Delete this book from the catalogue? This cannot be undone.",
+                      "True": [
+                        "StartLoading",
+                        "SubmitFormToPostAPI",
+                        "StopLoading",
+                        "CloseModal"
+                      ],
+                      "False": []
+                    },
+                    "api": {
+                      "name": "deleteBook"
+                    },
+                    "reloadDataTable": "books",
+                    "snackbarSuccess": {
+                      "type": "success",
+                      "message": "Book deleted"
+                    },
+                    "snackbarError": "$exception"
+                  }
+                }
+              ],
+              "gap": "16px",
+              "justifyItems": "stretch",
+              "alignItems": "stretch",
+              "justifyContent": "start",
+              "alignContent": "start",
+              "gridAutoFlow": "row",
+              "contextData": "books"
+            },
+            "modalMaxWidth": "880px",
+            "modalMinWidth": "720px",
+            "canEdit": true,
+            "canDelete": false
+          }
+        }
+      ],
+      "gap": "16px",
+      "justifyItems": "stretch",
+      "alignItems": "stretch",
+      "justifyContent": "start",
+      "alignContent": "start",
+      "gridAutoFlow": "row"
+    }
+  ]
+}

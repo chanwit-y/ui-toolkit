@@ -11,6 +11,7 @@ import { useNavigateTo } from "./core/pages";
 import { useRowScope } from "./core/rowScope";
 import { getStateStore, readSlice } from "./core/stateStore";
 import { isCustomAction, resolveCustomAction, useActions } from "./core/actions";
+import { useAuthOptional } from "../auth/azure/context";
 import Icon from "./Icon";
 import type { IconData } from "./core/const/iconData";
 import { useSnackbar } from "./Snackbar";
@@ -47,11 +48,12 @@ const ButtonBase = forwardRef<ElementRef<typeof RadixButton>, ButtonBaseProps>(
 				disabled={disabled}
 				variant={RADIX_VARIANTS[variant] ?? "solid"}
 				className={variant === "text" ? "cursor-pointer !m-0" : "cursor-pointer"}
-				color={
-					(theme.components.button?.color as ThemeProps["accentColor"]) ||
-					color ||
-					"blue"
-				}
+				// The button's own colour, else the theme's button colour, else the
+				// theme accent (Radix's default when `color` is unset). It used to be
+				// theme-first with a hard "blue" fallback: an explicit colour (the
+				// workflow editor's red Remove) was overridden, and a theme without a
+				// button colour got blue instead of its accent.
+				color={color || (theme.components.button?.color as ThemeProps["accentColor"]) || undefined}
 				onClick={onClick}
 			>
 				{icon ? <Icon icon={icon} size={14} /> : ""}
@@ -86,6 +88,7 @@ const Button = forwardRef<ElementRef<typeof RadixButton>, ButtonProps>(({
 	const { handleSubmit, formState, trigger, getValues, setValue } = useFormContext()
 	const { startLoading, stopLoading } = useLoading()
 	const customActions = useActions()
+	const auth = useAuthOptional()
 	const rowScope = useRowScope()
 
 	const [open, setOpen] = useState(false)
@@ -183,6 +186,14 @@ const Button = forwardRef<ElementRef<typeof RadixButton>, ButtonProps>(({
 					case 'Navigate':
 						navigateTo(navigate)
 						break;
+					case 'SignIn':
+						if (auth) await auth.signIn()
+						else console.warn(`[Button] "${label}": SignIn needs an <AzureAuth> (or <GummyApp> with project.auth) above the page — skipped.`)
+						break;
+					case 'SignOut':
+						if (auth) await auth.signOut()
+						else console.warn(`[Button] "${label}": SignOut needs an <AzureAuth> (or <GummyApp> with project.auth) above the page — skipped.`)
+						break;
 					default: {
 						// "fn:<name>" — a consumer-coded action from the ActionsProvider
 						// registry. It gets the same services the built-ins use, as one
@@ -217,6 +228,9 @@ const Button = forwardRef<ElementRef<typeof RadixButton>, ButtonProps>(({
 							startLoading,
 							stopLoading,
 							navigate: (target) => navigateTo(target),
+							auth: auth
+								? { status: auth.status, email: auth.account?.email, name: auth.account?.name, signIn: auth.signIn, signOut: auth.signOut, getToken: auth.getToken }
+								: undefined,
 							element: { label, actions, modalId, reloadDataTable, navigate, confirmBox },
 							event,
 						}
@@ -242,7 +256,7 @@ const Button = forwardRef<ElementRef<typeof RadixButton>, ButtonProps>(({
 				})
 			}
 		}
-	}, [api, clearCurrentFormSelected, handleSubmit, fnCtxs, onClick, showSnackbar, snackbarSuccess, startLoading, stopLoading, modalId, reloadDataTable, formState, trigger, snackbarError, navigateTo, navigate, customActions, label, actions, confirmBox, contextData, getValues, setValue, rowScope])
+	}, [api, clearCurrentFormSelected, handleSubmit, fnCtxs, onClick, showSnackbar, snackbarSuccess, startLoading, stopLoading, modalId, reloadDataTable, formState, trigger, snackbarError, navigateTo, navigate, customActions, auth, label, actions, confirmBox, contextData, getValues, setValue, rowScope])
 
 	const handleConfirm = useCallback((isConfirm: boolean) => {
 		if (isConfirm) {

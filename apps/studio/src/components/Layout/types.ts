@@ -854,6 +854,14 @@ export type DataCondition = {
   value: string
 }
 
+/**
+ * `DataCondition.loadId` for a condition on the **enclosing repeater's item**
+ * instead of a page load (`compare` only): exported as the engine's bin
+ * condition over `{ key: "row", path }`, which a repeater's template sees
+ * (`ctx = { row, index }`). Offered by the Show when panel inside a template.
+ */
+export const ITEM_CONDITION_SOURCE = '$item'
+
 export function createDataCondition(loadId: string): DataCondition {
   return { loadId, test: 'loaded', path: '', op: 'eq', value: '' }
 }
@@ -1394,6 +1402,12 @@ export type ButtonConfig = {
   icon: string
   /** Exported only off the engine default (`contained`). */
   variant: ButtonVariant
+  /**
+   * A Radix colour name (`red`, `iris`, …) for this button; `''` / absent =
+   * the theme (its button colour, else the accent). Optional, so configs saved
+   * before it existed need no migration. Exported only when set.
+   */
+  color?: string
 }
 
 /** Defaults for a freshly dropped button. */
@@ -1418,6 +1432,9 @@ export type BuiltinButtonActionKey =
   | 'Navigate'
   /** Refetch `reloadTableItemId`: a table / form list / repeater, or a page load. */
   | 'ReloadDataTable'
+  /** Azure SSO (the project's auth entry): start the sign-in / sign out. */
+  | 'SignIn'
+  | 'SignOut'
 
 /**
  * A built-in engine action, or a project custom action by its declaration

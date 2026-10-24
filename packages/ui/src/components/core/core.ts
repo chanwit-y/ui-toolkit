@@ -1,37 +1,36 @@
 import type { TModelMaster } from "../../model/master";
-import { ApiFactory, HttpClientFactory } from "../../api";
-import { ApiMaster, type TApiMaster } from "../../api/APIMaster";
+import type { HttpClientFactory } from "../../api";
+import type { ApiMaster, TApiMaster } from "../../api/APIMaster";
 import { ContainerBuilder } from "./containerBuilder";
+import { sharedApiMaster } from "./sharedApiMaster";
 
 import type { Container, PageLoad } from "../@types";
-import type { IAuthContext } from "../../auth/@types";
+
+let constructed = 0;
+
+/** How many `Core`s were constructed since the last reset — for tests and benchmarks. */
+export function coreStats(): { constructed: number } {
+  return { constructed };
+}
+
+export function resetCoreStats(): void {
+  constructed = 0;
+}
 
 export class Core {
-  private _apiFactory: ApiFactory<any, {}>;
-  private _modelConfig: TModelMaster;
-  private _apiConfig: TApiMaster<any>;
-  private _apis: ApiMaster<typeof this._modelConfig, typeof this._apiConfig>;
+  private _apis: ApiMaster<TModelMaster, TApiMaster<TModelMaster>>;
 
   constructor(
-    private _http: HttpClientFactory,
-    private _model: TModelMaster,
-    private _api: Record<string, any>,
+    http: HttpClientFactory,
+    model: TModelMaster,
+    api: Record<string, any>,
     private _containers: Container[],
     /** Page-level data loads (`PageElement.loads`), mounted once above the containers. */
     private _loads: PageLoad[] = []
   ) {
-    this._apiFactory = new ApiFactory(this._http, {});
-    this._modelConfig = this._model;
-    this._apiConfig = this._api as TApiMaster<any>;
-    this._apis = new ApiMaster(
-      this._modelConfig,
-      this._apiConfig,
-      this._apiFactory
-    );
-  }
-
-  public useAuthCtx(_hookAuthCtx: () => IAuthContext<any>): Core {
-    return this;
+    // Shared per (http, model, api): every page of an app reuses one set of schemas and request functions.
+    this._apis = sharedApiMaster(http, model, api);
+    constructed += 1;
   }
 
   public run() {

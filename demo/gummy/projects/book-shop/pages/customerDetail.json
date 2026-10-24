@@ -1,0 +1,192 @@
+{
+  "containers": [
+    {
+      "id": "page-customerDetail",
+      "name": "page-customerDetail",
+      "isArray": false,
+      "bins": [
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "button",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "label": "Back to customers",
+            "icon": "chevronLeft",
+            "variant": "text",
+            "actions": [
+              "Navigate"
+            ],
+            "navigate": {
+              "page": "customers"
+            }
+          }
+        },
+        {
+          "sm": "12",
+          "md": "6",
+          "lg": "4",
+          "xl": "4",
+          "type": "card",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "customerCard",
+            "header": {
+              "title": "Customer",
+              "titleValue": {
+                "type": "state",
+                "key": "customer",
+                "path": "name"
+              },
+              "subheaderValue": {
+                "type": "state",
+                "key": "customer",
+                "path": "email"
+              },
+              "avatar": {
+                "name": "",
+                "size": "md",
+                "fallback": "?",
+                "srcValue": {
+                  "type": "state",
+                  "key": "customer",
+                  "path": "avatar"
+                },
+                "fallbackValue": {
+                  "type": "state",
+                  "key": "customer",
+                  "path": "name"
+                }
+              }
+            },
+            "content": {
+              "id": "card-bs-item-",
+              "name": "card-bs-item-",
+              "isArray": false,
+              "bins": [
+                {
+                  "sm": "12",
+                  "md": "12",
+                  "lg": "12",
+                  "xl": "12",
+                  "type": "html",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "customerFacts",
+                    "html": "<dl><dt>City</dt><dd>{{city}}</dd><dt>Phone</dt><dd>{{phone}}</dd><dt>Customer since</dt><dd>{{joinedAtText}}</dd><dt>Orders</dt><dd>{{orderCount}}</dd><dt>Spent</dt><dd><strong>{{totalSpentText}}</strong></dd></dl>",
+                    "value": {
+                      "type": "state",
+                      "key": "customer"
+                    }
+                  }
+                }
+              ],
+              "gap": "16px",
+              "justifyItems": "stretch",
+              "alignItems": "stretch",
+              "justifyContent": "start",
+              "alignContent": "start",
+              "gridAutoFlow": "row"
+            },
+            "actionsAlign": "end",
+            "variant": "outlined"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "8",
+          "xl": "8",
+          "type": "datatable",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "customerOrders",
+            "title": "Orders",
+            "rowNavigate": {
+              "page": "orderDetail",
+              "params": {
+                "id": {
+                  "type": "row",
+                  "key": "_id"
+                }
+              }
+            },
+            "columns": [
+              {
+                "accessor": "number",
+                "header": "Order",
+                "enableSorting": false,
+                "enableColumnFilter": false,
+                "align": "start"
+              },
+              {
+                "accessor": "placedAt",
+                "header": "Placed",
+                "enableSorting": false,
+                "enableColumnFilter": false,
+                "align": "start",
+                "useDateFormat": "DD/MM/YYYY"
+              },
+              {
+                "accessor": "statusLabel",
+                "header": "Status",
+                "enableSorting": false,
+                "enableColumnFilter": false,
+                "align": "start",
+                "html": "<span class=\"dt-badge\">{{statusLabel}}</span>"
+              },
+              {
+                "accessor": "totalText",
+                "header": "Total",
+                "enableSorting": false,
+                "enableColumnFilter": false,
+                "align": "end"
+              }
+            ],
+            "items": {
+              "type": "state",
+              "key": "customer",
+              "path": "orders"
+            },
+            "canSearch": false,
+            "cellLines": 1,
+            "canEdit": false,
+            "canDelete": false
+          }
+        }
+      ],
+      "gap": "16px",
+      "justifyItems": "stretch",
+      "alignItems": "stretch",
+      "justifyContent": "start",
+      "alignContent": "start",
+      "gridAutoFlow": "row"
+    }
+  ],
+  "loads": [
+    {
+      "key": "customer",
+      "api": {
+        "name": "getCustomer",
+        "paths": [
+          "data"
+        ],
+        "params": {
+          "id": {
+            "type": "url",
+            "key": "id",
+            "source": "param"
+          }
+        }
+      },
+      "loading": "cycle",
+      "errorMessage": "Could not load the customer"
+    }
+  ]
+}

@@ -5,6 +5,7 @@ import { MISSING_OBSERVE_TARGET, observeContext, type ObserveContext } from './o
 import {
   collectButtonTargets,
   createChildCanvas,
+  ITEM_CONDITION_SOURCE,
   DEFAULT_ADD_BUTTON,
   DEFAULT_CARD_MEDIA_HEIGHT,
   DEFAULT_CELL_LINES,
@@ -1077,14 +1078,22 @@ function conditionValue(text: string): unknown {
  * Status tests read `$status`; `set` / `unset` compare against `undefined`
  * (the `val` drops from JSON, which the engine reads the same way).
  */
-function dataConditionValue(c: DataCondition, refs: Pick<ButtonRefMaps, 'loadKey'>): Record<string, unknown> | undefined {
+export function dataConditionValue(c: DataCondition, refs: Pick<ButtonRefMaps, 'loadKey'>): Record<string, unknown> | undefined {
   if (!c.loadId) return undefined
-  const key = refs.loadKey(c.loadId)
-  if (c.test !== 'compare') {
-    const status = { loaded: 'success', loading: 'loading', failed: 'error' }[c.test]
-    return { left: { source: 'state', key, path: '$status' }, operator: 'eq', right: { val: status } }
+  let left: Record<string, unknown>
+  if (c.loadId === ITEM_CONDITION_SOURCE) {
+    // The enclosing repeater item: the engine's bin conditions inside a
+    // template see `{ row, index }`. A load status has no meaning here.
+    if (c.test !== 'compare') return undefined
+    left = { key: 'row', ...(c.path ? { path: c.path } : {}) }
+  } else {
+    const key = refs.loadKey(c.loadId)
+    if (c.test !== 'compare') {
+      const status = { loaded: 'success', loading: 'loading', failed: 'error' }[c.test]
+      return { left: { source: 'state', key, path: '$status' }, operator: 'eq', right: { val: status } }
+    }
+    left = { source: 'state', key, ...(c.path ? { path: c.path } : {}) }
   }
-  const left = { source: 'state', key, ...(c.path ? { path: c.path } : {}) }
   if (c.op === 'set' || c.op === 'unset')
     return { left, operator: c.op === 'set' ? 'neq' : 'eq', right: { val: undefined } }
   return { left, operator: c.op, right: { val: conditionValue(c.value) } }
@@ -1332,6 +1341,7 @@ function replaceProfileElement(
     ...(c.trigger.label !== DEFAULT_REPLACE_TRIGGER.label ? { label: c.trigger.label } : {}),
     ...(c.trigger.icon && c.trigger.icon !== DEFAULT_REPLACE_TRIGGER.icon ? { icon: c.trigger.icon } : {}),
     ...(c.trigger.variant !== 'contained' ? { variant: c.trigger.variant } : {}),
+    ...(c.trigger.color ? { color: c.trigger.color } : {}),
   }
   const searchParam = c.searchParam.trim()
   return {
@@ -1504,6 +1514,7 @@ function buttonElement(c: ButtonConfig): Record<string, unknown> {
     label: c.label,
     ...(c.icon ? { icon: c.icon } : {}),
     ...(c.variant !== 'contained' ? { variant: c.variant } : {}),
+    ...(c.color ? { color: c.color } : {}),
     actions: [],
   }
 }
@@ -1547,6 +1558,7 @@ function buttonItemElement(
     label: c.label,
     ...(c.icon ? { icon: c.icon } : {}),
     ...(c.variant !== 'contained' ? { variant: c.variant } : {}),
+    ...(c.color ? { color: c.color } : {}),
     // Custom actions are stored by declaration id and exported by name.
     actions: confirm ? ['ConfirmBox'] : c.actions.map(refs.actionKey),
     ...(confirm

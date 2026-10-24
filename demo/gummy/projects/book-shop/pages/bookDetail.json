@@ -1,0 +1,488 @@
+{
+  "containers": [
+    {
+      "id": "page-bookDetail",
+      "name": "page-bookDetail",
+      "isArray": false,
+      "bins": [
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "button",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "label": "Back to books",
+            "icon": "chevronLeft",
+            "variant": "text",
+            "actions": [
+              "Navigate"
+            ],
+            "navigate": {
+              "page": "books"
+            }
+          }
+        },
+        {
+          "sm": "12",
+          "md": "6",
+          "lg": "4",
+          "xl": "4",
+          "type": "card",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "bookCover",
+            "media": {
+              "alt": "Cover",
+              "srcValue": {
+                "type": "state",
+                "key": "book",
+                "path": "cover"
+              },
+              "height": 380
+            },
+            "content": {
+              "id": "card-bs-item-",
+              "name": "card-bs-item-",
+              "isArray": false,
+              "bins": [],
+              "gap": "16px",
+              "justifyItems": "stretch",
+              "alignItems": "stretch",
+              "justifyContent": "start",
+              "alignContent": "start",
+              "gridAutoFlow": "row"
+            },
+            "actionsAlign": "end",
+            "variant": "outlined"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "8",
+          "xl": "8",
+          "type": "container",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "container": {
+            "id": "container-bs-item-",
+            "name": "container-bs-item-",
+            "isArray": false,
+            "bins": [
+              {
+                "sm": "12",
+                "md": "12",
+                "lg": "12",
+                "xl": "12",
+                "type": "typography",
+                "justifySelf": "stretch",
+                "alignSelf": "stretch",
+                "element": {
+                  "text": "Untitled",
+                  "variant": "h3",
+                  "weight": "bold",
+                  "value": {
+                    "type": "state",
+                    "key": "book",
+                    "path": "title"
+                  }
+                }
+              },
+              {
+                "sm": "12",
+                "md": "12",
+                "lg": "12",
+                "xl": "12",
+                "type": "typography",
+                "justifySelf": "stretch",
+                "alignSelf": "stretch",
+                "element": {
+                  "text": "",
+                  "variant": "subtitle1",
+                  "color": "gray",
+                  "value": {
+                    "type": "state",
+                    "key": "book",
+                    "path": "authorName"
+                  }
+                }
+              },
+              {
+                "sm": "12",
+                "md": "12",
+                "lg": "12",
+                "xl": "12",
+                "type": "html",
+                "justifySelf": "stretch",
+                "alignSelf": "stretch",
+                "element": {
+                  "name": "bookFacts",
+                  "html": "<p><span class=\"dt-badge\">{{genreName}}</span> <strong>{{priceText}}</strong> · {{stock}} in stock · ★ {{rating}} ({{reviewCount}} reviews)</p><dl><dt>ISBN</dt><dd>{{isbn}}</dd><dt>Pages</dt><dd>{{pages}}</dd><dt>Published</dt><dd>{{publishedAtText}}</dd></dl><p>{{description}}</p>",
+                  "value": {
+                    "type": "state",
+                    "key": "book"
+                  }
+                }
+              },
+              {
+                "sm": "4",
+                "md": "3",
+                "lg": "2",
+                "xl": "2",
+                "type": "button",
+                "justifySelf": "start",
+                "alignSelf": "stretch",
+                "element": {
+                  "label": "Author",
+                  "icon": "user",
+                  "variant": "outlined",
+                  "actions": [
+                    "Navigate"
+                  ],
+                  "navigate": {
+                    "page": "authorDetail",
+                    "params": {
+                      "id": {
+                        "type": "state",
+                        "key": "book",
+                        "path": "authorId"
+                      }
+                    }
+                  }
+                }
+              }
+            ],
+            "gap": "16px",
+            "justifyItems": "stretch",
+            "alignItems": "stretch",
+            "justifyContent": "start",
+            "alignContent": "start",
+            "gridAutoFlow": "row"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "formlist",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "editions",
+            "title": "Editions",
+            "addLabel": "Add edition",
+            "emptyText": "No editions yet.",
+            "addPosition": "bottom",
+            "addAlign": "start",
+            "addDisplay": "both",
+            "removePosition": "end",
+            "removeDisplay": "both",
+            "idKey": "_id",
+            "rowContainer": {
+              "id": "formlist-bs-item--row",
+              "name": "formlist-bs-item--row",
+              "isArray": false,
+              "bins": [
+                {
+                  "sm": "4",
+                  "md": "5",
+                  "lg": "4",
+                  "xl": "4",
+                  "type": "autocomplete",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "format",
+                    "dataType": "string",
+                    "label": "Format",
+                    "isRequired": false,
+                    "errorMessage": "",
+                    "canObserve": false,
+                    "observeTo": "",
+                    "isSingleLoad": false,
+                    "keys": {
+                      "id": "value",
+                      "search": "label",
+                      "display": "label"
+                    },
+                    "defaultData": {},
+                    "options": [
+                      {
+                        "value": "Hardcover",
+                        "label": "Hardcover"
+                      },
+                      {
+                        "value": "Paperback",
+                        "label": "Paperback"
+                      },
+                      {
+                        "value": "Ebook",
+                        "label": "Ebook"
+                      },
+                      {
+                        "value": "Audiobook",
+                        "label": "Audiobook"
+                      }
+                    ],
+                    "placeholder": "Any format"
+                  }
+                },
+                {
+                  "sm": "4",
+                  "md": "5",
+                  "lg": "5",
+                  "xl": "5",
+                  "type": "textfield",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "isbn",
+                    "dataType": "string",
+                    "label": "ISBN",
+                    "isRequired": false,
+                    "errorMessage": "",
+                    "variant": "surface",
+                    "size": "3",
+                    "radius": "medium",
+                    "isFullWidth": true,
+                    "isFixedHeight": true
+                  }
+                },
+                {
+                  "sm": "4",
+                  "md": "3",
+                  "lg": "3",
+                  "xl": "3",
+                  "type": "textfield",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "price",
+                    "dataType": "number",
+                    "label": "Price (THB)",
+                    "isRequired": true,
+                    "errorMessage": "",
+                    "variant": "surface",
+                    "size": "3",
+                    "radius": "medium",
+                    "isFullWidth": true,
+                    "isFixedHeight": true
+                  }
+                }
+              ],
+              "gap": "16px",
+              "justifyItems": "stretch",
+              "alignItems": "stretch",
+              "justifyContent": "start",
+              "alignContent": "start",
+              "gridAutoFlow": "row"
+            },
+            "apiCrud": {
+              "read": {
+                "name": "listEditions",
+                "paths": [
+                  "data"
+                ],
+                "params": {
+                  "bookId": {
+                    "type": "url",
+                    "key": "id",
+                    "source": "param"
+                  }
+                }
+              },
+              "create": {
+                "name": "createEdition",
+                "extraParams": {
+                  "bookId": {
+                    "type": "url",
+                    "key": "id",
+                    "source": "param"
+                  }
+                }
+              },
+              "update": {
+                "name": "updateEdition",
+                "params": {
+                  "id": "_id"
+                },
+                "extraParams": {
+                  "bookId": {
+                    "type": "url",
+                    "key": "id",
+                    "source": "param"
+                  }
+                }
+              },
+              "delete": {
+                "name": "deleteEdition",
+                "params": {
+                  "id": "_id"
+                },
+                "extraParams": {
+                  "bookId": {
+                    "type": "url",
+                    "key": "id",
+                    "source": "param"
+                  }
+                },
+                "confirmBox": {
+                  "title": "Remove edition",
+                  "description": "Remove this edition of the book?"
+                }
+              }
+            }
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "Reviews",
+            "variant": "h5",
+            "weight": "bold"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "repeater",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "reviews",
+            "emptyText": "No reviews yet.",
+            "idKey": "_id",
+            "api": {
+              "name": "listReviews",
+              "paths": [
+                "data"
+              ],
+              "params": {
+                "bookId": {
+                  "type": "url",
+                  "key": "id",
+                  "source": "param"
+                }
+              }
+            },
+            "itemContainer": {
+              "id": "repeater-bs-item--item",
+              "name": "repeater-bs-item--item",
+              "isArray": false,
+              "bins": [
+                {
+                  "sm": "12",
+                  "md": "12",
+                  "lg": "12",
+                  "xl": "12",
+                  "type": "card",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "reviewCard",
+                    "header": {
+                      "title": "Review",
+                      "titleValue": {
+                        "type": "row",
+                        "key": "title"
+                      },
+                      "subheaderValue": {
+                        "type": "row",
+                        "key": "reviewer"
+                      }
+                    },
+                    "content": {
+                      "id": "card-bs-item-",
+                      "name": "card-bs-item-",
+                      "isArray": false,
+                      "bins": [
+                        {
+                          "sm": "12",
+                          "md": "12",
+                          "lg": "12",
+                          "xl": "12",
+                          "type": "html",
+                          "justifySelf": "stretch",
+                          "alignSelf": "stretch",
+                          "element": {
+                            "name": "reviewBody",
+                            "html": "<p><strong>★ {{rating}}</strong> · <span class=\"dt-muted\">{{createdAtText}}</span></p><p>{{body}}</p>",
+                            "value": {
+                              "type": "row",
+                              "key": "none"
+                            }
+                          }
+                        }
+                      ],
+                      "gap": "16px",
+                      "justifyItems": "stretch",
+                      "alignItems": "stretch",
+                      "justifyContent": "start",
+                      "alignContent": "start",
+                      "gridAutoFlow": "row"
+                    },
+                    "actionsAlign": "end",
+                    "variant": "outlined"
+                  }
+                }
+              ],
+              "gap": "16px",
+              "justifyItems": "stretch",
+              "alignItems": "stretch",
+              "justifyContent": "start",
+              "alignContent": "start",
+              "gridAutoFlow": "row"
+            },
+            "itemSpan": {
+              "sm": "12",
+              "md": "6",
+              "lg": "6",
+              "xl": "6"
+            },
+            "gap": "3",
+            "itemSurface": "none"
+          }
+        }
+      ],
+      "gap": "16px",
+      "justifyItems": "stretch",
+      "alignItems": "stretch",
+      "justifyContent": "start",
+      "alignContent": "start",
+      "gridAutoFlow": "row"
+    }
+  ],
+  "loads": [
+    {
+      "key": "book",
+      "api": {
+        "name": "getBook",
+        "paths": [
+          "data"
+        ],
+        "params": {
+          "id": {
+            "type": "url",
+            "key": "id",
+            "source": "param"
+          }
+        }
+      },
+      "loading": "cycle",
+      "errorMessage": "Could not load the book"
+    }
+  ]
+}

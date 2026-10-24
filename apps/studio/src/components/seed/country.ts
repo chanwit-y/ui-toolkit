@@ -47,6 +47,7 @@ import type { CustomComponentDef } from '../Workspace/customComponents'
 import type { EnvVarDef } from '../Env/types'
 import type { StudioThemeConfig } from '../Theme/types'
 import type { PageLoadDef } from '../Workspace/pageLoads'
+import { AUTH_PROFILE_LOAD_ID, createAuthDef, type AuthDef } from '../Workspace/auth'
 
 /**
  * The mock "country" config studio boots with — the same feature the example
@@ -190,6 +191,7 @@ export function countrySeedModels(): ModelDef[] {
     ...approvalSeedModels(),
     ...workflowSeedModels(),
     ...profileSeedModels(),
+    ...profileByEmailSeedModels(),
   ]
 }
 
@@ -1554,6 +1556,7 @@ export function countrySeedEndpoints(): EndpointDef[] {
     ...approvalSeedEndpoints(),
     ...workflowSeedEndpoints(),
     ...profileSeedEndpoints(),
+    ...profileByEmailSeedEndpoints(),
   ]
 }
 
@@ -4598,6 +4601,10 @@ export const ME_ENDPOINT_ID = 'seed-endpoint-profile-me'
 export const SEARCH_PROFILES_ENDPOINT_ID = 'seed-endpoint-profile-search'
 export const PROFILES_BY_PERSON_ENDPOINT_ID = 'seed-endpoint-profiles-by-person'
 export const LOAD_ME_ID = 'load-seed-me'
+export const PROFILE_BY_EMAIL_ENDPOINT_ID = 'seed-endpoint-profile-by-email'
+export const PROFILE_EMAIL_QUERY_MODEL_ID = 'seed-model-profile-email-query'
+/** The seeded shared auth entry (Azure SSO, see the grilled design `azure-sso-auth`). */
+export const BANPU_AZURE_AUTH_ID = 'seed-auth-banpu-azure'
 
 /** One Banpu-shaped profile record (the mock `/collection/profiles/*`). */
 function profileFields(): ModelField[] {
@@ -4671,9 +4678,61 @@ export function profileSeedEndpoints(): EndpointDef[] {
   ]
 }
 
-/** The Profile page's load: the logged-in profile (`me`), seeding the `profile` slice. */
+/**
+ * The Profile page's loads: none since v51 — the logged-in profile is the
+ * `me` slice the project's sign-in fills (`AUTH_PROFILE_LOAD_ID`); a page
+ * load on the same key would clear it when the page unmounts. `LOAD_ME_ID`
+ * stays for the v50 → v51 migration.
+ */
 export function profileSeedLoads(): PageLoadDef[] {
-  return [seedLoad(LOAD_ME_ID, 'me', ME_ENDPOINT_ID)]
+  return []
+}
+
+/** The Azure SSO profile fetch's query model + endpoint (the mock `/collection/profiles/email?email=`). */
+export function profileByEmailSeedModels(): ModelDef[] {
+  return [{ id: PROFILE_EMAIL_QUERY_MODEL_ID, name: 'profileEmailQuery', fields: [field('email')] }]
+}
+
+export function profileByEmailSeedEndpoints(): EndpointDef[] {
+  return [
+    {
+      withOptions: false,
+      query: PROFILE_EMAIL_QUERY_MODEL_ID,
+      id: PROFILE_BY_EMAIL_ENDPOINT_ID,
+      name: 'profileByEmail',
+      description: "The signed-in user's profile by email (the Azure SSO profile fetch)",
+      url: '/collection/profiles/email',
+      method: 'GET',
+      response: PROFILE_RES_MODEL_ID,
+      parameter: null,
+      body: null,
+    },
+  ]
+}
+
+/**
+ * The seeded shared auth entry: Banpu's Azure tenant by the default var
+ * names (dev values left empty — nothing tenant-specific in the repo), the
+ * profile fetch over `profileByEmail` into `me`, default texts, the user menu
+ * with the Banpu profile keys.
+ */
+export function banpuAzureSeedAuth(): AuthDef {
+  return {
+    ...createAuthDef('Banpu Azure'),
+    id: BANPU_AZURE_AUTH_ID,
+    profile: {
+      enabled: true,
+      read: { endpointId: PROFILE_BY_EMAIL_ENDPOINT_ID, params: {}, extra: {} },
+      paths: 'data',
+      emailParam: 'email',
+      stateKey: 'me',
+    },
+    screens: {
+      landing: { title: '', message: 'Sign in with your Banpu account to continue.', buttonLabel: '' },
+      denied: { title: '', message: '', buttonLabel: '' },
+      loading: { message: '' },
+    },
+  }
 }
 
 /**
@@ -4692,7 +4751,7 @@ export const PROFILE_SWITCH_DROPDOWN_ITEM_ID = 'seed-item-profile-switch-dropdow
 export function profileSwitchSeedItems(): GridItemData[] {
   const full = { xs: 4, sm: 6, md: 8, lg: 12 }
   const half = { xs: 4, sm: 6, md: 4, lg: 6 }
-  const me = { key: LOAD_ME_ID, path: '', source: 'state' as const }
+  const me = { key: AUTH_PROFILE_LOAD_ID, path: '', source: 'state' as const }
   const profiles = { endpointId: PROFILES_BY_PERSON_ENDPOINT_ID, params: {}, extra: { exceptJobStatus: { type: 'value' as const, value: 'T' } } }
   return [
     {
@@ -4738,7 +4797,7 @@ export function profileDemoSeedItems(): GridItemData[] {
     typography(`${id}-title`, text, { variant: 'subtitle1', weight: 'medium' }),
     typography(`${id}-caption`, caption, { color: 'gray' }),
   ]
-  const me = { key: LOAD_ME_ID, path: '', source: 'state' as const }
+  const me = { key: AUTH_PROFILE_LOAD_ID, path: '', source: 'state' as const }
   const profiles = { endpointId: PROFILES_BY_PERSON_ENDPOINT_ID, params: {}, extra: { exceptJobStatus: { type: 'value' as const, value: 'T' } } }
   return [
     typography('seed-item-profile-h', 'Replace / Switch Profile', { variant: 'h3' }),
@@ -4759,7 +4818,7 @@ export function profileDemoSeedItems(): GridItemData[] {
         initial: me,
         search: { endpointId: SEARCH_PROFILES_ENDPOINT_ID, params: {}, extra: {} },
         read: profiles,
-        canReplace: { loadId: LOAD_ME_ID, test: 'compare', path: 'isAdmin', op: 'eq', value: 'true' },
+        canReplace: { loadId: AUTH_PROFILE_LOAD_ID, test: 'compare', path: 'isAdmin', op: 'eq', value: 'true' },
       },
     },
 

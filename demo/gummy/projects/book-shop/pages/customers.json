@@ -1,0 +1,359 @@
+{
+  "containers": [
+    {
+      "id": "page-customers",
+      "name": "page-customers",
+      "isArray": false,
+      "bins": [
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "Customers",
+            "variant": "h3",
+            "weight": "bold"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "Paged and searched by the API. New customer opens a form in a drawer that posts to the API and refreshes the table.",
+            "variant": "body2",
+            "color": "gray"
+          }
+        },
+        {
+          "sm": "6",
+          "md": "6",
+          "lg": "3",
+          "xl": "3",
+          "type": "drawer",
+          "justifySelf": "start",
+          "alignSelf": "stretch",
+          "element": {
+            "id": "newCustomer",
+            "container": {
+              "id": "drawer-bs-item-",
+              "name": "drawer-bs-item-",
+              "isArray": false,
+              "bins": [
+                {
+                  "sm": "12",
+                  "md": "12",
+                  "lg": "12",
+                  "xl": "12",
+                  "type": "textfield",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "name",
+                    "dataType": "string",
+                    "label": "Name",
+                    "isRequired": true,
+                    "errorMessage": "",
+                    "variant": "surface",
+                    "size": "3",
+                    "radius": "medium",
+                    "isFullWidth": true,
+                    "isFixedHeight": true
+                  }
+                },
+                {
+                  "sm": "12",
+                  "md": "12",
+                  "lg": "12",
+                  "xl": "12",
+                  "type": "textfield",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "email",
+                    "dataType": "email",
+                    "label": "Email",
+                    "isRequired": true,
+                    "errorMessage": "",
+                    "variant": "surface",
+                    "size": "3",
+                    "radius": "medium",
+                    "isFullWidth": true,
+                    "isFixedHeight": true
+                  }
+                },
+                {
+                  "sm": "12",
+                  "md": "12",
+                  "lg": "12",
+                  "xl": "12",
+                  "type": "textfield",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "phone",
+                    "dataType": "tel",
+                    "label": "Phone",
+                    "isRequired": false,
+                    "errorMessage": "",
+                    "variant": "surface",
+                    "size": "3",
+                    "radius": "medium",
+                    "isFullWidth": true,
+                    "isFixedHeight": true
+                  }
+                },
+                {
+                  "sm": "12",
+                  "md": "12",
+                  "lg": "12",
+                  "xl": "12",
+                  "type": "autocomplete",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "city",
+                    "dataType": "string",
+                    "label": "City",
+                    "isRequired": false,
+                    "errorMessage": "",
+                    "canObserve": false,
+                    "observeTo": "",
+                    "isSingleLoad": false,
+                    "keys": {
+                      "id": "value",
+                      "search": "label",
+                      "display": "label"
+                    },
+                    "defaultData": {},
+                    "options": [
+                      {
+                        "value": "Bangkok",
+                        "label": "Bangkok"
+                      },
+                      {
+                        "value": "Chiang Mai",
+                        "label": "Chiang Mai"
+                      },
+                      {
+                        "value": "Phuket",
+                        "label": "Phuket"
+                      },
+                      {
+                        "value": "Khon Kaen",
+                        "label": "Khon Kaen"
+                      },
+                      {
+                        "value": "Hat Yai",
+                        "label": "Hat Yai"
+                      },
+                      {
+                        "value": "Singapore",
+                        "label": "Singapore"
+                      },
+                      {
+                        "value": "Tokyo",
+                        "label": "Tokyo"
+                      },
+                      {
+                        "value": "London",
+                        "label": "London"
+                      }
+                    ],
+                    "placeholder": "Any city"
+                  }
+                },
+                {
+                  "sm": "6",
+                  "md": "6",
+                  "lg": "6",
+                  "xl": "6",
+                  "type": "button",
+                  "justifySelf": "start",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "label": "Cancel",
+                    "variant": "outlined",
+                    "color": "gray",
+                    "actions": [
+                      "CloseModal"
+                    ],
+                    "modalId": "newCustomer"
+                  }
+                },
+                {
+                  "sm": "6",
+                  "md": "6",
+                  "lg": "6",
+                  "xl": "6",
+                  "type": "button",
+                  "justifySelf": "start",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "label": "Save",
+                    "icon": "save",
+                    "actions": [
+                      "StartLoading",
+                      "SubmitFormToPostAPI",
+                      "StopLoading",
+                      "CloseModal"
+                    ],
+                    "api": {
+                      "name": "createCustomer"
+                    },
+                    "reloadDataTable": "customers",
+                    "modalId": "newCustomer",
+                    "snackbarSuccess": {
+                      "type": "success",
+                      "message": "Customer added"
+                    },
+                    "snackbarError": "$exception"
+                  }
+                }
+              ],
+              "gap": "16px",
+              "justifyItems": "stretch",
+              "alignItems": "stretch",
+              "justifyContent": "start",
+              "alignContent": "start",
+              "gridAutoFlow": "row"
+            },
+            "trigger": {
+              "type": "button",
+              "element": {
+                "label": "New customer",
+                "icon": "puls",
+                "actions": []
+              }
+            },
+            "title": "New customer",
+            "description": "Name and email are required; the email must be new.",
+            "size": "420px"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "datatable",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "customers",
+            "title": "Customers",
+            "rowNavigate": {
+              "page": "customerDetail",
+              "params": {
+                "id": {
+                  "type": "row",
+                  "key": "_id"
+                }
+              }
+            },
+            "columns": [
+              {
+                "accessor": "avatar",
+                "header": "",
+                "enableSorting": false,
+                "enableColumnFilter": false,
+                "align": "start",
+                "html": "<img src=\"{{avatar}}\" alt=\"\" style=\"width:28px;height:28px;border-radius:9999px;display:block\">",
+                "size": 56,
+                "enableResizing": false
+              },
+              {
+                "accessor": "name",
+                "header": "Name",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start"
+              },
+              {
+                "accessor": "email",
+                "header": "Email",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start"
+              },
+              {
+                "accessor": "city",
+                "header": "City",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start"
+              },
+              {
+                "accessor": "orderCount",
+                "header": "Orders",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "end"
+              },
+              {
+                "accessor": "totalSpentText",
+                "header": "Spent",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "end",
+                "sortField": "totalSpent"
+              },
+              {
+                "accessor": "joinedAt",
+                "header": "Joined",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "useDateFormat": "DD/MM/YYYY"
+              }
+            ],
+            "api": {
+              "name": "listCustomers",
+              "paths": [
+                "data"
+              ],
+              "pagination": {
+                "offsetKey": "offset",
+                "limitKey": "limit",
+                "searchKey": "search",
+                "totalPath": [
+                  "total"
+                ],
+                "pageSizeOptions": [
+                  10,
+                  20,
+                  50
+                ]
+              },
+              "sort": {
+                "sortKey": "sortBy",
+                "orderKey": "sortDir",
+                "default": {
+                  "field": "name",
+                  "order": "asc"
+                }
+              }
+            },
+            "cellLines": 1,
+            "canEdit": false,
+            "canDelete": false
+          }
+        }
+      ],
+      "gap": "16px",
+      "justifyItems": "stretch",
+      "alignItems": "stretch",
+      "justifyContent": "start",
+      "alignContent": "start",
+      "gridAutoFlow": "row"
+    }
+  ]
+}

@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   ActionsProvider,
+  AuthUserMenu,
+  AzureAuth,
   ComponentsProvider,
   AppShell,
   DataProvider,
@@ -9,6 +11,7 @@ import {
   getStateStore,
   loadingModeOf,
   HttpClientFactory,
+  getAccessToken,
   PageRouter,
   ThemeProvider,
   ThemeToggle,
@@ -18,34 +21,37 @@ import { api } from "./config/country/api";
 import { pages } from "./config/country/pages";
 import { menu } from "./config/country/menu";
 import { globalLoads } from "./config/country/pageDataDemo";
+import { auth, MOCK_EMAIL } from "./config/country/auth";
 import { actions } from "./actions";
 import { components as customComponents } from "./customComponents";
 import { theme, components } from "./config/theme";
 
+// The token getter is the signed-in user's (`getAccessToken` reads the
+// mounted <AzureAuth>); in mock mode it is "".
 const http = new HttpClientFactory(
   import.meta.env.VITE_API_URL ?? "",
-  async () => "",
+  getAccessToken,
   "1.0.0",
   30000
 );
 
 /**
- * Replays a page-enter animation on every navigation. Keying the wrapper by the
- * route pathname forces a remount, so the CSS `.page-enter` animation restarts
- * each time the user lands on a new page. Kept outside `PageRouter` on purpose:
- * transitions are the consumer's policy, not the router's.
+ * Azure SSO in mock mode: no tenant here, so the account below is signed in
+ * without Microsoft while the profile fetch still runs. Set
+ * `VITE_AUTH_MOCK_EMAIL` to another mock-API person — or an unknown one for
+ * the denied card. The `AZURE_*` vars would make it real.
  */
+const authMock = { email: import.meta.env.VITE_AUTH_MOCK_EMAIL || MOCK_EMAIL, name: "Chanwit Yimneam" };
+const authEnv = {
+  AZURE_TENANT_ID: import.meta.env.VITE_AZURE_TENANT_ID ?? "",
+  AZURE_CLIENT_ID: import.meta.env.VITE_AZURE_CLIENT_ID ?? "",
+  AZURE_REDIRECT_URL: import.meta.env.VITE_AZURE_REDIRECT_URL ?? "",
+  AZURE_API_SCOPE: import.meta.env.VITE_AZURE_API_SCOPE ?? "",
+};
+
 // Dev aid: the page-data slices and their loading modes, for the console.
 ;(window as any).__gummy = { getStateStore, loadingModeOf };
 
-function PageTransition({ children }: { children: React.ReactNode }) {
-  const { pathname } = useLocation();
-  return (
-    <div key={pathname} className="page-enter">
-      {children}
-    </div>
-  );
-}
 
 function NotFound() {
   const { pathname } = useLocation();
@@ -102,44 +108,48 @@ function NavPlacementToggle({
   );
 }
 
+const appBar = {
+  title: "Gummy UI — Example",
+  icon: "globe",
+  sidebarToggle: { hide: "panelLeftClose", show: "panelLeftOpen" },
+} as const;
+
 function AppContent() {
   const [navigation, setNavigation] = useState<Placement>("sidebar");
   return (
     // The shell owns the chrome: top bar (brand, collapse toggle, ThemeToggle)
     // and the menu from config/country/menu.ts — as a sidebar or, via the
     // toggle, a top strip. The breadcrumb strip follows `parent` in
-    // config/country/pages.ts. Routes stay in PageRouter; the transition
-    // wrapper is the consumer's, as before.
+    // config/country/pages.ts. Routes stay in PageRouter; pages fade up on
+    // every route change through the shell's `pageTransition` — played on the
+    // page's wrapper, so nothing remounts (the old key-by-pathname wrapper
+    // rebuilt the whole router, and every page with it, per navigation).
     <AppShell
       pages={pages}
       menu={menu}
       navigation={navigation}
-      appBar={{
-        title: "Gummy UI — Example",
-        icon: "globe",
-        sidebarToggle: { hide: "panelLeftClose", show: "panelLeftOpen" },
-      }}
+      appBar={appBar}
+      pageTransition={{ type: "fade-up", duration: 350 }}
       header={
         <>
           <NavPlacementToggle value={navigation} onChange={setNavigation} />
           <ThemeToggle />
+          {/* The signed-in user + Sign out (GummyApp adds this itself). */}
+          <AuthUserMenu />
         </>
       }
       footer={<span className="text-xs">@gummy-ui/ui · example</span>}
     >
-      {/* App-wide loads: fetched once, kept across pages — outside the
-          pathname-keyed transition, which would refetch them per navigation. */}
+      {/* App-wide loads: fetched once, kept across pages. */}
       <GlobalLoads http={http as any} model={model} api={api} loads={globalLoads} />
       <div className="p-8">
-        <PageTransition>
-          <PageRouter
-            http={http as any}
-            model={model}
-            api={api}
-            pages={pages}
-            notFound={<NotFound />}
-          />
-        </PageTransition>
+        <PageRouter
+          http={http as any}
+          model={model}
+          api={api}
+          pages={pages}
+          notFound={<NotFound />}
+        />
       </div>
     </AppShell>
   );
@@ -155,7 +165,11 @@ export function App() {
           {/* Custom components: the app's coded React components
               (src/customComponents.ts), placed by `custom` Bins by name. */}
           <ComponentsProvider components={customComponents}>
-            <AppContent />
+            {/* Azure SSO (config/country/auth.ts): landing / loading / denied
+                screens around the shell, the `auth` + `me` slices, the token. */}
+            <AzureAuth config={auth} env={authEnv} mock={authMock} http={http as any} model={model} api={api} appBar={appBar}>
+              <AppContent />
+            </AzureAuth>
           </ComponentsProvider>
         </ActionsProvider>
       </ThemeProvider>

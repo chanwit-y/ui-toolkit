@@ -4,7 +4,7 @@ import { CliBanner } from './cli/CliBanner'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { ApiEditor, EnvEditor, Grid, MenuEditor, ModelEditor, ThemeEditor } from './components'
 import { toThemeObjects, useThemeStore } from './components/Theme'
-import { LibraryPage, LibrarySync, TemplateShell, TemplatesPage } from './components/Library'
+import { AuthPage, LibraryPage, LibrarySync, TemplateShell, TemplatesPage } from './components/Library'
 import {
   ActivityPage,
   PortalLayout,
@@ -49,6 +49,7 @@ function App() {
               <Route path="library/apis" element={<LibraryPage kind="api" />} />
               <Route path="library/models" element={<LibraryPage kind="model" />} />
               <Route path="library/templates" element={<TemplatesPage />} />
+              <Route path="library/auth" element={<AuthPage />} />
               <Route path="activity" element={<ActivityPage />} />
             </Route>
             <Route path="library/templates/:templateId/layout" element={<TemplateShell />} />

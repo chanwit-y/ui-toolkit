@@ -1,0 +1,201 @@
+{
+  "containers": [
+    {
+      "id": "page-catalogue",
+      "name": "page-catalogue",
+      "isArray": false,
+      "bins": [
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "Catalogue",
+            "variant": "h3",
+            "weight": "bold"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "The 24 best-rated books as customers see them: a card per book from a repeater, the whole card a link, and a Featured line on the items whose own field says so.",
+            "variant": "body2",
+            "color": "gray"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "repeater",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "catalogue",
+            "emptyText": "The catalogue is empty.",
+            "itemPadding": "0",
+            "idKey": "_id",
+            "api": {
+              "name": "listBooks",
+              "paths": [
+                "data"
+              ],
+              "query": {
+                "limit": {
+                  "type": "value",
+                  "key": "none",
+                  "value": "24"
+                },
+                "sortBy": {
+                  "type": "value",
+                  "key": "none",
+                  "value": "rating"
+                },
+                "sortDir": {
+                  "type": "value",
+                  "key": "none",
+                  "value": "desc"
+                }
+              }
+            },
+            "itemContainer": {
+              "id": "repeater-bs-item--item",
+              "name": "repeater-bs-item--item",
+              "isArray": false,
+              "bins": [
+                {
+                  "sm": "12",
+                  "md": "12",
+                  "lg": "12",
+                  "xl": "12",
+                  "type": "card",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "catalogueCard",
+                    "header": {
+                      "titleValue": {
+                        "type": "row",
+                        "key": "title"
+                      },
+                      "subheaderValue": {
+                        "type": "row",
+                        "key": "authorName"
+                      }
+                    },
+                    "media": {
+                      "alt": "Cover",
+                      "srcValue": {
+                        "type": "row",
+                        "key": "cover"
+                      },
+                      "height": 280
+                    },
+                    "content": {
+                      "id": "card-bs-item-",
+                      "name": "card-bs-item-",
+                      "isArray": false,
+                      "bins": [
+                        {
+                          "sm": "12",
+                          "md": "12",
+                          "lg": "12",
+                          "xl": "12",
+                          "type": "typography",
+                          "justifySelf": "stretch",
+                          "alignSelf": "stretch",
+                          "condition": {
+                            "left": {
+                              "key": "row",
+                              "path": "featured"
+                            },
+                            "operator": "eq",
+                            "right": {
+                              "val": true
+                            }
+                          },
+                          "element": {
+                            "text": "Featured",
+                            "variant": "caption",
+                            "weight": "bold",
+                            "color": "amber"
+                          }
+                        },
+                        {
+                          "sm": "12",
+                          "md": "12",
+                          "lg": "12",
+                          "xl": "12",
+                          "type": "html",
+                          "justifySelf": "stretch",
+                          "alignSelf": "stretch",
+                          "element": {
+                            "name": "cataloguePrice",
+                            "html": "<strong>{{priceText}}</strong> · ★ {{rating}} <span class=\"dt-muted\">({{reviewCount}})</span>",
+                            "value": {
+                              "type": "row",
+                              "key": "none"
+                            },
+                            "prose": false
+                          }
+                        }
+                      ],
+                      "gap": "16px",
+                      "justifyItems": "stretch",
+                      "alignItems": "stretch",
+                      "justifyContent": "start",
+                      "alignContent": "start",
+                      "gridAutoFlow": "row"
+                    },
+                    "actionsAlign": "end",
+                    "variant": "outlined"
+                  }
+                }
+              ],
+              "gap": "16px",
+              "justifyItems": "stretch",
+              "alignItems": "stretch",
+              "justifyContent": "start",
+              "alignContent": "start",
+              "gridAutoFlow": "row"
+            },
+            "itemSpan": {
+              "sm": "6",
+              "md": "4",
+              "lg": "3",
+              "xl": "3"
+            },
+            "gap": "4",
+            "itemSurface": "none",
+            "itemNavigate": {
+              "page": "bookDetail",
+              "params": {
+                "id": {
+                  "type": "row",
+                  "key": "_id"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "gap": "16px",
+      "justifyItems": "stretch",
+      "alignItems": "stretch",
+      "justifyContent": "start",
+      "alignContent": "start",
+      "gridAutoFlow": "row"
+    }
+  ]
+}

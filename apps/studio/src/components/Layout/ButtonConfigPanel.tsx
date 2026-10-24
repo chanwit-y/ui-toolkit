@@ -19,6 +19,7 @@ import { LoadFieldPicker, usePageLoads } from './pageData'
 import { useActivePages, useActiveProject, useWorkspaceStore } from '../Workspace/workspaceStore'
 import { customActionIdOf, customActionKey, isCustomActionKey, type CustomActionDef } from '../Workspace/customActions'
 import { useGridStore } from './gridStore'
+import { ColorField } from '../Theme/ThemeEditor'
 import { useRepeaterScope } from './repeaterScope'
 import { EndpointPicker } from './SelectFieldConfigPanel'
 import {
@@ -55,6 +56,8 @@ const ACTION_LABELS: Record<BuiltinButtonActionKey, string> = {
   CloseModal: 'Close modal',
   Navigate: 'Go to page',
   ReloadDataTable: 'Reload data',
+  SignIn: 'Sign in (SSO)',
+  SignOut: 'Sign out (SSO)',
 }
 const ALL_ACTIONS = Object.keys(ACTION_LABELS) as BuiltinButtonActionKey[]
 const NO_CUSTOM_ACTIONS: CustomActionDef[] = []
@@ -336,6 +339,7 @@ export function ButtonConfigPanel({
           aria-label="Variant"
         />
       </Field>
+      <ColorField label="Color" value={config.color ?? ''} onChange={(color) => set('color', color)} unsetLabel="Theme (button colour, else accent)" />
 
       <h3 className="pt-1 text-ui-sm font-semibold uppercase tracking-wide text-ink-3">
         On click

@@ -39,7 +39,8 @@ export type { OptionRowProps, SelectedChipProps } from "./components/OptionRow";
 export { Provider as CoreProvider } from "./components/core/context";
 export * from "./components/core/core";
 export * from "./components/core/containerBuilder";
-export { PageRouter } from "./components/core/PageRouter";
+export { PageRouter, PageLoadingFallback, usePrefetchPage } from "./components/core/PageRouter";
+export { PageEnter, PageEnterGate, playPageTransition, resolvePageTransition, DEFAULT_PAGE_TRANSITION_DURATION } from "./components/core/pageTransition";
 export { GlobalLoads } from "./components/core/GlobalLoads";
 // Custom button actions: the consumer's registry of coded functions, referenced
 // inline in a button's action chain as "fn:<name>" (see core/actions.tsx).
@@ -59,12 +60,15 @@ export { PagesProvider, usePages, useNavigateTo, buildNavigateUrl, pathParamName
 export { AppShell } from "./components/AppShell";
 export type { AppShellProps } from "./components/AppShell";
 export type { AppBarConfig, MenuItem, TMenu } from "./components/@types";
+export { appBarTone, appBarStyle, appBarBackground, appBarForeground, colorLuminance, type AppBarTone } from "./components/core/appBarStyle";
 // Runtime rendering of a studio project document (see the grilled library / CLI
 // design): <GummyApp project={json} …/> inside the consumer's router.
 export { GummyApp } from "./components/GummyApp";
 export type { GummyAppProps, GummyAppShell } from "./components/GummyApp";
 export { assertGummyProject, projectApiToEngine, GummyProjectError, GUMMY_PROJECT_SCHEMA_VERSION } from "./components/core/project";
-export type { GummyProject, GummyProjectApi, GummyProjectShell, GummyProjectTheme, GummyProjectCustomComponent } from "./components/core/project";
+export { splitProjectPages } from "./components/core/project";
+export { fetchPageLoader, globPageLoader, PageBodyCache, type PageBodyLoader } from "./components/core/pageBodies";
+export type { GummyProject, GummyProjectApi, GummyProjectAuth, GummyProjectShell, GummyProjectTheme, GummyProjectCustomComponent } from "./components/core/project";
 export {
 	DEFAULT_CONTAINER_GRID,
 	getBinGridItemStyle,
@@ -166,7 +170,8 @@ export * from "./components/ConfirmBox";
 export * from "./components/Snackbar";
 
 export { ApiFactory, HttpClientFactory } from "./api";
-export { getAccessToken } from "./auth/azure/MsalInstance"
+// Azure SSO (see the grilled design `azure-sso-auth`): <AzureAuth> / GummyApp project.auth.
+export * from "./auth/azure"
 
 export * from "./components/Avatar";
 export type { AvatarProps } from "./components/@types";
@@ -196,7 +201,7 @@ export { uploadFileToApi, deleteFileFromApi } from "./util/uploadApi";
 export * from "./components/RadioButton2"
 export * from "./components/ThemeToggle"
 export type { ThemeToggleProps } from "./components/ThemeToggle"
-export type { Bin, Container, ContainerSurface, ContainerLoad, PageLoad, DataValue, DataTableElement, DrawerAnchor, DrawerElement, RadioElement, NavigateTarget, PageElement, TPageMaster } from "./components/@types"
+export type { Bin, Container, ContainerSurface, ContainerLoad, PageLoad, DataValue, DataTableElement, DrawerAnchor, DrawerElement, RadioElement, NavigateTarget, PageElement, TPageMaster, PageEntry, TPageEntries, GummyPageBody, PageTransition, PageTransitionType } from "./components/@types"
 export { getStateStore, stateStoreKeys, readSlice, loadingModeOf, skeletonPending, skeletonBindingKeys } from "./components/core/stateStore"
 export type { StateSlice, StateStore, StateStatus } from "./components/core/stateStore"
 export { loadCycles, loadDependencies, loadingMode, resolveLoadRequest } from "./components/core/pageLoads"

@@ -20,6 +20,7 @@ import { ConditionExpression } from "./core/expression";
 import { useData } from "./context/DataProvider";
 import { OptionRow, SelectedChip, matchesOptionQuery, resolveIcon, resolveItemAvatar, resolveItemIcon, resolveItemSubtitle } from "./OptionRow";
 import { OptionSearch, OPTION_SEARCH_HEIGHT } from "./OptionSearch";
+import { callArgs } from "./core/readApi";
 
 const createMultiAutocomplete = <T extends Record<string, any>>() => {
 	return forwardRef<
@@ -49,6 +50,7 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 		observeTo,
 		api,
 		apiInfo,
+		apiSegments,
 		enabledWhen,
 		maxSelections,
 		showSelectedCount = true,
@@ -127,16 +129,19 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 							return { ...acc, [key]: value.type === "observe" ? observeData : value.type === "value" ? text : value }
 						}, {})
 
+						// The declared segments decide the argument order (see Autocomplete2).
+						if (apiSegments) return api && api(...(callArgs(apiSegments, q, p, undefined) as []))
 						return api && api({ ...q }, {
 							...p
 						})
 					}
 				}
 			} else {
+				if (apiSegments) return api && api(...(callArgs(apiSegments, q, {}, undefined) as []))
 				return api && api({ ...q }, {})
 			}
 			return undefined
-		}, [observeTo, observeData, api, apiInfo]);
+		}, [observeTo, observeData, api, apiInfo, apiSegments]);
 
 		const apiSearch = useMemo(() => {
 			if (api && apiInfo?.query) {
