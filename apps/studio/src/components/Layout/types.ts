@@ -1418,6 +1418,9 @@ export type BuiltinButtonActionKey =
   | 'Navigate'
   /** Refetch `reloadTableItemId`: a table / form list / repeater, or a page load. */
   | 'ReloadDataTable'
+  /** Azure SSO (the project's auth entry): start the sign-in / sign out. */
+  | 'SignIn'
+  | 'SignOut'
 
 /**
  * A built-in engine action, or a project custom action by its declaration

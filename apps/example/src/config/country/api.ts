@@ -207,6 +207,14 @@ export const api = {
     response: "profileRes",
     withOptions: false,
   },
+  profileByEmail: {
+    url: "/collection/profiles/email",
+    description: "The signed-in user's profile by email (the Azure SSO profile fetch)",
+    methods: "GET" as const,
+    response: "profileRes",
+    query: "profileEmailQuery",
+    withOptions: false,
+  },
   searchProfiles: {
     url: "/collection/profiles/search",
     description: "Search people by name / email (one row per person)",

@@ -6,7 +6,9 @@ import { pathParams } from './snapshots'
 import type { PageDef, ProjectDef } from './types'
 import { makeActionKeyResolver, toActionsTs, type CustomActionRef } from './customActions'
 import { toComponentsTsx } from './customComponents'
-import { projectKey, runtimeDocument } from './runtimeProject'
+import { pickedAuth, projectKey, runtimeDocument } from './runtimeProject'
+import { useWorkspaceStore } from './workspaceStore'
+import { DEFAULT_AUTH_ENV_NAMES } from '@gummy-ui/ui'
 
 export type ExportFile = { name: string; lang: 'json' | 'ts' | 'md'; body: string }
 
@@ -76,7 +78,9 @@ export function buildExportFiles(
   const customActions = snapshot.customActions ?? []
   const customComponents = snapshot.customComponents ?? []
   const key = projectKey(project.name)
-  const doc = runtimeDocument(project, endpoints, models)
+  // The picked sign-in entry lives in the shared library (not on the project).
+  const auth = pickedAuth(project.snapshot, useWorkspaceStore.getState().library)
+  const doc = runtimeDocument({ ...project, auth }, endpoints, models)
 
   const out: ExportFile[] = []
   out.push({ name: `${key}.json`, lang: 'json', body: JSON.stringify(doc, null, 2) + '\n' })
@@ -102,7 +106,7 @@ export function buildExportFiles(
     '<BrowserRouter>',
     '  <GummyApp',
     '    project={project}',
-    '    getToken={async () => "<bearer token>"}',
+    ...(doc.auth ? [] : ['    getToken={async () => "<bearer token>"}']),
     '    env={{ API_URL: import.meta.env.VITE_API_URL }}',
     ...(customActions.length ? ['    actions={actions}'] : []),
     ...(customComponents.length ? ['    components={components}'] : []),
@@ -161,6 +165,25 @@ export function buildExportFiles(
       lines.push(`- \`${c.name.trim() || '(unnamed)'}\`${c.description.trim() ? ` — ${c.description.trim()}` : ''}${props.length ? ` · props: ${props.join(', ')}` : ''}`)
     }
     lines.push('')
+  }
+  if (doc.auth) {
+    const names = { ...DEFAULT_AUTH_ENV_NAMES, ...doc.auth.env }
+    lines.push(
+      '## Azure SSO',
+      '',
+      'The document carries `auth` (an Azure SSO entry from the shared library): `<GummyApp>` shows the sign-in screen until the user signs in, passes the bearer token on every request, and' +
+        (doc.auth.profile ? ` loads the profile through \`${doc.auth.profile.api.name}\` into the \`${doc.auth.profile.stateKey ?? 'me'}\` state slice (a failed fetch shows the denied screen).` : ' fetches no profile.'),
+      '',
+      'Set these env vars per environment (names from the entry; blank ⇒ the app warns and sign-in cannot work):',
+      '',
+      `- \`${names.tenantId}\` — the Azure AD tenant id`,
+      `- \`${names.clientId}\` — the app registration (client) id`,
+      `- \`${names.redirectUri}\` — the redirect URL (blank ⇒ the page origin)`,
+      `- \`${names.scope}\` — the API scope (\`api://<client-id>/.default\`)`,
+      '',
+      'Without a tenant yet, sign a mock account in: `<GummyApp auth={{ mock: { email: "you@example.com" } }} />` (the profile fetch still runs). Remove the `mock` before shipping.',
+      '',
+    )
   }
   lines.push('## Endpoints', '')
   for (const a of endpoints) {

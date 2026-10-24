@@ -37,7 +37,9 @@ import { designThemeStyle } from '../Theme/designTheme'
 import { useThemeStore } from '../Theme/themeStore'
 import { emptyProjectSnapshot, pathParams } from '../Workspace/snapshots'
 import type { PageDef, PageGrid } from '../Workspace/types'
-import { useActivePages, useWorkspaceStore } from '../Workspace/workspaceStore'
+import { MOCK_USERS, useActivePages, useWorkspaceStore } from '../Workspace/workspaceStore'
+import { pickedAuth } from '../Workspace/runtimeProject'
+import { authProfileLoad } from '../Workspace/auth'
 import { runtimeDocument } from '../Workspace/runtimeProject'
 import type { PageLoadDef } from '../Workspace/pageLoads'
 import { gridConfigToJson } from './gridConfig'
@@ -183,8 +185,22 @@ export function LivePreviewModal({ onClose }: { onClose: () => void }) {
   const project = useWorkspaceStore((s) =>
     s.projects.find((p) => p.id === s.activeProjectId),
   )
-  // App-wide loads: mounted once beside the router (`<GlobalLoads>`), read by every page.
-  const globalLoads = useMemo(() => project?.snapshot.globalLoads ?? [], [project?.snapshot.globalLoads])
+  // The sign-in entry the project picked (shared library) and the studio's
+  // mock user, who is signed in without MSAL (see the grilled design).
+  const libraryAuth = useWorkspaceStore((s) => s.library.auth)
+  const auth = useMemo(() => (project ? pickedAuth(project.snapshot, { auth: libraryAuth }) : null), [project, libraryAuth])
+  const userName = useWorkspaceStore((s) => s.user)
+  const authMock = useMemo(() => {
+    const u = MOCK_USERS.find((m) => m.name === userName) ?? MOCK_USERS[0]
+    return { email: u.email, name: u.name }
+  }, [userName])
+  // App-wide loads: mounted once beside the router (`<GlobalLoads>`), read by
+  // every page — plus the sign-in's profile pseudo-load, so bindings to it resolve.
+  const globalLoads = useMemo(() => {
+    const list = project?.snapshot.globalLoads ?? []
+    const profile = authProfileLoad(auth ?? undefined)
+    return profile ? [...list, profile] : list
+  }, [project?.snapshot.globalLoads, auth])
   // The declared custom actions: `fn:<id>` in a button resolves to `fn:<name>`
   // in its exported config, and the preview mounts a stub per name (below).
   const customActions = project?.snapshot.customActions ?? NO_CUSTOM_ACTIONS
@@ -325,12 +341,12 @@ export function LivePreviewModal({ onClose }: { onClose: () => void }) {
   const doc = useMemo<GummyProject>(() => {
     const snapshot = project?.snapshot ?? emptyProjectSnapshot('Template')
     const raw = runtimeDocument(
-      { name: project?.name ?? 'Template', description: project?.description, snapshot: { ...snapshot, pages } },
+      { name: project?.name ?? 'Template', description: project?.description, snapshot: { ...snapshot, pages }, auth },
       endpoints,
       models,
     )
     return livePreviewProject(raw, previewWiring(raw, apiUrl))
-  }, [project, pages, endpoints, models, apiUrl])
+  }, [project, pages, endpoints, models, apiUrl, auth])
 
   const projectSlug = (project?.name ?? 'project').toLowerCase().replace(/\s+/g, '-')
 
@@ -378,6 +394,7 @@ export function LivePreviewModal({ onClose }: { onClose: () => void }) {
             stubActions={stubActions}
             stubComponents={stubComponents}
             onConfigJson={setConfigJson}
+            authMock={authMock}
           />
         </MemoryRouter>
       </NestedRouterBoundary>
@@ -390,6 +407,7 @@ export function LivePreviewModal({ onClose }: { onClose: () => void }) {
           log={apiLog}
           actionLog={actionLog}
           configJson={configJson}
+          auth={doc.auth ? { profileKey: doc.auth.profile?.stateKey ?? 'me', hasProfile: !!doc.auth.profile } : null}
           onClose={() => setDevOpen(false)}
         />
       ) : (
@@ -421,6 +439,7 @@ const PreviewApp = memo(function PreviewApp({
   stubActions,
   stubComponents,
   onConfigJson,
+  authMock,
 }: {
   pages: PreviewPage[]
   livePage: PreviewPage
@@ -436,6 +455,8 @@ const PreviewApp = memo(function PreviewApp({
   stubActions: TActionMaster
   stubComponents: TComponentMaster
   onConfigJson: (json: string) => void
+  /** The studio user as the mock sign-in account (used when the document has `auth`). */
+  authMock: { email: string; name: string }
 }) {
   const location = useLocation()
   const navigate = useNavigate()
@@ -547,6 +568,7 @@ const PreviewApp = memo(function PreviewApp({
             actions={stubActions}
             components={stubComponents}
             shell={{ sidebarWidth: '13rem', height: fullscreen ? 'calc(100vh - 11rem)' : 'calc(85vh - 11rem)' }}
+            auth={doc.auth ? { mock: authMock } : false}
             notFound={NOT_FOUND}
             documentTitle={false}
             renderPages={renderPages}

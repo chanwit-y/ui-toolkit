@@ -14,6 +14,7 @@ import { WiringHint } from './ButtonConfigPanel'
 import { CrudRefEditor } from './FormListConfigPanel'
 import {
   shapeLabel,
+  useAuthProfileLoad,
   useGlobalLoads,
   useLoadShapes,
   useOwnPageLoads,
@@ -49,9 +50,11 @@ export function DataPanel() {
   const global = useGlobalLoads()
   const setOwn = useSetPageLoads()
   const setGlobal = useSetGlobalLoads()
+  const authLoad = useAuthProfileLoad()
   const [open, setOpen] = useState<string | null>(null)
   if (!page) return null
-  const all = [...own, ...global]
+  const all = authLoad ? [...own, ...global, authLoad] : [...own, ...global]
+  const clash = authLoad ? [...own, ...global].find((l) => l.key.trim() === authLoad.key) : undefined
   return (
     <div className="min-h-0 flex-1 overflow-y-auto pb-3">
       <LoadSection
@@ -77,6 +80,24 @@ export function DataPanel() {
         base="lookups"
         global
       />
+      {authLoad && (
+        <section className="px-3 pt-3">
+          <span className="sec-label block">Sign-in · every page</span>
+          <p className="mb-2 mt-1 text-ui-sm text-ink-3">
+            The signed-in user's profile, fetched by the project's Azure SSO entry (Env page) — bindable as page data under{' '}
+            <span className="font-mono">{authLoad.key}</span>. Not a load you edit: the entry's Profile block is.
+          </p>
+          <div className="list-row flex items-center gap-2 font-mono text-ui-sm">
+            <span className="truncate text-ink">{authLoad.key}</span>
+            <span className="tag ml-auto">sign-in</span>
+          </div>
+          {clash && (
+            <p className="mt-1 text-ui-sm text-warn">
+              The load <span className="font-mono">{clash.key}</span> writes the same key — it would clear the signed-in profile when its page closes. Rename one.
+            </p>
+          )}
+        </section>
+      )}
     </div>
   )
 }

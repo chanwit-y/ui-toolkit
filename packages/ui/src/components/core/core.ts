@@ -4,7 +4,6 @@ import { ApiMaster, type TApiMaster } from "../../api/APIMaster";
 import { ContainerBuilder } from "./containerBuilder";
 
 import type { Container, PageLoad } from "../@types";
-import type { IAuthContext } from "../../auth/@types";
 
 export class Core {
   private _apiFactory: ApiFactory<any, {}>;
@@ -28,10 +27,6 @@ export class Core {
       this._apiConfig,
       this._apiFactory
     );
-  }
-
-  public useAuthCtx(_hookAuthCtx: () => IAuthContext<any>): Core {
-    return this;
   }
 
   public run() {

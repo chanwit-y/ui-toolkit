@@ -18,6 +18,7 @@ import {
   useSearchParams,
 } from "react-router-dom";
 import type { AppBarConfig, MenuItem, NavigateTarget, TMenu, TPageMaster } from "./@types";
+import { appBarStyle, appBarTone, type AppBarTone } from "./core/appBarStyle";
 import { useTheme } from "./context";
 import { Icon } from "./Icon";
 import { breadcrumbTrail, buildNavigateUrl, matchPage, PagesProvider, pathParamNames, usePageTitle } from "./core/pages";
@@ -133,6 +134,17 @@ const BAR_PANEL = "border-[var(--gray-6)] bg-[var(--color-panel-solid)]";
 const BAR_ACCENT = "border-[var(--accent-10)] bg-[var(--accent-9)] text-[var(--accent-contrast)]";
 const BAR_DIVIDER = "border-[var(--gray-6)]";
 const BAR_DIVIDER_ACCENT = "border-[var(--accent-contrast)] opacity-40";
+// `appBar.variant: "custom"` paints the bar with `background` / `gradient`;
+// its chrome reads the `--gummy-bar-*` vars `appBarStyle` sets (the text
+// colour and white- or black-alpha tints picked from its luminance).
+const TOP_BUTTON_CUSTOM =
+  "inline-flex h-8 w-8 items-center justify-center rounded-md text-[var(--gummy-bar-fg)] hover:bg-[var(--gummy-bar-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gummy-bar-fg)]";
+const BAR_CUSTOM = "border-[var(--gummy-bar-line)]";
+const BAR_DIVIDER_CUSTOM = "border-[var(--gummy-bar-fg)] opacity-40";
+
+const BAR_CLASS: Record<AppBarTone, string> = { panel: BAR_PANEL, accent: BAR_ACCENT, custom: BAR_CUSTOM };
+const TOP_BUTTON_CLASS: Record<AppBarTone, string> = { panel: TOP_BUTTON, accent: TOP_BUTTON_ACCENT, custom: TOP_BUTTON_CUSTOM };
+const BAR_DIVIDER_CLASS: Record<AppBarTone, string> = { panel: BAR_DIVIDER, accent: BAR_DIVIDER_ACCENT, custom: BAR_DIVIDER_CUSTOM };
 
 type ItemProps = {
   item: MenuItem;
@@ -305,20 +317,28 @@ const TOP_LINK_ACTIVE =
 const TOP_LINK_ACCENT =
   "inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-sm text-[var(--accent-contrast)] no-underline transition-colors hover:bg-[var(--accent-10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-contrast)]";
 const TOP_LINK_ACCENT_ACTIVE = "bg-[var(--accent-11)] font-semibold hover:bg-[var(--accent-11)]";
+const TOP_LINK_CUSTOM =
+  "inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-sm text-[var(--gummy-bar-fg)] no-underline transition-colors hover:bg-[var(--gummy-bar-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gummy-bar-fg)]";
+const TOP_LINK_CUSTOM_ACTIVE = "bg-[var(--gummy-bar-active)] font-semibold hover:bg-[var(--gummy-bar-active)]";
+const TOP_LINK_CLASS: Record<AppBarTone, string> = { panel: TOP_LINK, accent: TOP_LINK_ACCENT, custom: TOP_LINK_CUSTOM };
+const TOP_LINK_ACTIVE_CLASS: Record<AppBarTone, string> = {
+  panel: TOP_LINK_ACTIVE,
+  accent: TOP_LINK_ACCENT_ACTIVE,
+  custom: TOP_LINK_CUSTOM_ACTIVE,
+};
 
-type TopEntryProps = { item: MenuItem; pages: TPageMaster; pathname: string; onAccent?: boolean };
+type TopEntryProps = { item: MenuItem; pages: TPageMaster; pathname: string; tone?: AppBarTone };
 
 /** One top-strip entry: link, external link, dropdown group or vertical divider. */
-function TopEntry({ item, pages, pathname, onAccent }: TopEntryProps) {
+function TopEntry({ item, pages, pathname, tone = "panel" }: TopEntryProps) {
   const showIcons = useContext(MenuIconsContext);
   const navigate = useNavigate();
   const params = useParams();
   const [searchParams] = useSearchParams();
-  const link = onAccent ? TOP_LINK_ACCENT : TOP_LINK;
-  const linkActive = onAccent ? TOP_LINK_ACCENT_ACTIVE : TOP_LINK_ACTIVE;
+  const link = TOP_LINK_CLASS[tone];
+  const linkActive = TOP_LINK_ACTIVE_CLASS[tone];
 
-  if (isDivider(item))
-    return <li role="separator" className={`mx-1 h-5 border-l ${onAccent ? BAR_DIVIDER_ACCENT : BAR_DIVIDER}`} />;
+  if (isDivider(item)) return <li role="separator" className={`mx-1 h-5 border-l ${BAR_DIVIDER_CLASS[tone]}`} />;
 
   const icon = showIcons && item.icon ? <Icon icon={item.icon} size={16} className="shrink-0" /> : null;
 
@@ -433,16 +453,16 @@ function TopDropdownEntry({ item, pages, pathname }: TopEntryProps) {
 }
 
 /** The horizontal strip of `menu` in the top bar (`navigation="top"`), desktop only. */
-function TopNav({ menu, pages, onAccent }: { menu: TMenu; pages: TPageMaster; onAccent?: boolean }) {
+function TopNav({ menu, pages, tone }: { menu: TMenu; pages: TPageMaster; tone: AppBarTone }) {
   const { pathname } = useLocation();
   const { components } = useTheme();
-  // On an accent bar the strip must stay in the bar's own colour.
-  const color = onAccent ? undefined : components.sidebar?.color;
+  // On an accent or custom bar the strip must stay in the bar's own colour.
+  const color = tone === "panel" ? components.sidebar?.color : undefined;
   const nav = (
     <nav aria-label="Main" className="hidden min-w-0 flex-1 md:flex">
       <ul className="flex min-w-0 items-center gap-0.5 overflow-x-auto">
         {menu.map((item, i) => (
-          <TopEntry key={i} item={item} pages={pages} pathname={pathname} onAccent={onAccent} />
+          <TopEntry key={i} item={item} pages={pages} pathname={pathname} tone={tone} />
         ))}
       </ul>
     </nav>
@@ -536,7 +556,7 @@ function BrandMark({ bar }: { bar: AppBarConfig }) {
   return (
     <>
       {bar.logo ? (
-        <img src={bar.logo} alt="" className="h-6 w-6 shrink-0 rounded object-contain" />
+        <img src={bar.logo} alt="" className="w-auto shrink-0 rounded object-contain" style={{ height: bar.logoSize ?? "1.5rem" }} />
       ) : bar.icon ? (
         <Icon icon={bar.icon} size={20} className="shrink-0" />
       ) : null}
@@ -602,15 +622,16 @@ export function AppShell({
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
 
   const bar = appBar ?? {};
-  const accentBar = bar.variant === "accent";
-  const topButton = accentBar ? TOP_BUTTON_ACCENT : TOP_BUTTON;
+  const tone = appBarTone(bar);
+  const accentBar = tone === "accent";
+  const topButton = TOP_BUTTON_CLASS[tone];
   const brandNode = brand ?? (bar.title || bar.icon || bar.logo ? <BrandMark bar={bar} /> : null);
-  const barStyle = useMemo<CSSProperties>(() => ({ height: bar.height ?? "3rem" }), [bar.height]);
+  const barStyle = useMemo<CSSProperties>(() => appBarStyle(bar), [bar]);
   const topBar = (
     <header
-      className={`flex shrink-0 items-center gap-2 border-b px-3 ${accentBar ? BAR_ACCENT : BAR_PANEL}`}
+      className={`flex shrink-0 items-center gap-2 border-b ${bar.padding ? "" : "px-3"} ${BAR_CLASS[tone]}`}
       style={barStyle}
-      data-variant={bar.variant ?? "panel"}
+      data-variant={tone}
     >
       <button
         type="button"
@@ -638,9 +659,9 @@ export function AppShell({
       {!sidebar && (
         <>
           {brandNode && (
-            <span className={`mx-1 hidden h-5 border-l md:block ${accentBar ? BAR_DIVIDER_ACCENT : BAR_DIVIDER}`} />
+            <span className={`mx-1 hidden h-5 border-l md:block ${BAR_DIVIDER_CLASS[tone]}`} />
           )}
-          <TopNav menu={menu} pages={pages} onAccent={accentBar} />
+          <TopNav menu={menu} pages={pages} tone={tone} />
         </>
       )}
       <div className="ml-auto flex shrink-0 items-center gap-2">{header}</div>

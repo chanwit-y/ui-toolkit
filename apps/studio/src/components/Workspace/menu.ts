@@ -77,7 +77,7 @@ export type EngineShellProps = Pick<AppShellProps, 'navigation' | 'breadcrumbs' 
 
 /** Studio shell settings → `AppShell` props; empty app-bar fields are dropped. */
 export function shellToEngine(shell: ShellSettings): EngineShellProps {
-  const { title, icon, logo, variant, sidebarToggle } = shell.appBar
+  const { title, icon, logo, logoSize, variant, background, gradient, foreground, padding, sidebarToggle } = shell.appBar
   type IconKey = AppBarConfig['icon']
   const toggle = shell.collapsible
     ? {
@@ -85,11 +85,26 @@ export function shellToEngine(shell: ShellSettings): EngineShellProps {
         ...(sidebarToggle.show ? { show: sidebarToggle.show as IconKey } : {}),
       }
     : {}
+  // The paint rides along only on a custom bar; a gradient needs both stops.
+  const gradientOn = variant === 'custom' && gradient.enabled && gradient.from.trim() && gradient.to.trim()
+  const paint: Partial<AppBarConfig> =
+    variant === 'custom'
+      ? {
+          ...(background.trim() ? { background: background.trim() } : {}),
+          ...(gradientOn
+            ? { gradient: { from: gradient.from.trim(), to: gradient.to.trim(), ...(gradient.angle !== 90 ? { angle: gradient.angle } : {}) } }
+            : {}),
+          ...(foreground ? { foreground } : {}),
+        }
+      : {}
   const appBar: AppBarConfig = {
     ...(title ? { title } : {}),
     ...(icon ? { icon: icon as IconKey } : {}),
     ...(logo ? { logo } : {}),
+    ...(logo && logoSize.trim() ? { logoSize: logoSize.trim() } : {}),
     ...(variant !== 'panel' ? { variant } : {}),
+    ...paint,
+    ...(padding.trim() ? { padding: padding.trim() } : {}),
     ...(Object.keys(toggle).length ? { sidebarToggle: toggle } : {}),
   }
   return {

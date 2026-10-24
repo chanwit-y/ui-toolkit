@@ -55,6 +55,8 @@ const ACTION_LABELS: Record<BuiltinButtonActionKey, string> = {
   CloseModal: 'Close modal',
   Navigate: 'Go to page',
   ReloadDataTable: 'Reload data',
+  SignIn: 'Sign in (SSO)',
+  SignOut: 'Sign out (SSO)',
 }
 const ALL_ACTIONS = Object.keys(ACTION_LABELS) as BuiltinButtonActionKey[]
 const NO_CUSTOM_ACTIONS: CustomActionDef[] = []

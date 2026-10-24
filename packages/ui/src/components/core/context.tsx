@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { LoadingProvider } from "../context";
 import { SnackbarProvider } from "../Snackbar";
-import { AzureAuthProvider, azureCtx } from "../../auth";
 import { DataProvider } from "../context/DataProvider";
 
 type CoreContextType = {
@@ -26,13 +25,12 @@ const Context = createContext<CoreContextType>({} as CoreContextType);
 type CoreProviderProps = {
 	children: ReactNode;
 	isRoot?: boolean;
-	withAuth?: boolean;
 }
 
 /** One QueryClient for every engine root (page Cores and `GlobalLoads`), so caches are shared. */
 export const queryClient = new QueryClient()
 
-export const Provider = ({ children, isRoot = false, withAuth = false }: CoreProviderProps) => {
+export const Provider = ({ children, isRoot = false }: CoreProviderProps) => {
 
 	// const [contextData, setContextData] = useState<Record<string, any>>({});
 	// const [fnCtxs, setFnCtxs] = useState<Record<string, Function>>({});
@@ -69,9 +67,7 @@ export const Provider = ({ children, isRoot = false, withAuth = false }: CorePro
 					<LoadingProvider>
 						<SnackbarProvider>
 							<QueryClientProvider client={queryClient}>
-								{withAuth ? <AzureAuthProvider context={azureCtx}>
-									{children}
-								</AzureAuthProvider> : children}
+								{children}
 								{process.env.NODE_ENV === "development" && <ReactQueryDevtools initialIsOpen={false} />}
 							</QueryClientProvider>
 						</SnackbarProvider>

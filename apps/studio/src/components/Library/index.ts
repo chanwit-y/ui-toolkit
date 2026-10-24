@@ -1,4 +1,5 @@
 export { LibraryPage } from './LibraryPage'
+export { AuthPage } from './AuthPage'
 export { TemplatesPage } from './TemplatesPage'
 export { TemplateShell } from './TemplateShell'
 export { LibrarySync } from './LibrarySync'

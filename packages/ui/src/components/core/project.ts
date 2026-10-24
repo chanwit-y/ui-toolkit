@@ -2,6 +2,7 @@ import type { ThemeProps } from "@radix-ui/themes";
 import type { TApiMaster } from "../../api/APIMaster";
 import type { TModelMaster } from "../../model/master";
 import type { AppBarConfig, PageLoad, ThemeComponents, TMenu, TPageMaster } from "../@types";
+import type { AzureAuthConfig } from "../../auth/azure/config";
 
 /**
  * The project document a Gummy app renders at runtime (see the grilled
@@ -48,6 +49,13 @@ export type GummyProjectApi = Record<
   }
 >;
 
+/**
+ * The project's sign-in (see the grilled design `azure-sso-auth`): `GummyApp`
+ * wraps the app in `AzureAuth` when present. Only Azure for now; the union
+ * grows per provider.
+ */
+export type GummyProjectAuth = AzureAuthConfig;
+
 export type GummyProject = {
   schemaVersion: typeof GUMMY_PROJECT_SCHEMA_VERSION;
   name: string;
@@ -66,6 +74,8 @@ export type GummyProject = {
   customActions?: string[];
   /** Components the configs place by name; the app registers the React components. */
   customComponents?: GummyProjectCustomComponent[];
+  /** Sign-in; absent = no gate, no token. */
+  auth?: GummyProjectAuth;
 };
 
 export class GummyProjectError extends Error {
@@ -112,6 +122,22 @@ export function assertGummyProject(value: unknown): GummyProject {
   if (value.menu !== undefined && !Array.isArray(value.menu)) throw new GummyProjectError("`menu` must be an array.");
   if (value.globalLoads !== undefined && !Array.isArray(value.globalLoads))
     throw new GummyProjectError("`globalLoads` must be an array.");
+  if (value.auth !== undefined) {
+    if (!isRecord(value.auth) || value.auth.provider !== "azure")
+      throw new GummyProjectError(`\`auth.provider\` must be "azure" (got ${JSON.stringify(isRecord(value.auth) ? value.auth.provider : value.auth)}).`);
+    if (value.auth.env !== undefined) {
+      if (!isRecord(value.auth.env)) throw new GummyProjectError("`auth.env` must be an object of env var names.");
+      for (const [k, v] of Object.entries(value.auth.env))
+        if (typeof v !== "string") throw new GummyProjectError(`auth.env.${k} must be an env var name (string).`);
+    }
+    if (value.auth.profile !== undefined) {
+      const p = value.auth.profile;
+      if (!isRecord(p) || !isRecord(p.api) || typeof p.api.name !== "string" || typeof p.emailParam !== "string")
+        throw new GummyProjectError("`auth.profile` needs `api.name` and `emailParam`.");
+      if (!(p.api.name in value.api))
+        throw new GummyProjectError(`auth.profile.api.name refers to endpoint ${JSON.stringify(p.api.name)}, which is not in \`api\`.`);
+    }
+  }
   return value as unknown as GummyProject;
 }
 
@@ -128,3 +154,4 @@ export function projectApiToEngine(api: GummyProjectApi): TApiMaster<TModelMaste
   }
   return out;
 }
+

@@ -7,6 +7,7 @@ import type { ThemeAppearance } from '../Theme/types'
 import type { LoadingMode, PageLoadDef } from './pageLoads'
 import type { CustomActionDef } from './customActions'
 import type { CustomComponentDef } from './customComponents'
+import { AUTH_PROFILE_LOAD_ID, authEnvRows, authProfileEndpointId, createAuthDef, normalizeAuthDef, type AuthDef } from './auth'
 import { seedActivity } from '../seed/activity'
 import {
   countryCreateButtonSeedItem,
@@ -44,6 +45,11 @@ import {
   PROFILE_LIST_RES_MODEL_ID,
   PROFILE_SWITCH_DROPDOWN_ITEM_ID,
   profileSeedEndpoints,
+  profileByEmailSeedModels,
+  profileByEmailSeedEndpoints,
+  banpuAzureSeedAuth,
+  BANPU_AZURE_AUTH_ID,
+  LOAD_ME_ID,
   tableLayoutSeedEndpoints,
   REGION_RES_MODEL_ID,
   DATA_TABLE_PAGE_ID,
@@ -87,6 +93,7 @@ import {
   normalizePath,
   defaultAppBar,
   defaultShell,
+  normalizeAppBar,
   optionDemoPages,
   formListDemoPage,
   repeaterDemoPage,
@@ -152,11 +159,13 @@ export const WORKSPACE_STORAGE_KEY = 'gummy.studio.workspace.v1'
 export type SaveState = 'saved' | 'pending' | 'error'
 
 /** The mockup's four people — a mock identity with no auth behind it. */
-export const MOCK_USERS: { name: string; role: string }[] = [
-  { name: 'Chanwit Y.', role: 'Product design' },
-  { name: 'Pimchanok S.', role: 'Backend' },
-  { name: 'Thanapat R.', role: 'QA' },
-  { name: 'Nattapong V.', role: 'Head of Digital' },
+export const MOCK_USERS: { name: string; role: string; email: string }[] = [
+  // The emails are the Live Preview's mock sign-in account (see the grilled
+  // design `azure-sso-auth`): the first is the mock API's admin.
+  { name: 'Chanwit Yimneam', role: 'Product design', email: 'chanwit_y@banpu.co.th' },
+  { name: 'Pimchanok S.', role: 'Backend', email: 'pimchanok_s@banpu.co.th' },
+  { name: 'Thanapat R.', role: 'QA', email: 'thanapat_r@banpu.co.th' },
+  { name: 'Nattapong V.', role: 'Head of Digital', email: 'nattapong_v@banpu.co.th' },
 ]
 
 type WorkspaceStore = WorkspaceData & {
@@ -185,6 +194,16 @@ type WorkspaceStore = WorkspaceData & {
   updateProjectCustomActions: (id: string, actions: CustomActionDef[]) => void
   /** Replace the project's declared custom components (the Env page's section). */
   updateProjectCustomComponents: (id: string, components: CustomComponentDef[]) => void
+  /**
+   * Pick the shared auth entry the project signs in with (null = none). Also
+   * attaches the entry's profile endpoint; the Env rows are the caller's (they
+   * live in the live env store while a project is open).
+   */
+  setProjectAuth: (id: string, authId: string | null) => void
+  // Shared auth entries (Azure SSO, see the grilled design `azure-sso-auth`).
+  addAuth: (name?: string) => AuthDef
+  updateAuth: (id: string, patch: Partial<AuthDef>) => void
+  deleteAuth: (id: string) => void
   deleteProject: (id: string) => void
   /** Write the live env/theme and the active page's grid back (autosave). */
   saveProjectState: (id: string, pageId: string, state: ProjectStateSnapshot) => void
@@ -983,7 +1002,7 @@ const REMOVED_TEMPLATE_IDS_V49 = new Set(['seed-tpl-dashboard', 'seed-tpl-report
  * `navigation` (link / toast / dialog) is removed, and the two builtin
  * templates made of stats and charts go.
  */
-function migrateV49(data: { projects: ProjectDef[]; library: LibraryData }): {
+function migrateV49Only(data: { projects: ProjectDef[]; library: LibraryData }): {
   projects: ProjectDef[]
   library: LibraryData
 } {
@@ -1018,6 +1037,75 @@ function migrateV49(data: { projects: ProjectDef[]; library: LibraryData }): {
       .filter((t) => !(t.builtin && REMOVED_TEMPLATE_IDS_V49.has(t.id)))
       .map((t) => ({ ...t, grid: { ...t.grid, items: strip(t.grid.items) } })),
   }
+  return { projects, library }
+}
+
+/** v49 → v50 chained onto v49 (every older payload passes through here). */
+function migrateV49(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  return migrateV50(migrateV49Only(data))
+}
+
+/** v50 → v51 → v52 (every v50 payload passes through here). */
+function migrateV50(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  return migrateV51(migrateV50Only(data))
+}
+
+/**
+ * v51 → v52: the app bar's paint — `logoSize`, the `custom` variant with
+ * `background` / `gradient` / `foreground`, and `padding` — filled with the
+ * defaults on every project's shell (`normalizeAppBar`).
+ */
+function migrateV51(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  return {
+    ...data,
+    projects: data.projects.map((p) => ({
+      ...p,
+      snapshot: { ...p.snapshot, shell: { ...p.snapshot.shell, appBar: normalizeAppBar(p.snapshot.shell?.appBar, p.name) } },
+    })),
+  }
+}
+
+/**
+ * v50 → v51: Azure SSO (see the grilled design `azure-sso-auth`). The
+ * library gains `auth` with the seeded **Banpu Azure** entry and the
+ * `profileByEmail` endpoint + query model (by id, so re-runs and edits are
+ * safe); every project gets `authId` (null); the seeded Country manager
+ * picks the entry (unless it already picked one), gets the four `AZURE_*`
+ * Env rows seeded + locked, and its Profile page's own `me` load goes — the
+ * sign-in fills that slice now — with every binding to that load repointed
+ * at the auth profile pseudo-load.
+ */
+function migrateV50Only(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  const seeded = seedLibraryAdditions(data.projects, data.library, profileByEmailSeedModels(), profileByEmailSeedEndpoints())
+  const existing = (seeded.library.auth ?? []).map((a) => normalizeAuthDef(a))
+  const auth = existing.some((a) => a.id === BANPU_AZURE_AUTH_ID) ? existing : [...existing, banpuAzureSeedAuth()]
+  const library: LibraryData = { ...seeded.library, auth }
+  const seedDef = auth.find((a) => a.id === BANPU_AZURE_AUTH_ID)!
+  const projects = seeded.projects.map((p) => {
+    const authId = p.snapshot.authId ?? null
+    if (p.id !== 'seed-project-country') return { ...p, snapshot: { ...p.snapshot, authId } }
+    const picked = authId ?? BANPU_AZURE_AUTH_ID
+    const env = authId ? p.snapshot.env : authEnvRows(seedDef, p.snapshot.env)
+    const pages = p.snapshot.pages.map((pg) => {
+      if (pg.id !== PROFILE_PAGE_ID) return pg
+      const loads = (pg.loads ?? []).filter((l) => l.id !== LOAD_ME_ID)
+      const items = JSON.parse(JSON.stringify(pg.grid.items).split(LOAD_ME_ID).join(AUTH_PROFILE_LOAD_ID)) as GridItemData[]
+      return { ...pg, loads, grid: { ...pg.grid, items } }
+    })
+    return { ...p, snapshot: { ...p.snapshot, authId: picked, env, pages } }
+  })
   return { projects, library }
 }
 
@@ -1743,7 +1831,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
       const templateOf = (id: string) => get().library.templates.find((t) => t.id === id)
 
       return {
-      version: 50,
+      version: 52,
       appearance: 'light',
       user: MOCK_USERS[0].name,
       projects: seedProjects(initialLibrary),
@@ -1827,6 +1915,48 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
         set((s) => ({
           projects: patchProject(s.projects, id, (p) => ({ snapshot: { ...p.snapshot, customComponents } })),
         }))
+      },
+
+      setProjectAuth: (id, authId) => {
+        const def = authId ? (get().library.auth ?? []).find((a) => a.id === authId) : undefined
+        const endpointId = authProfileEndpointId(def)
+        set((s) => ({
+          projects: patchProject(s.projects, id, (p) => ({
+            snapshot: {
+              ...p.snapshot,
+              authId,
+              endpointIds:
+                endpointId && !p.snapshot.endpointIds.includes(endpointId)
+                  ? [...p.snapshot.endpointIds, endpointId]
+                  : p.snapshot.endpointIds,
+            },
+          })),
+        }))
+        log(def ? 'updated' : 'updated', 'auth', def?.name ?? 'none', def ? `${projectName(id)} signs in with it` : `${projectName(id)} has no sign-in`, id)
+      },
+
+      addAuth: (name) => {
+        const def = createAuthDef(name)
+        set((s) => ({ library: { ...s.library, auth: [...(s.library.auth ?? []), def] } }))
+        log('created', 'auth', def.name, 'Azure SSO', null)
+        return def
+      },
+
+      updateAuth: (id, patch) => {
+        const before = (get().library.auth ?? []).find((a) => a.id === id)
+        set((s) => ({
+          library: { ...s.library, auth: (s.library.auth ?? []).map((a) => (a.id === id ? { ...a, ...patch } : a)) },
+        }))
+        if (before && patch.name !== undefined && patch.name !== before.name) log('renamed', 'auth', patch.name, `was ${before.name}`, null)
+      },
+
+      deleteAuth: (id) => {
+        const before = (get().library.auth ?? []).find((a) => a.id === id)
+        set((s) => ({
+          library: { ...s.library, auth: (s.library.auth ?? []).filter((a) => a.id !== id) },
+          // Projects that picked it keep the dangling id (shown as missing), like a deleted endpoint.
+        }))
+        if (before) log('deleted', 'auth', before.name, '', null)
       },
 
       updateProjectGlobalLoads: (id, globalLoads) => {
@@ -2128,7 +2258,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
       name: WORKSPACE_STORAGE_KEY,
       // localStorage, or the `gummy studio` CLI's file API — decided before this module loads.
       storage: createJSONStorage(() => studioStorage),
-      version: 50,
+      version: 52,
       partialize: (s) => ({
         version: s.version,
         appearance: s.appearance,
@@ -2309,8 +2439,15 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
         if (data.version === 49) {
           return { ...current, appearance, user, activity, ...migrateV49({ projects: data.projects, library }) }
         }
-        if (data.version !== 50) return current
-        return { ...current, appearance, user, activity, projects: data.projects, library }
+        if (data.version === 50) {
+          return { ...current, appearance, user, activity, ...migrateV50({ projects: data.projects, library }) }
+        }
+        if (data.version === 51) {
+          return { ...current, appearance, user, activity, ...migrateV51({ projects: data.projects, library }) }
+        }
+        if (data.version !== 52) return current
+        // Same version, possibly older entry shapes (fields added without a bump): fill the defaults.
+        return { ...current, appearance, user, activity, projects: data.projects, library: { ...library, auth: (library.auth ?? []).map((a) => normalizeAuthDef(a)) } }
       },
       // The version bumps are handled in `merge` (it sees the raw payload);
       // keep the middleware's own migrate a pass-through.

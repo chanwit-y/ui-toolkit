@@ -56,6 +56,16 @@ export const actions: TActionMaster = {
     );
   },
 
+  /** `ctx.auth`: the signed-in session (see config/country/auth.ts) — here the bearer token's length. */
+  tokenLength: async ({ auth, snackbar }) => {
+    if (!auth) {
+      snackbar("warning", "No <AzureAuth> above the page — ctx.auth is undefined");
+      return;
+    }
+    const token = await auth.getToken();
+    snackbar("info", `${auth.email ?? "nobody"} · status ${auth.status} · token: ${token ? `${token.length} chars` : "empty (mock mode)"}`);
+  },
+
   /** Throws: the chain's catch shows the message through `snackbarError: "$exception"`. */
   fail: () => {
     throw new Error("fn:fail threw on purpose");

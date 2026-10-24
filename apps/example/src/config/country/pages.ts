@@ -24,6 +24,7 @@ import { containerPageDataDemo, pageDataLoads } from "./pageDataDemo";
 import { approvalLineLoads, containerApprovalLineDemo } from "./approvalLineDemo";
 import { containerWorkflowDemo, workflowLoads } from "./workflowDemo";
 import { containerProfileDemo, profileLoads } from "./profileDemo";
+import { containerAuthDemo } from "./authDemo";
 
 /**
  * Router demo: the pages the example app serves, keyed by name. Navigating
@@ -223,6 +224,15 @@ export const pages = {
     title: { type: "state", key: "approval", path: "title" },
     loads: approvalLineLoads,
     containers: containerApprovalLineDemo,
+  },
+  authDemo: {
+    // Azure SSO (see ./authDemo.ts): the `auth` / `me` slices the app's
+    // <AzureAuth> publishes, SignIn / SignOut buttons and a custom action
+    // reading the token.
+    path: "/auth",
+    parent: "countryList",
+    title: "Auth",
+    containers: containerAuthDemo,
   },
   workflowDemo: {
     // The `workfloweditor` element as a field of a form over a loaded

@@ -10,6 +10,7 @@ import { menuToEngine, shellToEngine } from './menu'
 import { enginePageMeta } from './pageMeta'
 import { attachedEndpoints, referencedModels } from './snapshots'
 import type { LibraryData, ProjectDef, ProjectSnapshot } from './types'
+import { authProfileEndpointId, authProfileLoad, authToEngine, normalizeAuthDef, type AuthDef } from './auth'
 
 /**
  * The runtime document (`GummyProject`, `schemaVersion: 1`) a consumer app
@@ -36,6 +37,16 @@ export type RuntimeSource = {
   name: string
   description?: string
   snapshot: ProjectSnapshot
+  /** The shared auth entry the snapshot's `authId` names (resolved by the caller). */
+  auth?: AuthDef | null
+}
+
+/** The entry a snapshot picked, or `null` (none, or deleted). */
+export function pickedAuth(snapshot: Pick<ProjectSnapshot, 'authId'>, library: Pick<LibraryData, 'auth'>): AuthDef | null {
+  if (!snapshot.authId) return null
+  const found = (library.auth ?? []).find((a) => a.id === snapshot.authId)
+  // Entries saved by an older studio may lack newer fields (the card's keys): fill the defaults.
+  return found ? normalizeAuthDef(found) : null
 }
 
 /**
@@ -49,10 +60,13 @@ export function runtimeDocument(source: RuntimeSource, endpoints: EndpointDef[],
   const customActions = snapshot.customActions ?? []
   const customComponents = snapshot.customComponents ?? []
   const pages = snapshot.pages
+  // The sign-in's profile fetch shows up as a pseudo-load so bindings to it resolve to its slice key.
+  const authLoad = authProfileLoad(source.auth ?? undefined)
+  const readable = authLoad ? [...globalLoads, authLoad] : globalLoads
 
   const enginePages: TPageMaster = Object.fromEntries(
     pages.map((pg) => {
-      const loads = pageLoadsToEngine(pg.loads, endpoints, globalLoads) as PageLoad[] | undefined
+      const loads = pageLoadsToEngine(pg.loads, endpoints, readable) as PageLoad[] | undefined
       return [
         pg.key,
         {
@@ -69,7 +83,7 @@ export function runtimeDocument(source: RuntimeSource, endpoints: EndpointDef[],
                 pages,
                 undefined,
                 undefined,
-                [...(pg.loads ?? []), ...globalLoads],
+                [...(pg.loads ?? []), ...readable],
                 customActions,
                 customComponents,
               ),
@@ -82,7 +96,8 @@ export function runtimeDocument(source: RuntimeSource, endpoints: EndpointDef[],
   ) as TPageMaster
 
   const { theme, components } = toThemeObjects(snapshot.theme)
-  const engineGlobalLoads = (pageLoadsToEngine(globalLoads, endpoints) ?? []) as PageLoad[]
+  const engineGlobalLoads = (pageLoadsToEngine(globalLoads, endpoints, readable) ?? []) as PageLoad[]
+  const auth = source.auth ? authToEngine(source.auth, endpoints) : undefined
   const env = Object.fromEntries(snapshot.env.filter((e) => e.name.trim()).map((e) => [e.name.trim(), e.value]))
 
   return {
@@ -97,6 +112,7 @@ export function runtimeDocument(source: RuntimeSource, endpoints: EndpointDef[],
     shell: shellToEngine(snapshot.shell),
     theme: { theme, components },
     globalLoads: engineGlobalLoads,
+    ...(auth ? { auth } : {}),
     customActions: customActions.map((a) => a.name.trim()).filter(isValidIdentifier),
     customComponents: customComponents
       .filter((c) => isValidIdentifier(c.name.trim()))
@@ -116,9 +132,15 @@ export function runtimeDocument(source: RuntimeSource, endpoints: EndpointDef[],
 
 /** A stored project → its runtime document, resolving its endpoints and models against the shared library. */
 export function projectToRuntime(project: ProjectDef, library: LibraryData): GummyProject {
-  const endpoints = attachedEndpoints(project.snapshot.endpointIds, library.endpoints)
+  const auth = pickedAuth(project.snapshot, library)
+  // The picked entry's profile endpoint rides along even when it was never attached (a safety net under the pick's auto-attach).
+  const profileEndpointId = authProfileEndpointId(auth ?? undefined)
+  const ids = profileEndpointId && !project.snapshot.endpointIds.includes(profileEndpointId)
+    ? [...project.snapshot.endpointIds, profileEndpointId]
+    : project.snapshot.endpointIds
+  const endpoints = attachedEndpoints(ids, library.endpoints)
   const models = referencedModels(endpoints, library.models)
-  return runtimeDocument(project, endpoints, models)
+  return runtimeDocument({ ...project, auth }, endpoints, models)
 }
 
 /** Every project of a workspace by its file key; a name clash gets `-2`, `-3`… */

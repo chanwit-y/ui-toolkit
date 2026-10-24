@@ -225,7 +225,12 @@ export function livePreviewProject(doc: GummyProject, wiring: LivePreviewWiring)
     ]),
   )
   const api = Object.fromEntries(Object.entries(doc.api).filter(([name]) => wiring.fetchableNames.has(name)))
-  return { ...doc, pages, api }
+  // A sign-in whose profile endpoint can't be built keeps the gate but skips the fetch (signed-in is enough).
+  const auth =
+    doc.auth?.profile && !wiring.fetchableNames.has(doc.auth.profile.api.name)
+      ? (({ profile: _profile, ...rest }) => rest)(doc.auth)
+      : doc.auth
+  return { ...doc, pages, api, ...(auth ? { auth } : {}) }
 }
 
 /**

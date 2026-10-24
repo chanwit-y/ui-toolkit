@@ -59,12 +59,13 @@ export { PagesProvider, usePages, useNavigateTo, buildNavigateUrl, pathParamName
 export { AppShell } from "./components/AppShell";
 export type { AppShellProps } from "./components/AppShell";
 export type { AppBarConfig, MenuItem, TMenu } from "./components/@types";
+export { appBarTone, appBarStyle, appBarBackground, appBarForeground, colorLuminance, type AppBarTone } from "./components/core/appBarStyle";
 // Runtime rendering of a studio project document (see the grilled library / CLI
 // design): <GummyApp project={json} …/> inside the consumer's router.
 export { GummyApp } from "./components/GummyApp";
 export type { GummyAppProps, GummyAppShell } from "./components/GummyApp";
 export { assertGummyProject, projectApiToEngine, GummyProjectError, GUMMY_PROJECT_SCHEMA_VERSION } from "./components/core/project";
-export type { GummyProject, GummyProjectApi, GummyProjectShell, GummyProjectTheme, GummyProjectCustomComponent } from "./components/core/project";
+export type { GummyProject, GummyProjectApi, GummyProjectAuth, GummyProjectShell, GummyProjectTheme, GummyProjectCustomComponent } from "./components/core/project";
 export {
 	DEFAULT_CONTAINER_GRID,
 	getBinGridItemStyle,
@@ -166,7 +167,8 @@ export * from "./components/ConfirmBox";
 export * from "./components/Snackbar";
 
 export { ApiFactory, HttpClientFactory } from "./api";
-export { getAccessToken } from "./auth/azure/MsalInstance"
+// Azure SSO (see the grilled design `azure-sso-auth`): <AzureAuth> / GummyApp project.auth.
+export * from "./auth/azure"
 
 export * from "./components/Avatar";
 export type { AvatarProps } from "./components/@types";

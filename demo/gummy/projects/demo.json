@@ -46,6 +46,43 @@
     },
     "countryParam": {
       "id": "string"
+    },
+    "profileEmailQuery": {
+      "email": "string"
+    },
+    "profileRes": {
+      "data": {
+        "type": "object",
+        "collection": {
+          "personId": "string",
+          "userId": "string",
+          "firstNameEn": "string",
+          "lastNameEN": "string",
+          "email": "string",
+          "jobTitle": "string",
+          "jobStatus": "string",
+          "isPrimaryAssignment": "string",
+          "isAdmin": "boolean",
+          "avatar": "string",
+          "companyModel": {
+            "type": "object",
+            "collection": {
+              "code": "string",
+              "name": "string"
+            }
+          },
+          "businessUnitModel": {
+            "type": "object",
+            "collection": {
+              "code": "string",
+              "name": "string"
+            }
+          }
+        }
+      },
+      "status": "number",
+      "success": "boolean",
+      "message": "string"
     }
   },
   "api": {
@@ -62,6 +99,13 @@
       "description": "One country by id",
       "response": "countryDetailRes",
       "parameter": "countryParam"
+    },
+    "profileByEmail": {
+      "url": "/collection/profiles/email",
+      "methods": "GET",
+      "response": "profileRes",
+      "query": "profileEmailQuery",
+      "description": "The signed-in user's profile by email (the Azure SSO profile fetch)"
     }
   },
   "pages": {
@@ -445,5 +489,22 @@
         }
       ]
     }
-  ]
+  ],
+  "auth": {
+    "provider": "azure",
+    "profile": {
+      "api": {
+        "name": "profileByEmail",
+        "paths": [
+          "data"
+        ]
+      },
+      "emailParam": "email"
+    },
+    "screens": {
+      "landing": {
+        "message": "Sign in with your organisation account to open the demo."
+      }
+    }
+  }
 }

@@ -42,3 +42,24 @@ describe("projectApiToEngine", () => {
     expect(api.one).toEqual({ url: "/one", methods: "GET", response: "res", description: "", withOptions: false });
   });
 });
+
+describe("assertGummyProject: auth", () => {
+  const withAuth = (auth: unknown) => ({ ...valid(), auth });
+
+  test("accepts an azure block whose profile endpoint exists", () => {
+    const p = withAuth({ provider: "azure", profile: { api: { name: "one", paths: ["data"] }, emailParam: "id" } });
+    expect(assertGummyProject(p).auth?.provider).toBe("azure");
+  });
+
+  test("rejects another provider", () => {
+    expect(() => assertGummyProject(withAuth({ provider: "okta" }))).toThrow(/auth\.provider/);
+  });
+
+  test("rejects a non-string env var name", () => {
+    expect(() => assertGummyProject(withAuth({ provider: "azure", env: { tenantId: 1 } }))).toThrow(/auth\.env\.tenantId/);
+  });
+
+  test("names a profile endpoint that is not in api", () => {
+    expect(() => assertGummyProject(withAuth({ provider: "azure", profile: { api: { name: "nope" }, emailParam: "email" } }))).toThrow(/auth\.profile\.api\.name .*"nope"/);
+  });
+});

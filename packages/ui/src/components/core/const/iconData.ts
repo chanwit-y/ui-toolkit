@@ -98,6 +98,8 @@ export const IconData = {
 	terminal: i.Terminal,
 	puzzle: i.Puzzle,
 	userCog: i.UserCog,
+	shieldCheck: i.ShieldCheck,
+	shieldAlert: i.ShieldAlert,
 	userCheck: i.UserCheck,
 	arrowLeftRight: i.ArrowLeftRight,
 	code: i.Code,

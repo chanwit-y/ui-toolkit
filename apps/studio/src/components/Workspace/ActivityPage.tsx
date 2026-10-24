@@ -24,6 +24,7 @@ const KIND_HUE: Record<ActivityKind, number> = {
   template: 36,
   group: 152,
   theme: 320,
+  auth: 95,
 }
 
 function KindTag({ kind }: { kind: ActivityKind }) {
@@ -51,6 +52,7 @@ const KINDS: { value: 'all' | ActivityKind; label: string }[] = [
   { value: 'model', label: 'Models' },
   { value: 'template', label: 'Templates' },
   { value: 'theme', label: 'Theme' },
+  { value: 'auth', label: 'Sign-in' },
 ]
 
 function inRange(ts: number, from: string, to: string): boolean {

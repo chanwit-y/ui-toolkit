@@ -62,8 +62,8 @@ const profile = (
 
 /** The logged-in person: an admin with two positions — the *second* is the primary assignment. */
 const ME: Profile[] = [
-  profile('p-me', 1, 'Kavisara', 'Thisakobsuk', 'Section Manager - Application Development', 'BPP', 'Digital', { isAdmin: true }),
-  profile('p-me', 2, 'Kavisara', 'Thisakobsuk', 'Product Owner - Employee Platforms', 'BPN', 'Digital', { isAdmin: true, isPrimaryAssignment: 'Y' }),
+  profile('p-me', 1, 'Chanwit', 'Yimneam', 'Section Manager - Application Development', 'BPP', 'Digital', { isAdmin: true }),
+  profile('p-me', 2, 'Chanwit', 'Yimneam', 'Product Owner - Employee Platforms', 'BPN', 'Digital', { isAdmin: true, isPrimaryAssignment: 'Y' }),
 ];
 
 // Everyone from the workflow demo gets one profile; a few hold more, one is
@@ -95,7 +95,24 @@ const PROFILES: Profile[] = [
   profile('p-broken', 1, 'Broken', 'Record', 'Returns a server error', 'BPP', 'Operations', { isPrimaryAssignment: 'Y' }),
 ];
 
+/** The logged-in admin's email (the demo apps' mock account). */
+export const ME_EMAIL = 'chanwit_y@banpu.co.th';
+
 const envelope = <T>(data: T, message: string) => ({ data, status: 200, success: true, message });
+
+// GET /collection/profiles/email?email= — the Azure SSO profile fetch (`project.auth.profile`):
+// the person's primary profile for a known email (404 unknown, 403 when every
+// profile is terminated — the denied path). The admin's own email maps to `ME`.
+userProfileRoutes.get('/collection/profiles/email', (c) => {
+  const email = (c.req.query('email') ?? '').trim().toLowerCase();
+  if (!email) return c.json({ data: null, status: 400, success: false, message: 'email is required' }, 400);
+  if (email === ME_EMAIL) return c.json(envelope(ME[1], 'Profile retrieved successfully'));
+  const rows = PROFILES.filter((p) => p.email.toLowerCase() === email);
+  if (rows.length === 0) return c.json({ data: null, status: 404, success: false, message: `No profile for ${email}` }, 404);
+  const active = rows.filter((p) => p.jobStatus !== 'T');
+  if (active.length === 0) return c.json({ data: null, status: 403, success: false, message: 'No active profile — access denied' }, 403);
+  return c.json(envelope(active.find((p) => p.isPrimaryAssignment === 'Y') ?? active[0], 'Profile retrieved successfully'));
+});
 
 userProfileRoutes.get('/collection/profiles/me', (c) => c.json(envelope(ME[0], 'Profile retrieved successfully')));
 

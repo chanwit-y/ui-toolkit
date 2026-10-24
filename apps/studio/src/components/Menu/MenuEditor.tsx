@@ -1,6 +1,6 @@
-import { IconData } from '@gummy-ui/ui'
-import { Plus, Trash2 } from 'lucide-react'
-import { useMemo, type ReactNode } from 'react'
+import { IconData, appBarStyle, appBarTone } from '@gummy-ui/ui'
+import { Plus, Trash2, Upload, X } from 'lucide-react'
+import { useMemo, useRef, useState, type ReactNode } from 'react'
 import {
   Button,
   CodeViewer,
@@ -8,6 +8,7 @@ import {
   IconField,
   Input,
   SegmentedControl,
+  Select,
   SortableCardList,
   cn,
 } from '../common'
@@ -24,6 +25,147 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
       <span className="text-ui-sm font-medium text-ink-2">{label}</span>
       {children}
     </label>
+  )
+}
+
+const HEX = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i
+
+/** A CSS colour: a native picker swatch (hex only) beside the free text (`rgb(…)`, `var(--teal-9)` …). */
+function ColorInput({
+  value,
+  onChange,
+  placeholder,
+  disabled,
+}: {
+  value: string
+  onChange: (next: string) => void
+  placeholder?: string
+  disabled?: boolean
+}) {
+  const hex = HEX.test(value.trim())
+    ? value.trim().length === 4
+      ? `#${value
+          .trim()
+          .slice(1)
+          .split('')
+          .map((c) => c + c)
+          .join('')}`
+      : value.trim()
+    : '#888888'
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        type="color"
+        aria-label="Pick a colour"
+        value={hex}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.value)}
+        className="h-8 w-9 shrink-0 cursor-pointer rounded border border-line bg-panel p-0.5 disabled:opacity-50"
+      />
+      <Input
+        value={value}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="font-mono"
+      />
+    </div>
+  )
+}
+
+/** Logos bigger than this are refused: the data URL lives in the project JSON and every workspace save. */
+const MAX_LOGO_BYTES = 300 * 1024
+
+/**
+ * The app bar logo: a URL, or an image uploaded from disk and stored as a
+ * `data:` URL (so the exported project is self-contained), with a preview.
+ */
+function LogoField({ value, onChange }: { value: string; onChange: (next: string) => void }) {
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [error, setError] = useState<string | null>(null)
+  const uploaded = value.startsWith('data:')
+
+  const pick = (file: File | undefined) => {
+    setError(null)
+    if (!file) return
+    if (!file.type.startsWith('image/')) return setError('Pick an image file (PNG, SVG, JPEG, WebP …).')
+    if (file.size > MAX_LOGO_BYTES) return setError(`That image is ${Math.round(file.size / 1024)} KB — keep the logo under ${MAX_LOGO_BYTES / 1024} KB.`)
+    const reader = new FileReader()
+    reader.onload = () => onChange(typeof reader.result === 'string' ? reader.result : '')
+    reader.onerror = () => setError('Could not read that file.')
+    reader.readAsDataURL(file)
+  }
+
+  return (
+    <div className="space-y-1">
+      <span className="text-ui-sm font-medium text-ink-2">Logo</span>
+      <div className="flex items-center gap-2">
+        {value ? (
+          <img src={value} alt="" className="h-8 w-8 shrink-0 rounded border border-line bg-panel object-contain p-0.5" />
+        ) : (
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded border border-dashed border-line text-ink-3">
+            <Upload size={13} />
+          </span>
+        )}
+        {uploaded ? (
+          <span className="field flex min-w-0 flex-1 items-center text-ui text-ink-2">Uploaded image ({Math.max(1, Math.round((value.length * 3) / 4 / 1024))} KB)</span>
+        ) : (
+          <Input
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder="https://… (wins over the icon)"
+            className="min-w-0 flex-1 font-mono"
+          />
+        )}
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            pick(e.target.files?.[0])
+            e.target.value = ''
+          }}
+        />
+        <Button size="sm" onClick={() => fileRef.current?.click()} title="Upload an image from disk">
+          <Upload size={13} />
+          Upload
+        </Button>
+        {value && (
+          <IconButton label="Clear logo" onClick={() => onChange('')}>
+            <X size={13} />
+          </IconButton>
+        )}
+      </div>
+      {error && <p className="text-ui-xs text-danger">{error}</p>}
+    </div>
+  )
+}
+
+/** The bar as the exported app will paint it (title, mark, colour / gradient, padding). */
+function AppBarPreview({ bar, title }: { bar: AppBarSettings; title: string }) {
+  const engine = shellToEngine({ navigation: 'sidebar', breadcrumbs: false, appBar: bar, menuIcons: true, collapsible: true }).appBar ?? {}
+  const tone = appBarTone(engine)
+  const cls =
+    tone === 'panel'
+      ? 'border-[var(--gray-6)] bg-[var(--color-panel-solid)] text-[var(--gray-12)]'
+      : tone === 'accent'
+        ? 'border-[var(--accent-10)] bg-[var(--accent-9)] text-[var(--accent-contrast)]'
+        : 'border-transparent'
+  const Glyph = engine.icon ? IconData[engine.icon] : null
+  return (
+    <div
+      className={cn('flex items-center gap-2 overflow-hidden rounded-md border text-sm font-semibold', !engine.padding && 'px-3', cls)}
+      style={appBarStyle(engine)}
+      aria-hidden="true"
+    >
+      {engine.logo ? (
+        <img src={engine.logo} alt="" className="w-auto shrink-0 rounded object-contain" style={{ height: engine.logoSize ?? '1.5rem' }} />
+      ) : Glyph ? (
+        <Glyph size={18} className="shrink-0" />
+      ) : null}
+      <span className="truncate">{engine.title || title}</span>
+    </div>
   )
 }
 
@@ -264,6 +406,7 @@ export function MenuEditor() {
 
         <section className="mt-3 box space-y-3 p-3">
           <span className="sec-label block">App bar</span>
+          <AppBarPreview bar={shell.appBar} title={project.name} />
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="Title">
               <Input
@@ -272,15 +415,17 @@ export function MenuEditor() {
                 placeholder={project.name}
               />
             </Field>
-            <Field label="Logo URL">
+            <IconField value={shell.appBar.icon} onChange={(icon) => setAppBar({ icon })} />
+            <LogoField value={shell.appBar.logo} onChange={(logo) => setAppBar({ logo })} />
+            <Field label="Logo size">
               <Input
-                value={shell.appBar.logo}
-                onChange={(e) => setAppBar({ logo: e.target.value })}
-                placeholder="https://… (wins over the icon)"
+                value={shell.appBar.logoSize}
+                disabled={!shell.appBar.logo}
+                onChange={(e) => setAppBar({ logoSize: e.target.value })}
+                placeholder="Default: 1.5rem (CSS height; width follows)"
                 className="font-mono"
               />
             </Field>
-            <IconField value={shell.appBar.icon} onChange={(icon) => setAppBar({ icon })} />
             <div className="space-y-1">
               <span className="text-ui-sm font-medium text-ink-2">Style</span>
               <div>
@@ -289,13 +434,85 @@ export function MenuEditor() {
                   options={[
                     { value: 'panel', label: 'Panel' },
                     { value: 'accent', label: 'Accent' },
+                    { value: 'custom', label: 'Custom' },
                   ]}
                   value={shell.appBar.variant}
                   onChange={(v) => setAppBar({ variant: v as AppBarSettings['variant'] })}
                 />
               </div>
             </div>
+            <Field label="Padding">
+              <Input
+                value={shell.appBar.padding}
+                onChange={(e) => setAppBar({ padding: e.target.value })}
+                placeholder="Default: 0 0.75rem (CSS padding)"
+                className="font-mono"
+              />
+            </Field>
           </div>
+          {shell.appBar.variant === 'custom' && (
+            <div className="space-y-3 rounded-md border border-line bg-panel-2 p-3">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="Colour">
+                  <ColorInput
+                    value={shell.appBar.background}
+                    disabled={shell.appBar.gradient.enabled}
+                    onChange={(background) => setAppBar({ background })}
+                    placeholder="#0f766e · rgb(…) · var(--teal-9)"
+                  />
+                </Field>
+                <Field label="Text colour">
+                  <Select
+                    value={shell.appBar.foreground}
+                    onChange={(v) => setAppBar({ foreground: v as AppBarSettings['foreground'] })}
+                    options={[
+                      { value: '', label: 'Auto (from the colour)' },
+                      { value: 'light', label: 'Light' },
+                      { value: 'dark', label: 'Dark' },
+                    ]}
+                  />
+                </Field>
+              </div>
+              <CheckboxRow
+                label="Gradient"
+                checked={shell.appBar.gradient.enabled}
+                onChange={(enabled) => setAppBar({ gradient: { ...shell.appBar.gradient, enabled } })}
+              />
+              {shell.appBar.gradient.enabled && (
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <Field label="From">
+                    <ColorInput
+                      value={shell.appBar.gradient.from}
+                      onChange={(from) => setAppBar({ gradient: { ...shell.appBar.gradient, from } })}
+                      placeholder="#0f766e"
+                    />
+                  </Field>
+                  <Field label="To">
+                    <ColorInput
+                      value={shell.appBar.gradient.to}
+                      onChange={(to) => setAppBar({ gradient: { ...shell.appBar.gradient, to } })}
+                      placeholder="#1d4ed8"
+                    />
+                  </Field>
+                  <Field label="Angle (deg)">
+                    <Input
+                      type="number"
+                      min={0}
+                      max={360}
+                      step={1}
+                      value={shell.appBar.gradient.angle}
+                      onChange={(e) => setAppBar({ gradient: { ...shell.appBar.gradient, angle: Number(e.target.value) || 0 } })}
+                    />
+                  </Field>
+                </div>
+              )}
+              <p className="text-ui-xs text-ink-3">
+                A custom bar is painted with the colour, or the gradient from → to when enabled (both stops
+                needed). Buttons, links and the user menu on it use the text colour — picked from the paint’s
+                brightness unless set.
+              </p>
+            </div>
+          )}
           <CheckboxRow
             label="Collapsible sidebar (show the collapse-to-rail button)"
             checked={shell.collapsible}
@@ -318,8 +535,9 @@ export function MenuEditor() {
             />
           </div>
           <p className="text-ui-xs text-ink-3">
-            The bar across the top of the exported app: its title and mark, on the neutral panel or painted
-            in the theme accent. The sidebar button and its glyphs only apply to the Sidebar placement.
+            The bar across the top of the exported app: its title and mark (an uploaded logo is stored in the
+            project as a data URL), on the neutral panel, painted in the theme accent, or a custom colour /
+            gradient. The sidebar button and its glyphs only apply to the Sidebar placement.
             Exported as <span className="font-mono">shell.appBar</span> in menu.ts.
           </p>
         </section>

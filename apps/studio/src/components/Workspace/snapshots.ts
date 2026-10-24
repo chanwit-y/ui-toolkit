@@ -83,12 +83,15 @@ import {
   PROFILE_PAGE_ID,
   profileDemoSeedItems,
   profileSeedLoads,
+  BANPU_AZURE_AUTH_ID,
+  banpuAzureSeedAuth,
 } from '../seed/country'
 import { builtinTemplates } from '../seed/templates'
 import { useThemeStore } from '../Theme/themeStore'
 import type { StudioThemeConfig } from '../Theme/types'
 import type { LibraryData, MenuItemDef, PageDef, PageGrid, ProjectSnapshot, AppBarSettings, ShellSettings } from './types'
 import { defaultMenu } from './menu'
+import { authEnvRows } from './auth'
 
 export const COUNTRIES_GROUP_ID = 'seed-group-countries'
 
@@ -105,6 +108,7 @@ export function countryLibrary(): LibraryData {
     models: countrySeedModels().map((m) => ({ ...m, groupId: COUNTRIES_GROUP_ID })),
     endpoints: countrySeedEndpoints().map((e) => ({ ...e, groupId: COUNTRIES_GROUP_ID })),
     templates: builtinTemplates(),
+    auth: [banpuAzureSeedAuth()],
   }
 }
 
@@ -173,7 +177,30 @@ export function pathParams(path: string): string[] {
 
 /** A new project's shell: sidebar navigation with the breadcrumb strip on. */
 export function defaultAppBar(title: string): AppBarSettings {
-  return { title, icon: '', logo: '', variant: 'panel', sidebarToggle: { hide: '', show: '' } }
+  return {
+    title,
+    icon: '',
+    logo: '',
+    logoSize: '',
+    variant: 'panel',
+    background: '',
+    gradient: { enabled: false, from: '', to: '', angle: 90 },
+    foreground: '',
+    padding: '',
+    sidebarToggle: { hide: '', show: '' },
+  }
+}
+
+/** Fill the paint fields a persisted app bar from before workspace v52 lacks (see `migrateV51`). */
+export function normalizeAppBar(bar: Partial<AppBarSettings> | undefined, title: string): AppBarSettings {
+  const base = defaultAppBar(title)
+  if (!bar) return base
+  return {
+    ...base,
+    ...bar,
+    gradient: { ...base.gradient, ...(bar.gradient ?? {}) },
+    sidebarToggle: { ...base.sidebarToggle, ...(bar.sidebarToggle ?? {}) },
+  }
 }
 
 /** Sidebar navigation, breadcrumbs on, a panel app bar titled after the project. */
@@ -836,11 +863,13 @@ export function countryProjectSnapshot(library: LibraryData): ProjectSnapshot {
     menu,
     globalLoads: seedGlobalLoads(),
     shell: defaultShell('Country manager'),
-    env: countrySeedEnvVars(),
+    // The seeded sign-in entry is picked, so its four env rows ride along (locked, empty dev values).
+    env: authEnvRows(banpuAzureSeedAuth(), countrySeedEnvVars()),
     theme: countrySeedTheme(),
     endpointIds: countryEndpointIds(library),
     customActions: customActionsSeedDefs(),
     customComponents: customComponentsSeedDefs(),
+    authId: BANPU_AZURE_AUTH_ID,
   }
 }
 
@@ -879,6 +908,7 @@ export function emptyProjectSnapshot(name = 'My app'): ProjectSnapshot {
     endpointIds: [],
     customActions: [],
     customComponents: [],
+    authId: null,
   }
 }
 

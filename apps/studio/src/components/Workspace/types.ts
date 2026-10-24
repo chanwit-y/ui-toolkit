@@ -7,6 +7,7 @@ import type { StudioThemeConfig, ThemeAppearance } from '../Theme/types'
 import type { PageLoadDef } from './pageLoads'
 import type { CustomActionDef } from './customActions'
 import type { CustomComponentDef } from './customComponents'
+import type { AuthDef } from './auth'
 
 /** One canvas tree — the shape `gridStore.hydrate` takes and autosave writes. */
 export type PageGrid = {
@@ -52,10 +53,20 @@ export type AppBarSettings = {
   title: string
   /** `IconData` key shown before the title. */
   icon: string
-  /** Logo image URL shown before the title (wins over `icon`). */
+  /** Logo image URL — or the `data:` URL of an uploaded image — shown before the title (wins over `icon`). */
   logo: string
-  /** Neutral panel surface, or painted in the theme accent. */
-  variant: 'panel' | 'accent'
+  /** CSS height of the logo (empty = the library's `1.5rem`). */
+  logoSize: string
+  /** Neutral panel surface, painted in the theme accent, or a custom colour / gradient. */
+  variant: 'panel' | 'accent' | 'custom'
+  /** The custom bar's colour (any CSS colour). */
+  background: string
+  /** The custom bar's gradient (wins over `background` while enabled): `from` → `to` at `angle` degrees. */
+  gradient: { enabled: boolean; from: string; to: string; angle: number }
+  /** Text / icon colour on the custom bar; empty = picked from the paint's luminance. */
+  foreground: '' | 'light' | 'dark'
+  /** CSS padding of the bar (empty = the library's `0 0.75rem`). */
+  padding: string
   /** `IconData` keys of the desktop collapse button (empty = library chevrons). */
   sidebarToggle: { hide: string; show: string }
 }
@@ -116,6 +127,8 @@ export type ProjectSnapshot = {
    * lives in the app; see `customComponents.ts`). Optional: absent = none.
    */
   customComponents?: CustomComponentDef[]
+  /** The shared auth entry this project signs in with (`library.auth[].id`); null / absent = no sign-in. */
+  authId?: string | null
 }
 
 export type ProjectDef = {
@@ -154,9 +167,11 @@ export type LibraryData = {
   models: ModelDef[]
   endpoints: EndpointDef[]
   templates: TemplateDef[]
+  /** Shared sign-in entries (Azure SSO), picked per project (`ProjectSnapshot.authId`). Optional: absent = none. */
+  auth?: AuthDef[]
 }
 
-export type ActivityKind = 'project' | 'page' | 'group' | 'api' | 'model' | 'template' | 'theme'
+export type ActivityKind = 'project' | 'page' | 'group' | 'api' | 'model' | 'template' | 'theme' | 'auth'
 
 /**
  * One line of the Activity page (see the grilled design): who did what, to
@@ -178,7 +193,7 @@ export type ActivityEntry = {
 
 /** The persisted shape (one localStorage key, versioned). */
 export type WorkspaceData = {
-  version: 50
+  version: 52
   /** The portal's own appearance; inside a project the project theme wins. */
   appearance: ThemeAppearance
   /** The mock identity stamped on activity and templates (see `MOCK_USERS`). */

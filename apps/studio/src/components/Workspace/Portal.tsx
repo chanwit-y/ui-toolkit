@@ -11,6 +11,7 @@ import {
   Plus,
   Search,
   Settings,
+  ShieldCheck,
   Sun,
   Trash2,
 } from 'lucide-react'
@@ -46,6 +47,7 @@ export function PortalLayout() {
   const endpointCount = useWorkspaceStore((s) => s.library.endpoints.length)
   const modelCount = useWorkspaceStore((s) => s.library.models.length)
   const templateCount = useWorkspaceStore((s) => s.library.templates.length)
+  const authCount = useWorkspaceStore((s) => s.library.auth?.length ?? 0)
   const activityCount = useWorkspaceStore((s) => s.activity.length)
   const appearance = useWorkspaceStore((s) => s.appearance)
   const setAppearance = useWorkspaceStore((s) => s.setAppearance)
@@ -114,6 +116,11 @@ export function PortalLayout() {
             <LayoutTemplate size={15} aria-hidden="true" className="text-ink-3" />
             <span className="flex-1">Templates</span>
             <span className="font-mono text-ui-xs text-ink-3">{templateCount}</span>
+          </NavLink>
+          <NavLink to="/library/auth" className={RAIL_ITEM}>
+            <ShieldCheck size={15} aria-hidden="true" className="text-ink-3" />
+            <span className="flex-1">Sign-in</span>
+            <span className="font-mono text-ui-xs text-ink-3">{authCount}</span>
           </NavLink>
           <hr className="mx-1 my-2.5 border-0 border-t border-line" />
           <NavLink to="/activity" className={RAIL_ITEM}>

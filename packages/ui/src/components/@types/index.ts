@@ -1963,6 +1963,10 @@ export type ButtonAction =
   | "CloseModal"
   /** Go to the page named by the element's `navigate` target (see {@link NavigateTarget}). */
   | "Navigate"
+  /** Azure SSO (see `AzureAuth`): start the sign-in / sign out. Warn and skip without a mounted provider. */
+  | "SignIn"
+  | "SignOut"
+| "Navigate"
   /**
    * A consumer-coded function, by registry name (see {@link CustomActionName}):
    * `"fn:increase"` calls `actions.increase(ctx)` from the enclosing
@@ -2015,10 +2019,23 @@ export type ActionContext = {
   startLoading: () => string;
   stopLoading: (id: string) => void;
   navigate: (target: NavigateTarget) => void;
+  /** The mounted Azure SSO (`AzureAuth` / `GummyApp` with `project.auth`), `undefined` without one. */
+  auth?: AuthActionContext;
   /** The button's config, as authored. */
   element: Pick<ButtonElement, "label" | "actions" | "modalId" | "reloadDataTable" | "navigate" | "confirmBox">;
   /** The click that started the chain, when there was one (a confirm branch has none). */
   event?: ReactMouseEvent<HTMLButtonElement>;
+};
+
+/** What a custom action gets of the signed-in session (see `AzureAuth`). */
+export type AuthActionContext = {
+  status: "signedOut" | "signingIn" | "signedIn" | "denied";
+  email?: string;
+  name?: string;
+  signIn: () => Promise<void>;
+  signOut: () => Promise<void>;
+  /** The bearer token for the configured API scope (`""` in mock mode). */
+  getToken: () => Promise<string>;
 };
 
 /** One consumer-coded button action. `false` ends the action chain. */
@@ -2100,12 +2117,33 @@ export type AppBarConfig = {
   title?: string;
   /** Glyph before the title (`IconData` key). */
   icon?: keyof typeof IconData;
-  /** Logo image URL before the title (wins over `icon`). */
+  /** Logo image URL (or a `data:` URL of an uploaded image) before the title (wins over `icon`). */
   logo?: string;
-  /** `"panel"` (default): the neutral panel surface. `"accent"`: painted in the accent colour. */
-  variant?: "panel" | "accent";
+  /** CSS height of the logo image; the width follows its aspect ratio. Default `1.5rem`. */
+  logoSize?: string;
+  /**
+   * `"panel"` (default): the neutral panel surface. `"accent"`: painted in the
+   * accent colour. `"custom"`: painted with `background` / `gradient`, text in
+   * `foreground` (implied when either is set and `variant` is absent).
+   */
+  variant?: "panel" | "accent" | "custom";
   /** Accent for `variant: "accent"`. Unset → the theme accent. */
   color?: ThemeProps["accentColor"];
+  /** Any CSS colour painting a `custom` bar (`#0f766e`, `rgb(…)`, `var(--teal-9)`). */
+  background?: string;
+  /**
+   * A linear gradient painting a `custom` bar (wins over `background`):
+   * `from` → `to` at `angle` degrees (default `90`, left to right).
+   */
+  gradient?: { from: string; to: string; angle?: number };
+  /**
+   * Text / icon colour on a `custom` bar: `"light"` (white), `"dark"` (near
+   * black) or any CSS colour. Default: chosen from the luminance of
+   * `background` / `gradient.from` when it is a hex / rgb value, else light.
+   */
+  foreground?: "light" | "dark" | (string & {});
+  /** CSS padding of the bar (the inset of its content). Default `0 0.75rem`. */
+  padding?: string;
   /** CSS height. Default `3rem`. */
   height?: string;
   /**

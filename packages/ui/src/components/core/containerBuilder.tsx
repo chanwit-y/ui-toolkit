@@ -157,7 +157,6 @@ function ContainerSection(props: ContainerGridProps) {
 type ContainerRendererProps = {
 	builder: ContainerBuilder<TModelMaster, TApiMaster<TModelMaster>>;
 	isRoot: boolean;
-	withAuth: boolean;
 };
 
 /**
@@ -166,7 +165,7 @@ type ContainerRendererProps = {
  * This matters for modal containers: they must read contextData from the same
  * DataProvider that DataTable2 writes the selected row into.
  */
-const ContainerRenderer = ({ builder, isRoot, withAuth }: ContainerRendererProps) => {
+const ContainerRenderer = ({ builder, isRoot }: ContainerRendererProps) => {
 	const { contextData: ctx } = useData();
 	const theme = useTheme();
 
@@ -209,7 +208,7 @@ const ContainerRenderer = ({ builder, isRoot, withAuth }: ContainerRendererProps
 			}, [f, debugKey]);
 
 			return (
-				<Provider isRoot={isRoot} withAuth={withAuth}>
+				<Provider isRoot={isRoot}>
 					{isRoot && builder.loads.map((l) => (
 							<StateLoader
 								key={`page-load-${l.key}`}
@@ -296,11 +295,11 @@ export class ContainerBuilder<M extends TModelMaster, A extends TApiMaster<M>> {
 		return <span></span>;
 	}
 
-	public draw(isRoot: boolean = false, withAuth: boolean = false, _t: ThemeContextType | undefined = undefined) {
+	/** `_withAuth` is kept for the callers' positional args; sign-in is `AzureAuth` / `GummyApp project.auth` now. */
+	public draw(isRoot: boolean = false, _withAuth: boolean = false, _t: ThemeContextType | undefined = undefined) {
 		return <ContainerRenderer
 			builder={this as unknown as ContainerBuilder<TModelMaster, TApiMaster<TModelMaster>>}
 			isRoot={isRoot}
-			withAuth={withAuth}
 		/>;
 	}
 }

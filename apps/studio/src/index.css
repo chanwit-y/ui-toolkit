@@ -16,6 +16,7 @@
 @import "../../../packages/ui/src/styles/approvalLine.css";
 @import "../../../packages/ui/src/styles/workflowEditor.css";
 @import "../../../packages/ui/src/styles/profile.css";
+@import "../../../packages/ui/src/styles/auth.css";
 
 /* The library `<Modal>` (Live Preview chrome + engine modal bins) styles its
    backdrop, fade animations, and close button via semantic `.modal-*` classes
@@ -395,4 +396,15 @@ body {
 }
 ::-webkit-scrollbar-track {
   background: transparent;
+}
+
+/* The Auth library page's screen previews: the real screens, boxed. */
+.auth-preview .auth-screen {
+  min-height: 0;
+  padding: 1rem;
+  border-radius: 8px;
+}
+.auth-preview .auth-card {
+  padding: 1rem;
+  gap: 0.5rem;
 }

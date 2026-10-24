@@ -2,6 +2,7 @@ import { useEffect, useMemo, type ReactElement, type ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { HttpClientFactory } from "../api";
 import type { TActionMaster, TComponentMaster } from "./@types";
+import { AuthUserMenu, AzureAuth, getAccessToken, type AuthMock, type AuthScreens } from "../auth/azure";
 import { AppShell, type AppShellProps } from "./AppShell";
 import { DataProvider, ThemeProvider } from "./context";
 import { ActionsProvider } from "./core/actions";
@@ -25,6 +26,16 @@ export type GummyAppProps = {
   actions?: TActionMaster;
   /** The React components the configs place by name. */
   components?: TComponentMaster;
+  /**
+   * Sign-in (`project.auth`, see `AzureAuth`): `false` turns the gate off
+   * (no screens, empty token — what a project without `auth` gets);
+   * `{ mock }` signs that account in without MSAL (the studio Live Preview,
+   * local development) while the profile fetch still runs. Default: the
+   * project's auth, for real.
+   */
+  auth?: false | { mock: AuthMock };
+  /** Replacement sign-in screens (landing / loading / denied). */
+  authScreens?: AuthScreens;
   /**
    * `false` renders the routed pages with no `AppShell`; an object overrides
    * the project's shell settings (plus the shell's embedding props `height` /
@@ -88,6 +99,8 @@ export function GummyApp({
   http: ownHttp,
   actions,
   components,
+  auth,
+  authScreens,
   shell = true,
   brand,
   header,
@@ -101,10 +114,14 @@ export function GummyApp({
   const project = useMemo(() => assertGummyProject(rawProject), [rawProject]);
   const env = useMemo(() => ({ ...project.env, ...envOverrides }), [project.env, envOverrides]);
   const baseUrl = apiUrl ?? env.API_URL ?? "";
+  const authConfig = auth === false ? undefined : project.auth;
 
+  // Under `project.auth` the token is the signed-in user's (the provider
+  // registers itself before any request fires); an explicit getter still wins.
+  const tokenGetter = getToken ?? (authConfig ? getAccessToken : async () => "");
   const http = useMemo(
-    () => ownHttp ?? new HttpClientFactory(baseUrl, getToken ?? (async () => ""), "1.0.0", 30000),
-    [ownHttp, baseUrl, getToken],
+    () => ownHttp ?? new HttpClientFactory(baseUrl, tokenGetter, "1.0.0", 30000),
+    [ownHttp, baseUrl, tokenGetter],
   );
   const api = useMemo(() => projectApiToEngine(project.api), [project.api]);
   const globalLoads = project.globalLoads ?? [];
@@ -137,18 +154,43 @@ export function GummyApp({
       {renderPages(pages)}
     </>
   );
+  // The signed-in user sits after the consumer's header slot (nothing without auth).
+  const headerNode = authConfig ? (
+    <>
+      {header}
+      <AuthUserMenu />
+    </>
+  ) : (
+    header
+  );
+  const app = shellProps ? (
+    <AppShell pages={project.pages} menu={menu} brand={brand} header={headerNode} footer={footer} {...shellProps}>
+      {content}
+    </AppShell>
+  ) : (
+    content
+  );
 
   return (
     <DataProvider>
       <ThemeProvider theme={project.theme?.theme} components={project.theme?.components ?? {}} className={className}>
         <ActionsProvider actions={actions ?? {}}>
           <ComponentsProvider components={components ?? {}}>
-            {shellProps ? (
-              <AppShell pages={project.pages} menu={menu} brand={brand} header={header} footer={footer} {...shellProps}>
-                {content}
-              </AppShell>
+            {authConfig ? (
+              <AzureAuth
+                config={authConfig}
+                env={env}
+                mock={auth === false ? false : auth?.mock ?? false}
+                screens={authScreens}
+                http={http}
+                model={project.model}
+                api={api}
+                appBar={shellProps?.appBar}
+              >
+                {app}
+              </AzureAuth>
             ) : (
-              content
+              app
             )}
           </ComponentsProvider>
         </ActionsProvider>
