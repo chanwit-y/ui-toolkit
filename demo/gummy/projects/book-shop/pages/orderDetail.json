@@ -1,0 +1,550 @@
+{
+  "containers": [
+    {
+      "id": "page-orderDetail",
+      "name": "page-orderDetail",
+      "isArray": false,
+      "bins": [
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "button",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "label": "Back to orders",
+            "icon": "chevronLeft",
+            "variant": "text",
+            "actions": [
+              "Navigate"
+            ],
+            "navigate": {
+              "page": "orders"
+            }
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "8",
+          "xl": "8",
+          "type": "html",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "orderHead",
+            "html": "<h2>{{number}}</h2><p><span class=\"dt-badge\">{{statusLabel}}</span> · placed {{placedAtText}} · paid by {{paymentMethod}} · handled by {{handledBy}}</p>",
+            "value": {
+              "type": "state",
+              "key": "order"
+            }
+          }
+        },
+        {
+          "sm": "4",
+          "md": "3",
+          "lg": "2",
+          "xl": "2",
+          "type": "button",
+          "justifySelf": "start",
+          "alignSelf": "stretch",
+          "element": {
+            "label": "Print",
+            "icon": "printer",
+            "variant": "outlined",
+            "actions": [
+              "fn:printOrder"
+            ]
+          }
+        },
+        {
+          "sm": "12",
+          "md": "6",
+          "lg": "4",
+          "xl": "4",
+          "type": "card",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "orderCustomer",
+            "header": {
+              "title": "Customer",
+              "titleValue": {
+                "type": "state",
+                "key": "order",
+                "path": "customerName"
+              },
+              "subheaderValue": {
+                "type": "state",
+                "key": "order",
+                "path": "customerCity"
+              }
+            },
+            "content": {
+              "id": "card-bs-item-",
+              "name": "card-bs-item-",
+              "isArray": false,
+              "bins": [],
+              "gap": "16px",
+              "justifyItems": "stretch",
+              "alignItems": "stretch",
+              "justifyContent": "start",
+              "alignContent": "start",
+              "gridAutoFlow": "row"
+            },
+            "actions": [
+              {
+                "label": "Customer page",
+                "icon": "chevronRight",
+                "variant": "text",
+                "actions": [
+                  "Navigate"
+                ],
+                "navigate": {
+                  "page": "customerDetail",
+                  "params": {
+                    "id": {
+                      "type": "state",
+                      "key": "order",
+                      "path": "customerId"
+                    }
+                  }
+                }
+              }
+            ],
+            "actionsAlign": "end",
+            "variant": "outlined"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "8",
+          "xl": "8",
+          "type": "html",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "orderTotals",
+            "html": "<dl><dt>Items</dt><dd>{{itemCount}}</dd><dt>Subtotal</dt><dd>{{subtotalText}}</dd><dt>Shipping</dt><dd>{{shippingText}}</dd><dt>Total</dt><dd><strong>{{totalText}}</strong></dd></dl>",
+            "value": {
+              "type": "state",
+              "key": "order"
+            }
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "datatable",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "orderItems",
+            "title": "Lines",
+            "rowNavigate": {
+              "page": "bookDetail",
+              "params": {
+                "id": {
+                  "type": "row",
+                  "key": "bookId"
+                }
+              }
+            },
+            "columns": [
+              {
+                "accessor": "cover",
+                "header": "",
+                "enableSorting": false,
+                "enableColumnFilter": false,
+                "align": "start",
+                "html": "<img src=\"{{cover}}\" alt=\"\" style=\"width:36px;height:54px;object-fit:cover;border-radius:4px;display:block\">",
+                "size": 64,
+                "enableResizing": false
+              },
+              {
+                "accessor": "title",
+                "header": "Book",
+                "enableSorting": false,
+                "enableColumnFilter": false,
+                "align": "start"
+              },
+              {
+                "accessor": "authorName",
+                "header": "Author",
+                "enableSorting": false,
+                "enableColumnFilter": false,
+                "align": "start"
+              },
+              {
+                "accessor": "qty",
+                "header": "Qty",
+                "enableSorting": false,
+                "enableColumnFilter": false,
+                "align": "end"
+              },
+              {
+                "accessor": "priceText",
+                "header": "Price",
+                "enableSorting": false,
+                "enableColumnFilter": false,
+                "align": "end"
+              },
+              {
+                "accessor": "lineTotalText",
+                "header": "Line total",
+                "enableSorting": false,
+                "enableColumnFilter": false,
+                "align": "end"
+              }
+            ],
+            "items": {
+              "type": "state",
+              "key": "order",
+              "path": "items"
+            },
+            "canSearch": false,
+            "cellLines": 1,
+            "canEdit": false,
+            "canDelete": false
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "container",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "condition": {
+            "left": {
+              "source": "state",
+              "key": "order",
+              "path": "status"
+            },
+            "operator": "eq",
+            "right": {
+              "val": "refund_requested"
+            }
+          },
+          "container": {
+            "id": "container-bs-item-",
+            "name": "container-bs-item-",
+            "isArray": false,
+            "bins": [
+              {
+                "sm": "12",
+                "md": "12",
+                "lg": "12",
+                "xl": "12",
+                "type": "typography",
+                "justifySelf": "stretch",
+                "alignSelf": "stretch",
+                "element": {
+                  "text": "Refund",
+                  "variant": "h5",
+                  "weight": "bold"
+                }
+              },
+              {
+                "sm": "12",
+                "md": "12",
+                "lg": "12",
+                "xl": "12",
+                "type": "html",
+                "justifySelf": "stretch",
+                "alignSelf": "stretch",
+                "element": {
+                  "name": "refundReason",
+                  "html": "<p>{{refund.reason}}</p><p class=\"dt-muted\">Requested by {{refund.requestedBy}} on {{refund.requestedAtText}}</p>",
+                  "value": {
+                    "type": "state",
+                    "key": "order"
+                  }
+                }
+              },
+              {
+                "sm": "12",
+                "md": "12",
+                "lg": "12",
+                "xl": "12",
+                "type": "approvalline",
+                "justifySelf": "stretch",
+                "alignSelf": "stretch",
+                "element": {
+                  "name": "refundLine",
+                  "items": {
+                    "type": "state",
+                    "key": "order",
+                    "path": "refund.steps"
+                  },
+                  "keys": {
+                    "name": "name",
+                    "status": "status",
+                    "jobTitle": "jobTitle",
+                    "role": "role",
+                    "remark": "remark",
+                    "date": "actionDate",
+                    "sequence": "sequence"
+                  },
+                  "showJobTitle": true
+                }
+              },
+              {
+                "sm": "12",
+                "md": "12",
+                "lg": "12",
+                "xl": "12",
+                "type": "typography",
+                "justifySelf": "stretch",
+                "alignSelf": "stretch",
+                "condition": {
+                  "left": {
+                    "source": "state",
+                    "key": "me",
+                    "path": "role"
+                  },
+                  "operator": "eq",
+                  "right": {
+                    "val": "clerk"
+                  }
+                },
+                "element": {
+                  "text": "Waiting for a manager to approve this refund.",
+                  "variant": "body2",
+                  "color": "gray"
+                }
+              },
+              {
+                "sm": "12",
+                "md": "12",
+                "lg": "12",
+                "xl": "12",
+                "type": "container",
+                "justifySelf": "stretch",
+                "alignSelf": "stretch",
+                "condition": {
+                  "left": {
+                    "source": "state",
+                    "key": "me",
+                    "path": "role"
+                  },
+                  "operator": "eq",
+                  "right": {
+                    "val": "manager"
+                  }
+                },
+                "container": {
+                  "id": "container-bs-item-",
+                  "name": "container-bs-item-",
+                  "isArray": false,
+                  "bins": [
+                    {
+                      "sm": "12",
+                      "md": "12",
+                      "lg": "12",
+                      "xl": "12",
+                      "type": "hidden",
+                      "justifySelf": "stretch",
+                      "alignSelf": "stretch",
+                      "element": {
+                        "name": "_id",
+                        "dataType": "string",
+                        "value": {
+                          "type": "state",
+                          "key": "order",
+                          "path": "_id"
+                        }
+                      }
+                    },
+                    {
+                      "sm": "12",
+                      "md": "12",
+                      "lg": "12",
+                      "xl": "12",
+                      "type": "textarea",
+                      "justifySelf": "stretch",
+                      "alignSelf": "stretch",
+                      "element": {
+                        "name": "remark",
+                        "dataType": "string",
+                        "label": "Remark (optional)",
+                        "isRequired": false,
+                        "errorMessage": "",
+                        "rows": 2,
+                        "resize": "vertical",
+                        "autoResize": false,
+                        "showCharCount": false
+                      }
+                    },
+                    {
+                      "sm": "6",
+                      "md": "5",
+                      "lg": "3",
+                      "xl": "3",
+                      "type": "button",
+                      "justifySelf": "start",
+                      "alignSelf": "stretch",
+                      "element": {
+                        "label": "Approve refund",
+                        "icon": "checkCircle",
+                        "color": "grass",
+                        "actions": [
+                          "ConfirmBox"
+                        ],
+                        "confirmBox": {
+                          "title": "Approve refund",
+                          "description": "Refund this order to the customer?",
+                          "True": [
+                            "StartLoading",
+                            "SubmitFormToPostAPI",
+                            "StopLoading"
+                          ],
+                          "False": []
+                        },
+                        "api": {
+                          "name": "refundOrder"
+                        },
+                        "reloadDataTable": "order",
+                        "snackbarSuccess": {
+                          "type": "success",
+                          "message": "Refund approved"
+                        },
+                        "snackbarError": "$exception"
+                      }
+                    }
+                  ],
+                  "gap": "16px",
+                  "justifyItems": "stretch",
+                  "alignItems": "stretch",
+                  "justifyContent": "start",
+                  "alignContent": "start",
+                  "gridAutoFlow": "row"
+                }
+              }
+            ],
+            "gap": "16px",
+            "justifyItems": "stretch",
+            "alignItems": "stretch",
+            "justifyContent": "start",
+            "alignContent": "start",
+            "gridAutoFlow": "row",
+            "surface": {
+              "background": true,
+              "border": true
+            }
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "container",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "condition": {
+            "left": {
+              "source": "state",
+              "key": "order",
+              "path": "status"
+            },
+            "operator": "eq",
+            "right": {
+              "val": "refunded"
+            }
+          },
+          "container": {
+            "id": "container-bs-item-",
+            "name": "container-bs-item-",
+            "isArray": false,
+            "bins": [
+              {
+                "sm": "12",
+                "md": "12",
+                "lg": "12",
+                "xl": "12",
+                "type": "typography",
+                "justifySelf": "stretch",
+                "alignSelf": "stretch",
+                "element": {
+                  "text": "Refunded",
+                  "variant": "h5",
+                  "weight": "bold"
+                }
+              },
+              {
+                "sm": "12",
+                "md": "12",
+                "lg": "12",
+                "xl": "12",
+                "type": "approvalline",
+                "justifySelf": "stretch",
+                "alignSelf": "stretch",
+                "element": {
+                  "name": "refundedLine",
+                  "items": {
+                    "type": "state",
+                    "key": "order",
+                    "path": "refund.steps"
+                  },
+                  "keys": {
+                    "name": "name",
+                    "status": "status",
+                    "jobTitle": "jobTitle",
+                    "role": "role",
+                    "remark": "remark",
+                    "date": "actionDate",
+                    "sequence": "sequence"
+                  },
+                  "showJobTitle": true
+                }
+              }
+            ],
+            "gap": "16px",
+            "justifyItems": "stretch",
+            "alignItems": "stretch",
+            "justifyContent": "start",
+            "alignContent": "start",
+            "gridAutoFlow": "row",
+            "surface": {
+              "background": true,
+              "border": true
+            }
+          }
+        }
+      ],
+      "gap": "16px",
+      "justifyItems": "stretch",
+      "alignItems": "stretch",
+      "justifyContent": "start",
+      "alignContent": "start",
+      "gridAutoFlow": "row"
+    }
+  ],
+  "loads": [
+    {
+      "key": "order",
+      "api": {
+        "name": "getOrder",
+        "paths": [
+          "data"
+        ],
+        "params": {
+          "id": {
+            "type": "url",
+            "key": "id",
+            "source": "param"
+          }
+        }
+      },
+      "loading": "cycle",
+      "errorMessage": "Could not load the order"
+    }
+  ]
+}

@@ -157,6 +157,17 @@ describe("large project", () => {
     );
   });
 
+  test("a page transition wraps the routed content once, without building more pages", () => {
+    const { model, api, pages } = largeProject(5);
+    resetCoreStats();
+    const html = render(<PageRouter http={http()} model={model} api={api} pages={pages} pageTransition={{ type: "fade-up" }} />, "/page-2");
+    expect(html).toContain('class="gummy-page"');
+    expect(html.match(/class="gummy-page"/g)).toHaveLength(1);
+    expect(coreStats().constructed).toBe(1);
+    // No transition: no wrapper at all.
+    expect(render(<PageRouter http={http()} model={model} api={api} pages={pages} />, "/page-2")).not.toContain("gummy-page");
+  });
+
   test("a split page shows the fallback and asks the loader for its file", async () => {
     const { model, api, pages } = largeProject(3);
     const calls: [string, string][] = [];

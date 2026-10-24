@@ -26,9 +26,9 @@ const defaultTheme = {
 } as const
 
 const defaultComponents: ThemeComponents = {
-  button: {
-    color: 'blue',
-  },
+  // No button colour by default: buttons follow the theme accent. (It used to
+  // be "blue", so every button ignored an accent the app had set.)
+  button: { color: undefined },
   // Every dataTable role is intentionally left unset: header / row-hover /
   // pagination resolve to the Radix accent (--accent-*), the edit button to
   // button.color, and delete to red — all flipping with light/dark. A named
@@ -105,14 +105,13 @@ export function ThemeProvider({
   const resolvedComponents = useMemo<ThemeComponents>(() => {
     const parentComponents = parentThemeContext.components 
     const nextComponents = components || {}
-    const defaultButtonColor =  'blue'
 
     return {
       ...defaultComponents,
       ...parentComponents,
       ...nextComponents,
       button: {
-        color: nextComponents.button?.color ?? parentComponents.button?.color ?? defaultButtonColor,
+        color: nextComponents.button?.color ?? parentComponents.button?.color,
       },
       dataTable: {
         // Leave these undefined when unconfigured so the dt*Class helpers fall

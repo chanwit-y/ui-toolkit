@@ -1,7 +1,7 @@
 import { useEffect, useMemo, type ReactElement, type ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { HttpClientFactory } from "../api";
-import type { TActionMaster, TComponentMaster } from "./@types";
+import type { PageTransition, TActionMaster, TComponentMaster } from "./@types";
 import { AuthUserMenu, AzureAuth, getAccessToken, type AuthMock, type AuthScreens } from "../auth/azure";
 import { AppShell, type AppShellProps } from "./AppShell";
 import { DataProvider, ThemeProvider } from "./context";
@@ -29,6 +29,8 @@ export type GummyAppProps = {
   projectUrl?: string;
   /** Shown inside the shell while a split page's body loads. Default: a centred spinner. */
   pageFallback?: ReactNode;
+  /** How a page enters on a route change; wins over `shell.pageTransition` / the project's. `{ type: "none" }` turns it off. */
+  pageTransition?: PageTransition;
   /** Bearer token for every request (default: none). */
   getToken?: () => Promise<string>;
   /** HTTP base URL; wins over `env.API_URL`. */
@@ -120,6 +122,7 @@ export function GummyApp({
   loadPage,
   projectUrl,
   pageFallback,
+  pageTransition,
   auth,
   authScreens,
   shell = true,
@@ -168,6 +171,8 @@ export function GummyApp({
       pages={project.pages}
       loadPage={pageLoader}
       pageFallback={pageFallback}
+      // Passed straight to the router so it also applies with `shell={false}`.
+      pageTransition={pageTransition ?? shellProps?.pageTransition ?? project.shell?.pageTransition}
       notFound={notFound ?? <DefaultNotFound firstPath={firstPath} />}
       documentTitle={documentTitle}
     />

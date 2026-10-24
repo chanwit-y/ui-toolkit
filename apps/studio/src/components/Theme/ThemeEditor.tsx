@@ -118,7 +118,7 @@ function SwatchGrid({
  * "unset" resolves to), opening the `SwatchGrid` in the studio popover — the
  * `IconField` precedent: pick a colour you can see, not a name from a list.
  */
-function ColorField({
+export function ColorField({
   label,
   value,
   onChange,
@@ -131,6 +131,9 @@ function ColorField({
 }) {
   const [anchor, setAnchor] = useState<DOMRect | null>(null)
   const close = useCallback(() => setAnchor(null), [])
+  // "Header" → "header color"; a label that already says colour isn't doubled ("Color" → "color").
+  const role = label.replace(/\s*colou?r$/i, '').trim().toLowerCase()
+  const what = role ? `${role} color` : 'color'
   // The popover closes itself on any outside pointerdown — including one on
   // this trigger — so the click that follows must not reopen it.
   const wasOpen = useRef(false)
@@ -139,7 +142,7 @@ function ColorField({
       <div className="flex items-center gap-1.5">
         <button
           type="button"
-          aria-label={`Choose ${label.toLowerCase()} color`}
+          aria-label={`Choose ${what}`}
           aria-haspopup="dialog"
           aria-expanded={anchor !== null}
           onPointerDown={() => {
@@ -165,7 +168,7 @@ function ColorField({
           )}
         </button>
         {value && (
-          <IconButton label={`Clear ${label.toLowerCase()} color`} className="btn-icon-sm" onClick={() => onChange('')}>
+          <IconButton label={`Clear ${what}`} className="btn-icon-sm" onClick={() => onChange('')}>
             <X size={13} aria-hidden="true" />
           </IconButton>
         )}
@@ -582,7 +585,7 @@ export function ThemeEditor() {
                   <span className="font-mono text-ink-2">{config.buttonColor}</span>
                 </>
               ) : (
-                'No override — buttons use the component default.'
+                'No override — buttons follow the accent colour (a button can still pick its own colour in its Props).'
               )}
             </p>
           </Field>

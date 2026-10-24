@@ -8,16 +8,14 @@ import { globPageLoader, type GummyProject, type PageBodyLoader } from "@gummy-u
  * Vite reloads when one is added or saved. One is chosen:
  *
  * 1. `VITE_GUMMY_PROJECT=<key>` when set (`.env` or the shell);
- * 2. otherwise the one named after this package (`gummy-demo`), which is what
- *    `gummy studio` creates in a fresh folder;
- * 3. otherwise any project the studio exported (anything but the shipped
- *    `demo` sample), alphabetically first;
- * 4. otherwise the shipped `demo` sample.
+ * 2. otherwise the Book shop (`book-shop`), the project the tracked
+ *    `gummy/workspace.json` holds;
+ * 3. otherwise any other project, alphabetically first.
  *
  * The choice and the keys available are logged to the console once.
  */
-const SAMPLE_KEY = "demo";
-const PACKAGE_KEY = "gummy-demo";
+const SAMPLE_KEY = "book-shop";
+const PACKAGE_KEY = "book-shop";
 
 const folders = import.meta.glob<GummyProject>("../gummy/projects/*/project.json", { eager: true, import: "default" });
 const singleFiles = import.meta.glob<GummyProject>("../gummy/projects/*.json", { eager: true, import: "default" });

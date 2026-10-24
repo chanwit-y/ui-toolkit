@@ -22,6 +22,7 @@ import { useData } from "./context/DataProvider";
 import { Avatar } from "./Avatar";
 import { OptionRow, matchesOptionQuery, resolveIcon, resolveItemAvatar, resolveItemIcon, resolveItemSubtitle } from "./OptionRow";
 import { OptionSearch, OPTION_SEARCH_HEIGHT } from "./OptionSearch";
+import { callArgs } from "./core/readApi";
 
 const createAutocomplete = <T extends Record<string, any>>() => {
 	return forwardRef<
@@ -51,6 +52,7 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 		observeTo,
 		api,
 		apiInfo,
+		apiSegments,
 		// defaultData: defaultValue,
 		// apiCanSearch = false,
 		// apiObserveParam,
@@ -134,6 +136,11 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 				return { ...acc, [key]: resolveDataValue(value, text) }
 			}, {} as Record<string, unknown>)
 
+			// The endpoint's declared segments decide the argument order; the
+			// branches below are the older guess, kept for a hand-wired `api`.
+			const call = (query: Record<string, unknown>, params: Record<string, unknown>, body: Record<string, unknown>) =>
+				api?.(...(callArgs(apiSegments, query, params, isEmpty(body) ? undefined : body) as []))
+
 			if (observeTo !== "") {
 				if (!isEmpty(apiInfo?.params)) {
 					if (!isEmpty(observeApiData)) {
@@ -148,6 +155,7 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 							}
 						}, {} as Record<string, unknown>)
 
+						if (apiSegments) return call(q, p, b)
 						if (!isEmpty(apiInfo?.query) && !isEmpty(apiInfo?.body)) {
 							return api?.({ ...q }, { ...p }, { ...b })
 						}
@@ -155,6 +163,8 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 						return api?.({ ...q }, { ...p })
 					}
 				}
+			} else if (apiSegments) {
+				return call(q, {}, b)
 			} else if (!isEmpty(apiInfo?.query) && !isEmpty(apiInfo?.body)) {
 				return api?.({ ...q }, { ...b })
 			} else if (!isEmpty(apiInfo?.query)) {
@@ -166,7 +176,7 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 			}
 
 			return undefined
-		}, [observeTo, observeApiData, api, apiInfo, resolveDataValue]);
+		}, [observeTo, observeApiData, api, apiInfo, apiSegments, resolveDataValue]);
 
 		const hasApiSearch = !!(api && apiInfo?.query);
 		const [isSearching, setIsSearching] = useState(false);

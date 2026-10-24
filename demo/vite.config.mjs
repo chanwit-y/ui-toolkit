@@ -1,10 +1,10 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
-// In dev the engine calls the API through this origin; `/collection` is proxied
-// to the mock API (`bun run api`, port 9000). A real app sets `API_URL` in the
-// project's env (or `apiUrl` on <GummyApp>) instead.
-const apiTarget = process.env.API_PROXY_TARGET || "http://localhost:9000";
+// In dev the engine calls the API through this origin; `/api` is proxied to the
+// Book shop mock API (`bun run api`, port 9100 — see api/README.md). A real app
+// sets `API_URL` in the project's env (or `apiUrl` on <GummyApp>) instead.
+const apiTarget = process.env.API_PROXY_TARGET || "http://localhost:9100";
 
 export default defineConfig({
   plugins: [react()],
@@ -16,9 +16,7 @@ export default defineConfig({
     port: 3400,
     host: true,
     proxy: {
-      "/collection": { target: apiTarget, changeOrigin: true },
-      "/upload": { target: apiTarget, changeOrigin: true },
-      "/uploads": { target: apiTarget, changeOrigin: true },
+      "/api": { target: apiTarget, changeOrigin: true },
     },
   },
 });

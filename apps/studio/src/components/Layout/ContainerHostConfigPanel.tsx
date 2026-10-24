@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Expand, Plus, Trash2 } from 'lucide-react'
 import { IconButton, IconPicker, Input, Select, SegmentedControl } from '../common'
 import { useGridStore } from './gridStore'
+import { ColorField } from '../Theme/ThemeEditor'
 import { BUTTON_VARIANT_OPTIONS, createDefaultContainerConfig, type ContainerConfig } from './types'
 import type {
   ButtonConfig,
@@ -333,6 +334,7 @@ export function ModalConfigPanel({
           aria-label="Variant"
         />
       </Field>
+      <ColorField label="Color" value={config.trigger.color ?? ''} onChange={(color) => patchTrigger({ color })} unsetLabel="Theme (button colour, else accent)" />
     </div>
   )
 }
@@ -428,6 +430,7 @@ export function DrawerConfigPanel({
           aria-label="Variant"
         />
       </Field>
+      <ColorField label="Color" value={config.trigger.color ?? ''} onChange={(color) => patchTrigger({ color })} unsetLabel="Theme (button colour, else accent)" />
     </div>
   )
 }
@@ -539,6 +542,12 @@ export function PopoverConfigPanel({
               aria-label="Variant"
             />
           </Field>
+          <ColorField
+            label="Color"
+            value={config.triggerButton.color ?? ''}
+            onChange={(color) => set('triggerButton', { ...config.triggerButton, color })}
+            unsetLabel="Theme (button colour, else accent)"
+          />
         </>
       ) : (
         <>

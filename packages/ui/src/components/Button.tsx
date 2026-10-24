@@ -48,11 +48,12 @@ const ButtonBase = forwardRef<ElementRef<typeof RadixButton>, ButtonBaseProps>(
 				disabled={disabled}
 				variant={RADIX_VARIANTS[variant] ?? "solid"}
 				className={variant === "text" ? "cursor-pointer !m-0" : "cursor-pointer"}
-				color={
-					(theme.components.button?.color as ThemeProps["accentColor"]) ||
-					color ||
-					"blue"
-				}
+				// The button's own colour, else the theme's button colour, else the
+				// theme accent (Radix's default when `color` is unset). It used to be
+				// theme-first with a hard "blue" fallback: an explicit colour (the
+				// workflow editor's red Remove) was overridden, and a theme without a
+				// button colour got blue instead of its accent.
+				color={color || (theme.components.button?.color as ThemeProps["accentColor"]) || undefined}
 				onClick={onClick}
 			>
 				{icon ? <Icon icon={icon} size={14} /> : ""}

@@ -15,7 +15,7 @@ import { useLoading, useTheme } from "./context"
 import { useStord } from "./core/stord"
 import { ColumnResizeHandle, sizeStyle, sizeVars, useColumnResize } from "./dataTableResize"
 import { SkeletonBlock } from "./Skeleton"
-import { columnMeta, groupColumns, headerRows, headerTopStyle, useHeaderRowTops } from "./dataTableLayout"
+import { columnMeta, groupColumns, headerRows, headerTopStyle, useHeaderRowTops, displayedLeafColumns } from "./dataTableLayout"
 
 const NEW_ROW_ID = "__new__"
 
@@ -471,7 +471,11 @@ export const DataTableEditable = <T extends Record<string, any>>({
 		manualPagination: false,
 	})
 
-	const visibleColumns = table.getVisibleLeafColumns()
+	// In the order the cells are drawn — left-pinned, centre, right-pinned — which
+	// is what the <colgroup> widths and the merged-cell spans must follow. The
+	// plain getVisibleLeafColumns() keeps the definition order and put a pinned
+	// column's width on whichever column sat in its slot.
+	const visibleColumns = displayedLeafColumns(table)
 	const isResizing = !!table.getState().columnSizingInfo.isResizingColumn
 	// The header rows (one, or two with a group band); the lower row's cells
 	// stick below the upper one (see `headerTopStyle`).
@@ -558,7 +562,7 @@ export const DataTableEditable = <T extends Record<string, any>>({
 									? <th key={header.id} colSpan={colSpan} className={`datatable-header-cell datatable-group-header ${headerCellClass}`} style={headerTopStyle(rowIndex)}>
 										<div className="datatable-header-content">{flexRender(header.column.columnDef.header, header.getContext())}</div>
 									</th>
-									: header.column.columnDef.header && <th key={header.id} data-column-id={header.column.id} colSpan={colSpan} rowSpan={rowSpan} className={`datatable-header-cell
+									: <th key={header.id} data-column-id={header.column.id} colSpan={colSpan} rowSpan={rowSpan} className={`datatable-header-cell
 									 ${headerCellClass}
 									 ${dtHeaderHoverClass(theme.components.dataTable?.headerHoverColor)} cursor-pointer`}
 									style={{ ...sizeStyle(header.column), ...headerTopStyle(rowIndex) }}>

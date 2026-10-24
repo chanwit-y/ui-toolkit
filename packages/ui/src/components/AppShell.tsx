@@ -17,7 +17,8 @@ import {
   useParams,
   useSearchParams,
 } from "react-router-dom";
-import type { AppBarConfig, MenuItem, NavigateTarget, TMenu, TPageEntries } from "./@types";
+import type { AppBarConfig, MenuItem, NavigateTarget, PageTransition, TMenu, TPageEntries } from "./@types";
+import { PageTransitionContext } from "./core/pageTransition";
 import { appBarStyle, appBarTone, type AppBarTone } from "./core/appBarStyle";
 import { useTheme } from "./context";
 import { Icon } from "./Icon";
@@ -31,6 +32,13 @@ export type AppShellProps = {
   brand?: ReactNode;
   /** The top bar as config: title, icon or logo, panel/accent variant, height. */
   appBar?: AppBarConfig;
+  /**
+   * Text (and icon) colour of the active sidebar / drawer menu item, any CSS
+   * colour, on its accent background. Default: the accent's contrast colour.
+   */
+  menuActiveColor?: string;
+  /** How a page enters on a pathname change — read by the `PageRouter` inside (which may override it). Default: none. */
+  pageTransition?: PageTransition;
   /**
    * Show the icons of menu items (sidebar, drawer and top strip). Default
    * `true`. With `false` the icon rail shows label initials instead.
@@ -118,10 +126,16 @@ function readCollapsed(): boolean {
 
 // Literal class strings (Tailwind only emits what it can scan). Surfaces use
 // Radix theme vars so they follow the accent and flip with appearance.
-const ITEM_BASE =
-  "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-[var(--gray-11)] no-underline transition-colors hover:bg-[var(--gray-3)] hover:text-[var(--gray-12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-8)]";
+// Idle and active colours are alternatives, never stacked: both `text-*`
+// utilities on one element resolve by their order in the compiled stylesheet,
+// not in the class list, and the grey won — the active label vanished into the
+// accent bar. The active text follows `menuActiveColor` (the
+// `--gummy-menu-active-fg` var the shell sets), else the accent's contrast.
+const ITEM_LAYOUT =
+  "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm no-underline transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-8)]";
+const ITEM_IDLE = "text-[var(--gray-11)] hover:bg-[var(--gray-3)] hover:text-[var(--gray-12)]";
 const ITEM_ACTIVE =
-  "bg-[var(--accent-9)] text-[var(--accent-contrast)] hover:bg-[var(--accent-10)] hover:text-[var(--accent-contrast)]";
+  "bg-[var(--accent-9)] text-[var(--gummy-menu-active-fg,var(--accent-contrast))] hover:bg-[var(--accent-10)] hover:text-[var(--gummy-menu-active-fg,var(--accent-contrast))]";
 const GROUP_HEADER =
   "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--gray-10)] hover:text-[var(--gray-12)]";
 const TOP_BUTTON =
@@ -204,7 +218,7 @@ function MenuEntry({ item, depth, rail, pages, pathname, onNavigated }: ItemProp
         href={item.href}
         target={item.newTab ? "_blank" : undefined}
         rel={item.newTab ? "noopener noreferrer" : undefined}
-        className={`${ITEM_BASE} ${railClass}`}
+        className={`${ITEM_LAYOUT} ${ITEM_IDLE} ${railClass}`}
         style={indent}
         aria-label={rail ? item.label : undefined}
       >
@@ -224,7 +238,7 @@ function MenuEntry({ item, depth, rail, pages, pathname, onNavigated }: ItemProp
       aria-current={active ? "page" : undefined}
       aria-disabled={url ? undefined : true}
       aria-label={rail ? item.label : undefined}
-      className={`${ITEM_BASE} ${railClass} ${active ? ITEM_ACTIVE : ""} ${url ? "" : "opacity-50"}`}
+      className={`${ITEM_LAYOUT} ${active ? ITEM_ACTIVE : ITEM_IDLE} ${railClass} ${url ? "" : "opacity-50"}`}
       style={indent}
       onClick={(e) => {
         e.preventDefault();
@@ -310,16 +324,15 @@ function SidebarNav({ menu, pages, rail, onNavigated, footer }: { menu: TMenu; p
   );
 }
 
-const TOP_LINK =
-  "inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-sm text-[var(--gray-11)] no-underline transition-colors hover:bg-[var(--gray-3)] hover:text-[var(--gray-12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-8)]";
-const TOP_LINK_ACTIVE =
-  "bg-[var(--accent-3)] text-[var(--accent-11)] hover:bg-[var(--accent-4)] hover:text-[var(--accent-11)]";
-const TOP_LINK_ACCENT =
-  "inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-sm text-[var(--accent-contrast)] no-underline transition-colors hover:bg-[var(--accent-10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-contrast)]";
-const TOP_LINK_ACCENT_ACTIVE = "bg-[var(--accent-11)] font-semibold hover:bg-[var(--accent-11)]";
-const TOP_LINK_CUSTOM =
-  "inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-sm text-[var(--gummy-bar-fg)] no-underline transition-colors hover:bg-[var(--gummy-bar-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gummy-bar-fg)]";
-const TOP_LINK_CUSTOM_ACTIVE = "bg-[var(--gummy-bar-active)] font-semibold hover:bg-[var(--gummy-bar-active)]";
+// Like the sidebar: each class string is a whole state (layout + colours), the
+// active one used *instead of* the idle one, so their text colours never stack.
+const TOP_LINK_LAYOUT = "inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-sm no-underline transition-colors focus-visible:outline-none focus-visible:ring-2";
+const TOP_LINK = `${TOP_LINK_LAYOUT} text-[var(--gray-11)] hover:bg-[var(--gray-3)] hover:text-[var(--gray-12)] focus-visible:ring-[var(--accent-8)]`;
+const TOP_LINK_ACTIVE = `${TOP_LINK_LAYOUT} bg-[var(--accent-3)] text-[var(--accent-11)] hover:bg-[var(--accent-4)] hover:text-[var(--accent-11)] focus-visible:ring-[var(--accent-8)]`;
+const TOP_LINK_ACCENT = `${TOP_LINK_LAYOUT} text-[var(--accent-contrast)] hover:bg-[var(--accent-10)] focus-visible:ring-[var(--accent-contrast)]`;
+const TOP_LINK_ACCENT_ACTIVE = `${TOP_LINK_LAYOUT} bg-[var(--accent-11)] font-semibold text-[var(--accent-contrast)] hover:bg-[var(--accent-11)] focus-visible:ring-[var(--accent-contrast)]`;
+const TOP_LINK_CUSTOM = `${TOP_LINK_LAYOUT} text-[var(--gummy-bar-fg)] hover:bg-[var(--gummy-bar-hover)] focus-visible:ring-[var(--gummy-bar-fg)]`;
+const TOP_LINK_CUSTOM_ACTIVE = `${TOP_LINK_LAYOUT} bg-[var(--gummy-bar-active)] font-semibold text-[var(--gummy-bar-fg)] hover:bg-[var(--gummy-bar-active)] focus-visible:ring-[var(--gummy-bar-fg)]`;
 const TOP_LINK_CLASS: Record<AppBarTone, string> = { panel: TOP_LINK, accent: TOP_LINK_ACCENT, custom: TOP_LINK_CUSTOM };
 const TOP_LINK_ACTIVE_CLASS: Record<AppBarTone, string> = {
   panel: TOP_LINK_ACTIVE,
@@ -348,7 +361,7 @@ function TopEntry({ item, pages, pathname, tone = "panel" }: TopEntryProps) {
       <li>
         <DropdownMenu.Root>
           <DropdownMenu.Trigger>
-            <button type="button" className={`${link} ${holdsActive ? linkActive : ""}`} aria-current={holdsActive ? "true" : undefined}>
+            <button type="button" className={holdsActive ? linkActive : link} aria-current={holdsActive ? "true" : undefined}>
               {icon}
               <span className="truncate">{item.label}</span>
               <Icon icon="chevronDown" size={14} className="shrink-0 opacity-70" />
@@ -389,7 +402,7 @@ function TopEntry({ item, pages, pathname, tone = "panel" }: TopEntryProps) {
         href={url ?? "#"}
         aria-current={active ? "page" : undefined}
         aria-disabled={url ? undefined : true}
-        className={`${link} ${active ? linkActive : ""} ${url ? "" : "opacity-50"}`}
+        className={`${active ? linkActive : link} ${url ? "" : "opacity-50"}`}
         onClick={(e) => {
           e.preventDefault();
           if (url) navigate(url, { replace: !!item.navigate.replace });
@@ -582,6 +595,8 @@ export function AppShell({
   menu,
   brand,
   appBar,
+  menuActiveColor,
+  pageTransition,
   menuIcons = true,
   header,
   footer,
@@ -673,7 +688,7 @@ export function AppShell({
       <MenuIconsContext.Provider value={menuIcons}>
       <div
         className={`flex w-full flex-col bg-[var(--color-background)] text-[var(--gray-12)] ${className ?? ""}`}
-        style={{ height }}
+        style={{ height, ...(menuActiveColor ? ({ "--gummy-menu-active-fg": menuActiveColor } as CSSProperties) : {}) }}
       >
         {accentBar && bar.color ? (
           <Theme accentColor={bar.color} hasBackground={false} asChild>
@@ -694,7 +709,9 @@ export function AppShell({
               <SidebarNav menu={menu} pages={pages} rail={rail} onNavigated={closeDrawer} footer={footer} />
             </aside>
           )}
-          <main className="min-w-0 flex-1 overflow-auto">{children}</main>
+          <main className="min-w-0 flex-1 overflow-auto">
+            <PageTransitionContext.Provider value={pageTransition}>{children}</PageTransitionContext.Provider>
+          </main>
         </div>
 
         {drawerOpen && (

@@ -3,12 +3,13 @@ import { useRoutes, type RouteObject } from "react-router-dom";
 import { Button } from "@radix-ui/themes";
 import type { TModelMaster } from "../../model/master";
 import type { HttpClientFactory } from "../../api";
-import type { DataValue, GummyPageBody, NavigateTarget, PageEntry, TPageEntries } from "../@types";
+import type { DataValue, GummyPageBody, NavigateTarget, PageEntry, PageTransition, TPageEntries } from "../@types";
 import { Icon } from "../Icon";
 import { Core } from "./core";
 import { breadcrumbTrail, PagesProvider, usePageTitle } from "./pages";
 import { loadCycles } from "./pageLoads";
 import { fetchPageLoader, PageBodyCache, type PageBodyLoader } from "./pageBodies";
+import { PageEnter, PageEnterGate, usePageTransition } from "./pageTransition";
 
 export type PageRouterProps = {
   http: HttpClientFactory;
@@ -24,6 +25,8 @@ export type PageRouterProps = {
   loadPage?: PageBodyLoader;
   /** Shown while a split page's body loads (inside the shell). Default: a centred spinner. */
   pageFallback?: ReactNode;
+  /** How a page enters on a pathname change. Default: the enclosing `AppShell`'s `pageTransition`, else none. */
+  pageTransition?: PageTransition;
   /** Rendered for paths no page matches (`*`). */
   notFound?: ReactNode;
   /** Mirror each page's `title` into `document.title`. Default `true`; off when embedding (a studio preview). */
@@ -124,8 +127,10 @@ export function usePrefetchPage(): (key: string) => Promise<void> {
   return useContext(PrefetchContext);
 }
 
-/** A split page: suspends until its file is in, then builds it once. */
-function SplitPage({ pageKey, src, build, cache }: { pageKey: string; src: string; build: BuildPage; cache: PageBodyCache }) {
+type Enter = { transition?: PageTransition; gate: PageEnterGate };
+
+/** A split page: suspends until its file is in, then builds it once (and only then animates in). */
+function SplitPage({ pageKey, src, build, cache, enter }: { pageKey: string; src: string; build: BuildPage; cache: PageBodyCache; enter: Enter }) {
   const [, setAttempt] = useState(0);
   const entry = cache.read(pageKey, src);
   if (entry.status === "pending") throw entry.promise;
@@ -140,15 +145,24 @@ function SplitPage({ pageKey, src, build, cache }: { pageKey: string; src: strin
         }}
       />
     );
-  return build(pageKey, entry.body, true);
+  return (
+    <PageEnter transition={enter.transition} gate={enter.gate}>
+      {build(pageKey, entry.body, true)}
+    </PageEnter>
+  );
 }
 
 /** The routed element: inline pages build synchronously on the first visit, split ones behind Suspense. */
-function RoutedPage({ pageKey, page, build, cache, fallback }: { pageKey: string; page: PageEntry; build: BuildPage; cache: PageBodyCache; fallback: ReactNode }) {
-  if (page.containers) return build(pageKey, { containers: page.containers, loads: page.loads }, false);
+function RoutedPage({ pageKey, page, build, cache, fallback, enter }: { pageKey: string; page: PageEntry; build: BuildPage; cache: PageBodyCache; fallback: ReactNode; enter: Enter }) {
+  if (page.containers)
+    return (
+      <PageEnter transition={enter.transition} gate={enter.gate}>
+        {build(pageKey, { containers: page.containers, loads: page.loads }, false)}
+      </PageEnter>
+    );
   return (
     <Suspense fallback={fallback}>
-      <SplitPage pageKey={pageKey} src={page.src ?? ""} build={build} cache={cache} />
+      <SplitPage pageKey={pageKey} src={page.src ?? ""} build={build} cache={cache} enter={enter} />
     </Suspense>
   );
 }
@@ -170,7 +184,11 @@ let defaultLoader: PageBodyLoader | null = null;
  * page entry with `src` instead of `containers` is loaded through `loadPage`
  * on its first visit, with `pageFallback` meanwhile and a retry card on failure.
  */
-export function PageRouter({ http, model, api, pages, loadPage, pageFallback, notFound, documentTitle = true }: PageRouterProps): ReactElement | null {
+export function PageRouter({ http, model, api, pages, loadPage, pageFallback, pageTransition, notFound, documentTitle = true }: PageRouterProps): ReactElement | null {
+  // One gate per router: no animation on the first page shown, then one per pathname change.
+  const transition = usePageTransition(pageTransition);
+  const gate = useMemo(() => new PageEnterGate(), []);
+  const enter = useMemo<Enter>(() => ({ transition, gate }), [transition, gate]);
   const loader = loadPage ?? (defaultLoader ??= fetchPageLoader());
   const cache = useMemo(() => new PageBodyCache(loader), [loader]);
   const known = useMemo(() => new Set(Object.keys(pages)), [pages]);
@@ -203,12 +221,12 @@ export function PageRouter({ http, model, api, pages, loadPage, pageFallback, no
       path: page.path,
       element: (
         <PageView key={key} title={page.title} setDocumentTitle={documentTitle}>
-          <RoutedPage pageKey={key} page={page} build={build} cache={cache} fallback={fallback} />
+          <RoutedPage pageKey={key} page={page} build={build} cache={cache} fallback={fallback} enter={enter} />
         </PageView>
       ),
     }));
     return notFound !== undefined ? [...pageRoutes, { path: "*", element: <>{notFound}</> }] : pageRoutes;
-  }, [pages, documentTitle, build, cache, fallback, notFound]);
+  }, [pages, documentTitle, build, cache, fallback, notFound, enter]);
 
   const prefetch = useCallback(
     (key: string) => {

@@ -71,6 +71,13 @@ export type AppBarSettings = {
   sidebarToggle: { hide: string; show: string }
 }
 
+/** The studio side of the engine `PageTransition`. */
+export type StudioPageTransition = {
+  type: 'none' | 'fade' | 'fade-up' | 'slide' | 'scale'
+  duration: number | ''
+  easing: 'ease-out' | 'ease-in-out' | 'linear'
+}
+
 export type ShellSettings = {
   /** Where the menu renders: the collapsible sidebar or a strip in the top bar. */
   navigation: 'sidebar' | 'top'
@@ -79,6 +86,18 @@ export type ShellSettings = {
   appBar: AppBarSettings
   /** Show the icons of menu items (sidebar, drawer, top strip). */
   menuIcons: boolean
+  /**
+   * Text colour of the active sidebar / drawer item (any CSS colour) on its
+   * accent background; `''` / absent = the accent's contrast colour.
+   * Optional, so shells saved before it existed need no migration.
+   */
+  menuActiveColor?: string
+  /**
+   * How a page enters on a route change (the engine `shell.pageTransition`,
+   * see the grilled design `page-transition`). Optional: absent = none, so
+   * older shells need no migration. `duration: ''` = the engine's 250 ms.
+   */
+  pageTransition?: StudioPageTransition
   /** Sidebar placement: offer the collapse-to-rail toggle. */
   collapsible: boolean
 }

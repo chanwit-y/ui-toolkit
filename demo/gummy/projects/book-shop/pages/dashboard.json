@@ -1,0 +1,460 @@
+{
+  "containers": [
+    {
+      "id": "page-dashboard",
+      "name": "page-dashboard",
+      "isArray": false,
+      "bins": [
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "Dashboard",
+            "variant": "h3",
+            "weight": "bold"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "This month at a glance. Everything below is one page load (summary) in skeleton mode: each block draws its own placeholder until the numbers land.",
+            "variant": "body2",
+            "color": "gray"
+          }
+        },
+        {
+          "sm": "6",
+          "md": "6",
+          "lg": "3",
+          "xl": "3",
+          "type": "card",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "kpiBooks",
+            "header": {
+              "title": "Books",
+              "subheader": "in the catalogue"
+            },
+            "content": {
+              "id": "card-bs-item-",
+              "name": "card-bs-item-",
+              "isArray": false,
+              "bins": [
+                {
+                  "sm": "12",
+                  "md": "12",
+                  "lg": "12",
+                  "xl": "12",
+                  "type": "typography",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "text": "—",
+                    "variant": "h4",
+                    "weight": "bold",
+                    "value": {
+                      "type": "state",
+                      "key": "summary",
+                      "path": "bookCount"
+                    }
+                  }
+                }
+              ],
+              "gap": "16px",
+              "justifyItems": "stretch",
+              "alignItems": "stretch",
+              "justifyContent": "start",
+              "alignContent": "start",
+              "gridAutoFlow": "row"
+            },
+            "actionsAlign": "end",
+            "variant": "outlined"
+          }
+        },
+        {
+          "sm": "6",
+          "md": "6",
+          "lg": "3",
+          "xl": "3",
+          "type": "card",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "kpiOrders",
+            "header": {
+              "title": "Orders",
+              "subheader": "this month"
+            },
+            "content": {
+              "id": "card-bs-item-",
+              "name": "card-bs-item-",
+              "isArray": false,
+              "bins": [
+                {
+                  "sm": "12",
+                  "md": "12",
+                  "lg": "12",
+                  "xl": "12",
+                  "type": "typography",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "text": "—",
+                    "variant": "h4",
+                    "weight": "bold",
+                    "value": {
+                      "type": "state",
+                      "key": "summary",
+                      "path": "ordersThisMonth"
+                    }
+                  }
+                }
+              ],
+              "gap": "16px",
+              "justifyItems": "stretch",
+              "alignItems": "stretch",
+              "justifyContent": "start",
+              "alignContent": "start",
+              "gridAutoFlow": "row"
+            },
+            "actionsAlign": "end",
+            "variant": "outlined"
+          }
+        },
+        {
+          "sm": "6",
+          "md": "6",
+          "lg": "3",
+          "xl": "3",
+          "type": "card",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "kpiRevenue",
+            "header": {
+              "title": "Revenue",
+              "subheader": "this month"
+            },
+            "content": {
+              "id": "card-bs-item-",
+              "name": "card-bs-item-",
+              "isArray": false,
+              "bins": [
+                {
+                  "sm": "12",
+                  "md": "12",
+                  "lg": "12",
+                  "xl": "12",
+                  "type": "typography",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "text": "—",
+                    "variant": "h4",
+                    "weight": "bold",
+                    "value": {
+                      "type": "state",
+                      "key": "summary",
+                      "path": "revenueThisMonthText"
+                    }
+                  }
+                }
+              ],
+              "gap": "16px",
+              "justifyItems": "stretch",
+              "alignItems": "stretch",
+              "justifyContent": "start",
+              "alignContent": "start",
+              "gridAutoFlow": "row"
+            },
+            "actionsAlign": "end",
+            "variant": "outlined"
+          }
+        },
+        {
+          "sm": "6",
+          "md": "6",
+          "lg": "3",
+          "xl": "3",
+          "type": "card",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "kpiLowstock",
+            "header": {
+              "title": "Low stock",
+              "subheader": "at or under the threshold"
+            },
+            "content": {
+              "id": "card-bs-item-",
+              "name": "card-bs-item-",
+              "isArray": false,
+              "bins": [
+                {
+                  "sm": "12",
+                  "md": "12",
+                  "lg": "12",
+                  "xl": "12",
+                  "type": "typography",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "text": "—",
+                    "variant": "h4",
+                    "weight": "bold",
+                    "value": {
+                      "type": "state",
+                      "key": "summary",
+                      "path": "lowStockCount"
+                    }
+                  }
+                }
+              ],
+              "gap": "16px",
+              "justifyItems": "stretch",
+              "alignItems": "stretch",
+              "justifyContent": "start",
+              "alignContent": "start",
+              "gridAutoFlow": "row"
+            },
+            "actionsAlign": "end",
+            "variant": "outlined"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "8",
+          "xl": "8",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "Sales, last 30 days",
+            "variant": "subtitle1",
+            "weight": "medium"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "6",
+          "lg": "4",
+          "xl": "4",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "Low stock",
+            "variant": "subtitle1",
+            "weight": "medium"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "8",
+          "xl": "8",
+          "type": "custom",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "salesChart",
+            "component": "SalesChart",
+            "value": {
+              "type": "state",
+              "key": "summary",
+              "path": "salesByDay"
+            }
+          }
+        },
+        {
+          "sm": "12",
+          "md": "6",
+          "lg": "4",
+          "xl": "4",
+          "type": "repeater",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "lowStock",
+            "emptyText": "Nothing is running low.",
+            "itemPadding": "3",
+            "idKey": "_id",
+            "items": {
+              "type": "state",
+              "key": "summary",
+              "path": "lowStock"
+            },
+            "itemContainer": {
+              "id": "repeater-bs-item--item",
+              "name": "repeater-bs-item--item",
+              "isArray": false,
+              "bins": [
+                {
+                  "sm": "12",
+                  "md": "12",
+                  "lg": "12",
+                  "xl": "12",
+                  "type": "typography",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "text": "",
+                    "variant": "subtitle2",
+                    "truncate": true,
+                    "value": {
+                      "type": "row",
+                      "key": "title"
+                    }
+                  }
+                },
+                {
+                  "sm": "12",
+                  "md": "12",
+                  "lg": "12",
+                  "xl": "12",
+                  "type": "html",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "lowStockMeta",
+                    "html": "<span class=\"dt-muted\">{{authorName}}</span> · <strong>{{stock}}</strong> left",
+                    "value": {
+                      "type": "row",
+                      "key": "none"
+                    },
+                    "prose": false
+                  }
+                }
+              ],
+              "gap": "16px",
+              "justifyItems": "stretch",
+              "alignItems": "stretch",
+              "justifyContent": "start",
+              "alignContent": "start",
+              "gridAutoFlow": "row"
+            },
+            "itemSpan": {
+              "sm": "12",
+              "md": "12",
+              "lg": "12",
+              "xl": "12"
+            },
+            "gap": "2",
+            "itemSurface": "outlined",
+            "itemNavigate": {
+              "page": "bookDetail",
+              "params": {
+                "id": {
+                  "type": "row",
+                  "key": "_id"
+                }
+              }
+            }
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "datatable",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "recentOrders",
+            "title": "Recent orders",
+            "rowNavigate": {
+              "page": "orderDetail",
+              "params": {
+                "id": {
+                  "type": "row",
+                  "key": "_id"
+                }
+              }
+            },
+            "columns": [
+              {
+                "accessor": "number",
+                "header": "Order",
+                "enableSorting": false,
+                "enableColumnFilter": false,
+                "align": "start"
+              },
+              {
+                "accessor": "customerName",
+                "header": "Customer",
+                "enableSorting": false,
+                "enableColumnFilter": false,
+                "align": "start"
+              },
+              {
+                "accessor": "placedAt",
+                "header": "Placed",
+                "enableSorting": false,
+                "enableColumnFilter": false,
+                "align": "start",
+                "useDateFormat": "DD/MM/YYYY HH:mm"
+              },
+              {
+                "accessor": "statusLabel",
+                "header": "Status",
+                "enableSorting": false,
+                "enableColumnFilter": false,
+                "align": "start",
+                "html": "<span class=\"dt-badge\">{{statusLabel}}</span>"
+              },
+              {
+                "accessor": "totalText",
+                "header": "Total",
+                "enableSorting": false,
+                "enableColumnFilter": false,
+                "align": "end"
+              }
+            ],
+            "items": {
+              "type": "state",
+              "key": "summary",
+              "path": "recentOrders"
+            },
+            "canSearch": false,
+            "cellLines": 1,
+            "canEdit": false,
+            "canDelete": false
+          }
+        }
+      ],
+      "gap": "16px",
+      "justifyItems": "stretch",
+      "alignItems": "stretch",
+      "justifyContent": "start",
+      "alignContent": "start",
+      "gridAutoFlow": "row"
+    }
+  ],
+  "loads": [
+    {
+      "key": "summary",
+      "api": {
+        "name": "getSummary",
+        "paths": [
+          "data"
+        ]
+      },
+      "loading": "skeleton",
+      "errorMessage": "Could not load the dashboard"
+    }
+  ]
+}

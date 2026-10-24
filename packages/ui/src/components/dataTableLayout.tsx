@@ -57,6 +57,15 @@ export function groupColumns<T>(
 	return out
 }
 
+/**
+ * The visible leaf columns in the order the cells are drawn: left-pinned,
+ * centre, right-pinned (TanStack orders header groups and row cells this way,
+ * but `getVisibleLeafColumns()` keeps the definition order).
+ */
+export function displayedLeafColumns<T>(table: Table<T>): Column<T, unknown>[] {
+	return [...table.getLeftVisibleLeafColumns(), ...table.getCenterVisibleLeafColumns(), ...table.getRightVisibleLeafColumns()]
+}
+
 /** One `<th>` of the header: a leaf or a group cell, with its spans. */
 export type HeaderCell<T> = {
 	header: Header<T, unknown>

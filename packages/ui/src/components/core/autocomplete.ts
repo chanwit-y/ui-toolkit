@@ -8,6 +8,7 @@ import type { TApiMaster } from "../../api/APIMaster";
 import type { TModelMaster } from "../../model/master";
 import { ElementContext } from "./elementBuilder";
 import { BoundOptions } from "./bound";
+import { resolveApiRef } from "./readApi";
 
 /** The field as is, or behind {@link BoundOptions} when `optionsValue` is set. */
 function withBoundOptions(props: AutocompleteElement, component: any, fieldProps: Record<string, unknown>): JSX.Element {
@@ -39,6 +40,7 @@ export class Autocomplete<M extends TModelMaster, A extends TApiMaster<M>>
 
       api: this._context.api,
       apiInfo: props.api,
+      apiSegments: resolveApiRef(this._context, props.api?.name)?.segments,
 
       enabledWhen: props.enabledWhen,
 
@@ -75,6 +77,7 @@ export class MultiAutocomplete<M extends TModelMaster, A extends TApiMaster<M>>
       canObserve: props.canObserve,
       observeTo: props.observeTo,
       apiInfo: props.api,
+      apiSegments: resolveApiRef(this._context, props.api?.name)?.segments,
 
       enabledWhen: props.enabledWhen,
 

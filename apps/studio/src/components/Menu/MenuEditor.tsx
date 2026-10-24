@@ -1,5 +1,5 @@
-import { IconData, appBarStyle, appBarTone } from '@gummy-ui/ui'
-import { Plus, Trash2, Upload, X } from 'lucide-react'
+import { DEFAULT_PAGE_TRANSITION_DURATION, IconData, appBarStyle, appBarTone, playPageTransition } from '@gummy-ui/ui'
+import { Play, Plus, Trash2, Upload, X } from 'lucide-react'
 import { useMemo, useRef, useState, type ReactNode } from 'react'
 import {
   Button,
@@ -13,8 +13,8 @@ import {
   cn,
 } from '../common'
 import { NavigateEditor, WiringHint } from '../Layout/ButtonConfigPanel'
-import { createMenuItem, menuToEngine, shellToEngine } from '../Workspace/menu'
-import type { AppBarSettings, MenuItemDef, ShellSettings } from '../Workspace/types'
+import { createMenuItem, menuToEngine, pageTransitionToEngine, shellToEngine } from '../Workspace/menu'
+import type { AppBarSettings, MenuItemDef, ShellSettings, StudioPageTransition } from '../Workspace/types'
 import { defaultShell } from '../Workspace/snapshots'
 import { useActiveProject, useWorkspaceStore } from '../Workspace/workspaceStore'
 
@@ -138,6 +138,78 @@ function LogoField({ value, onChange }: { value: string; onChange: (next: string
         )}
       </div>
       {error && <p className="text-ui-xs text-danger">{error}</p>}
+    </div>
+  )
+}
+
+const NO_TRANSITION: StudioPageTransition = { type: 'none', duration: '', easing: 'ease-out' }
+
+/**
+ * The page-change animation (see the grilled design `page-transition`): type,
+ * duration and easing, plus Play, which runs the exact engine animation
+ * (`playPageTransition`) on a sample page block.
+ */
+function PageTransitionField({ value, onChange }: { value: StudioPageTransition; onChange: (next: StudioPageTransition) => void }) {
+  const sample = useRef<HTMLDivElement>(null)
+  const off = value.type === 'none'
+  const reduced = typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  return (
+    <div className="space-y-2">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Field label="Page transition">
+          <Select
+            value={value.type}
+            onChange={(type) => onChange({ ...value, type: type as StudioPageTransition['type'] })}
+            options={[
+              { value: 'none', label: 'None' },
+              { value: 'fade', label: 'Fade' },
+              { value: 'fade-up', label: 'Fade up' },
+              { value: 'slide', label: 'Slide in' },
+              { value: 'scale', label: 'Scale' },
+            ]}
+          />
+        </Field>
+        <Field label="Duration (ms)">
+          <Input
+            type="number"
+            min={0}
+            max={2000}
+            step={50}
+            disabled={off}
+            value={value.duration}
+            placeholder={String(DEFAULT_PAGE_TRANSITION_DURATION)}
+            onChange={(e) => onChange({ ...value, duration: e.target.value === '' ? '' : Number(e.target.value) })}
+          />
+        </Field>
+        <Field label="Easing">
+          <Select
+            value={value.easing}
+            disabled={off}
+            onChange={(easing) => onChange({ ...value, easing: easing as StudioPageTransition['easing'] })}
+            options={[
+              { value: 'ease-out', label: 'Ease out' },
+              { value: 'ease-in-out', label: 'Ease in-out' },
+              { value: 'linear', label: 'Linear' },
+            ]}
+          />
+        </Field>
+      </div>
+      <div className="flex items-center gap-3">
+        <Button size="sm" disabled={off} onClick={() => playPageTransition(sample.current, pageTransitionToEngine(value))}>
+          <Play size={13} />
+          Play
+        </Button>
+        <div ref={sample} aria-hidden="true" className="flex h-12 w-40 flex-col justify-center gap-1.5 rounded-md border border-line bg-panel px-3">
+          <span className="h-1.5 w-20 rounded bg-ink-3/40" />
+          <span className="h-1.5 w-28 rounded bg-ink-3/25" />
+          <span className="h-1.5 w-16 rounded bg-ink-3/25" />
+        </div>
+        {reduced && <span className="text-ui-xs text-ink-3">Your system asks for reduced motion, so nothing plays here or in the app.</span>}
+      </div>
+      <p className="text-ui-xs text-ink-3">
+        Plays when the page’s path changes (a :param too, not a query-string change), never on the first page. The page
+        isn’t rebuilt, so data and form input stay; a page still loading animates once its content is in.
+      </p>
     </div>
   )
 }
@@ -396,6 +468,19 @@ export function MenuEditor() {
               checked={shell.menuIcons}
               onChange={(menuIcons) => setShell({ menuIcons })}
             />
+          </div>
+          <PageTransitionField
+            value={shell.pageTransition ?? NO_TRANSITION}
+            onChange={(pageTransition) => setShell({ pageTransition })}
+          />
+          <div className="max-w-sm">
+            <Field label="Active item text colour (sidebar)">
+              <ColorInput
+                value={shell.menuActiveColor ?? ''}
+                onChange={(menuActiveColor) => setShell({ menuActiveColor })}
+                placeholder="Default: the accent's contrast · #fef3c7 · var(--amber-3)"
+              />
+            </Field>
           </div>
           <p className="text-ui-xs text-ink-3">
             In the top bar, groups become dropdowns and there is no sidebar; below the md breakpoint both

@@ -375,6 +375,13 @@ export type AutocompleteProps2<T extends Record<string, any> = {}> =
       // apiCanSearch?: boolean;
       api?: APIFunction;
       apiInfo?: API;
+      /**
+       * Which of (query, URL params, body) the endpoint declares — the order
+       * its built caller takes them in. Set by the engine's builder; without it
+       * the call falls back to `(query, params)`, which mis-slots the params of
+       * an endpoint that declares no query.
+       */
+      apiSegments?: ApiSegments;
       // enabledWhen?: ConditionTerm;
       enabledWhen?: CondExpression;
       isSingleLoad?: boolean;
@@ -415,6 +422,8 @@ export type MultiAutocompleteProps<T extends Record<string, any> = {}> =
       observeTo?: string;
       api?: APIFunction;
       apiInfo?: API;
+      /** See `AutocompleteProps2.apiSegments`. */
+      apiSegments?: ApiSegments;
       enabledWhen?: CondExpression;
       maxSelections?: number;
       showSelectedCount?: boolean;
@@ -2129,6 +2138,22 @@ export type MenuItem =
 /** The sidebar menu `AppShell` renders, top to bottom. */
 export type TMenu = MenuItem[];
 
+/** The enter animations a page change can play (see {@link PageTransition}). */
+export type PageTransitionType = "none" | "fade" | "fade-up" | "slide" | "scale";
+
+/**
+ * How a page enters when the route's pathname changes (see the grilled design
+ * `page-transition`): enter-only, transform / opacity, replayed on the page's
+ * wrapper without remounting it, off under `prefers-reduced-motion`.
+ */
+export type PageTransition = {
+  type: PageTransitionType;
+  /** Milliseconds. Default 250. */
+  duration?: number;
+  /** Default `ease-out`. */
+  easing?: "ease-out" | "ease-in-out" | "linear";
+};
+
 /**
  * The `AppShell` top bar, as plain config (so a studio export can author it).
  * `brand` on the shell, when given, replaces the title/icon/logo mark.
@@ -2184,6 +2209,8 @@ export type ButtonElement = {
   icon?: keyof typeof IconData;
   /** Visual weight: "contained" (default), "outlined" or "text". */
   variant?: ButtonVariant;
+  /** A Radix colour for this button. Unset: the theme's button colour, else the theme accent. */
+  color?: ThemeProps["accentColor"];
   confirmBox?: ConfirmBoxElement;
   reloadDataTable?: string;
   actions: ButtonAction[];

@@ -1,6 +1,6 @@
-import type { AppBarConfig, AppShellProps, MenuItem, TMenu } from '@gummy-ui/ui'
+import { DEFAULT_PAGE_TRANSITION_DURATION, type AppBarConfig, type AppShellProps, type MenuItem, type PageTransition, type TMenu } from '@gummy-ui/ui'
 import { toNavigateTarget } from '../Layout/gridConfig'
-import type { MenuItemDef, PageDef, ShellSettings } from './types'
+import type { MenuItemDef, PageDef, ShellSettings, StudioPageTransition } from './types'
 import { pathParams } from './snapshots'
 
 /** A fresh, empty item of the given kind. */
@@ -73,7 +73,17 @@ export function menuToEngine(menu: MenuItemDef[], pages: Pick<PageDef, 'id' | 'k
 }
 
 /** The `AppShell` props the studio shell settings become (spread onto the shell). */
-export type EngineShellProps = Pick<AppShellProps, 'navigation' | 'breadcrumbs' | 'appBar' | 'menuIcons' | 'collapsible'>
+export type EngineShellProps = Pick<AppShellProps, 'navigation' | 'breadcrumbs' | 'appBar' | 'menuIcons' | 'menuActiveColor' | 'pageTransition' | 'collapsible'>
+
+/** The studio transition → the engine's, or nothing for none; duration / easing only off the engine defaults. */
+export function pageTransitionToEngine(t: StudioPageTransition | undefined): PageTransition | undefined {
+  if (!t || t.type === 'none') return undefined
+  return {
+    type: t.type,
+    ...(typeof t.duration === 'number' && t.duration !== DEFAULT_PAGE_TRANSITION_DURATION ? { duration: t.duration } : {}),
+    ...(t.easing !== 'ease-out' ? { easing: t.easing } : {}),
+  }
+}
 
 /** Studio shell settings → `AppShell` props; empty app-bar fields are dropped. */
 export function shellToEngine(shell: ShellSettings): EngineShellProps {
@@ -112,6 +122,8 @@ export function shellToEngine(shell: ShellSettings): EngineShellProps {
     breadcrumbs: shell.breadcrumbs,
     appBar,
     ...(shell.menuIcons ? {} : { menuIcons: false }),
+    ...(shell.menuActiveColor?.trim() ? { menuActiveColor: shell.menuActiveColor.trim() } : {}),
+    ...(pageTransitionToEngine(shell.pageTransition) ? { pageTransition: pageTransitionToEngine(shell.pageTransition) } : {}),
     ...(shell.collapsible ? {} : { collapsible: false }),
   }
 }

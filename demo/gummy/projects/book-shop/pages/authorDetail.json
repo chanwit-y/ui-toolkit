@@ -1,0 +1,369 @@
+{
+  "containers": [
+    {
+      "id": "page-authorDetail",
+      "name": "page-authorDetail",
+      "isArray": false,
+      "bins": [
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "button",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "label": "Back to authors",
+            "icon": "chevronLeft",
+            "variant": "text",
+            "actions": [
+              "Navigate"
+            ],
+            "navigate": {
+              "page": "authors"
+            }
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "card",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "authorCard",
+            "header": {
+              "title": "Author",
+              "titleValue": {
+                "type": "state",
+                "key": "author",
+                "path": "name"
+              },
+              "subheaderValue": {
+                "type": "state",
+                "key": "author",
+                "path": "country"
+              },
+              "avatar": {
+                "name": "",
+                "size": "md",
+                "fallback": "?",
+                "srcValue": {
+                  "type": "state",
+                  "key": "author",
+                  "path": "avatar"
+                },
+                "fallbackValue": {
+                  "type": "state",
+                  "key": "author",
+                  "path": "name"
+                }
+              }
+            },
+            "content": {
+              "id": "card-bs-item-",
+              "name": "card-bs-item-",
+              "isArray": false,
+              "bins": [
+                {
+                  "sm": "12",
+                  "md": "12",
+                  "lg": "12",
+                  "xl": "12",
+                  "type": "html",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "authorBio",
+                    "html": "<p>Born {{born}} · {{bookCount}} books in the shop</p><p>{{bio}}</p>",
+                    "value": {
+                      "type": "state",
+                      "key": "author"
+                    }
+                  }
+                }
+              ],
+              "gap": "16px",
+              "justifyItems": "stretch",
+              "alignItems": "stretch",
+              "justifyContent": "start",
+              "alignContent": "start",
+              "gridAutoFlow": "row"
+            },
+            "actionsAlign": "end",
+            "variant": "outlined"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "Books",
+            "variant": "h5",
+            "weight": "bold"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "repeater",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "authorBooks",
+            "emptyText": "No books yet.",
+            "itemPadding": "0",
+            "idKey": "_id",
+            "items": {
+              "type": "state",
+              "key": "author",
+              "path": "books"
+            },
+            "itemContainer": {
+              "id": "repeater-bs-item--item",
+              "name": "repeater-bs-item--item",
+              "isArray": false,
+              "bins": [
+                {
+                  "sm": "12",
+                  "md": "12",
+                  "lg": "12",
+                  "xl": "12",
+                  "type": "card",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "authorBookCard",
+                    "header": {
+                      "titleValue": {
+                        "type": "row",
+                        "key": "title"
+                      },
+                      "subheaderValue": {
+                        "type": "row",
+                        "key": "genreName"
+                      }
+                    },
+                    "media": {
+                      "alt": "Cover",
+                      "srcValue": {
+                        "type": "row",
+                        "key": "cover"
+                      },
+                      "height": 200
+                    },
+                    "content": {
+                      "id": "card-bs-item-",
+                      "name": "card-bs-item-",
+                      "isArray": false,
+                      "bins": [],
+                      "gap": "16px",
+                      "justifyItems": "stretch",
+                      "alignItems": "stretch",
+                      "justifyContent": "start",
+                      "alignContent": "start",
+                      "gridAutoFlow": "row"
+                    },
+                    "actionsAlign": "end",
+                    "variant": "outlined"
+                  }
+                }
+              ],
+              "gap": "16px",
+              "justifyItems": "stretch",
+              "alignItems": "stretch",
+              "justifyContent": "start",
+              "alignContent": "start",
+              "gridAutoFlow": "row"
+            },
+            "itemSpan": {
+              "sm": "4",
+              "md": "3",
+              "lg": "2",
+              "xl": "2"
+            },
+            "gap": "3",
+            "itemSurface": "none",
+            "itemNavigate": {
+              "page": "bookDetail",
+              "params": {
+                "id": {
+                  "type": "row",
+                  "key": "_id"
+                }
+              }
+            }
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "formlist",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "authorLinks",
+            "title": "Links",
+            "addLabel": "Add link",
+            "emptyText": "No links yet.",
+            "addPosition": "bottom",
+            "addAlign": "start",
+            "addDisplay": "both",
+            "removePosition": "end",
+            "removeDisplay": "both",
+            "idKey": "_id",
+            "rowContainer": {
+              "id": "formlist-bs-item--row",
+              "name": "formlist-bs-item--row",
+              "isArray": false,
+              "bins": [
+                {
+                  "sm": "4",
+                  "md": "5",
+                  "lg": "4",
+                  "xl": "4",
+                  "type": "textfield",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "label",
+                    "dataType": "string",
+                    "label": "Label",
+                    "isRequired": true,
+                    "errorMessage": "",
+                    "variant": "surface",
+                    "size": "3",
+                    "radius": "medium",
+                    "isFullWidth": true,
+                    "isFixedHeight": true
+                  }
+                },
+                {
+                  "sm": "8",
+                  "md": "8",
+                  "lg": "8",
+                  "xl": "8",
+                  "type": "textfield",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "url",
+                    "dataType": "url",
+                    "label": "URL",
+                    "isRequired": false,
+                    "errorMessage": "",
+                    "variant": "surface",
+                    "size": "3",
+                    "radius": "medium",
+                    "isFullWidth": true,
+                    "isFixedHeight": true,
+                    "placeholder": "https://…"
+                  }
+                }
+              ],
+              "gap": "16px",
+              "justifyItems": "stretch",
+              "alignItems": "stretch",
+              "justifyContent": "start",
+              "alignContent": "start",
+              "gridAutoFlow": "row"
+            },
+            "apiCrud": {
+              "read": {
+                "name": "listAuthorLinks",
+                "paths": [
+                  "data"
+                ],
+                "params": {
+                  "authorId": {
+                    "type": "url",
+                    "key": "id",
+                    "source": "param"
+                  }
+                }
+              },
+              "create": {
+                "name": "createAuthorLink",
+                "extraParams": {
+                  "authorId": {
+                    "type": "url",
+                    "key": "id",
+                    "source": "param"
+                  }
+                }
+              },
+              "update": {
+                "name": "updateAuthorLink",
+                "params": {
+                  "id": "_id"
+                },
+                "extraParams": {
+                  "authorId": {
+                    "type": "url",
+                    "key": "id",
+                    "source": "param"
+                  }
+                }
+              },
+              "delete": {
+                "name": "deleteAuthorLink",
+                "params": {
+                  "id": "_id"
+                },
+                "extraParams": {
+                  "authorId": {
+                    "type": "url",
+                    "key": "id",
+                    "source": "param"
+                  }
+                },
+                "confirmBox": {
+                  "title": "Remove link",
+                  "description": "Remove this link?"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "gap": "16px",
+      "justifyItems": "stretch",
+      "alignItems": "stretch",
+      "justifyContent": "start",
+      "alignContent": "start",
+      "gridAutoFlow": "row"
+    }
+  ],
+  "loads": [
+    {
+      "key": "author",
+      "api": {
+        "name": "getAuthor",
+        "paths": [
+          "data"
+        ],
+        "params": {
+          "id": {
+            "type": "url",
+            "key": "id",
+            "source": "param"
+          }
+        }
+      },
+      "loading": "cycle",
+      "errorMessage": "Could not load the author"
+    }
+  ]
+}

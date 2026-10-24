@@ -32,9 +32,8 @@ export class Button<M extends TModelMaster, A extends TApiMaster<M>>
       apiInfo: apiInfo,
       modalId: props.modalId,
       navigate: props.navigate,
-      color:
-        (this._context.theme?.components.button
-          ?.color as ThemeProps["accentColor"]) || "blue",
+      // The element's own colour; unset ⇒ ButtonBase falls back to the theme's button colour, then the accent.
+      color: props.color,
     });
   }
 }

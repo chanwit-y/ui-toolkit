@@ -5,12 +5,18 @@ import type { TActionMaster } from "@gummy-ui/ui";
  * chain as `"fn:<name>"`. Each gets the engine's ActionContext (form, row,
  * state, api, snackbar, navigate…); `return false` ends the chain.
  *
- * The names must match `customActions` in gummy/projects/demo.json — <GummyApp>
- * warns at mount about a name the project uses that is missing here.
+ * The names must match `customActions` in gummy/projects/book-shop/project.json
+ * (declared on the studio's Env page) — <GummyApp> warns at mount about a name
+ * the project uses that is missing here.
  */
 export const actions: TActionMaster = {
-  greet: async ({ state, snackbar }) => {
-    const name = state.get("country", "name");
-    snackbar("success", `Hello from ${typeof name === "string" && name ? name : "the demo"}!`);
+  /** Order page → Print: the browser's print dialog over the order on screen. */
+  printOrder: async ({ state, snackbar }) => {
+    const number = state.get("order", "number");
+    if (typeof number !== "string" || !number) {
+      snackbar("warning", "Open an order first.");
+      return false;
+    }
+    window.print();
   },
 };

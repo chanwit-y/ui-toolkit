@@ -1,7 +1,7 @@
 import type { ThemeProps } from "@radix-ui/themes";
 import type { TApiMaster } from "../../api/APIMaster";
 import type { TModelMaster } from "../../model/master";
-import type { AppBarConfig, GummyPageBody, PageLoad, ThemeComponents, TMenu, TPageEntries } from "../@types";
+import type { AppBarConfig, GummyPageBody, PageLoad, PageTransition, ThemeComponents, TMenu, TPageEntries } from "../@types";
 import type { AzureAuthConfig } from "../../auth/azure/config";
 
 /**
@@ -25,6 +25,10 @@ export type GummyProjectShell = {
   navigation?: "sidebar" | "top";
   breadcrumbs?: boolean;
   appBar?: AppBarConfig;
+  /** Text colour of the active sidebar menu item (any CSS colour); default the accent's contrast. */
+  menuActiveColor?: string;
+  /** How a page enters on a pathname change (enter-only animation); absent = none. */
+  pageTransition?: PageTransition;
   menuIcons?: boolean;
   collapsible?: boolean;
   sidebarWidth?: string;

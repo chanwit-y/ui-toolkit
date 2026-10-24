@@ -49,23 +49,9 @@ const authEnv = {
   AZURE_API_SCOPE: import.meta.env.VITE_AZURE_API_SCOPE ?? "",
 };
 
-/**
- * Replays a page-enter animation on every navigation. Keying the wrapper by the
- * route pathname forces a remount, so the CSS `.page-enter` animation restarts
- * each time the user lands on a new page. Kept outside `PageRouter` on purpose:
- * transitions are the consumer's policy, not the router's.
- */
 // Dev aid: the page-data slices and their loading modes, for the console.
 ;(window as any).__gummy = { getStateStore, loadingModeOf };
 
-function PageTransition({ children }: { children: React.ReactNode }) {
-  const { pathname } = useLocation();
-  return (
-    <div key={pathname} className="page-enter">
-      {children}
-    </div>
-  );
-}
 
 function NotFound() {
   const { pathname } = useLocation();
@@ -134,13 +120,16 @@ function AppContent() {
     // The shell owns the chrome: top bar (brand, collapse toggle, ThemeToggle)
     // and the menu from config/country/menu.ts — as a sidebar or, via the
     // toggle, a top strip. The breadcrumb strip follows `parent` in
-    // config/country/pages.ts. Routes stay in PageRouter; the transition
-    // wrapper is the consumer's, as before.
+    // config/country/pages.ts. Routes stay in PageRouter; pages fade up on
+    // every route change through the shell's `pageTransition` — played on the
+    // page's wrapper, so nothing remounts (the old key-by-pathname wrapper
+    // rebuilt the whole router, and every page with it, per navigation).
     <AppShell
       pages={pages}
       menu={menu}
       navigation={navigation}
       appBar={appBar}
+      pageTransition={{ type: "fade-up", duration: 350 }}
       header={
         <>
           <NavPlacementToggle value={navigation} onChange={setNavigation} />
@@ -151,19 +140,16 @@ function AppContent() {
       }
       footer={<span className="text-xs">@gummy-ui/ui · example</span>}
     >
-      {/* App-wide loads: fetched once, kept across pages — outside the
-          pathname-keyed transition, which would refetch them per navigation. */}
+      {/* App-wide loads: fetched once, kept across pages. */}
       <GlobalLoads http={http as any} model={model} api={api} loads={globalLoads} />
       <div className="p-8">
-        <PageTransition>
-          <PageRouter
-            http={http as any}
-            model={model}
-            api={api}
-            pages={pages}
-            notFound={<NotFound />}
-          />
-        </PageTransition>
+        <PageRouter
+          http={http as any}
+          model={model}
+          api={api}
+          pages={pages}
+          notFound={<NotFound />}
+        />
       </div>
     </AppShell>
   );

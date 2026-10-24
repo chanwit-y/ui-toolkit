@@ -1,26 +1,26 @@
-# Gummy demo — the consumer starter
+# Gummy demo — the Book shop
 
-The smallest app that uses Gummy UI the way an external team would: install the
-library, let the studio write the project document, render it with the engine.
-Nothing in `src/` describes a screen; the screens live in
-`gummy/projects/demo/` — the routes, menu, models and endpoints in
-`project.json`, each page in `pages/<page>.json`, loaded on its first visit.
+A proof of concept of Gummy UI: **Gummy Books**, a staff back office for a book
+shop, built the way an external team would build it. The screens were designed
+in the studio and live as JSON in `gummy/`; `<GummyApp>` renders them; a small
+mock API in `api/` is the backend. Nothing in `src/` describes a screen.
 
 ```
 demo/
 ├─ gummy/
-│  ├─ workspace.json       the studio's state (written by `gummy studio`; absent until the first save)
-│  └─ projects/demo/       a project document — what `gummy studio` writes per project on save
-│     ├─ project.json      the manifest: routes (each page's `src`), menu, shell, model, api, theme
-│     └─ pages/*.json      one file per page, its own chunk, fetched on the page's first visit
+│  ├─ workspace.json            the studio's state — open it with `bun run studio`
+│  └─ projects/book-shop/       the project the app renders (written by the studio on every save)
+│     ├─ project.json           routes (each page's `src`), menu, app bar, theme, models, endpoints, sign-in
+│     └─ pages/*.json           one file per page, its own chunk, fetched on the page's first visit
+├─ api/                         the Book shop mock API (Hono on Bun, port 9100) — README.md is its contract
 ├─ src/
-│  ├─ main.tsx             BrowserRouter + the library stylesheet
-│  ├─ App.tsx              <GummyApp project={…} …/>
-│  ├─ project.ts           picks which gummy/projects/<key>/ to render, and its page loader
-│  ├─ actions.ts           custom button actions the configs name as "fn:<name>"
-│  └─ components.tsx       custom React components the configs place by name
-├─ index.html
-├─ vite.config.mjs         proxies /collection to the mock API in dev
+│  ├─ main.tsx                  BrowserRouter + the library stylesheet
+│  ├─ App.tsx                   <GummyApp project={…} loadPage={…} …/>
+│  ├─ project.ts                picks the project under gummy/projects/ and builds its page loader
+│  ├─ actions.ts                `printOrder`, the one custom button action
+│  └─ components.tsx            `SalesChart`, the one custom component
+├─ scripts/dev.mjs              runs the API and the app together
+├─ vite.config.mjs              proxies /api to the mock API in dev
 └─ package.json
 ```
 
@@ -31,73 +31,58 @@ From the monorepo root (the demo is a workspace, so `@gummy-ui/ui` resolves to
 
 ```bash
 bun run --filter @gummy-ui/ui build
-bun run api                      # mock API on :9000
-bun run --cwd demo dev           # http://localhost:3400
-bun run --cwd demo studio        # the studio over demo/gummy (see below)
+bun run demo                     # mock API on :9100 + the app on http://localhost:3400
+bun run --cwd demo studio        # the studio over demo/gummy on http://127.0.0.1:3300
+bun run --cwd demo test          # the mock API's tests + the project ↔ API contract
 ```
 
-A real app does the same with `npm install @gummy-ui/ui` and its own API.
+`bun run --cwd demo api` / `app` start one half alone.
 
-## How it fits together
+## Who you are
 
-- **`@gummy-ui/ui`** is the runtime dependency. `import "@gummy-ui/ui/styles.css"`
-  brings the compiled stylesheet (Radix Themes, the engine partials, every
-  utility the components use) — the app needs no Tailwind.
-- **`<GummyApp>`** (`src/App.tsx`) renders the project document: theme,
-  app shell + menu, page data loads and the page router, all from the JSON. It
-  mounts inside the app's own `<BrowserRouter>`, like `PageRouter`, so other
-  routes can live beside it. The app supplies only what JSON cannot carry:
-  - `getToken` — the bearer token for API calls;
-  - `env` — per-environment overrides of the project's `env` (`API_URL` is the HTTP base URL);
-  - `actions` — the functions behind `"fn:<name>"` button actions;
-  - `components` — the React components behind `type: "custom"` bins;
-  - `header` / `footer` / `brand` — the shell slots; `shell={false}` drops the shell.
-- **`gummy/projects/demo/project.json`** is validated at mount (`schemaVersion`,
-  model references, page paths); a broken document throws with the reason
-  instead of rendering blank. A page file is checked when it loads; one that
-  fails to load shows a Retry card inside the shell. `loadPage` (from
-  `src/project.ts`) is a lazy `import.meta.glob`, so the first screen downloads
-  the manifest and one page, not the whole app. Names in `customActions` / `customComponents` that the app
-  forgot to register are reported with a console warning.
+Sign-in is the project's Azure SSO entry (`auth` in `project.json`). With no
+tenant, `.env` signs a mock staff account in — the profile still comes from the
+API (`GET /api/staff/by-email`):
 
-## Editing the screens
+| `VITE_AUTH_MOCK_EMAIL` | Sees |
+|---|---|
+| `chanwit_y@banpu.co.th` (default) | Chanwit Yimneam, **manager** — Delete in the book form, Approve refund, Save settings |
+| `pimchanok_s@banpu.co.th` | Pimchanok Saelim, **clerk** — the same pages without those, plus "waiting for a manager" / read-only notes |
+| `nadia_s@banpu.co.th` | a former employee — the "No access" screen |
 
-The studio owns the document. `@gummy-ui/cli` is a devDependency (it brings
-the prebuilt `@gummy-ui/studio` with it), so from this folder:
+The gates are plain config: items shown only while the signed-in profile's
+`role` equals `manager` (or `clerk`) — the studio's **Show when (page data)**
+over the Sign-in profile.
 
-```bash
-bun run studio          # = gummy studio → http://127.0.0.1:3300
-```
+## The pages
 
-`gummy studio` serves the prebuilt studio and keeps your work **in this folder**:
+| Page | What it shows of Gummy |
+|---|---|
+| **Dashboard** `/` | One page load in skeleton mode feeding KPI cards, the custom `SalesChart`, a low-stock repeater and a recent-orders table |
+| **Catalogue** `/catalogue` | A card grid from a repeater; a "Featured" line shown by a condition on each item's own field; the whole card a link |
+| **Books** `/books` | Server paging, sort and search; a filter form whose Author list depends on the Genre picked; HTML cover cells; the Add / Edit form with a cover upload, a date and a switch; Delete for managers only |
+| **Book** `/books/:id` | Title and breadcrumb from the loaded book; a card with the cover; Editions as a form list; reviews from a repeater over their own endpoint |
+| **Authors** `/authors`, **Author** `/authors/:id` | A pinned, resizable table; the author's books as a card repeater; links as a form list |
+| **Orders** `/orders` | Inline filters (status multi-select, dates); the order number as row header; Customer / Amount header groups; subtotal and total merged when there's no shipping |
+| **Order** `/orders/:id` | Lines from page data; `fn:printOrder`; a pending refund as an approval line and the manager's Approve refund form (POST, then the order reloads) |
+| **Customers** `/customers`, **Customer** `/customers/:id` | A paged table; a "New customer" form in a drawer that posts and refreshes; the customer's orders |
+| **Settings** `/settings` | One form over the settings load: switches (one gated by another), a currency select, the refund approval line in a workflow editor, saved with one PATCH |
 
-- `gummy/workspace.json` — the studio's own state (projects, shared library,
-  activity). Commit it; it is what your teammates open.
-- `gummy/projects/<key>/` — one runtime document per project (`<key>` is the
-  project name as a slug): `project.json` and `pages/<page>.json`. A save
-  rewrites only the files of the project you edited whose content changed, and
-  removes page files of deleted pages. The app imports the one it renders;
-  Vite reloads on change.
+## Editing it
 
-A fresh folder starts with one empty project named after this package
-(`gummy-demo`). Pass `--demo` on the first run to start from the Country demo
-instead, `--port <n>` for another port, `--open` to open the browser.
+`bun run --cwd demo studio` runs `gummy studio` over this folder: it opens
+`gummy/workspace.json`, and every change rewrites the files of
+`gummy/projects/book-shop/` that changed — Vite reloads the running app.
+`workspace.json` is the source of truth; commit it with the project folder.
 
-Saves are version-checked: if `workspace.json` changes on disk under an open
-studio (a `git pull`, another tab), the studio pauses saving and shows a
-Reload banner instead of overwriting the file.
+The workspace was first written by `bun apps/studio/scripts/bookshop.ts`
+(from the repo root), which builds it with the studio's own seed helpers
+(`apps/studio/src/components/seed/bookshop/`). It refuses to overwrite an
+existing workspace — `--force` regenerates it and throws studio edits away.
 
-Every project under `gummy/projects/` is picked up automatically
-(`src/project.ts`) — the `<key>/` folders and older single-file `<key>.json`
-documents (pages inline; when both exist the folder wins):
-`VITE_GUMMY_PROJECT=<key>` wins when set, else the project named after this
-package (`gummy-demo`, what a fresh `gummy studio` creates), else the first
-exported project, else the shipped `demo` sample. The console says which one
-is rendering. Delete `projects/demo/` once your own project is there.
+## The mock API
 
-## What the demo shows
-
-- `/` — a data table over `POST /collection/get-all`; a row opens `/countries/:id`.
-- `/countries/:id` — a page data load (`country`, skeleton mode) feeding a card,
-  a typography, a custom `StatBadge`, a `Reload` action, a `Navigate` button
-  back and a `fn:greet` custom action that reads the loaded country.
+`api/README.md` is the contract: deterministic data (120 books, 30 authors,
+300 orders over the last 90 days, 60 customers, 6 staff), money and dates also
+sent as display strings (a config can't format them), drawn SVG covers, uploads
+kept in memory. Writes last until the API restarts.
