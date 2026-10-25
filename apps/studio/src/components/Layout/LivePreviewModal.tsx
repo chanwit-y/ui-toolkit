@@ -16,16 +16,12 @@ import {
   useMemo,
   useRef,
   useState,
-  type ContextType,
   type ReactElement,
   type ReactNode,
 } from 'react'
 import {
   MemoryRouter,
   matchPath,
-  UNSAFE_LocationContext,
-  UNSAFE_NavigationContext,
-  UNSAFE_RouteContext,
   useLocation,
   useNavigate,
 } from 'react-router-dom'
@@ -43,6 +39,7 @@ import { authProfileLoad } from '../Workspace/auth'
 import { runtimeDocument } from '../Workspace/runtimeProject'
 import type { PageLoadDef } from '../Workspace/pageLoads'
 import { gridConfigToJson } from './gridConfig'
+import { NestedRouterBoundary } from './NestedRouterBoundary'
 import { useGridStore } from './gridStore'
 import { livePreviewProject, previewWiring } from './livePreview'
 import { PreviewDevTools, PreviewDevToolsToggle, type ActionLogEntry, type ApiLogEntry } from './PreviewDevTools'
@@ -129,28 +126,6 @@ class PreviewErrorBoundary extends Component<{ children: ReactNode }, BoundarySt
     }
     return this.props.children
   }
-}
-
-/**
- * Resets react-router's contexts so a `MemoryRouter` can mount inside the
- * studio's `BrowserRouter` (the `Router` invariant only checks that no
- * location context is above it; the route context reset keeps the nested
- * `useRoutes` from prefixing the studio's `/p/:projectId/...` path).
- */
-function NestedRouterBoundary({ children }: { children: ReactNode }) {
-  return (
-    <UNSAFE_LocationContext.Provider
-      value={null as unknown as ContextType<typeof UNSAFE_LocationContext>}
-    >
-      <UNSAFE_NavigationContext.Provider
-        value={null as unknown as ContextType<typeof UNSAFE_NavigationContext>}
-      >
-        <UNSAFE_RouteContext.Provider value={{ outlet: null, matches: [], isDataRoute: false }}>
-          {children}
-        </UNSAFE_RouteContext.Provider>
-      </UNSAFE_NavigationContext.Provider>
-    </UNSAFE_LocationContext.Provider>
-  )
 }
 
 /** `/countries/:code` + `{code: 'TH'}` → `/countries/TH`; an unfilled param

@@ -1,23 +1,9 @@
-import * as Tooltip from "@radix-ui/react-tooltip";
 import { DropdownMenu, Theme } from "@radix-ui/themes";
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type CSSProperties,
-  type ReactNode,
-} from "react";
-import {
-  matchPath,
-  useLocation,
-  useNavigate,
-  useParams,
-  useSearchParams,
-} from "react-router-dom";
-import type { AppBarConfig, MenuItem, NavigateTarget, PageTransition, TMenu, TPageEntries } from "./@types";
+import { useCallback, useContext, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import type { AppBarConfig, MenuItem, NavigateTarget, PageTransition, SidebarConfig, TMenu, TPageEntries } from "./@types";
+import { AppSidebar, MenuDropdownEntry, MenuIconsContext } from "./AppSidebar";
+import { collectPageKeys, containsActive, isDivider, isExternal, isGroup, isTargetActive } from "./core/menuItems";
 import { PageTransitionContext } from "./core/pageTransition";
 import { appBarStyle, appBarTone, type AppBarTone } from "./core/appBarStyle";
 import { useTheme } from "./context";
@@ -53,6 +39,11 @@ export type AppShellProps = {
   /** Show the collapse-to-icon-rail toggle. Default `true`. */
   collapsible?: boolean;
   /**
+   * The sidebar's look (`"plain"` / `"pill"`, colour overrides, rail width)
+   * and where its collapse toggle sits (top bar or sidebar footer).
+   */
+  sidebar?: SidebarConfig;
+  /**
    * Where `menu` renders. `"sidebar"` (default): the collapsible side panel.
    * `"top"`: a horizontal strip in the top bar (groups become dropdowns) and no
    * sidebar. Below `md` both fall back to the off-canvas drawer.
@@ -73,49 +64,6 @@ export type AppShellProps = {
 
 const COLLAPSE_STORAGE_KEY = "gummy-ui-sidebar-collapsed";
 
-/** `menuIcons` for every entry below the shell (a context beats threading it through six components). */
-const MenuIconsContext = createContext(true);
-const RAIL_WIDTH = "3.5rem";
-
-const isDivider = (i: MenuItem): i is { divider: true } => "divider" in i;
-const isGroup = (i: MenuItem): i is Extract<MenuItem, { items: MenuItem[] }> => "items" in i;
-const isPageLink = (i: MenuItem): i is Extract<MenuItem, { navigate: NavigateTarget }> =>
-  "navigate" in i;
-const isExternal = (i: MenuItem): i is Extract<MenuItem, { href: string }> => "href" in i;
-
-/**
- * A page link is active when its page's path matches the location and every
- * fixed (`value`) param equals the matched one. Params read from the URL or
- * state can't be compared statically and are treated as matching.
- */
-function isTargetActive(target: NavigateTarget, pages: TPageEntries, pathname: string): boolean {
-  const page = pages[target.page];
-  if (!page) return false;
-  const m = matchPath({ path: page.path, end: true }, pathname);
-  if (!m) return false;
-  for (const [k, dv] of Object.entries(target.params ?? {})) {
-    if (dv.type === "value" && String(dv.value) !== m.params[k]) return false;
-  }
-  return true;
-}
-
-function containsActive(items: MenuItem[], pages: TPageEntries, pathname: string): boolean {
-  return items.some((i) =>
-    isGroup(i)
-      ? containsActive(i.items, pages, pathname)
-      : isPageLink(i) && isTargetActive(i.navigate, pages, pathname)
-  );
-}
-
-/** Every page key the menu references, for the mount-time validation. */
-function collectPageKeys(items: MenuItem[], out: string[] = []): string[] {
-  for (const i of items) {
-    if (isGroup(i)) collectPageKeys(i.items, out);
-    else if (isPageLink(i)) out.push(i.navigate.page);
-  }
-  return out;
-}
-
 function readCollapsed(): boolean {
   try {
     return window.localStorage.getItem(COLLAPSE_STORAGE_KEY) === "1";
@@ -126,18 +74,6 @@ function readCollapsed(): boolean {
 
 // Literal class strings (Tailwind only emits what it can scan). Surfaces use
 // Radix theme vars so they follow the accent and flip with appearance.
-// Idle and active colours are alternatives, never stacked: both `text-*`
-// utilities on one element resolve by their order in the compiled stylesheet,
-// not in the class list, and the grey won — the active label vanished into the
-// accent bar. The active text follows `menuActiveColor` (the
-// `--gummy-menu-active-fg` var the shell sets), else the accent's contrast.
-const ITEM_LAYOUT =
-  "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm no-underline transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-8)]";
-const ITEM_IDLE = "text-[var(--gray-11)] hover:bg-[var(--gray-3)] hover:text-[var(--gray-12)]";
-const ITEM_ACTIVE =
-  "bg-[var(--accent-9)] text-[var(--gummy-menu-active-fg,var(--accent-contrast))] hover:bg-[var(--accent-10)] hover:text-[var(--gummy-menu-active-fg,var(--accent-contrast))]";
-const GROUP_HEADER =
-  "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--gray-10)] hover:text-[var(--gray-12)]";
 const TOP_BUTTON =
   "inline-flex h-8 w-8 items-center justify-center rounded-md text-[var(--gray-11)] hover:bg-[var(--gray-3)] hover:text-[var(--gray-12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-8)]";
 // `appBar.variant: "accent"` paints the bar in the accent; everything sitting
@@ -159,170 +95,6 @@ const BAR_DIVIDER_CUSTOM = "border-[var(--gummy-bar-fg)] opacity-40";
 const BAR_CLASS: Record<AppBarTone, string> = { panel: BAR_PANEL, accent: BAR_ACCENT, custom: BAR_CUSTOM };
 const TOP_BUTTON_CLASS: Record<AppBarTone, string> = { panel: TOP_BUTTON, accent: TOP_BUTTON_ACCENT, custom: TOP_BUTTON_CUSTOM };
 const BAR_DIVIDER_CLASS: Record<AppBarTone, string> = { panel: BAR_DIVIDER, accent: BAR_DIVIDER_ACCENT, custom: BAR_DIVIDER_CUSTOM };
-
-type ItemProps = {
-  item: MenuItem;
-  depth: number;
-  rail: boolean;
-  pages: TPageEntries;
-  pathname: string;
-  onNavigated: () => void;
-};
-
-function RailTooltip({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <Tooltip.Root delayDuration={200}>
-      <Tooltip.Trigger asChild>{children}</Tooltip.Trigger>
-      <Tooltip.Portal>
-        <Tooltip.Content
-          side="right"
-          sideOffset={6}
-          className="z-50 rounded-md bg-[var(--gray-12)] px-2 py-1 text-xs text-[var(--gray-1)] shadow-md"
-        >
-          {label}
-          <Tooltip.Arrow className="fill-[var(--gray-12)]" />
-        </Tooltip.Content>
-      </Tooltip.Portal>
-    </Tooltip.Root>
-  );
-}
-
-function MenuEntry({ item, depth, rail, pages, pathname, onNavigated }: ItemProps) {
-  const showIcons = useContext(MenuIconsContext);
-  const navigate = useNavigate();
-  const params = useParams();
-  const [searchParams] = useSearchParams();
-  const indent: CSSProperties = rail ? {} : { paddingLeft: `${0.5 + depth * 0.75}rem` };
-
-  if (isDivider(item)) return <li role="separator" className="my-2 border-t border-[var(--gray-6)]" />;
-
-  if (isGroup(item)) {
-    return (
-      <MenuGroup item={item} depth={depth} rail={rail} pages={pages} pathname={pathname} onNavigated={onNavigated} />
-    );
-  }
-
-  const icon = showIcons && item.icon ? <Icon icon={item.icon} size={16} className="shrink-0" /> : null;
-  const content = (
-    <>
-      {icon ?? (rail ? <span className="text-xs font-semibold">{item.label.slice(0, 2)}</span> : null)}
-      {!rail && <span className="truncate">{item.label}</span>}
-      {!rail && isExternal(item) && <Icon icon="external" size={12} className="ml-auto shrink-0 opacity-60" />}
-    </>
-  );
-  const railClass = rail ? "justify-center px-0" : "";
-
-  if (isExternal(item)) {
-    const a = (
-      <a
-        href={item.href}
-        target={item.newTab ? "_blank" : undefined}
-        rel={item.newTab ? "noopener noreferrer" : undefined}
-        className={`${ITEM_LAYOUT} ${ITEM_IDLE} ${railClass}`}
-        style={indent}
-        aria-label={rail ? item.label : undefined}
-      >
-        {content}
-      </a>
-    );
-    return <li>{rail ? <RailTooltip label={item.label}>{a}</RailTooltip> : a}</li>;
-  }
-
-  // Page link: resolved against the shell's pages; an unresolvable one (page
-  // deleted, missing param) renders disabled — the mount-time check already warned.
-  const url = buildNavigateUrl(item.navigate, pages, { params, searchParams }, true);
-  const active = isTargetActive(item.navigate, pages, pathname);
-  const a = (
-    <a
-      href={url ?? "#"}
-      aria-current={active ? "page" : undefined}
-      aria-disabled={url ? undefined : true}
-      aria-label={rail ? item.label : undefined}
-      className={`${ITEM_LAYOUT} ${active ? ITEM_ACTIVE : ITEM_IDLE} ${railClass} ${url ? "" : "opacity-50"}`}
-      style={indent}
-      onClick={(e) => {
-        e.preventDefault();
-        if (!url) return;
-        navigate(url, { replace: !!item.navigate.replace });
-        onNavigated();
-      }}
-    >
-      {content}
-    </a>
-  );
-  return <li>{rail ? <RailTooltip label={item.label}>{a}</RailTooltip> : a}</li>;
-}
-
-function MenuGroup({ item, depth, rail, pages, pathname, onNavigated }: ItemProps & { item: Extract<MenuItem, { items: MenuItem[] }> }) {
-  const showIcons = useContext(MenuIconsContext);
-  const holdsActive = containsActive(item.items, pages, pathname);
-  const [open, setOpen] = useState(() => !item.collapsed || holdsActive);
-  // Navigating into the group from elsewhere (a row click, a button) opens it.
-  useEffect(() => {
-    if (holdsActive) setOpen(true);
-  }, [holdsActive]);
-
-  // The icon rail has no room for headers: a group's links show flat.
-  if (rail) {
-    return (
-      <>
-        {item.items.map((child, i) => (
-          <MenuEntry key={i} item={child} depth={depth} rail pages={pages} pathname={pathname} onNavigated={onNavigated} />
-        ))}
-      </>
-    );
-  }
-  return (
-    <li>
-      <button
-        type="button"
-        className={GROUP_HEADER}
-        style={{ paddingLeft: `${0.5 + depth * 0.75}rem` }}
-        aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
-      >
-        {showIcons && item.icon && <Icon icon={item.icon} size={14} className="shrink-0" />}
-        <span className="truncate">{item.label}</span>
-        <Icon icon={open ? "chevronDown" : "chevronRight"} size={14} className="ml-auto shrink-0" />
-      </button>
-      {open && (
-        <ul className="mt-0.5 space-y-0.5">
-          {item.items.map((child, i) => (
-            <MenuEntry key={i} item={child} depth={depth + 1} rail={false} pages={pages} pathname={pathname} onNavigated={onNavigated} />
-          ))}
-        </ul>
-      )}
-    </li>
-  );
-}
-
-function SidebarNav({ menu, pages, rail, onNavigated, footer }: { menu: TMenu; pages: TPageEntries; rail: boolean; onNavigated: () => void; footer?: ReactNode }) {
-  const { pathname } = useLocation();
-  const { components } = useTheme();
-  const color = components.sidebar?.color;
-  const nav = (
-    <nav aria-label="Main" className="flex min-h-0 flex-1 flex-col">
-      <ul className="flex-1 space-y-0.5 overflow-y-auto p-2">
-        {menu.map((item, i) => (
-          <MenuEntry key={i} item={item} depth={0} rail={rail} pages={pages} pathname={pathname} onNavigated={onNavigated} />
-        ))}
-      </ul>
-      {footer && !rail && <div className="border-t border-[var(--gray-6)] p-2 text-sm text-[var(--gray-11)]">{footer}</div>}
-    </nav>
-  );
-  // A per-component accent re-scopes the Radix `--accent-*` vars for the nav only.
-  return (
-    <Tooltip.Provider>
-      {color ? (
-        <Theme accentColor={color} hasBackground={false} asChild>
-          {nav}
-        </Theme>
-      ) : (
-        nav
-      )}
-    </Tooltip.Provider>
-  );
-}
 
 // Like the sidebar: each class string is a whole state (layout + colours), the
 // active one used *instead of* the idle one, so their text colours never stack.
@@ -369,7 +141,7 @@ function TopEntry({ item, pages, pathname, tone = "panel" }: TopEntryProps) {
           </DropdownMenu.Trigger>
           <DropdownMenu.Content size="2" align="start">
             {item.items.map((child, i) => (
-              <TopDropdownEntry key={i} item={child} pages={pages} pathname={pathname} />
+              <MenuDropdownEntry key={i} item={child} pages={pages} pathname={pathname} />
             ))}
           </DropdownMenu.Content>
         </DropdownMenu.Root>
@@ -412,56 +184,6 @@ function TopEntry({ item, pages, pathname, tone = "panel" }: TopEntryProps) {
         <span className="truncate">{item.label}</span>
       </a>
     </li>
-  );
-}
-
-/** A group's children inside the top-strip dropdown (nested groups flatten to a labelled section). */
-function TopDropdownEntry({ item, pages, pathname }: TopEntryProps) {
-  const showIcons = useContext(MenuIconsContext);
-  const navigate = useNavigate();
-  const params = useParams();
-  const [searchParams] = useSearchParams();
-
-  if (isDivider(item)) return <DropdownMenu.Separator />;
-  if (isGroup(item)) {
-    return (
-      <>
-        <DropdownMenu.Label>{item.label}</DropdownMenu.Label>
-        {item.items.map((child, i) => (
-          <TopDropdownEntry key={i} item={child} pages={pages} pathname={pathname} />
-        ))}
-      </>
-    );
-  }
-  const icon = showIcons && item.icon ? <Icon icon={item.icon} size={14} className="shrink-0" /> : null;
-  if (isExternal(item)) {
-    return (
-      <DropdownMenu.Item
-        onSelect={() => {
-          if (item.newTab) window.open(item.href, "_blank", "noopener,noreferrer");
-          else window.location.assign(item.href);
-        }}
-      >
-        {icon}
-        {item.label}
-        <Icon icon="external" size={12} className="ml-auto shrink-0 opacity-60" />
-      </DropdownMenu.Item>
-    );
-  }
-  const url = buildNavigateUrl(item.navigate, pages, { params, searchParams }, true);
-  const active = isTargetActive(item.navigate, pages, pathname);
-  return (
-    <DropdownMenu.Item
-      disabled={!url}
-      data-active={active || undefined}
-      className={active ? "font-semibold" : undefined}
-      onSelect={() => {
-        if (url) navigate(url, { replace: !!item.navigate.replace });
-      }}
-    >
-      {icon}
-      {item.label}
-    </DropdownMenu.Item>
   );
 }
 
@@ -602,6 +324,7 @@ export function AppShell({
   footer,
   sidebarWidth = "16rem",
   collapsible = true,
+  sidebar: sidebarConfig,
   navigation = "sidebar",
   breadcrumbs = true,
   height = "100dvh",
@@ -633,7 +356,7 @@ export function AppShell({
   }, [menu, pages]);
 
   const rail = sidebar && collapsible && collapsed;
-  const asideStyle = useMemo<CSSProperties>(() => ({ width: rail ? RAIL_WIDTH : sidebarWidth }), [rail, sidebarWidth]);
+  const footerToggle = sidebarConfig?.toggle === "footer";
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
 
   const bar = appBar ?? {};
@@ -650,17 +373,17 @@ export function AppShell({
     >
       <button
         type="button"
-        className={`${topButton} md:hidden`}
+        className={`${topButton} gummy-shell-mobile`}
         aria-label="Open navigation"
         aria-expanded={drawerOpen}
         onClick={() => setDrawerOpen(true)}
       >
         <Icon icon="menu" size={18} />
       </button>
-      {sidebar && collapsible && (
+      {sidebar && collapsible && !footerToggle && (
         <button
           type="button"
-          className={`${topButton} hidden md:inline-flex`}
+          className={`${topButton} gummy-shell-desktop`}
           aria-label={rail ? "Expand sidebar" : "Collapse sidebar"}
           aria-pressed={rail}
           onClick={toggleCollapsed}
@@ -701,13 +424,18 @@ export function AppShell({
 
         <div className="flex min-h-0 flex-1">
           {sidebar && (
-            <aside
-              className="hidden shrink-0 flex-col border-r border-[var(--gray-6)] bg-[var(--color-panel-solid)] transition-[width] duration-200 md:flex"
-              style={asideStyle}
-              data-collapsed={rail || undefined}
-            >
-              <SidebarNav menu={menu} pages={pages} rail={rail} onNavigated={closeDrawer} footer={footer} />
-            </aside>
+            <AppSidebar
+              menu={menu}
+              pages={pages}
+              sidebar={sidebarConfig}
+              rail={rail}
+              onToggleRail={collapsible ? toggleCollapsed : undefined}
+              toggleIcons={bar.sidebarToggle}
+              footer={footer}
+              onNavigated={closeDrawer}
+              width={sidebarWidth}
+              className="gummy-side-desktop border-r border-[var(--gray-6)]"
+            />
           )}
           <main className="min-w-0 flex-1 overflow-auto">
             <PageTransitionContext.Provider value={pageTransition}>{children}</PageTransitionContext.Provider>
@@ -729,7 +457,16 @@ export function AppShell({
                   <div className="flex min-w-0 items-center gap-2 truncate text-base font-semibold">{brandNode}</div>
                 )}
               </div>
-              <SidebarNav menu={menu} pages={pages} rail={false} onNavigated={closeDrawer} footer={footer} />
+              <AppSidebar
+                as="div"
+                menu={menu}
+                pages={pages}
+                sidebar={sidebarConfig}
+                footer={footer}
+                onNavigated={closeDrawer}
+                width="100%"
+                className="flex min-h-0 flex-1"
+              />
             </aside>
           </div>
         )}

@@ -2200,6 +2200,36 @@ export type AppBarConfig = {
   sidebarToggle?: { hide?: keyof typeof IconData; show?: keyof typeof IconData };
 };
 
+/**
+ * The `AppShell` sidebar's look, as plain config. `variant: "plain"` (default)
+ * is the flat list; `"pill"` draws every item as a tinted card, the active one
+ * in a gradient beside an indicator bar at the sidebar's edge. The colours
+ * follow the Radix accent unless overridden (any CSS colour).
+ */
+export type SidebarConfig = {
+  variant?: "plain" | "pill";
+  /**
+   * Where the collapse-to-rail toggle sits: `"header"` (default) — the top
+   * bar's button; `"footer"` — an icon + label row at the bottom of the
+   * sidebar (icon only on the rail). Glyphs: `AppBarConfig.sidebarToggle`.
+   */
+  toggle?: "header" | "footer";
+  /** Label of the footer toggle while expanded. Default `Hide Menu`. */
+  toggleLabel?: string;
+  /** CSS width of the icon rail. Default `3.5rem` (plain) / `4.5rem` (pill). */
+  railWidth?: string;
+  /** Idle item card colour (pill). Default `--accent-2`. */
+  itemBackground?: string;
+  /** Active item colour (pill); `activeGradient` wins. Default: a `--accent-3` → `--accent-5` gradient. */
+  activeBackground?: string;
+  /** Active item gradient (pill): `from` → `to` at `angle` degrees (default `90`). */
+  activeGradient?: { from: string; to: string; angle?: number };
+  /** The bar at the sidebar's edge beside the active item. Default `true` for pill, `false` for plain. */
+  indicator?: boolean;
+  /** Indicator colour. Default `--accent-11`. */
+  indicatorColor?: string;
+};
+
 export type SnackbarElement = {
   type: SnackbarVariant;
   message: string;

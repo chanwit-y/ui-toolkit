@@ -1,0 +1,107 @@
+{
+  "containers": [
+    {
+      "id": "page-home",
+      "name": "page-home",
+      "isArray": false,
+      "bins": [
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "Welcome back",
+            "variant": "h3",
+            "weight": "bold"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "Keep up to date with what’s happening across Gummy.",
+            "variant": "body2",
+            "color": "gray"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "html",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "favorites",
+            "html": "<h4 style=\"margin:8px 0 12px;font-size:18px;font-weight:600;color:var(--accent-11)\">Favorite apps</h4><div style=\"display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:20px\"><a href=\"#\" style=\"display:flex;flex-direction:column;align-items:center;gap:8px;text-decoration:none;color:var(--gray-12)\">\n  <span style=\"display:flex;width:72px;height:72px;align-items:center;justify-content:center;border-radius:18px;background:var(--iris-3);color:var(--iris-11);font-size:26px;font-weight:700;box-shadow:0 1px 2px var(--gray-a4)\">D</span>\n  <span style=\"font-size:13px;font-weight:500\">DOA</span>\n</a><a href=\"#\" style=\"display:flex;flex-direction:column;align-items:center;gap:8px;text-decoration:none;color:var(--gray-12)\">\n  <span style=\"display:flex;width:72px;height:72px;align-items:center;justify-content:center;border-radius:18px;background:var(--grass-3);color:var(--grass-11);font-size:26px;font-weight:700;box-shadow:0 1px 2px var(--gray-a4)\">L</span>\n  <span style=\"font-size:13px;font-weight:500\">Leave</span>\n</a><a href=\"#\" style=\"display:flex;flex-direction:column;align-items:center;gap:8px;text-decoration:none;color:var(--gray-12)\">\n  <span style=\"display:flex;width:72px;height:72px;align-items:center;justify-content:center;border-radius:18px;background:var(--amber-3);color:var(--amber-11);font-size:26px;font-weight:700;box-shadow:0 1px 2px var(--gray-a4)\">E</span>\n  <span style=\"font-size:13px;font-weight:500\">Expense</span>\n</a><a href=\"#\" style=\"display:flex;flex-direction:column;align-items:center;gap:8px;text-decoration:none;color:var(--gray-12)\">\n  <span style=\"display:flex;width:72px;height:72px;align-items:center;justify-content:center;border-radius:18px;background:var(--cyan-3);color:var(--cyan-11);font-size:26px;font-weight:700;box-shadow:0 1px 2px var(--gray-a4)\">R</span>\n  <span style=\"font-size:13px;font-weight:500\">Room booking</span>\n</a></div>",
+            "prose": false
+          }
+        },
+        {
+          "sm": "6",
+          "md": "6",
+          "lg": "6",
+          "xl": "6",
+          "type": "html",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "approvalsSummary",
+            "html": "<h4 style=\"margin:8px 0 12px;font-size:18px;font-weight:600;color:var(--accent-11)\">Approvals</h4>\n<div style=\"border-radius:16px;padding:20px;background:linear-gradient(135deg,var(--indigo-12),var(--iris-10));color:white\">\n  <span style=\"display:inline-flex;padding:2px 10px;border:1px solid rgba(255,255,255,.4);border-radius:9999px;font-size:12px\">Overview</span>\n  <div style=\"display:flex;gap:32px;margin-top:16px\">\n    <div><div style=\"font-size:30px;font-weight:700\">4</div><div style=\"font-size:13px;opacity:.8\">waiting for you</div></div>\n    <div><div style=\"font-size:30px;font-weight:700\">12</div><div style=\"font-size:13px;opacity:.8\">approved this month</div></div>\n  </div>\n</div>",
+            "prose": false
+          }
+        },
+        {
+          "sm": "6",
+          "md": "6",
+          "lg": "6",
+          "xl": "6",
+          "type": "html",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "latestNews",
+            "html": "<h4 style=\"margin:8px 0 12px;font-size:18px;font-weight:600;color:var(--accent-11)\">Communications</h4><div style=\"display:grid;gap:12px\"><article style=\"border:1px solid var(--gray-a5);border-radius:14px;background:var(--color-panel-solid);padding:16px;display:flex;gap:14px\">\n  <span style=\"display:flex;width:44px;height:44px;flex-shrink:0;align-items:center;justify-content:center;border-radius:12px;background:var(--accent-9);color:var(--accent-contrast);font-weight:700\">A</span>\n  <span style=\"min-width:0\">\n    <span style=\"display:block;font-size:12px;color:var(--gray-11)\">Announcement · Today</span>\n    <span style=\"display:block;margin-top:2px;font-weight:600;color:var(--gray-12)\">Dear Team, the new office opens on Monday</span>\n    <span style=\"display:block;margin-top:4px;font-size:14px;color:var(--gray-11)\">Desks on floors 7 and 8 are ready; badges work from 08:00. Parking passes stay the same.</span>\n  </span>\n</article></div>",
+            "prose": false
+          }
+        },
+        {
+          "sm": "6",
+          "md": "6",
+          "lg": "3",
+          "xl": "3",
+          "type": "button",
+          "justifySelf": "start",
+          "alignSelf": "stretch",
+          "element": {
+            "label": "Go to approvals",
+            "icon": "stamp",
+            "variant": "outlined",
+            "actions": [
+              "Navigate"
+            ],
+            "navigate": {
+              "page": "approvals"
+            }
+          }
+        }
+      ],
+      "gap": "16px",
+      "justifyItems": "stretch",
+      "alignItems": "stretch",
+      "justifyContent": "start",
+      "alignContent": "start",
+      "gridAutoFlow": "row"
+    }
+  ]
+}

@@ -59,7 +59,10 @@ export type { PageRouterProps } from "./components/core/PageRouter";
 export { PagesProvider, usePages, useNavigateTo, buildNavigateUrl, pathParamNames, matchPageKey, matchPage, breadcrumbTrail, usePageTitle } from "./components/core/pages";
 export { AppShell } from "./components/AppShell";
 export type { AppShellProps } from "./components/AppShell";
-export type { AppBarConfig, MenuItem, TMenu } from "./components/@types";
+export { AppSidebar } from "./components/AppSidebar";
+export type { AppSidebarProps } from "./components/AppSidebar";
+export type { AppBarConfig, MenuItem, SidebarConfig, TMenu } from "./components/@types";
+export { sidebarStyle, sidebarVariant, sidebarRailWidth, sidebarIndicator, sidebarActiveBackground, type SidebarVariant } from "./components/core/sidebarStyle";
 export { appBarTone, appBarStyle, appBarBackground, appBarForeground, colorLuminance, type AppBarTone } from "./components/core/appBarStyle";
 // Runtime rendering of a studio project document (see the grilled library / CLI
 // design): <GummyApp project={json} …/> inside the consumer's router.

@@ -9,9 +9,11 @@ mock API in `api/` is the backend. Nothing in `src/` describes a screen.
 demo/
 ├─ gummy/
 │  ├─ workspace.json            the studio's state — open it with `bun run studio`
-│  └─ projects/book-shop/       the project the app renders (written by the studio on every save)
-│     ├─ project.json           routes (each page's `src`), menu, app bar, theme, models, endpoints, sign-in
-│     └─ pages/*.json           one file per page, its own chunk, fetched on the page's first visit
+│  └─ projects/
+│     ├─ book-shop/             the project the app renders (written by the studio on every save)
+│     │  ├─ project.json        routes (each page's `src`), menu, app bar, theme, models, endpoints, sign-in
+│     │  └─ pages/*.json        one file per page, its own chunk, fetched on the page's first visit
+│     └─ gummy-portal/          a second project: the pill sidebar (see "Gummy Portal" below)
 ├─ api/                         the Book shop mock API (Hono on Bun, port 9100) — README.md is its contract
 ├─ src/
 │  ├─ main.tsx                  BrowserRouter + the library stylesheet
@@ -37,6 +39,21 @@ bun run --cwd demo test          # the mock API's tests + the project ↔ API co
 ```
 
 `bun run --cwd demo api` / `app` start one half alone.
+
+## Gummy Portal — the other sidebar
+
+The same workspace holds a second project, **Gummy Portal**: a small staff
+portal (Home, Applications, Approvals, Communications, a Settings group) with
+static pages and no API or sign-in. It exists to show the shell's **pill**
+sidebar beside the Book shop's plain one: tinted item cards, a sky → lavender
+gradient on the active item with an indigo bar at the edge, groups that open in
+place (a flyout on the icon rail) and a "Hide Menu" toggle at the sidebar's
+foot. All of it is `shell.sidebar` in its `project.json`, edited in the
+studio's Menu tab → Sidebar.
+
+```bash
+bun run --cwd demo app:portal    # http://localhost:3402 (VITE_GUMMY_PROJECT=gummy-portal)
+```
 
 ## Who you are
 
@@ -77,7 +94,8 @@ over the Sign-in profile.
 
 The workspace was first written by `bun apps/studio/scripts/bookshop.ts`
 (from the repo root), which builds it with the studio's own seed helpers
-(`apps/studio/src/components/seed/bookshop/`). It refuses to overwrite an
+(`apps/studio/src/components/seed/bookshop/`, Gummy Portal from
+`seed/portal/`). It refuses to overwrite an
 existing workspace — `--force` regenerates it and throws studio edits away.
 
 ## The mock API

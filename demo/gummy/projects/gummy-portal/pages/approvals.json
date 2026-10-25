@@ -1,0 +1,59 @@
+{
+  "containers": [
+    {
+      "id": "page-approvals",
+      "name": "page-approvals",
+      "isArray": false,
+      "bins": [
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "Approvals",
+            "variant": "h3",
+            "weight": "bold"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "Requests waiting for your decision, newest first.",
+            "variant": "body2",
+            "color": "gray"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "html",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "requests",
+            "html": "<div style=\"border:1px solid var(--gray-a5);border-radius:14px;background:var(--color-panel-solid);padding:16px;padding:4px 16px\"><div style=\"display:flex;align-items:center;gap:12px;padding:12px 0;border-top:0\">\n  <span style=\"display:inline-flex;padding:2px 8px;border-radius:9999px;background:var(--accent-3);color:var(--accent-11);font-size:12px;font-weight:500\">Leave</span>\n  <span style=\"flex:1;min-width:0\">\n    <span style=\"display:block;font-weight:500;color:var(--gray-12)\">Leave — 3 days annual leave</span>\n    <span style=\"display:block;font-size:12px;color:var(--gray-11)\">Pimchanok S. · Today, 09:12</span>\n  </span>\n  <span style=\"font-size:13px;font-weight:500;color:var(--accent-11)\">Review →</span>\n</div><div style=\"display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--gray-a4)\">\n  <span style=\"display:inline-flex;padding:2px 8px;border-radius:9999px;background:var(--accent-3);color:var(--accent-11);font-size:12px;font-weight:500\">Expense</span>\n  <span style=\"flex:1;min-width:0\">\n    <span style=\"display:block;font-weight:500;color:var(--gray-12)\">Expense claim — client dinner</span>\n    <span style=\"display:block;font-size:12px;color:var(--gray-11)\">Nadia S. · Yesterday</span>\n  </span>\n  <span style=\"font-size:13px;font-weight:500;color:var(--accent-11)\">Review →</span>\n</div><div style=\"display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--gray-a4)\">\n  <span style=\"display:inline-flex;padding:2px 8px;border-radius:9999px;background:var(--accent-3);color:var(--accent-11);font-size:12px;font-weight:500\">Procurement</span>\n  <span style=\"flex:1;min-width:0\">\n    <span style=\"display:block;font-weight:500;color:var(--gray-12)\">Purchase request — 4 monitors</span>\n    <span style=\"display:block;font-size:12px;color:var(--gray-11)\">Somchai K. · 2 days ago</span>\n  </span>\n  <span style=\"font-size:13px;font-weight:500;color:var(--accent-11)\">Review →</span>\n</div><div style=\"display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--gray-a4)\">\n  <span style=\"display:inline-flex;padding:2px 8px;border-radius:9999px;background:var(--accent-3);color:var(--accent-11);font-size:12px;font-weight:500\">Travel</span>\n  <span style=\"flex:1;min-width:0\">\n    <span style=\"display:block;font-weight:500;color:var(--gray-12)\">Travel — Singapore, 12–14 Nov</span>\n    <span style=\"display:block;font-size:12px;color:var(--gray-11)\">Arthit P. · 3 days ago</span>\n  </span>\n  <span style=\"font-size:13px;font-weight:500;color:var(--accent-11)\">Review →</span>\n</div></div>",
+            "prose": false
+          }
+        }
+      ],
+      "gap": "16px",
+      "justifyItems": "stretch",
+      "alignItems": "stretch",
+      "justifyContent": "start",
+      "alignContent": "start",
+      "gridAutoFlow": "row"
+    }
+  ]
+}

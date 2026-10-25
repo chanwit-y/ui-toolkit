@@ -1,0 +1,59 @@
+{
+  "containers": [
+    {
+      "id": "page-settingsNotifications",
+      "name": "page-settingsNotifications",
+      "isArray": false,
+      "bins": [
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "Notifications",
+            "variant": "h3",
+            "weight": "bold"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "Choose what reaches your inbox.",
+            "variant": "body2",
+            "color": "gray"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "html",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "notifications",
+            "html": "<div style=\"border:1px solid var(--gray-a5);border-radius:14px;background:var(--color-panel-solid);padding:16px;padding:4px 16px\"><div style=\"display:flex;align-items:center;gap:12px;padding:14px 0;border-top:0\">\n  <span style=\"flex:1\"><span style=\"display:block;font-weight:500;color:var(--gray-12)\">Approvals</span><span style=\"display:block;font-size:12px;color:var(--gray-11)\">A request waits for you</span></span>\n  <span style=\"font-size:14px;color:var(--gray-12)\">Email + portal</span>\n</div><div style=\"display:flex;align-items:center;gap:12px;padding:14px 0;border-top:1px solid var(--gray-a4)\">\n  <span style=\"flex:1\"><span style=\"display:block;font-weight:500;color:var(--gray-12)\">Communications</span><span style=\"display:block;font-size:12px;color:var(--gray-11)\">A new announcement is posted</span></span>\n  <span style=\"font-size:14px;color:var(--gray-12)\">Portal only</span>\n</div><div style=\"display:flex;align-items:center;gap:12px;padding:14px 0;border-top:1px solid var(--gray-a4)\">\n  <span style=\"flex:1\"><span style=\"display:block;font-weight:500;color:var(--gray-12)\">Weekly digest</span><span style=\"display:block;font-size:12px;color:var(--gray-11)\">Monday, 08:00</span></span>\n  <span style=\"font-size:14px;color:var(--gray-12)\">Email</span>\n</div></div>",
+            "prose": false
+          }
+        }
+      ],
+      "gap": "16px",
+      "justifyItems": "stretch",
+      "alignItems": "stretch",
+      "justifyContent": "start",
+      "alignContent": "start",
+      "gridAutoFlow": "row"
+    }
+  ]
+}

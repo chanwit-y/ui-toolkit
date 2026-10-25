@@ -78,6 +78,30 @@ export type StudioPageTransition = {
   easing: 'ease-out' | 'ease-in-out' | 'linear'
 }
 
+/**
+ * The exported app's sidebar look (the library `SidebarConfig`, see the
+ * grilled design `sidebar-pill-variant`); empty strings mean unset.
+ */
+export type SidebarSettings = {
+  variant: 'plain' | 'pill'
+  /** Collapse toggle in the top bar, or an icon + label row at the sidebar's foot. */
+  toggle: 'header' | 'footer'
+  /** The footer toggle's label (empty = the library's "Hide Menu"). */
+  toggleLabel: string
+  /** CSS width of the icon rail (empty = 3.5rem plain / 4.5rem pill). */
+  railWidth: string
+  /** Idle pill colour (empty = `--accent-2`). */
+  itemBackground: string
+  /** Active pill colour, used while the gradient is off (empty = the accent gradient). */
+  activeBackground: string
+  /** Active pill gradient (wins while enabled, both stops needed). */
+  activeGradient: { enabled: boolean; from: string; to: string; angle: number }
+  /** The edge bar beside the active item; `null` = the variant's default (pill on, plain off). */
+  indicator: boolean | null
+  /** Indicator colour (empty = `--accent-11`). */
+  indicatorColor: string
+}
+
 export type ShellSettings = {
   /** Where the menu renders: the collapsible sidebar or a strip in the top bar. */
   navigation: 'sidebar' | 'top'
@@ -100,6 +124,8 @@ export type ShellSettings = {
   pageTransition?: StudioPageTransition
   /** Sidebar placement: offer the collapse-to-rail toggle. */
   collapsible: boolean
+  /** Sidebar look and collapse-toggle placement (workspace v53). */
+  sidebar: SidebarSettings
 }
 
 /**
@@ -212,7 +238,7 @@ export type ActivityEntry = {
 
 /** The persisted shape (one localStorage key, versioned). */
 export type WorkspaceData = {
-  version: 52
+  version: 53
   /** The portal's own appearance; inside a project the project theme wins. */
   appearance: ThemeAppearance
   /** The mock identity stamped on activity and templates (see `MOCK_USERS`). */

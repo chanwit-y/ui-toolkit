@@ -10,14 +10,17 @@ import { builtinTemplates } from '../templates'
 import { bookshopEndpoints, bookshopModels, E } from './library'
 import { bookshopPages, P, PRINT_ORDER_ACTION_ID, SALES_CHART_COMPONENT_ID } from './pages'
 import { navigate } from './ui'
+import { portalProject } from '../portal/project'
 
 /**
  * The Book shop demo as a studio workspace (see the grilled design
- * `bookshop-demo`): one project over its own library, signing in through a
- * "Book shop Azure" entry. `bookshopWorkspace()` is what
+ * `bookshop-demo`): the Book shop project over its own library, signing in
+ * through a "Book shop Azure" entry, plus **Gummy Portal** (`../portal`, the
+ * pill-sidebar showcase, no API). `bookshopWorkspace()` is what
  * `scripts/bookshop.ts` writes to `demo/gummy/workspace.json`, and
- * `bookshopFolders()` the exported `projects/book-shop/` beside it — the same
- * exporter the CLI runs on every save.
+ * `bookshopFolders()` the exported `projects/book-shop/` +
+ * `projects/gummy-portal/` beside it — the same exporter the CLI runs on
+ * every save.
  */
 
 export const BOOKSHOP_PROJECT_ID = 'bs-project-book-shop'
@@ -179,10 +182,10 @@ export function bookshopProject(library: LibraryData = bookshopLibrary()): Proje
 export function bookshopWorkspace(): WorkspaceData {
   const library = bookshopLibrary()
   return {
-    version: 52,
+    version: 53,
     appearance: 'light',
     user: 'Chanwit Yimneam',
-    projects: [bookshopProject(library)],
+    projects: [bookshopProject(library), portalProject()],
     library,
     activity: [],
   }
@@ -193,7 +196,7 @@ export function bookshopWorkspaceFile(workspace: WorkspaceData = bookshopWorkspa
   return { state: workspace, version: workspace.version }
 }
 
-/** The exported project folder(s) by file key — `book-shop`. */
+/** The exported project folders by file key — `book-shop`, `gummy-portal`. */
 export function bookshopFolders(workspace: WorkspaceData = bookshopWorkspace()): Record<string, ProjectFolder> {
   return projectFolders(workspace.projects, workspace.library)
 }

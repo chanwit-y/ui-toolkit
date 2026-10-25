@@ -1,6 +1,16 @@
-import { DEFAULT_PAGE_TRANSITION_DURATION, IconData, appBarStyle, appBarTone, playPageTransition } from '@gummy-ui/ui'
+import {
+  AppSidebar,
+  DEFAULT_PAGE_TRANSITION_DURATION,
+  IconData,
+  appBarStyle,
+  appBarTone,
+  playPageTransition,
+  type TMenu,
+  type TPageEntries,
+} from '@gummy-ui/ui'
 import { Play, Plus, Trash2, Upload, X } from 'lucide-react'
 import { useMemo, useRef, useState, type ReactNode } from 'react'
+import { MemoryRouter } from 'react-router-dom'
 import {
   Button,
   CodeViewer,
@@ -13,8 +23,9 @@ import {
   cn,
 } from '../common'
 import { NavigateEditor, WiringHint } from '../Layout/ButtonConfigPanel'
-import { createMenuItem, menuToEngine, pageTransitionToEngine, shellToEngine } from '../Workspace/menu'
-import type { AppBarSettings, MenuItemDef, ShellSettings, StudioPageTransition } from '../Workspace/types'
+import { NestedRouterBoundary } from '../Layout/NestedRouterBoundary'
+import { DEFAULT_SIDEBAR_TOGGLE_LABEL, createMenuItem, menuToEngine, pageTransitionToEngine, shellToEngine } from '../Workspace/menu'
+import type { AppBarSettings, MenuItemDef, PageDef, ShellSettings, SidebarSettings, StudioPageTransition } from '../Workspace/types'
 import { defaultShell } from '../Workspace/snapshots'
 import { useActiveProject, useWorkspaceStore } from '../Workspace/workspaceStore'
 
@@ -216,7 +227,7 @@ function PageTransitionField({ value, onChange }: { value: StudioPageTransition;
 
 /** The bar as the exported app will paint it (title, mark, colour / gradient, padding). */
 function AppBarPreview({ bar, title }: { bar: AppBarSettings; title: string }) {
-  const engine = shellToEngine({ navigation: 'sidebar', breadcrumbs: false, appBar: bar, menuIcons: true, collapsible: true }).appBar ?? {}
+  const engine = shellToEngine({ ...defaultShell(title), breadcrumbs: false, appBar: bar }).appBar ?? {}
   const tone = appBarTone(engine)
   const cls =
     tone === 'panel'
@@ -260,6 +271,251 @@ function CheckboxRow({
       />
       {label}
     </label>
+  )
+}
+
+/** The route the preview opens on: the first page link's page, its fixed params filled. */
+function firstLinkPath(menu: TMenu, pages: TPageEntries): string | undefined {
+  for (const item of menu) {
+    if ('items' in item) {
+      const inner = firstLinkPath(item.items, pages)
+      if (inner) return inner
+    } else if ('navigate' in item) {
+      const page = pages[item.navigate.page]
+      if (!page) continue
+      return page.path.replace(/:([A-Za-z_][A-Za-z0-9_]*)/g, (_, k: string) => {
+        const dv = item.navigate.params?.[k]
+        return dv?.type === 'value' ? String(dv.value) : k
+      })
+    }
+  }
+  return undefined
+}
+
+/**
+ * The library's own `AppSidebar` over the project's real menu, in a memory
+ * router: links navigate (the active item follows), groups open, the footer
+ * toggle and the Expanded / Rail switch collapse it — what the exported app
+ * draws, before opening the Live Preview.
+ */
+function SidebarPreview({ shell, menu, pages }: { shell: ShellSettings; menu: MenuItemDef[]; pages: PageDef[] }) {
+  const [rail, setRail] = useState(false)
+  const engineMenu = useMemo(() => menuToEngine(menu, pages), [menu, pages])
+  const enginePages = useMemo(
+    () => Object.fromEntries(pages.map((p) => [p.key, { path: p.path, title: p.name, containers: [] }])) as TPageEntries,
+    [pages],
+  )
+  const start = useMemo(() => firstLinkPath(engineMenu, enginePages) ?? '/', [engineMenu, enginePages])
+  const engine = shellToEngine(shell)
+  return (
+    <div className="space-y-2">
+      <SegmentedControl
+        aria-label="Sidebar preview mode"
+        options={[
+          { value: 'expanded', label: 'Expanded' },
+          { value: 'rail', label: 'Rail' },
+        ]}
+        value={rail ? 'rail' : 'expanded'}
+        onChange={(v) => setRail(v === 'rail')}
+      />
+      <div className="flex h-80 overflow-hidden rounded-md border border-line bg-[var(--color-background)]">
+        {engineMenu.length === 0 ? (
+          <p className="m-auto text-ui-sm text-ink-3">Add menu items below to see the sidebar.</p>
+        ) : (
+          <NestedRouterBoundary>
+            <MemoryRouter key={start} initialEntries={[start]}>
+              <AppSidebar
+                menu={engineMenu}
+                pages={enginePages}
+                sidebar={engine.sidebar}
+                rail={rail}
+                onToggleRail={shell.collapsible ? () => setRail((r) => !r) : undefined}
+                toggleIcons={engine.appBar?.sidebarToggle}
+                menuIcons={shell.menuIcons}
+                menuActiveColor={engine.menuActiveColor}
+                className="flex h-full border-r border-[var(--gray-6)]"
+              />
+            </MemoryRouter>
+          </NestedRouterBoundary>
+        )}
+        <div aria-hidden="true" className="flex min-w-0 flex-1 flex-col gap-2 p-4">
+          <span className="h-2 w-32 rounded bg-[var(--gray-5)]" />
+          <span className="h-2 w-48 rounded bg-[var(--gray-4)]" />
+          <span className="h-2 w-40 rounded bg-[var(--gray-4)]" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** The Sidebar section: look (plain / pill + colours, indicator, rail width) and the collapse toggle. */
+function SidebarSection({
+  shell,
+  menu,
+  pages,
+  setShell,
+}: {
+  shell: ShellSettings
+  menu: MenuItemDef[]
+  pages: PageDef[]
+  setShell: (patch: Partial<ShellSettings>) => void
+}) {
+  const sb = shell.sidebar
+  const set = (patch: Partial<SidebarSettings>) => setShell({ sidebar: { ...sb, ...patch } })
+  const setToggleIcons = (patch: Partial<AppBarSettings['sidebarToggle']>) =>
+    setShell({ appBar: { ...shell.appBar, sidebarToggle: { ...shell.appBar.sidebarToggle, ...patch } } })
+  const pill = sb.variant === 'pill'
+  const footer = sb.toggle === 'footer'
+  const indicatorOn = sb.indicator ?? pill
+  return (
+    <section className="mt-3 box space-y-3 p-3">
+      <span className="sec-label block">Sidebar</span>
+      <SidebarPreview shell={shell} menu={menu} pages={pages} />
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1">
+          <span className="text-ui-sm font-medium text-ink-2">Style</span>
+          <div>
+            <SegmentedControl
+              aria-label="Sidebar style"
+              options={[
+                { value: 'plain', label: 'Plain' },
+                { value: 'pill', label: 'Pill' },
+              ]}
+              value={sb.variant}
+              onChange={(v) => set({ variant: v as SidebarSettings['variant'] })}
+            />
+          </div>
+        </div>
+        <Field label="Rail width">
+          <Input
+            value={sb.railWidth}
+            onChange={(e) => set({ railWidth: e.target.value })}
+            placeholder={`Default: ${pill ? '4.5rem' : '3.5rem'} (CSS width)`}
+            className="font-mono"
+          />
+        </Field>
+      </div>
+      <CheckboxRow
+        label="Collapsible sidebar (collapse to an icon rail)"
+        checked={shell.collapsible}
+        onChange={(collapsible) => setShell({ collapsible })}
+      />
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1">
+          <span className="text-ui-sm font-medium text-ink-2">Collapse toggle</span>
+          <div>
+            <SegmentedControl
+              aria-label="Collapse toggle placement"
+              options={[
+                { value: 'header', label: 'Top bar' },
+                { value: 'footer', label: 'Sidebar footer' },
+              ]}
+              value={sb.toggle}
+              onChange={(v) => set({ toggle: v as SidebarSettings['toggle'] })}
+            />
+          </div>
+        </div>
+        <Field label="Toggle label">
+          <Input
+            value={sb.toggleLabel}
+            disabled={!shell.collapsible || !footer}
+            onChange={(e) => set({ toggleLabel: e.target.value })}
+            placeholder={`Default: ${DEFAULT_SIDEBAR_TOGGLE_LABEL}`}
+          />
+        </Field>
+        <IconField
+          label="Hide sidebar icon"
+          placeholder={`Default: ${footer ? 'arrowLeft' : 'chevronLeft'}`}
+          disabled={!shell.collapsible}
+          value={shell.appBar.sidebarToggle.hide}
+          onChange={(hide) => setToggleIcons({ hide })}
+        />
+        <IconField
+          label="Show sidebar icon"
+          placeholder={`Default: ${footer ? 'arrowRight' : 'chevronRight'}`}
+          disabled={!shell.collapsible}
+          value={shell.appBar.sidebarToggle.show}
+          onChange={(show) => setToggleIcons({ show })}
+        />
+      </div>
+      {pill && (
+        <div className="space-y-3 rounded-md border border-line bg-panel-2 p-3">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Item colour">
+              <ColorInput
+                value={sb.itemBackground}
+                onChange={(itemBackground) => set({ itemBackground })}
+                placeholder="Default: --accent-2 · #f5f3ff"
+              />
+            </Field>
+            <Field label="Active colour">
+              <ColorInput
+                value={sb.activeBackground}
+                disabled={sb.activeGradient.enabled}
+                onChange={(activeBackground) => set({ activeBackground })}
+                placeholder="Default: an accent gradient"
+              />
+            </Field>
+          </div>
+          <CheckboxRow
+            label="Active gradient"
+            checked={sb.activeGradient.enabled}
+            onChange={(enabled) => set({ activeGradient: { ...sb.activeGradient, enabled } })}
+          />
+          {sb.activeGradient.enabled && (
+            <div className="grid gap-3 sm:grid-cols-3">
+              <Field label="From">
+                <ColorInput
+                  value={sb.activeGradient.from}
+                  onChange={(from) => set({ activeGradient: { ...sb.activeGradient, from } })}
+                  placeholder="#e0f2fe"
+                />
+              </Field>
+              <Field label="To">
+                <ColorInput
+                  value={sb.activeGradient.to}
+                  onChange={(to) => set({ activeGradient: { ...sb.activeGradient, to } })}
+                  placeholder="#c4b5fd"
+                />
+              </Field>
+              <Field label="Angle (deg)">
+                <Input
+                  type="number"
+                  min={0}
+                  max={360}
+                  step={1}
+                  value={sb.activeGradient.angle}
+                  onChange={(e) => set({ activeGradient: { ...sb.activeGradient, angle: Number(e.target.value) || 0 } })}
+                />
+              </Field>
+            </div>
+          )}
+        </div>
+      )}
+      <div className="grid items-end gap-3 sm:grid-cols-2">
+        <CheckboxRow
+          label="Indicator bar beside the active item"
+          checked={indicatorOn}
+          onChange={(indicator) => set({ indicator: indicator === pill ? null : indicator })}
+        />
+        <Field label="Indicator colour">
+          <ColorInput
+            value={sb.indicatorColor}
+            disabled={!indicatorOn}
+            onChange={(indicatorColor) => set({ indicatorColor })}
+            placeholder="Default: --accent-11 · #3730a3"
+          />
+        </Field>
+      </div>
+      <p className="text-ui-xs text-ink-3">
+        {shell.navigation === 'top'
+          ? 'With the top-bar placement there is no sidebar on desktop; the mobile drawer still draws this look. '
+          : ''}
+        Pill draws every item as a tinted card and the active one in a gradient; the colours follow the theme
+        accent unless set. The footer toggle shows its label while expanded and the icon alone on the rail.
+        Exported as <span className="font-mono">shell.sidebar</span>.
+      </p>
+    </section>
   )
 }
 
@@ -489,6 +745,8 @@ export function MenuEditor() {
           </p>
         </section>
 
+        <SidebarSection shell={shell} menu={menu} pages={pages} setShell={setShell} />
+
         <section className="mt-3 box space-y-3 p-3">
           <span className="sec-label block">App bar</span>
           <AppBarPreview bar={shell.appBar} title={project.name} />
@@ -598,31 +856,10 @@ export function MenuEditor() {
               </p>
             </div>
           )}
-          <CheckboxRow
-            label="Collapsible sidebar (show the collapse-to-rail button)"
-            checked={shell.collapsible}
-            onChange={(collapsible) => setShell({ collapsible })}
-          />
-          <div className="grid gap-3 sm:grid-cols-2">
-            <IconField
-              label="Hide sidebar icon"
-              placeholder="Default: chevronLeft"
-              disabled={!shell.collapsible}
-              value={shell.appBar.sidebarToggle.hide}
-              onChange={(hide) => setAppBar({ sidebarToggle: { ...shell.appBar.sidebarToggle, hide } })}
-            />
-            <IconField
-              label="Show sidebar icon"
-              placeholder="Default: chevronRight"
-              disabled={!shell.collapsible}
-              value={shell.appBar.sidebarToggle.show}
-              onChange={(show) => setAppBar({ sidebarToggle: { ...shell.appBar.sidebarToggle, show } })}
-            />
-          </div>
           <p className="text-ui-xs text-ink-3">
             The bar across the top of the exported app: its title and mark (an uploaded logo is stored in the
             project as a data URL), on the neutral panel, painted in the theme accent, or a custom colour /
-            gradient. The sidebar button and its glyphs only apply to the Sidebar placement.
+            gradient. The collapse button and its glyphs are set in the Sidebar section.
             Exported as <span className="font-mono">shell.appBar</span> in menu.ts.
           </p>
         </section>

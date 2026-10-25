@@ -103,6 +103,17 @@
       ],
       "port": 3401,
       "autoPort": false
+    },
+    {
+      "name": "demo-portal",
+      "comment": "The demo app rendering the Gummy Portal project (the pill sidebar showcase, no API, no sign-in), port 3402.",
+      "runtimeExecutable": "/bin/bash",
+      "runtimeArgs": [
+        "-c",
+        "cd demo && PATH=/opt/homebrew/bin:$PATH exec bun run app:portal"
+      ],
+      "port": 3402,
+      "autoPort": false
     }
   ]
 }

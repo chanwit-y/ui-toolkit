@@ -1,6 +1,6 @@
 {
   "state": {
-    "version": 52,
+    "version": 53,
     "appearance": "light",
     "user": "Chanwit Yimneam",
     "projects": [
@@ -9,7 +9,7 @@
         "name": "Book shop",
         "description": "Gummy Books — a staff back office for a book shop, designed in the studio and rendered from JSON by the demo app.",
         "createdAt": 1792800000000,
-        "updatedAt": 1792818391986,
+        "updatedAt": 1792800000000,
         "snapshot": {
           "pages": [
             {
@@ -14493,6 +14493,22 @@
             },
             "menuIcons": true,
             "collapsible": true,
+            "sidebar": {
+              "variant": "plain",
+              "toggle": "header",
+              "toggleLabel": "",
+              "railWidth": "",
+              "itemBackground": "",
+              "activeBackground": "",
+              "activeGradient": {
+                "enabled": false,
+                "from": "",
+                "to": "",
+                "angle": 90
+              },
+              "indicator": null,
+              "indicatorColor": ""
+            },
             "menuActiveColor": "#fde68a",
             "pageTransition": {
               "type": "fade-up",
@@ -14633,6 +14649,1821 @@
             }
           ],
           "authId": "auth-bs-azure"
+        }
+      },
+      {
+        "id": "gp-project-portal",
+        "name": "Gummy Portal",
+        "description": "A staff portal showing the pill sidebar — gradient active item, edge indicator, footer \"Hide Menu\" toggle.",
+        "createdAt": 1792886400000,
+        "updatedAt": 1792886400000,
+        "snapshot": {
+          "pages": [
+            {
+              "id": "gp-page-home",
+              "key": "home",
+              "name": "Home",
+              "path": "/",
+              "grid": {
+                "items": [
+                  {
+                    "id": "gp-home-heading-title",
+                    "label": "Typography",
+                    "type": "typography",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 6,
+                        "md": 8,
+                        "lg": 12
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "text": "Welcome back",
+                      "variant": "h3",
+                      "weight": "bold",
+                      "color": "",
+                      "align": "",
+                      "truncate": false,
+                      "href": "",
+                      "binding": null
+                    }
+                  },
+                  {
+                    "id": "gp-home-heading-caption",
+                    "label": "Typography",
+                    "type": "typography",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 6,
+                        "md": 8,
+                        "lg": 12
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "text": "Keep up to date with what’s happening across Gummy.",
+                      "variant": "body2",
+                      "weight": "",
+                      "color": "gray",
+                      "align": "",
+                      "truncate": false,
+                      "href": "",
+                      "binding": null
+                    }
+                  },
+                  {
+                    "id": "gp-home-favorites",
+                    "label": "HTML content",
+                    "type": "html",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 6,
+                        "md": 8,
+                        "lg": 12
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "name": "favorites",
+                      "html": "<h4 style=\"margin:8px 0 12px;font-size:18px;font-weight:600;color:var(--accent-11)\">Favorite apps</h4><div style=\"display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:20px\"><a href=\"#\" style=\"display:flex;flex-direction:column;align-items:center;gap:8px;text-decoration:none;color:var(--gray-12)\">\n  <span style=\"display:flex;width:72px;height:72px;align-items:center;justify-content:center;border-radius:18px;background:var(--iris-3);color:var(--iris-11);font-size:26px;font-weight:700;box-shadow:0 1px 2px var(--gray-a4)\">D</span>\n  <span style=\"font-size:13px;font-weight:500\">DOA</span>\n</a><a href=\"#\" style=\"display:flex;flex-direction:column;align-items:center;gap:8px;text-decoration:none;color:var(--gray-12)\">\n  <span style=\"display:flex;width:72px;height:72px;align-items:center;justify-content:center;border-radius:18px;background:var(--grass-3);color:var(--grass-11);font-size:26px;font-weight:700;box-shadow:0 1px 2px var(--gray-a4)\">L</span>\n  <span style=\"font-size:13px;font-weight:500\">Leave</span>\n</a><a href=\"#\" style=\"display:flex;flex-direction:column;align-items:center;gap:8px;text-decoration:none;color:var(--gray-12)\">\n  <span style=\"display:flex;width:72px;height:72px;align-items:center;justify-content:center;border-radius:18px;background:var(--amber-3);color:var(--amber-11);font-size:26px;font-weight:700;box-shadow:0 1px 2px var(--gray-a4)\">E</span>\n  <span style=\"font-size:13px;font-weight:500\">Expense</span>\n</a><a href=\"#\" style=\"display:flex;flex-direction:column;align-items:center;gap:8px;text-decoration:none;color:var(--gray-12)\">\n  <span style=\"display:flex;width:72px;height:72px;align-items:center;justify-content:center;border-radius:18px;background:var(--cyan-3);color:var(--cyan-11);font-size:26px;font-weight:700;box-shadow:0 1px 2px var(--gray-a4)\">R</span>\n  <span style=\"font-size:13px;font-weight:500\">Room booking</span>\n</a></div>",
+                      "binding": null,
+                      "prose": false
+                    }
+                  },
+                  {
+                    "id": "gp-home-approvals",
+                    "label": "HTML content",
+                    "type": "html",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 3,
+                        "md": 4,
+                        "lg": 6
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "name": "approvalsSummary",
+                      "html": "<h4 style=\"margin:8px 0 12px;font-size:18px;font-weight:600;color:var(--accent-11)\">Approvals</h4>\n<div style=\"border-radius:16px;padding:20px;background:linear-gradient(135deg,var(--indigo-12),var(--iris-10));color:white\">\n  <span style=\"display:inline-flex;padding:2px 10px;border:1px solid rgba(255,255,255,.4);border-radius:9999px;font-size:12px\">Overview</span>\n  <div style=\"display:flex;gap:32px;margin-top:16px\">\n    <div><div style=\"font-size:30px;font-weight:700\">4</div><div style=\"font-size:13px;opacity:.8\">waiting for you</div></div>\n    <div><div style=\"font-size:30px;font-weight:700\">12</div><div style=\"font-size:13px;opacity:.8\">approved this month</div></div>\n  </div>\n</div>",
+                      "binding": null,
+                      "prose": false
+                    }
+                  },
+                  {
+                    "id": "gp-home-communications",
+                    "label": "HTML content",
+                    "type": "html",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 3,
+                        "md": 4,
+                        "lg": 6
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "name": "latestNews",
+                      "html": "<h4 style=\"margin:8px 0 12px;font-size:18px;font-weight:600;color:var(--accent-11)\">Communications</h4><div style=\"display:grid;gap:12px\"><article style=\"border:1px solid var(--gray-a5);border-radius:14px;background:var(--color-panel-solid);padding:16px;display:flex;gap:14px\">\n  <span style=\"display:flex;width:44px;height:44px;flex-shrink:0;align-items:center;justify-content:center;border-radius:12px;background:var(--accent-9);color:var(--accent-contrast);font-weight:700\">A</span>\n  <span style=\"min-width:0\">\n    <span style=\"display:block;font-size:12px;color:var(--gray-11)\">Announcement · Today</span>\n    <span style=\"display:block;margin-top:2px;font-weight:600;color:var(--gray-12)\">Dear Team, the new office opens on Monday</span>\n    <span style=\"display:block;margin-top:4px;font-size:14px;color:var(--gray-11)\">Desks on floors 7 and 8 are ready; badges work from 08:00. Parking passes stay the same.</span>\n  </span>\n</article></div>",
+                      "binding": null,
+                      "prose": false
+                    }
+                  },
+                  {
+                    "id": "gp-home-to-approvals",
+                    "label": "Button",
+                    "type": "button",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 3,
+                        "md": 4,
+                        "lg": 3
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "start",
+                        "sm": "start",
+                        "md": "start",
+                        "lg": "start"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "label": "Go to approvals",
+                      "icon": "stamp",
+                      "variant": "outlined",
+                      "mode": "direct",
+                      "actions": [
+                        "Navigate"
+                      ],
+                      "confirmTitle": "",
+                      "confirmDescription": "",
+                      "confirmTrue": [],
+                      "confirmFalse": [],
+                      "modalItemId": "",
+                      "reloadTableItemId": "",
+                      "endpointId": null,
+                      "snackbarSuccessEnabled": false,
+                      "snackbarSuccessType": "success",
+                      "snackbarSuccessMessage": "",
+                      "snackbarErrorException": false,
+                      "navigate": {
+                        "pageId": "gp-page-approvals",
+                        "params": {},
+                        "replace": false
+                      }
+                    }
+                  }
+                ],
+                "containerSettings": {
+                  "columns": {
+                    "xs": 4,
+                    "sm": 6,
+                    "md": 8,
+                    "lg": 12
+                  },
+                  "gap": {
+                    "xs": "16px",
+                    "sm": "16px",
+                    "md": "16px",
+                    "lg": "16px"
+                  },
+                  "rowGap": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "columnGap": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "justifyItems": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "alignItems": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "justifyContent": {
+                    "xs": "start",
+                    "sm": "start",
+                    "md": "start",
+                    "lg": "start"
+                  },
+                  "alignContent": {
+                    "xs": "start",
+                    "sm": "start",
+                    "md": "start",
+                    "lg": "start"
+                  },
+                  "gridAutoRows": {
+                    "xs": "minmax(56px, auto)",
+                    "sm": "minmax(56px, auto)",
+                    "md": "minmax(56px, auto)",
+                    "lg": "minmax(56px, auto)"
+                  },
+                  "gridAutoFlow": {
+                    "xs": "row",
+                    "sm": "row",
+                    "md": "row",
+                    "lg": "row"
+                  }
+                },
+                "fieldSeq": 0
+              }
+            },
+            {
+              "id": "gp-page-applications",
+              "key": "applications",
+              "name": "Applications",
+              "path": "/applications",
+              "grid": {
+                "items": [
+                  {
+                    "id": "gp-apps-heading-title",
+                    "label": "Typography",
+                    "type": "typography",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 6,
+                        "md": 8,
+                        "lg": 12
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "text": "Applications",
+                      "variant": "h3",
+                      "weight": "bold",
+                      "color": "",
+                      "align": "",
+                      "truncate": false,
+                      "href": "",
+                      "binding": null
+                    }
+                  },
+                  {
+                    "id": "gp-apps-heading-caption",
+                    "label": "Typography",
+                    "type": "typography",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 6,
+                        "md": 8,
+                        "lg": 12
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "text": "Every app you can open with your Gummy account.",
+                      "variant": "body2",
+                      "weight": "",
+                      "color": "gray",
+                      "align": "",
+                      "truncate": false,
+                      "href": "",
+                      "binding": null
+                    }
+                  },
+                  {
+                    "id": "gp-apps-grid",
+                    "label": "HTML content",
+                    "type": "html",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 6,
+                        "md": 8,
+                        "lg": 12
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "name": "allApps",
+                      "html": "<div style=\"border:1px solid var(--gray-a5);border-radius:14px;background:var(--color-panel-solid);padding:16px;padding:24px\"><div style=\"display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:20px\"><a href=\"#\" style=\"display:flex;flex-direction:column;align-items:center;gap:8px;text-decoration:none;color:var(--gray-12)\">\n  <span style=\"display:flex;width:72px;height:72px;align-items:center;justify-content:center;border-radius:18px;background:var(--iris-3);color:var(--iris-11);font-size:26px;font-weight:700;box-shadow:0 1px 2px var(--gray-a4)\">D</span>\n  <span style=\"font-size:13px;font-weight:500\">DOA</span>\n</a><a href=\"#\" style=\"display:flex;flex-direction:column;align-items:center;gap:8px;text-decoration:none;color:var(--gray-12)\">\n  <span style=\"display:flex;width:72px;height:72px;align-items:center;justify-content:center;border-radius:18px;background:var(--grass-3);color:var(--grass-11);font-size:26px;font-weight:700;box-shadow:0 1px 2px var(--gray-a4)\">L</span>\n  <span style=\"font-size:13px;font-weight:500\">Leave</span>\n</a><a href=\"#\" style=\"display:flex;flex-direction:column;align-items:center;gap:8px;text-decoration:none;color:var(--gray-12)\">\n  <span style=\"display:flex;width:72px;height:72px;align-items:center;justify-content:center;border-radius:18px;background:var(--amber-3);color:var(--amber-11);font-size:26px;font-weight:700;box-shadow:0 1px 2px var(--gray-a4)\">E</span>\n  <span style=\"font-size:13px;font-weight:500\">Expense</span>\n</a><a href=\"#\" style=\"display:flex;flex-direction:column;align-items:center;gap:8px;text-decoration:none;color:var(--gray-12)\">\n  <span style=\"display:flex;width:72px;height:72px;align-items:center;justify-content:center;border-radius:18px;background:var(--cyan-3);color:var(--cyan-11);font-size:26px;font-weight:700;box-shadow:0 1px 2px var(--gray-a4)\">R</span>\n  <span style=\"font-size:13px;font-weight:500\">Room booking</span>\n</a><a href=\"#\" style=\"display:flex;flex-direction:column;align-items:center;gap:8px;text-decoration:none;color:var(--gray-12)\">\n  <span style=\"display:flex;width:72px;height:72px;align-items:center;justify-content:center;border-radius:18px;background:var(--crimson-3);color:var(--crimson-11);font-size:26px;font-weight:700;box-shadow:0 1px 2px var(--gray-a4)\">I</span>\n  <span style=\"font-size:13px;font-weight:500\">IT help</span>\n</a><a href=\"#\" style=\"display:flex;flex-direction:column;align-items:center;gap:8px;text-decoration:none;color:var(--gray-12)\">\n  <span style=\"display:flex;width:72px;height:72px;align-items:center;justify-content:center;border-radius:18px;background:var(--jade-3);color:var(--jade-11);font-size:26px;font-weight:700;box-shadow:0 1px 2px var(--gray-a4)\">P</span>\n  <span style=\"font-size:13px;font-weight:500\">Payslip</span>\n</a><a href=\"#\" style=\"display:flex;flex-direction:column;align-items:center;gap:8px;text-decoration:none;color:var(--gray-12)\">\n  <span style=\"display:flex;width:72px;height:72px;align-items:center;justify-content:center;border-radius:18px;background:var(--violet-3);color:var(--violet-11);font-size:26px;font-weight:700;box-shadow:0 1px 2px var(--gray-a4)\">T</span>\n  <span style=\"font-size:13px;font-weight:500\">Training</span>\n</a><a href=\"#\" style=\"display:flex;flex-direction:column;align-items:center;gap:8px;text-decoration:none;color:var(--gray-12)\">\n  <span style=\"display:flex;width:72px;height:72px;align-items:center;justify-content:center;border-radius:18px;background:var(--sky-3);color:var(--sky-11);font-size:26px;font-weight:700;box-shadow:0 1px 2px var(--gray-a4)\">T</span>\n  <span style=\"font-size:13px;font-weight:500\">Travel</span>\n</a><a href=\"#\" style=\"display:flex;flex-direction:column;align-items:center;gap:8px;text-decoration:none;color:var(--gray-12)\">\n  <span style=\"display:flex;width:72px;height:72px;align-items:center;justify-content:center;border-radius:18px;background:var(--orange-3);color:var(--orange-11);font-size:26px;font-weight:700;box-shadow:0 1px 2px var(--gray-a4)\">P</span>\n  <span style=\"font-size:13px;font-weight:500\">Procurement</span>\n</a><a href=\"#\" style=\"display:flex;flex-direction:column;align-items:center;gap:8px;text-decoration:none;color:var(--gray-12)\">\n  <span style=\"display:flex;width:72px;height:72px;align-items:center;justify-content:center;border-radius:18px;background:var(--bronze-3);color:var(--bronze-11);font-size:26px;font-weight:700;box-shadow:0 1px 2px var(--gray-a4)\">A</span>\n  <span style=\"font-size:13px;font-weight:500\">Assets</span>\n</a><a href=\"#\" style=\"display:flex;flex-direction:column;align-items:center;gap:8px;text-decoration:none;color:var(--gray-12)\">\n  <span style=\"display:flex;width:72px;height:72px;align-items:center;justify-content:center;border-radius:18px;background:var(--plum-3);color:var(--plum-11);font-size:26px;font-weight:700;box-shadow:0 1px 2px var(--gray-a4)\">V</span>\n  <span style=\"font-size:13px;font-weight:500\">Visitors</span>\n</a><a href=\"#\" style=\"display:flex;flex-direction:column;align-items:center;gap:8px;text-decoration:none;color:var(--gray-12)\">\n  <span style=\"display:flex;width:72px;height:72px;align-items:center;justify-content:center;border-radius:18px;background:var(--gray-3);color:var(--gray-11);font-size:26px;font-weight:700;box-shadow:0 1px 2px var(--gray-a4)\">D</span>\n  <span style=\"font-size:13px;font-weight:500\">Directory</span>\n</a></div></div>",
+                      "binding": null,
+                      "prose": false
+                    }
+                  }
+                ],
+                "containerSettings": {
+                  "columns": {
+                    "xs": 4,
+                    "sm": 6,
+                    "md": 8,
+                    "lg": 12
+                  },
+                  "gap": {
+                    "xs": "16px",
+                    "sm": "16px",
+                    "md": "16px",
+                    "lg": "16px"
+                  },
+                  "rowGap": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "columnGap": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "justifyItems": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "alignItems": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "justifyContent": {
+                    "xs": "start",
+                    "sm": "start",
+                    "md": "start",
+                    "lg": "start"
+                  },
+                  "alignContent": {
+                    "xs": "start",
+                    "sm": "start",
+                    "md": "start",
+                    "lg": "start"
+                  },
+                  "gridAutoRows": {
+                    "xs": "minmax(56px, auto)",
+                    "sm": "minmax(56px, auto)",
+                    "md": "minmax(56px, auto)",
+                    "lg": "minmax(56px, auto)"
+                  },
+                  "gridAutoFlow": {
+                    "xs": "row",
+                    "sm": "row",
+                    "md": "row",
+                    "lg": "row"
+                  }
+                },
+                "fieldSeq": 0
+              }
+            },
+            {
+              "id": "gp-page-approvals",
+              "key": "approvals",
+              "name": "Approvals",
+              "path": "/approvals",
+              "grid": {
+                "items": [
+                  {
+                    "id": "gp-approvals-heading-title",
+                    "label": "Typography",
+                    "type": "typography",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 6,
+                        "md": 8,
+                        "lg": 12
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "text": "Approvals",
+                      "variant": "h3",
+                      "weight": "bold",
+                      "color": "",
+                      "align": "",
+                      "truncate": false,
+                      "href": "",
+                      "binding": null
+                    }
+                  },
+                  {
+                    "id": "gp-approvals-heading-caption",
+                    "label": "Typography",
+                    "type": "typography",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 6,
+                        "md": 8,
+                        "lg": 12
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "text": "Requests waiting for your decision, newest first.",
+                      "variant": "body2",
+                      "weight": "",
+                      "color": "gray",
+                      "align": "",
+                      "truncate": false,
+                      "href": "",
+                      "binding": null
+                    }
+                  },
+                  {
+                    "id": "gp-approvals-list",
+                    "label": "HTML content",
+                    "type": "html",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 6,
+                        "md": 8,
+                        "lg": 12
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "name": "requests",
+                      "html": "<div style=\"border:1px solid var(--gray-a5);border-radius:14px;background:var(--color-panel-solid);padding:16px;padding:4px 16px\"><div style=\"display:flex;align-items:center;gap:12px;padding:12px 0;border-top:0\">\n  <span style=\"display:inline-flex;padding:2px 8px;border-radius:9999px;background:var(--accent-3);color:var(--accent-11);font-size:12px;font-weight:500\">Leave</span>\n  <span style=\"flex:1;min-width:0\">\n    <span style=\"display:block;font-weight:500;color:var(--gray-12)\">Leave — 3 days annual leave</span>\n    <span style=\"display:block;font-size:12px;color:var(--gray-11)\">Pimchanok S. · Today, 09:12</span>\n  </span>\n  <span style=\"font-size:13px;font-weight:500;color:var(--accent-11)\">Review →</span>\n</div><div style=\"display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--gray-a4)\">\n  <span style=\"display:inline-flex;padding:2px 8px;border-radius:9999px;background:var(--accent-3);color:var(--accent-11);font-size:12px;font-weight:500\">Expense</span>\n  <span style=\"flex:1;min-width:0\">\n    <span style=\"display:block;font-weight:500;color:var(--gray-12)\">Expense claim — client dinner</span>\n    <span style=\"display:block;font-size:12px;color:var(--gray-11)\">Nadia S. · Yesterday</span>\n  </span>\n  <span style=\"font-size:13px;font-weight:500;color:var(--accent-11)\">Review →</span>\n</div><div style=\"display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--gray-a4)\">\n  <span style=\"display:inline-flex;padding:2px 8px;border-radius:9999px;background:var(--accent-3);color:var(--accent-11);font-size:12px;font-weight:500\">Procurement</span>\n  <span style=\"flex:1;min-width:0\">\n    <span style=\"display:block;font-weight:500;color:var(--gray-12)\">Purchase request — 4 monitors</span>\n    <span style=\"display:block;font-size:12px;color:var(--gray-11)\">Somchai K. · 2 days ago</span>\n  </span>\n  <span style=\"font-size:13px;font-weight:500;color:var(--accent-11)\">Review →</span>\n</div><div style=\"display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--gray-a4)\">\n  <span style=\"display:inline-flex;padding:2px 8px;border-radius:9999px;background:var(--accent-3);color:var(--accent-11);font-size:12px;font-weight:500\">Travel</span>\n  <span style=\"flex:1;min-width:0\">\n    <span style=\"display:block;font-weight:500;color:var(--gray-12)\">Travel — Singapore, 12–14 Nov</span>\n    <span style=\"display:block;font-size:12px;color:var(--gray-11)\">Arthit P. · 3 days ago</span>\n  </span>\n  <span style=\"font-size:13px;font-weight:500;color:var(--accent-11)\">Review →</span>\n</div></div>",
+                      "binding": null,
+                      "prose": false
+                    }
+                  }
+                ],
+                "containerSettings": {
+                  "columns": {
+                    "xs": 4,
+                    "sm": 6,
+                    "md": 8,
+                    "lg": 12
+                  },
+                  "gap": {
+                    "xs": "16px",
+                    "sm": "16px",
+                    "md": "16px",
+                    "lg": "16px"
+                  },
+                  "rowGap": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "columnGap": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "justifyItems": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "alignItems": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "justifyContent": {
+                    "xs": "start",
+                    "sm": "start",
+                    "md": "start",
+                    "lg": "start"
+                  },
+                  "alignContent": {
+                    "xs": "start",
+                    "sm": "start",
+                    "md": "start",
+                    "lg": "start"
+                  },
+                  "gridAutoRows": {
+                    "xs": "minmax(56px, auto)",
+                    "sm": "minmax(56px, auto)",
+                    "md": "minmax(56px, auto)",
+                    "lg": "minmax(56px, auto)"
+                  },
+                  "gridAutoFlow": {
+                    "xs": "row",
+                    "sm": "row",
+                    "md": "row",
+                    "lg": "row"
+                  }
+                },
+                "fieldSeq": 0
+              }
+            },
+            {
+              "id": "gp-page-communications",
+              "key": "communications",
+              "name": "Communications",
+              "path": "/communications",
+              "grid": {
+                "items": [
+                  {
+                    "id": "gp-comms-heading-title",
+                    "label": "Typography",
+                    "type": "typography",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 6,
+                        "md": 8,
+                        "lg": 12
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "text": "Communications",
+                      "variant": "h3",
+                      "weight": "bold",
+                      "color": "",
+                      "align": "",
+                      "truncate": false,
+                      "href": "",
+                      "binding": null
+                    }
+                  },
+                  {
+                    "id": "gp-comms-heading-caption",
+                    "label": "Typography",
+                    "type": "typography",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 6,
+                        "md": 8,
+                        "lg": 12
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "text": "Announcements, events and reminders from around the company.",
+                      "variant": "body2",
+                      "weight": "",
+                      "color": "gray",
+                      "align": "",
+                      "truncate": false,
+                      "href": "",
+                      "binding": null
+                    }
+                  },
+                  {
+                    "id": "gp-comms-posts",
+                    "label": "HTML content",
+                    "type": "html",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 6,
+                        "md": 8,
+                        "lg": 12
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "name": "posts",
+                      "html": "<div style=\"display:grid;gap:12px\"><article style=\"border:1px solid var(--gray-a5);border-radius:14px;background:var(--color-panel-solid);padding:16px;display:flex;gap:14px\">\n  <span style=\"display:flex;width:44px;height:44px;flex-shrink:0;align-items:center;justify-content:center;border-radius:12px;background:var(--accent-9);color:var(--accent-contrast);font-weight:700\">A</span>\n  <span style=\"min-width:0\">\n    <span style=\"display:block;font-size:12px;color:var(--gray-11)\">Announcement · Today</span>\n    <span style=\"display:block;margin-top:2px;font-weight:600;color:var(--gray-12)\">Dear Team, the new office opens on Monday</span>\n    <span style=\"display:block;margin-top:4px;font-size:14px;color:var(--gray-11)\">Desks on floors 7 and 8 are ready; badges work from 08:00. Parking passes stay the same.</span>\n  </span>\n</article><article style=\"border:1px solid var(--gray-a5);border-radius:14px;background:var(--color-panel-solid);padding:16px;display:flex;gap:14px\">\n  <span style=\"display:flex;width:44px;height:44px;flex-shrink:0;align-items:center;justify-content:center;border-radius:12px;background:var(--accent-9);color:var(--accent-contrast);font-weight:700\">E</span>\n  <span style=\"min-width:0\">\n    <span style=\"display:block;font-size:12px;color:var(--gray-11)\">Event · Yesterday</span>\n    <span style=\"display:block;margin-top:2px;font-weight:600;color:var(--gray-12)\">Year-end town hall</span>\n    <span style=\"display:block;margin-top:4px;font-size:14px;color:var(--gray-11)\">Join us on 12 December at 15:00 in the main hall or online — questions welcome in advance.</span>\n  </span>\n</article><article style=\"border:1px solid var(--gray-a5);border-radius:14px;background:var(--color-panel-solid);padding:16px;display:flex;gap:14px\">\n  <span style=\"display:flex;width:44px;height:44px;flex-shrink:0;align-items:center;justify-content:center;border-radius:12px;background:var(--accent-9);color:var(--accent-contrast);font-weight:700\">I</span>\n  <span style=\"min-width:0\">\n    <span style=\"display:block;font-size:12px;color:var(--gray-11)\">IT · This week</span>\n    <span style=\"display:block;margin-top:2px;font-weight:600;color:var(--gray-12)\">Security reminder: phishing emails</span>\n    <span style=\"display:block;margin-top:4px;font-size:14px;color:var(--gray-11)\">IT will never ask for your password. Report a suspicious message with the Report button.</span>\n  </span>\n</article></div>",
+                      "binding": null,
+                      "prose": false
+                    }
+                  }
+                ],
+                "containerSettings": {
+                  "columns": {
+                    "xs": 4,
+                    "sm": 6,
+                    "md": 8,
+                    "lg": 12
+                  },
+                  "gap": {
+                    "xs": "16px",
+                    "sm": "16px",
+                    "md": "16px",
+                    "lg": "16px"
+                  },
+                  "rowGap": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "columnGap": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "justifyItems": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "alignItems": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "justifyContent": {
+                    "xs": "start",
+                    "sm": "start",
+                    "md": "start",
+                    "lg": "start"
+                  },
+                  "alignContent": {
+                    "xs": "start",
+                    "sm": "start",
+                    "md": "start",
+                    "lg": "start"
+                  },
+                  "gridAutoRows": {
+                    "xs": "minmax(56px, auto)",
+                    "sm": "minmax(56px, auto)",
+                    "md": "minmax(56px, auto)",
+                    "lg": "minmax(56px, auto)"
+                  },
+                  "gridAutoFlow": {
+                    "xs": "row",
+                    "sm": "row",
+                    "md": "row",
+                    "lg": "row"
+                  }
+                },
+                "fieldSeq": 0
+              }
+            },
+            {
+              "id": "gp-page-settings-profile",
+              "key": "settingsProfile",
+              "name": "Profile",
+              "path": "/settings/profile",
+              "grid": {
+                "items": [
+                  {
+                    "id": "gp-profile-heading-title",
+                    "label": "Typography",
+                    "type": "typography",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 6,
+                        "md": 8,
+                        "lg": 12
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "text": "Profile",
+                      "variant": "h3",
+                      "weight": "bold",
+                      "color": "",
+                      "align": "",
+                      "truncate": false,
+                      "href": "",
+                      "binding": null
+                    }
+                  },
+                  {
+                    "id": "gp-profile-heading-caption",
+                    "label": "Typography",
+                    "type": "typography",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 6,
+                        "md": 8,
+                        "lg": 12
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "text": "How you appear to colleagues across the portal.",
+                      "variant": "body2",
+                      "weight": "",
+                      "color": "gray",
+                      "align": "",
+                      "truncate": false,
+                      "href": "",
+                      "binding": null
+                    }
+                  },
+                  {
+                    "id": "gp-profile-rows",
+                    "label": "HTML content",
+                    "type": "html",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 6,
+                        "md": 8,
+                        "lg": 12
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "name": "profile",
+                      "html": "<div style=\"border:1px solid var(--gray-a5);border-radius:14px;background:var(--color-panel-solid);padding:16px;padding:4px 16px\"><div style=\"display:flex;align-items:center;gap:12px;padding:14px 0;border-top:0\">\n  <span style=\"flex:1\"><span style=\"display:block;font-weight:500;color:var(--gray-12)\">Name</span><span style=\"display:block;font-size:12px;color:var(--gray-11)\">From your Microsoft account</span></span>\n  <span style=\"font-size:14px;color:var(--gray-12)\">Chanwit Yimneam</span>\n</div><div style=\"display:flex;align-items:center;gap:12px;padding:14px 0;border-top:1px solid var(--gray-a4)\">\n  <span style=\"flex:1\"><span style=\"display:block;font-weight:500;color:var(--gray-12)\">Job title</span><span style=\"display:block;font-size:12px;color:var(--gray-11)\">Set by HR</span></span>\n  <span style=\"font-size:14px;color:var(--gray-12)\">Product Owner</span>\n</div><div style=\"display:flex;align-items:center;gap:12px;padding:14px 0;border-top:1px solid var(--gray-a4)\">\n  <span style=\"flex:1\"><span style=\"display:block;font-weight:500;color:var(--gray-12)\">Language</span><span style=\"display:block;font-size:12px;color:var(--gray-11)\">Used for menus and emails</span></span>\n  <span style=\"font-size:14px;color:var(--gray-12)\">English</span>\n</div></div>",
+                      "binding": null,
+                      "prose": false
+                    }
+                  }
+                ],
+                "containerSettings": {
+                  "columns": {
+                    "xs": 4,
+                    "sm": 6,
+                    "md": 8,
+                    "lg": 12
+                  },
+                  "gap": {
+                    "xs": "16px",
+                    "sm": "16px",
+                    "md": "16px",
+                    "lg": "16px"
+                  },
+                  "rowGap": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "columnGap": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "justifyItems": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "alignItems": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "justifyContent": {
+                    "xs": "start",
+                    "sm": "start",
+                    "md": "start",
+                    "lg": "start"
+                  },
+                  "alignContent": {
+                    "xs": "start",
+                    "sm": "start",
+                    "md": "start",
+                    "lg": "start"
+                  },
+                  "gridAutoRows": {
+                    "xs": "minmax(56px, auto)",
+                    "sm": "minmax(56px, auto)",
+                    "md": "minmax(56px, auto)",
+                    "lg": "minmax(56px, auto)"
+                  },
+                  "gridAutoFlow": {
+                    "xs": "row",
+                    "sm": "row",
+                    "md": "row",
+                    "lg": "row"
+                  }
+                },
+                "fieldSeq": 0
+              }
+            },
+            {
+              "id": "gp-page-settings-notifications",
+              "key": "settingsNotifications",
+              "name": "Notifications",
+              "path": "/settings/notifications",
+              "grid": {
+                "items": [
+                  {
+                    "id": "gp-notify-heading-title",
+                    "label": "Typography",
+                    "type": "typography",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 6,
+                        "md": 8,
+                        "lg": 12
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "text": "Notifications",
+                      "variant": "h3",
+                      "weight": "bold",
+                      "color": "",
+                      "align": "",
+                      "truncate": false,
+                      "href": "",
+                      "binding": null
+                    }
+                  },
+                  {
+                    "id": "gp-notify-heading-caption",
+                    "label": "Typography",
+                    "type": "typography",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 6,
+                        "md": 8,
+                        "lg": 12
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "text": "Choose what reaches your inbox.",
+                      "variant": "body2",
+                      "weight": "",
+                      "color": "gray",
+                      "align": "",
+                      "truncate": false,
+                      "href": "",
+                      "binding": null
+                    }
+                  },
+                  {
+                    "id": "gp-notify-rows",
+                    "label": "HTML content",
+                    "type": "html",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 6,
+                        "md": 8,
+                        "lg": 12
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "name": "notifications",
+                      "html": "<div style=\"border:1px solid var(--gray-a5);border-radius:14px;background:var(--color-panel-solid);padding:16px;padding:4px 16px\"><div style=\"display:flex;align-items:center;gap:12px;padding:14px 0;border-top:0\">\n  <span style=\"flex:1\"><span style=\"display:block;font-weight:500;color:var(--gray-12)\">Approvals</span><span style=\"display:block;font-size:12px;color:var(--gray-11)\">A request waits for you</span></span>\n  <span style=\"font-size:14px;color:var(--gray-12)\">Email + portal</span>\n</div><div style=\"display:flex;align-items:center;gap:12px;padding:14px 0;border-top:1px solid var(--gray-a4)\">\n  <span style=\"flex:1\"><span style=\"display:block;font-weight:500;color:var(--gray-12)\">Communications</span><span style=\"display:block;font-size:12px;color:var(--gray-11)\">A new announcement is posted</span></span>\n  <span style=\"font-size:14px;color:var(--gray-12)\">Portal only</span>\n</div><div style=\"display:flex;align-items:center;gap:12px;padding:14px 0;border-top:1px solid var(--gray-a4)\">\n  <span style=\"flex:1\"><span style=\"display:block;font-weight:500;color:var(--gray-12)\">Weekly digest</span><span style=\"display:block;font-size:12px;color:var(--gray-11)\">Monday, 08:00</span></span>\n  <span style=\"font-size:14px;color:var(--gray-12)\">Email</span>\n</div></div>",
+                      "binding": null,
+                      "prose": false
+                    }
+                  }
+                ],
+                "containerSettings": {
+                  "columns": {
+                    "xs": 4,
+                    "sm": 6,
+                    "md": 8,
+                    "lg": 12
+                  },
+                  "gap": {
+                    "xs": "16px",
+                    "sm": "16px",
+                    "md": "16px",
+                    "lg": "16px"
+                  },
+                  "rowGap": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "columnGap": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "justifyItems": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "alignItems": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "justifyContent": {
+                    "xs": "start",
+                    "sm": "start",
+                    "md": "start",
+                    "lg": "start"
+                  },
+                  "alignContent": {
+                    "xs": "start",
+                    "sm": "start",
+                    "md": "start",
+                    "lg": "start"
+                  },
+                  "gridAutoRows": {
+                    "xs": "minmax(56px, auto)",
+                    "sm": "minmax(56px, auto)",
+                    "md": "minmax(56px, auto)",
+                    "lg": "minmax(56px, auto)"
+                  },
+                  "gridAutoFlow": {
+                    "xs": "row",
+                    "sm": "row",
+                    "md": "row",
+                    "lg": "row"
+                  }
+                },
+                "fieldSeq": 0
+              }
+            }
+          ],
+          "menu": [
+            {
+              "id": "gp-menu-home",
+              "kind": "page",
+              "label": "Home",
+              "icon": "home",
+              "navigate": {
+                "pageId": "gp-page-home",
+                "params": {},
+                "replace": false
+              }
+            },
+            {
+              "id": "gp-menu-applications",
+              "kind": "page",
+              "label": "Applications",
+              "icon": "grid",
+              "navigate": {
+                "pageId": "gp-page-applications",
+                "params": {},
+                "replace": false
+              }
+            },
+            {
+              "id": "gp-menu-approvals",
+              "kind": "page",
+              "label": "Approvals",
+              "icon": "stamp",
+              "navigate": {
+                "pageId": "gp-page-approvals",
+                "params": {},
+                "replace": false
+              }
+            },
+            {
+              "id": "gp-menu-communications",
+              "kind": "page",
+              "label": "Communications",
+              "icon": "newspaper",
+              "navigate": {
+                "pageId": "gp-page-communications",
+                "params": {},
+                "replace": false
+              }
+            },
+            {
+              "id": "gp-menu-settings",
+              "kind": "group",
+              "label": "Settings",
+              "icon": "settings",
+              "collapsed": true,
+              "items": [
+                {
+                  "id": "gp-menu-settings-profile",
+                  "kind": "page",
+                  "label": "Profile",
+                  "icon": "user",
+                  "navigate": {
+                    "pageId": "gp-page-settings-profile",
+                    "params": {},
+                    "replace": false
+                  }
+                },
+                {
+                  "id": "gp-menu-settings-notifications",
+                  "kind": "page",
+                  "label": "Notifications",
+                  "icon": "bell",
+                  "navigate": {
+                    "pageId": "gp-page-settings-notifications",
+                    "params": {},
+                    "replace": false
+                  }
+                }
+              ]
+            }
+          ],
+          "shell": {
+            "navigation": "sidebar",
+            "breadcrumbs": false,
+            "appBar": {
+              "title": "Gummy Portal",
+              "icon": "layoutDashboard",
+              "logo": "",
+              "logoSize": "",
+              "variant": "panel",
+              "background": "",
+              "gradient": {
+                "enabled": false,
+                "from": "",
+                "to": "",
+                "angle": 90
+              },
+              "foreground": "",
+              "padding": "",
+              "sidebarToggle": {
+                "hide": "",
+                "show": ""
+              }
+            },
+            "menuIcons": true,
+            "collapsible": true,
+            "sidebar": {
+              "variant": "pill",
+              "toggle": "footer",
+              "toggleLabel": "",
+              "railWidth": "",
+              "itemBackground": "",
+              "activeBackground": "",
+              "activeGradient": {
+                "enabled": true,
+                "from": "#e0f2fe",
+                "to": "#c4b5fd",
+                "angle": 90
+              },
+              "indicator": null,
+              "indicatorColor": "#3730a3"
+            }
+          },
+          "env": [],
+          "theme": {
+            "appearance": "light",
+            "accentColor": "indigo",
+            "radius": "large",
+            "panelBackground": "solid",
+            "buttonColor": "",
+            "dataTable": {
+              "headerColor": "",
+              "headerTextColor": "",
+              "headerFontSize": "sm",
+              "headerFontWeight": "semibold",
+              "headerHoverColor": "",
+              "paginationButtonColor": "",
+              "paginationButtonHoverColor": "",
+              "rowHoverColor": "",
+              "editButtonColor": "",
+              "deleteButtonColor": ""
+            }
+          },
+          "endpointIds": [],
+          "globalLoads": [],
+          "customActions": [],
+          "customComponents": [],
+          "authId": null
         }
       }
     ],
@@ -20395,5 +22226,5 @@
     },
     "activity": []
   },
-  "version": 52
+  "version": 53
 }
