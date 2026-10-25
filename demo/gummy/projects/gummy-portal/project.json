@@ -1,0 +1,125 @@
+{
+  "schemaVersion": 1,
+  "name": "Gummy Portal",
+  "description": "A staff portal showing the pill sidebar — gradient active item, edge indicator, footer \"Hide Menu\" toggle.",
+  "env": {},
+  "model": {},
+  "api": {},
+  "pages": {
+    "home": {
+      "path": "/",
+      "title": "Home",
+      "src": "pages/home.json"
+    },
+    "applications": {
+      "path": "/applications",
+      "title": "Applications",
+      "src": "pages/applications.json"
+    },
+    "approvals": {
+      "path": "/approvals",
+      "title": "Approvals",
+      "src": "pages/approvals.json"
+    },
+    "communications": {
+      "path": "/communications",
+      "title": "Communications",
+      "src": "pages/communications.json"
+    },
+    "settingsProfile": {
+      "path": "/settings/profile",
+      "title": "Profile",
+      "src": "pages/settingsProfile.json"
+    },
+    "settingsNotifications": {
+      "path": "/settings/notifications",
+      "title": "Notifications",
+      "src": "pages/settingsNotifications.json"
+    }
+  },
+  "menu": [
+    {
+      "label": "Home",
+      "icon": "home",
+      "navigate": {
+        "page": "home"
+      }
+    },
+    {
+      "label": "Applications",
+      "icon": "grid",
+      "navigate": {
+        "page": "applications"
+      }
+    },
+    {
+      "label": "Approvals",
+      "icon": "stamp",
+      "navigate": {
+        "page": "approvals"
+      }
+    },
+    {
+      "label": "Communications",
+      "icon": "newspaper",
+      "navigate": {
+        "page": "communications"
+      }
+    },
+    {
+      "label": "Settings",
+      "icon": "settings",
+      "collapsed": true,
+      "items": [
+        {
+          "label": "Profile",
+          "icon": "user",
+          "navigate": {
+            "page": "settingsProfile"
+          }
+        },
+        {
+          "label": "Notifications",
+          "icon": "bell",
+          "navigate": {
+            "page": "settingsNotifications"
+          }
+        }
+      ]
+    }
+  ],
+  "shell": {
+    "navigation": "sidebar",
+    "breadcrumbs": false,
+    "appBar": {
+      "title": "Gummy Portal",
+      "icon": "layoutDashboard"
+    },
+    "sidebar": {
+      "variant": "pill",
+      "toggle": "footer",
+      "activeGradient": {
+        "from": "#e0f2fe",
+        "to": "#c4b5fd"
+      },
+      "indicatorColor": "#3730a3"
+    }
+  },
+  "theme": {
+    "theme": {
+      "appearance": "light",
+      "accentColor": "indigo",
+      "radius": "large",
+      "panelBackground": "solid"
+    },
+    "components": {
+      "dataTable": {
+        "headerFontSize": "sm",
+        "headerFontWeight": "semibold"
+      }
+    }
+  },
+  "globalLoads": [],
+  "customActions": [],
+  "customComponents": []
+}

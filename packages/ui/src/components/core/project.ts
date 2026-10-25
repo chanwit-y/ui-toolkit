@@ -1,7 +1,7 @@
 import type { ThemeProps } from "@radix-ui/themes";
 import type { TApiMaster } from "../../api/APIMaster";
 import type { TModelMaster } from "../../model/master";
-import type { AppBarConfig, GummyPageBody, PageLoad, PageTransition, ThemeComponents, TMenu, TPageEntries } from "../@types";
+import type { AppBarConfig, GummyPageBody, SidebarConfig, PageLoad, PageTransition, ThemeComponents, TMenu, TPageEntries } from "../@types";
 import type { AzureAuthConfig } from "../../auth/azure/config";
 
 /**
@@ -32,6 +32,8 @@ export type GummyProjectShell = {
   menuIcons?: boolean;
   collapsible?: boolean;
   sidebarWidth?: string;
+  /** Sidebar look (plain / pill, colours, rail width) and collapse-toggle placement. */
+  sidebar?: SidebarConfig;
 };
 
 /** The `ThemeProvider` config: Radix global tokens + per-component colours. */

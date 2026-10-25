@@ -17,6 +17,7 @@
 @import "../../../packages/ui/src/styles/workflowEditor.css";
 @import "../../../packages/ui/src/styles/profile.css";
 @import "../../../packages/ui/src/styles/auth.css";
+@import "../../../packages/ui/src/styles/sidebar.css";
 
 /* The library `<Modal>` (Live Preview chrome + engine modal bins) styles its
    backdrop, fade animations, and close button via semantic `.modal-*` classes

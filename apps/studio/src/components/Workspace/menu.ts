@@ -1,6 +1,6 @@
-import { DEFAULT_PAGE_TRANSITION_DURATION, type AppBarConfig, type AppShellProps, type MenuItem, type PageTransition, type TMenu } from '@gummy-ui/ui'
+import { DEFAULT_PAGE_TRANSITION_DURATION, type AppBarConfig, type AppShellProps, type MenuItem, type PageTransition, type SidebarConfig, type TMenu } from '@gummy-ui/ui'
 import { toNavigateTarget } from '../Layout/gridConfig'
-import type { MenuItemDef, PageDef, ShellSettings, StudioPageTransition } from './types'
+import type { MenuItemDef, PageDef, ShellSettings, SidebarSettings, StudioPageTransition } from './types'
 import { pathParams } from './snapshots'
 
 /** A fresh, empty item of the given kind. */
@@ -73,7 +73,10 @@ export function menuToEngine(menu: MenuItemDef[], pages: Pick<PageDef, 'id' | 'k
 }
 
 /** The `AppShell` props the studio shell settings become (spread onto the shell). */
-export type EngineShellProps = Pick<AppShellProps, 'navigation' | 'breadcrumbs' | 'appBar' | 'menuIcons' | 'menuActiveColor' | 'pageTransition' | 'collapsible'>
+export type EngineShellProps = Pick<
+  AppShellProps,
+  'navigation' | 'breadcrumbs' | 'appBar' | 'menuIcons' | 'menuActiveColor' | 'pageTransition' | 'collapsible' | 'sidebar'
+>
 
 /** The studio transition → the engine's, or nothing for none; duration / easing only off the engine defaults. */
 export function pageTransitionToEngine(t: StudioPageTransition | undefined): PageTransition | undefined {
@@ -83,6 +86,44 @@ export function pageTransitionToEngine(t: StudioPageTransition | undefined): Pag
     ...(typeof t.duration === 'number' && t.duration !== DEFAULT_PAGE_TRANSITION_DURATION ? { duration: t.duration } : {}),
     ...(t.easing !== 'ease-out' ? { easing: t.easing } : {}),
   }
+}
+
+/** The footer toggle's label when none is typed (the library's default, so typing it exports nothing). */
+export const DEFAULT_SIDEBAR_TOGGLE_LABEL = 'Hide Menu'
+
+/**
+ * Studio sidebar settings → the library `SidebarConfig`, only what differs
+ * from the defaults (undefined for a default sidebar). The pill colours ride
+ * along only on a pill, the gradient only with both stops, the indicator only
+ * off the variant's own default.
+ */
+export function sidebarToEngine(s: SidebarSettings | undefined): SidebarConfig | undefined {
+  if (!s) return undefined
+  const pill = s.variant === 'pill'
+  const gradientOn = pill && s.activeGradient.enabled && s.activeGradient.from.trim() && s.activeGradient.to.trim()
+  const indicatorOn = s.indicator ?? pill
+  const label = s.toggleLabel.trim()
+  const out: SidebarConfig = {
+    ...(pill ? { variant: 'pill' as const } : {}),
+    ...(s.toggle === 'footer' ? { toggle: 'footer' as const } : {}),
+    ...(s.toggle === 'footer' && label && label !== DEFAULT_SIDEBAR_TOGGLE_LABEL ? { toggleLabel: label } : {}),
+    ...(s.railWidth.trim() ? { railWidth: s.railWidth.trim() } : {}),
+    ...(pill && s.itemBackground.trim() ? { itemBackground: s.itemBackground.trim() } : {}),
+    ...(gradientOn
+      ? {
+          activeGradient: {
+            from: s.activeGradient.from.trim(),
+            to: s.activeGradient.to.trim(),
+            ...(s.activeGradient.angle !== 90 ? { angle: s.activeGradient.angle } : {}),
+          },
+        }
+      : pill && s.activeBackground.trim()
+        ? { activeBackground: s.activeBackground.trim() }
+        : {}),
+    ...(s.indicator !== null && s.indicator !== pill ? { indicator: s.indicator } : {}),
+    ...(indicatorOn && s.indicatorColor.trim() ? { indicatorColor: s.indicatorColor.trim() } : {}),
+  }
+  return Object.keys(out).length ? out : undefined
 }
 
 /** Studio shell settings → `AppShell` props; empty app-bar fields are dropped. */
@@ -125,6 +166,7 @@ export function shellToEngine(shell: ShellSettings): EngineShellProps {
     ...(shell.menuActiveColor?.trim() ? { menuActiveColor: shell.menuActiveColor.trim() } : {}),
     ...(pageTransitionToEngine(shell.pageTransition) ? { pageTransition: pageTransitionToEngine(shell.pageTransition) } : {}),
     ...(shell.collapsible ? {} : { collapsible: false }),
+    ...(sidebarToEngine(shell.sidebar) ? { sidebar: sidebarToEngine(shell.sidebar) } : {}),
   }
 }
 

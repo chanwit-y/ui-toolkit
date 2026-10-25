@@ -129,6 +129,7 @@ function AppContent() {
       menu={menu}
       navigation={navigation}
       appBar={appBar}
+      sidebar={{ variant: "pill", toggle: "footer" }}
       pageTransition={{ type: "fade-up", duration: 350 }}
       header={
         <>

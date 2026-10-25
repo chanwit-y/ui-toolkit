@@ -89,7 +89,7 @@ import {
 import { builtinTemplates } from '../seed/templates'
 import { useThemeStore } from '../Theme/themeStore'
 import type { StudioThemeConfig } from '../Theme/types'
-import type { LibraryData, MenuItemDef, PageDef, PageGrid, ProjectSnapshot, AppBarSettings, ShellSettings } from './types'
+import type { LibraryData, MenuItemDef, PageDef, PageGrid, ProjectSnapshot, AppBarSettings, ShellSettings, SidebarSettings } from './types'
 import { defaultMenu } from './menu'
 import { authEnvRows } from './auth'
 
@@ -203,6 +203,28 @@ export function normalizeAppBar(bar: Partial<AppBarSettings> | undefined, title:
   }
 }
 
+/** The plain sidebar with its toggle in the top bar — what every app had before v53. */
+export function defaultSidebar(): SidebarSettings {
+  return {
+    variant: 'plain',
+    toggle: 'header',
+    toggleLabel: '',
+    railWidth: '',
+    itemBackground: '',
+    activeBackground: '',
+    activeGradient: { enabled: false, from: '', to: '', angle: 90 },
+    indicator: null,
+    indicatorColor: '',
+  }
+}
+
+/** Fill the fields a persisted sidebar lacks (absent before workspace v53, see `migrateV52`). */
+export function normalizeSidebar(sidebar: Partial<SidebarSettings> | undefined): SidebarSettings {
+  const base = defaultSidebar()
+  if (!sidebar) return base
+  return { ...base, ...sidebar, activeGradient: { ...base.activeGradient, ...(sidebar.activeGradient ?? {}) } }
+}
+
 /** Sidebar navigation, breadcrumbs on, a panel app bar titled after the project. */
 export function defaultShell(title = 'My app'): ShellSettings {
   return {
@@ -211,6 +233,7 @@ export function defaultShell(title = 'My app'): ShellSettings {
     appBar: defaultAppBar(title),
     menuIcons: true,
     collapsible: true,
+    sidebar: defaultSidebar(),
   }
 }
 

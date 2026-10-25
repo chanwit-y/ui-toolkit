@@ -94,6 +94,7 @@ import {
   defaultAppBar,
   defaultShell,
   normalizeAppBar,
+  normalizeSidebar,
   optionDemoPages,
   formListDemoPage,
   repeaterDemoPage,
@@ -1048,7 +1049,7 @@ function migrateV49(data: { projects: ProjectDef[]; library: LibraryData }): {
   return migrateV50(migrateV49Only(data))
 }
 
-/** v50 → v51 → v52 (every v50 payload passes through here). */
+/** v50 → v51 → v52 → v53 (every v50 payload passes through here). */
 function migrateV50(data: { projects: ProjectDef[]; library: LibraryData }): {
   projects: ProjectDef[]
   library: LibraryData
@@ -1061,7 +1062,7 @@ function migrateV50(data: { projects: ProjectDef[]; library: LibraryData }): {
  * `background` / `gradient` / `foreground`, and `padding` — filled with the
  * defaults on every project's shell (`normalizeAppBar`).
  */
-function migrateV51(data: { projects: ProjectDef[]; library: LibraryData }): {
+function migrateV51Only(data: { projects: ProjectDef[]; library: LibraryData }): {
   projects: ProjectDef[]
   library: LibraryData
 } {
@@ -1070,6 +1071,33 @@ function migrateV51(data: { projects: ProjectDef[]; library: LibraryData }): {
     projects: data.projects.map((p) => ({
       ...p,
       snapshot: { ...p.snapshot, shell: { ...p.snapshot.shell, appBar: normalizeAppBar(p.snapshot.shell?.appBar, p.name) } },
+    })),
+  }
+}
+
+/** v51 → v52 → v53 (every v51 payload passes through here). */
+function migrateV51(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  return migrateV52(migrateV51Only(data))
+}
+
+/**
+ * v52 → v53: the sidebar look (see the grilled design `sidebar-pill-variant`)
+ * — `shell.sidebar` filled with the plain defaults on every project
+ * (`normalizeSidebar`), so nothing changes until a project picks Pill or the
+ * footer toggle.
+ */
+function migrateV52(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  return {
+    ...data,
+    projects: data.projects.map((p) => ({
+      ...p,
+      snapshot: { ...p.snapshot, shell: { ...p.snapshot.shell, sidebar: normalizeSidebar(p.snapshot.shell?.sidebar) } },
     })),
   }
 }
@@ -1831,7 +1859,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
       const templateOf = (id: string) => get().library.templates.find((t) => t.id === id)
 
       return {
-      version: 52,
+      version: 53,
       appearance: 'light',
       user: MOCK_USERS[0].name,
       projects: seedProjects(initialLibrary),
@@ -2258,7 +2286,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
       name: WORKSPACE_STORAGE_KEY,
       // localStorage, or the `gummy studio` CLI's file API — decided before this module loads.
       storage: createJSONStorage(() => studioStorage),
-      version: 52,
+      version: 53,
       partialize: (s) => ({
         version: s.version,
         appearance: s.appearance,
@@ -2445,7 +2473,11 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
         if (data.version === 51) {
           return { ...current, appearance, user, activity, ...migrateV51({ projects: data.projects, library }) }
         }
-        if (data.version !== 52) return current
+        if (data.version === 52) {
+          const normalized = { ...library, auth: (library.auth ?? []).map((a) => normalizeAuthDef(a)) }
+          return { ...current, appearance, user, activity, ...migrateV52({ projects: data.projects, library: normalized }) }
+        }
+        if (data.version !== 53) return current
         // Same version, possibly older entry shapes (fields added without a bump): fill the defaults.
         return { ...current, appearance, user, activity, projects: data.projects, library: { ...library, auth: (library.auth ?? []).map((a) => normalizeAuthDef(a)) } }
       },

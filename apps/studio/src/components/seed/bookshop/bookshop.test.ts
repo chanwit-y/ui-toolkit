@@ -4,6 +4,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { assertGummyProject, type GummyPageBody, type GummyProject } from '@gummy-ui/ui'
 import { bookshopFolders, bookshopWorkspace, bookshopWorkspaceFile, BOOKSHOP_KEY } from './project'
+import { PORTAL_KEY } from '../portal/project'
 
 /**
  * The Book shop demo's workspace (see the grilled design `bookshop-demo`):
@@ -42,8 +43,8 @@ function references(project: GummyProject, bodies: GummyPageBody[]) {
   return { apis: new Set([...apiNames, ...crud].filter(Boolean)), pages: new Set(pages), components: new Set(components), actions: new Set(actions) }
 }
 
-function checkProject(project: GummyProject, bodies: Record<string, GummyPageBody>) {
-  expect(assertGummyProject(project).name).toBe('Book shop')
+function checkProject(project: GummyProject, bodies: Record<string, GummyPageBody>, name = 'Book shop') {
+  expect(assertGummyProject(project).name).toBe(name)
   // Every page is split, and its file exists and is a page body.
   for (const [key, page] of Object.entries(project.pages)) {
     expect(page.containers).toBeUndefined()
@@ -65,9 +66,9 @@ describe('Book shop workspace', () => {
     expect(JSON.stringify(bookshopWorkspaceFile())).toBe(JSON.stringify(bookshopWorkspaceFile()))
   })
 
-  test('exports one valid, fully wired project folder', () => {
+  test('exports the Book shop as a valid, fully wired project folder', () => {
     const folders = bookshopFolders()
-    expect(Object.keys(folders)).toEqual([BOOKSHOP_KEY])
+    expect(Object.keys(folders)).toEqual([BOOKSHOP_KEY, PORTAL_KEY])
     const { project, pages } = folders[BOOKSHOP_KEY]
     const refs = checkProject(project, pages)
     expect(Object.keys(project.pages)).toHaveLength(11)
@@ -77,13 +78,36 @@ describe('Book shop workspace', () => {
     expect([...refs.actions]).toEqual(['printOrder'])
   })
 
-  test('the project the demo renders (demo/gummy) is valid and fully wired', () => {
-    const dir = join(demoGummy, 'projects', BOOKSHOP_KEY)
+  test('exports Gummy Portal with the pill sidebar and no API', () => {
+    const { project, pages } = bookshopFolders()[PORTAL_KEY]
+    const refs = checkProject(project, pages, 'Gummy Portal')
+    expect(Object.keys(project.pages)).toHaveLength(6)
+    expect(refs.apis.size).toBe(0)
+    expect(project.auth).toBeUndefined()
+    // The Book shop keeps the plain sidebar.
+    expect(bookshopFolders()[BOOKSHOP_KEY].project.shell?.sidebar).toBeUndefined()
+    expect(project.shell?.sidebar).toEqual({
+      variant: 'pill',
+      toggle: 'footer',
+      activeGradient: { from: '#e0f2fe', to: '#c4b5fd' },
+      indicatorColor: '#3730a3',
+    })
+  })
+
+  const tracked = (key: string) => {
+    const dir = join(demoGummy, 'projects', key)
     const project = JSON.parse(readFileSync(join(dir, 'project.json'), 'utf8')) as GummyProject
     const bodies = Object.fromEntries(
       readdirSync(join(dir, 'pages')).map((f) => [f.replace(/\.json$/, ''), JSON.parse(readFileSync(join(dir, 'pages', f), 'utf8'))]),
     )
-    checkProject(project, bodies)
+    return { project, bodies }
+  }
+
+  test('the projects the demo renders (demo/gummy) are valid and fully wired', () => {
+    const shop = tracked(BOOKSHOP_KEY)
+    checkProject(shop.project, shop.bodies)
+    const portal = tracked(PORTAL_KEY)
+    checkProject(portal.project, portal.bodies, 'Gummy Portal')
   })
 
   test("the studio opens the generated workspace.json without changing it", async () => {

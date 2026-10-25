@@ -1,0 +1,59 @@
+{
+  "containers": [
+    {
+      "id": "page-applications",
+      "name": "page-applications",
+      "isArray": false,
+      "bins": [
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "Applications",
+            "variant": "h3",
+            "weight": "bold"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "Every app you can open with your Gummy account.",
+            "variant": "body2",
+            "color": "gray"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "html",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "allApps",
+            "html": "<div style=\"border:1px solid var(--gray-a5);border-radius:14px;background:var(--color-panel-solid);padding:16px;padding:24px\"><div style=\"display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:20px\"><a href=\"#\" style=\"display:flex;flex-direction:column;align-items:center;gap:8px;text-decoration:none;color:var(--gray-12)\">\n  <span style=\"display:flex;width:72px;height:72px;align-items:center;justify-content:center;border-radius:18px;background:var(--iris-3);color:var(--iris-11);font-size:26px;font-weight:700;box-shadow:0 1px 2px var(--gray-a4)\">D</span>\n  <span style=\"font-size:13px;font-weight:500\">DOA</span>\n</a><a href=\"#\" style=\"display:flex;flex-direction:column;align-items:center;gap:8px;text-decoration:none;color:var(--gray-12)\">\n  <span style=\"display:flex;width:72px;height:72px;align-items:center;justify-content:center;border-radius:18px;background:var(--grass-3);color:var(--grass-11);font-size:26px;font-weight:700;box-shadow:0 1px 2px var(--gray-a4)\">L</span>\n  <span style=\"font-size:13px;font-weight:500\">Leave</span>\n</a><a href=\"#\" style=\"display:flex;flex-direction:column;align-items:center;gap:8px;text-decoration:none;color:var(--gray-12)\">\n  <span style=\"display:flex;width:72px;height:72px;align-items:center;justify-content:center;border-radius:18px;background:var(--amber-3);color:var(--amber-11);font-size:26px;font-weight:700;box-shadow:0 1px 2px var(--gray-a4)\">E</span>\n  <span style=\"font-size:13px;font-weight:500\">Expense</span>\n</a><a href=\"#\" style=\"display:flex;flex-direction:column;align-items:center;gap:8px;text-decoration:none;color:var(--gray-12)\">\n  <span style=\"display:flex;width:72px;height:72px;align-items:center;justify-content:center;border-radius:18px;background:var(--cyan-3);color:var(--cyan-11);font-size:26px;font-weight:700;box-shadow:0 1px 2px var(--gray-a4)\">R</span>\n  <span style=\"font-size:13px;font-weight:500\">Room booking</span>\n</a><a href=\"#\" style=\"display:flex;flex-direction:column;align-items:center;gap:8px;text-decoration:none;color:var(--gray-12)\">\n  <span style=\"display:flex;width:72px;height:72px;align-items:center;justify-content:center;border-radius:18px;background:var(--crimson-3);color:var(--crimson-11);font-size:26px;font-weight:700;box-shadow:0 1px 2px var(--gray-a4)\">I</span>\n  <span style=\"font-size:13px;font-weight:500\">IT help</span>\n</a><a href=\"#\" style=\"display:flex;flex-direction:column;align-items:center;gap:8px;text-decoration:none;color:var(--gray-12)\">\n  <span style=\"display:flex;width:72px;height:72px;align-items:center;justify-content:center;border-radius:18px;background:var(--jade-3);color:var(--jade-11);font-size:26px;font-weight:700;box-shadow:0 1px 2px var(--gray-a4)\">P</span>\n  <span style=\"font-size:13px;font-weight:500\">Payslip</span>\n</a><a href=\"#\" style=\"display:flex;flex-direction:column;align-items:center;gap:8px;text-decoration:none;color:var(--gray-12)\">\n  <span style=\"display:flex;width:72px;height:72px;align-items:center;justify-content:center;border-radius:18px;background:var(--violet-3);color:var(--violet-11);font-size:26px;font-weight:700;box-shadow:0 1px 2px var(--gray-a4)\">T</span>\n  <span style=\"font-size:13px;font-weight:500\">Training</span>\n</a><a href=\"#\" style=\"display:flex;flex-direction:column;align-items:center;gap:8px;text-decoration:none;color:var(--gray-12)\">\n  <span style=\"display:flex;width:72px;height:72px;align-items:center;justify-content:center;border-radius:18px;background:var(--sky-3);color:var(--sky-11);font-size:26px;font-weight:700;box-shadow:0 1px 2px var(--gray-a4)\">T</span>\n  <span style=\"font-size:13px;font-weight:500\">Travel</span>\n</a><a href=\"#\" style=\"display:flex;flex-direction:column;align-items:center;gap:8px;text-decoration:none;color:var(--gray-12)\">\n  <span style=\"display:flex;width:72px;height:72px;align-items:center;justify-content:center;border-radius:18px;background:var(--orange-3);color:var(--orange-11);font-size:26px;font-weight:700;box-shadow:0 1px 2px var(--gray-a4)\">P</span>\n  <span style=\"font-size:13px;font-weight:500\">Procurement</span>\n</a><a href=\"#\" style=\"display:flex;flex-direction:column;align-items:center;gap:8px;text-decoration:none;color:var(--gray-12)\">\n  <span style=\"display:flex;width:72px;height:72px;align-items:center;justify-content:center;border-radius:18px;background:var(--bronze-3);color:var(--bronze-11);font-size:26px;font-weight:700;box-shadow:0 1px 2px var(--gray-a4)\">A</span>\n  <span style=\"font-size:13px;font-weight:500\">Assets</span>\n</a><a href=\"#\" style=\"display:flex;flex-direction:column;align-items:center;gap:8px;text-decoration:none;color:var(--gray-12)\">\n  <span style=\"display:flex;width:72px;height:72px;align-items:center;justify-content:center;border-radius:18px;background:var(--plum-3);color:var(--plum-11);font-size:26px;font-weight:700;box-shadow:0 1px 2px var(--gray-a4)\">V</span>\n  <span style=\"font-size:13px;font-weight:500\">Visitors</span>\n</a><a href=\"#\" style=\"display:flex;flex-direction:column;align-items:center;gap:8px;text-decoration:none;color:var(--gray-12)\">\n  <span style=\"display:flex;width:72px;height:72px;align-items:center;justify-content:center;border-radius:18px;background:var(--gray-3);color:var(--gray-11);font-size:26px;font-weight:700;box-shadow:0 1px 2px var(--gray-a4)\">D</span>\n  <span style=\"font-size:13px;font-weight:500\">Directory</span>\n</a></div></div>",
+            "prose": false
+          }
+        }
+      ],
+      "gap": "16px",
+      "justifyItems": "stretch",
+      "alignItems": "stretch",
+      "justifyContent": "start",
+      "alignContent": "start",
+      "gridAutoFlow": "row"
+    }
+  ]
+}
