@@ -1,0 +1,59 @@
+1
+00:00:00,700 --> 00:00:03,864
+Meet Gummy Books, a back office for a book shop.
+
+2
+00:00:04,814 --> 00:00:11,209
+It has a dashboard, server-paged tables with filters, detail pages, forms and sign-in.
+
+3
+00:00:15,371 --> 00:00:18,132
+And not one of these screens was written by hand.
+
+4
+00:00:18,640 --> 00:00:21,274
+Every page was designed in Gummy Studio.
+
+5
+00:00:24,006 --> 00:00:31,454
+Drop a component on the canvas, point it at an API endpoint, and set paging, sorting and filters in its properties.
+
+6
+00:00:33,869 --> 00:00:37,201
+Then open the live preview, and try it with real data.
+
+7
+00:00:37,902 --> 00:00:41,006
+Sign-in is a shared entry that each project picks.
+
+8
+00:00:42,767 --> 00:00:48,163
+Roles are plain conditions, like: show this button only when the signed-in role is manager.
+
+9
+00:00:49,026 --> 00:00:52,654
+Menus, colours and page transitions are settings too.
+
+10
+00:00:53,202 --> 00:00:58,007
+A clerk opens an order with a pending refund, and sees it's waiting for a manager.
+
+11
+00:00:58,760 --> 00:01:02,001
+The manager opens the same order, and can approve it.
+
+12
+00:01:06,335 --> 00:01:08,951
+One page, one condition apart.
+
+13
+00:01:09,654 --> 00:01:12,849
+The studio saves plain JSON next to your code.
+
+14
+00:01:12,749 --> 00:01:16,022
+Change the app bar title, and the running app follows.
+
+15
+00:01:17,501 --> 00:01:22,069
+Gummy Studio. Design the screens, and keep your code for what matters.

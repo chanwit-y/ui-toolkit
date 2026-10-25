@@ -14,7 +14,8 @@ bun run --cwd demo api      # http://localhost:9100
 | `PUBLIC_URL` | `http://localhost:9100` | Prefix of every asset URL the API returns (covers, avatars, uploads), so `<img>` tags work from the demo (port 3400) and from the studio's Live Preview (port 3300) alike. |
 | `ANCHOR_DATE` | today (UTC, `YYYY-MM-DD`) | The last day of the generated 90-day order history; the dashboard's "this month" is relative to it. Tests pin it. |
 
-CORS is open (`*`, every method, `content-type` / `authorization` headers).
+CORS is open (`*`, every method, every requested header — the engine's HTTP client also sends
+`app-version`, and the studio's Live Preview calls the API from another origin).
 
 ## Conventions
 

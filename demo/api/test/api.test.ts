@@ -625,3 +625,19 @@ describe('display dates', () => {
     expect(dateText('2002-09-21')).toBe('21 Sep 2002');
   });
 });
+
+describe('cors', () => {
+  test('a preflight allows the headers the engine client sends', async () => {
+    const res = await createApp({ anchorDate: '2026-10-24' }).request('/api/staff/by-email?email=chanwit_y@banpu.co.th', {
+      method: 'OPTIONS',
+      headers: {
+        origin: 'http://localhost:3300',
+        'access-control-request-method': 'GET',
+        'access-control-request-headers': 'access-control-allow-origin,app-version,authorization,content-type',
+      },
+    });
+    expect(res.status).toBe(204);
+    const allowed = (res.headers.get('access-control-allow-headers') ?? '').toLowerCase();
+    for (const h of ['app-version', 'authorization', 'content-type', 'access-control-allow-origin']) expect(allowed).toContain(h);
+  });
+});

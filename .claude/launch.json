@@ -92,6 +92,17 @@
       ],
       "port": 3398,
       "autoPort": false
+    },
+    {
+      "name": "demo-clerk",
+      "comment": "A second demo app signed in as the clerk (VITE_AUTH_MOCK_EMAIL overrides demo/.env), port 3401 \u2014 the intro video's role scene.",
+      "runtimeExecutable": "/bin/bash",
+      "runtimeArgs": [
+        "-c",
+        "cd demo && PATH=/opt/homebrew/bin:$PATH VITE_AUTH_MOCK_EMAIL=pimchanok_s@banpu.co.th exec bun x vite --port 3401 --strictPort"
+      ],
+      "port": 3401,
+      "autoPort": false
     }
   ]
 }

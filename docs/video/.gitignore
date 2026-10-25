@@ -1,0 +1,4 @@
+# The rendered video and everything rebuilt on the way (frames, clips, audio).
+out/
+.work/
+node_modules

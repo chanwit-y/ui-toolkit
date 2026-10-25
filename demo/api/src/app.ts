@@ -39,7 +39,10 @@ export function createApp(options: AppOptions = {}) {
     cors({
       origin: '*',
       allowMethods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-      allowHeaders: ['content-type', 'authorization'],
+      // No allowHeaders: every requested header is allowed (Hono echoes the
+      // preflight's list). The engine's HTTP client sends `app-version` too,
+      // and a fixed list failed every cross-origin call — the studio's Live
+      // Preview calls this API from another origin.
     }),
   );
 
