@@ -4,8 +4,9 @@ import { cliInfo, isCliMode, useCliStatus } from './cliStorage'
 /**
  * The strip across the top of the studio when a save to `gummy/workspace.json`
  * could not go through (see `cliStorage.ts`): the file changed on disk under
- * this tab (a `git pull`, another tab) — nothing is overwritten, the user
- * reloads and the in-memory edits since are lost — or the CLI did not answer.
+ * this tab while it held unsaved edits (a clean tab reloads by itself) —
+ * nothing is overwritten, the user reloads and the in-memory edits since are
+ * lost — or the CLI did not answer.
  * Renders nothing outside CLI mode or while saves succeed.
  */
 export function CliBanner() {

@@ -1,0 +1,1852 @@
+/*
+ * Workspace migrations (versions 1 → 53), pure: no store, no browser. Every
+ * persisted payload goes through `migrateWorkspace` — the studio's persist
+ * `merge` and the headless `gummy mcp` alike (see the grilled design
+ * `mcp-server`). A version bump adds its step here and the case to the chain.
+ */
+import type { EndpointDef } from '../Api/types'
+import type { ModelDef } from '../Model/types'
+import type { LoadingMode, PageLoadDef } from './pageLoads'
+import { AUTH_PROFILE_LOAD_ID, authEnvRows, normalizeAuthDef } from './auth'
+import { seedActivity } from '../seed/activity'
+import {
+  countryCreateButtonSeedItem,
+  countryLanguagesSeedItem,
+  countryTablePagination,
+  COUNTRIES_PAGED_GET_ENDPOINT_ID,
+  COUNTRY_ADD_BUTTON,
+  COUNTRY_CREATE_BUTTON_ITEM_ID,
+  COUNTRY_MODAL_ITEM_ID,
+  COUNTRY_TABLE_ITEM_ID,
+  DATA_TABLE_HTML_ITEM_ID,
+  DATA_TABLE_CLAMP_ITEM_ID,
+  dataTableClampSeedItems,
+  tableLayoutSeedModels,
+  pageDataSeedModels,
+  pageDataSeedEndpoints,
+  PAGE_DATA_PAGE_ID,
+  approvalSeedModels,
+  approvalSeedEndpoints,
+  APPROVAL_LINE_PAGE_ID,
+  APPROVAL_RES_MODEL_ID,
+  APPROVAL_OWN_ITEM_ID,
+  approvalUserFields,
+  approvalLineDemoSeedItems,
+  workflowSeedModels,
+  workflowSeedEndpoints,
+  WORKFLOW_PAGE_ID,
+  LOADING_MODE_PAGE_ID,
+  customActionsSeedDefs,
+  customComponentsSeedDefs,
+  profileSeedModels,
+  profileSwitchSeedItems,
+  PROFILE_PAGE_ID,
+  PROFILE_RES_MODEL_ID,
+  PROFILE_LIST_RES_MODEL_ID,
+  PROFILE_SWITCH_DROPDOWN_ITEM_ID,
+  profileSeedEndpoints,
+  profileByEmailSeedModels,
+  profileByEmailSeedEndpoints,
+  azureSeedAuth,
+  AZURE_AUTH_ID,
+  LOAD_ME_ID,
+  tableLayoutSeedEndpoints,
+  REGION_RES_MODEL_ID,
+  DATA_TABLE_PAGE_ID,
+  HTML_COLUMNS_PAGE_ID,
+  COUNTRY_PAGE_BODY_MODEL_ID,
+  COUNTRY_PAGE_QUERY_MODEL_ID,
+  pageFilterFields,
+  serverFilterSeedEndpoints,
+  serverFilterSeedModels,
+  HTML_COLUMNS_RICH_ITEM_IDS,
+  htmlColumnDemoSeedItems,
+  dataTableHtmlSeedItems,
+  COUNTRY_UPDATE_BUTTON_ITEM_ID,
+  formListDemoSeedEndpoints,
+  formListDemoSeedModels,
+  pagedCountriesSeedEndpoints,
+  pagedCountriesSeedModels,
+  repeaterDemoSeedEndpoints,
+  repeaterDemoSeedModels,
+  languageSeedEndpoints,
+  languageSeedModels,
+  LANGUAGES_ITEM_ID,
+  SEARCH_COUNTRIES_ENDPOINT_ID,
+  LOAD_REGION_ID,
+  LOAD_REGION_COUNTRIES_ID,
+  LOAD_LOOKUPS_ID,
+  LOAD_APPROVAL_ID,
+  LOAD_WORKFLOW_ID,
+} from '../seed/country'
+import { builtinTemplates } from '../seed/templates'
+import {
+  COUNTRIES_GROUP_ID,
+  countryLibrary,
+  createPage,
+  uniquePageKey,
+  defaultAppBar,
+  defaultShell,
+  normalizeAppBar,
+  normalizeSidebar,
+  optionDemoPages,
+  formListDemoPage,
+  repeaterDemoPage,
+  paginationDemoPage,
+  dataTableDemoPage,
+  htmlColumnDemoPage,
+  columnResizeDemoPage,
+  serverFilterDemoPage,
+  filterApiDemoPage,
+  cellTooltipDemoPage,
+  tableLayoutDemoPage,
+  cardDemoPage,
+  htmlContentDemoPage,
+  drawerDemoPage,
+  chipsDemoPage,
+  switchDemoPage,
+  pageDataDemoPage,
+  pageDataMenuItem,
+  approvalLineDemoPage,
+  approvalLineMenuItem,
+  workflowDemoPage,
+  workflowMenuItem,
+  loadingModeDemoPage,
+  loadingModeMenuItem,
+  customActionsDemoPage,
+  customComponentsDemoPage,
+  profileDemoPage,
+  seedGlobalLoads,
+  uploadDemoPage,
+  OPTION_DEMO_MENU_ICONS,
+} from './snapshots'
+import type {
+  LibraryData,
+  PageDef,
+  PageGrid,
+  ProjectDef,
+  ProjectSnapshot,
+  AppBarSettings,
+  ShellSettings,
+  WorkspaceData,
+  MenuItemDef,
+} from './types'
+import { walkItems } from '../Layout/pageLinks'
+import type { ContainerConfig } from '../Layout/types'
+import { defaultMenu } from './menu'
+import { createDefaultPaginationConfig, DEFAULT_ADD_BUTTON, createDefaultApprovalLineConfig, createFormListCrudRef, type ApprovalLineConfig } from '../Layout/types'
+import { createDefaultSortConfig, DEFAULT_CELL_LINES, DEFAULT_FILTER_BUTTON, ensureDataTableCanvases, createDefaultProfileKeysConfig } from '../Layout/types'
+import type { ReplaceProfileConfig, SwitchProfileConfig } from '../Layout/types'
+import type { AvatarConfig, ButtonItemConfig, DataTableConfig, DataTableEditableConfig, FormListConfig, GridItemData, ModalConfig, PopoverConfig, SelectFieldConfig, TextConfig, TypographyConfig, UploadFileConfig } from '../Layout/types'
+
+
+import { MOCK_USERS } from './mockUsers'
+
+/** v2 projects owned one canvas (`snapshot.grid`) instead of pages. */
+type V2Snapshot = Omit<ProjectSnapshot, 'pages'> & { grid: PageGrid }
+type V2Project = Omit<ProjectDef, 'snapshot'> & { snapshot: V2Snapshot }
+
+/** v1 projects carried their own models/endpoints; the library didn't exist. */
+type V1Project = Omit<ProjectDef, 'snapshot'> & {
+  snapshot: Omit<V2Snapshot, 'endpointIds'> & {
+    models?: ModelDef[]
+    endpoints?: EndpointDef[]
+    endpointIds?: string[]
+  }
+}
+
+/**
+ * v1 → v2: promote every project's models and endpoints into one shared
+ * library (first copy of an id wins — projects created from the seed share
+ * ids), file the seed items under the Countries group, and leave each project
+ * attached to the endpoints it used to own.
+ */
+function migrateV1(projects: V1Project[]): { projects: V2Project[]; library: LibraryData } {
+  const models = new Map<string, ModelDef>()
+  const endpoints = new Map<string, EndpointDef>()
+  const isSeed = (id: string) => id.startsWith('seed-')
+  // v1 snapshots predate `menu` / `shell` (added by migrateV5 / V6 further down the chain).
+  const out = projects.map((p) => {
+    for (const m of p.snapshot.models ?? []) {
+      if (!models.has(m.id)) models.set(m.id, { ...m, groupId: isSeed(m.id) ? COUNTRIES_GROUP_ID : null })
+    }
+    for (const e of p.snapshot.endpoints ?? []) {
+      if (!endpoints.has(e.id))
+        endpoints.set(e.id, { ...e, groupId: isSeed(e.id) ? COUNTRIES_GROUP_ID : null })
+    }
+    return {
+      ...p,
+      snapshot: {
+        grid: p.snapshot.grid,
+        env: p.snapshot.env,
+        theme: p.snapshot.theme,
+        endpointIds:
+          p.snapshot.endpointIds ?? (p.snapshot.endpoints ?? []).map((e) => e.id),
+      },
+    }
+  }) as unknown as V2Project[]
+  const hasSeed = [...models.keys(), ...endpoints.keys()].some(isSeed)
+  return {
+    projects: out,
+    library: {
+      groups: hasSeed ? countryLibrary().groups : [],
+      models: [...models.values()],
+      endpoints: [...endpoints.values()],
+      templates: builtinTemplates(),
+    },
+  }
+}
+
+/** v3 pages had no `key`. */
+type V3Page = Omit<PageDef, 'key'> & { key?: string }
+type V3Project = Omit<ProjectDef, 'snapshot'> & {
+  snapshot: Omit<ProjectSnapshot, 'pages'> & { pages: V3Page[] }
+}
+
+/** v2 → v3: the single canvas becomes the project's first (and only) page. */
+function migrateV2(projects: V2Project[]): V3Project[] {
+  return projects.map((p) => {
+    const { grid, ...rest } = p.snapshot
+    return { ...p, snapshot: { ...rest, pages: [createPage('Page 1', '/', grid)] } }
+  })
+}
+
+/** The v3 design-only page navigation a button carried. */
+type V3PageNavigation = { kind: 'page'; pageId: string; params: Record<string, string> }
+
+/**
+ * v3 → v4 (see the grilled page-router design): every page gets a `key`
+ * derived from its name, and a button's design-only "go to page" becomes the
+ * engine `Navigate` action with a `navigate` target (fixed values → `value`
+ * sources), appended to its direct or confirm-true action list. Templates
+ * carry the same button configs, so their grids are migrated too (their page
+ * refs are dropped on insert anyway, see `cloneItems`).
+ */
+function migrateButtonNavigation(items: GridItemData[]): void {
+  walkItems(items, (item) => {
+    if (item.type !== 'button' || !item.config) return
+    const c = item.config as ButtonItemConfig & { navigation?: { kind: string } }
+    const nav = c.navigation as V3PageNavigation | { kind: string } | undefined
+    if (!nav || nav.kind !== 'page') return
+    const page = nav as V3PageNavigation
+    c.navigate = {
+      pageId: page.pageId ?? '',
+      params: Object.fromEntries(
+        Object.entries(page.params ?? {}).map(([k, v]) => [k, { type: 'value', value: v }]),
+      ),
+      replace: false,
+    }
+    const list = c.mode === 'confirm' ? c.confirmTrue : c.actions
+    if (!list.includes('Navigate')) list.push('Navigate')
+    c.navigation = { kind: 'none' }
+  })
+}
+
+/** v4 projects had no app-shell menu. */
+type V4Project = Omit<ProjectDef, 'snapshot'> & {
+  snapshot: Omit<ProjectSnapshot, 'menu' | 'shell'> & { menu?: MenuItemDef[] }
+}
+
+/** v4 → v5: every project gets a menu, seeded with one link per param-less page. */
+function migrateV4(projects: V4Project[]): V5Project[] {
+  return projects.map((p) => ({
+    ...p,
+    snapshot: {
+      ...p.snapshot,
+      menu: Array.isArray(p.snapshot.menu) ? p.snapshot.menu : defaultMenu(p.snapshot.pages),
+    },
+  }))
+}
+
+/** v5 projects had no shell settings. */
+type V5Project = Omit<ProjectDef, 'snapshot'> & {
+  snapshot: Omit<ProjectSnapshot, 'shell'> & { shell?: Omit<ShellSettings, 'appBar' | 'menuIcons' | 'collapsible'> }
+}
+
+/** v5 → v6: every project gets shell settings (sidebar navigation, breadcrumbs on). */
+function migrateV5(projects: V5Project[]): V6Project[] {
+  return projects.map((p) => ({
+    ...p,
+    snapshot: { ...p.snapshot, shell: p.snapshot.shell ?? defaultShell() },
+  }))
+}
+
+/** v6 shell settings had no app bar. */
+type V6Project = Omit<ProjectDef, 'snapshot'> & {
+  snapshot: Omit<ProjectSnapshot, 'shell'> & {
+    shell: Omit<ShellSettings, 'appBar' | 'menuIcons' | 'collapsible'> & {
+      appBar?: V8Project['snapshot']['shell']['appBar']
+      menuIcons?: boolean
+      collapsible?: boolean
+    }
+  }
+}
+
+/** v6 → v7: the app bar defaults to a panel bar titled after the project. */
+function migrateV6(projects: V6Project[]): V7Project[] {
+  return projects.map((p) => ({
+    ...p,
+    snapshot: {
+      ...p.snapshot,
+      shell: { ...p.snapshot.shell, appBar: p.snapshot.shell.appBar ?? defaultAppBar(p.name) },
+    },
+  }))
+}
+
+/** v7 shell settings had no menu-icons switch. */
+type V7Project = Omit<ProjectDef, 'snapshot'> & {
+  snapshot: Omit<ProjectSnapshot, 'shell'> & {
+    shell: Omit<ShellSettings, 'menuIcons' | 'appBar' | 'collapsible'> & {
+      menuIcons?: boolean
+      appBar: V8Project['snapshot']['shell']['appBar']
+      collapsible?: boolean
+    }
+  }
+}
+
+/** v7 → v8: menu item icons shown. */
+function migrateV7(projects: V7Project[]): V8Project[] {
+  return projects.map((p) => ({
+    ...p,
+    snapshot: {
+      ...p.snapshot,
+      shell: { ...p.snapshot.shell, menuIcons: p.snapshot.shell.menuIcons ?? true },
+    },
+  }))
+}
+
+/** v8 had no sidebar-toggle icons and no collapsible switch. */
+type V8Project = Omit<ProjectDef, 'snapshot'> & {
+  snapshot: Omit<ProjectSnapshot, 'shell'> & {
+    shell: Omit<ShellSettings, 'appBar' | 'collapsible'> & {
+      appBar: Omit<AppBarSettings, 'sidebarToggle'> & { sidebarToggle?: AppBarSettings['sidebarToggle'] }
+      collapsible?: boolean
+    }
+  }
+}
+
+/** v8 → v9: collapsible sidebar with the library's default toggle glyphs. */
+function migrateV8(projects: V8Project[]): ProjectDef[] {
+  return projects.map((p) => ({
+    ...p,
+    snapshot: {
+      ...p.snapshot,
+      shell: {
+        ...p.snapshot.shell,
+        appBar: {
+          ...p.snapshot.shell.appBar,
+          sidebarToggle: p.snapshot.shell.appBar.sidebarToggle ?? { hide: '', show: '' },
+        },
+        collapsible: p.snapshot.shell.collapsible ?? true,
+      },
+    },
+  }))
+}
+
+const SELECT_FAMILY = new Set(['select', 'autocomplete', 'multiAutocomplete'])
+
+/**
+ * v9 → v10 (see the grilled option-display design): the select family keeps one
+ * flat key set for both modes. Source mode used to edit `dataSource.valueKey` /
+ * `labelKey`, which the export never read (it always emitted the static-only
+ * `idKey`/`displayKey`/`searchKey`) — so what the author typed there is carried
+ * onto the flat keys, then dropped. The new option-display fields start unset.
+ * Templates carry the same configs, so their grids are migrated too.
+ */
+function migrateSelectKeys(items: GridItemData[]): void {
+  walkItems(items, (item) => {
+    if (!SELECT_FAMILY.has(item.type) || !item.config) return
+    const c = item.config as SelectFieldConfig & {
+      dataSource: SelectFieldConfig['dataSource'] & { valueKey?: string; labelKey?: string }
+    }
+    const { valueKey, labelKey, ...dataSource } = c.dataSource ?? { endpointId: null, paths: '' }
+    if (c.mode === 'source') {
+      if (valueKey?.trim()) c.idKey = valueKey.trim()
+      if (labelKey?.trim()) c.displayKey = c.searchKey = labelKey.trim()
+    }
+    c.dataSource = dataSource
+    c.subtitleKey ??= ''
+    c.avatarKey ??= ''
+    c.inputIcon ??= ''
+    c.itemIcon ??= ''
+  })
+}
+
+function migrateV9(projects: ProjectDef[], library: LibraryData): ProjectDef[] {
+  for (const p of projects) for (const pg of p.snapshot.pages) migrateSelectKeys(pg.grid.items)
+  for (const t of library.templates) migrateSelectKeys(t.grid.items)
+  return projects
+}
+
+/**
+ * v10 → v11: the seeded Country manager gains the select-family demo pages
+ * ("Option display", "Icons") that only fresh demo data used to get — appended
+ * once, with a sidebar link each, and only when that page id is absent, so a
+ * page the user deleted afterwards stays deleted. Other projects are untouched.
+ */
+/**
+ * Append demo pages (with a sidebar link each) to a project, skipping page
+ * ids it already has — so a page the user deleted afterwards stays deleted.
+ * Seed keys stay camelCase unless the user already took them.
+ */
+function appendDemoPages(p: ProjectDef, demos: PageDef[]): ProjectDef {
+  const missing = demos.filter((demo) => !p.snapshot.pages.some((pg) => pg.id === demo.id))
+  if (missing.length === 0) return p
+  const taken = new Set(p.snapshot.pages.map((pg) => pg.key))
+  const pages = missing.map((demo) => ({
+    ...demo,
+    key: taken.has(demo.key) ? uniquePageKey(demo.key, taken) : demo.key,
+  }))
+  const menu: MenuItemDef[] = pages.map((pg) => ({
+    id: crypto.randomUUID(),
+    kind: 'page',
+    label: pg.name,
+    icon: OPTION_DEMO_MENU_ICONS[pg.id] ?? '',
+    navigate: { pageId: pg.id, params: {}, replace: false },
+  }))
+  return {
+    ...p,
+    snapshot: {
+      ...p.snapshot,
+      pages: [...p.snapshot.pages, ...pages],
+      menu: [...p.snapshot.menu, ...menu],
+    },
+  }
+}
+
+function migrateV10(projects: ProjectDef[]): ProjectDef[] {
+  return projects.map((p) => (p.id === 'seed-project-country' ? appendDemoPages(p, optionDemoPages()) : p))
+}
+
+/**
+ * Add seeded models / endpoints the library doesn't have yet (by id, filed
+ * under the Countries group) and attach the endpoints to the seeded project.
+ */
+function seedLibraryAdditions(
+  projects: ProjectDef[],
+  library: LibraryData,
+  models: ModelDef[],
+  endpoints: EndpointDef[],
+): { projects: ProjectDef[]; library: LibraryData } {
+  const modelIds = new Set(library.models.map((m) => m.id))
+  const endpointIds = new Set(library.endpoints.map((e) => e.id))
+  const newModels = models.filter((m) => !modelIds.has(m.id)).map((m) => ({ ...m, groupId: COUNTRIES_GROUP_ID }))
+  const newEndpoints = endpoints
+    .filter((e) => !endpointIds.has(e.id))
+    .map((e) => ({ ...e, groupId: COUNTRIES_GROUP_ID }))
+  const nextLibrary =
+    newModels.length || newEndpoints.length
+      ? { ...library, models: [...library.models, ...newModels], endpoints: [...library.endpoints, ...newEndpoints] }
+      : library
+  const seedEndpointIds = endpoints.map((e) => e.id)
+  const nextProjects = projects.map((p) => {
+    if (p.id !== 'seed-project-country') return p
+    const attached = new Set(p.snapshot.endpointIds)
+    const missing = seedEndpointIds.filter((id) => !attached.has(id))
+    if (missing.length === 0) return p
+    return { ...p, snapshot: { ...p.snapshot, endpointIds: [...p.snapshot.endpointIds, ...missing] } }
+  })
+  return { projects: nextProjects, library: nextLibrary }
+}
+
+/**
+ * v11 → v12: the FormList demo. The shared library gains the seeded
+ * `languages` models and endpoints (by id, so re-runs and user edits are
+ * safe), and the seeded Country manager attaches them and gets the Languages
+ * form list on its detail page — only when that item is absent, so a list
+ * the user deleted stays deleted. Other projects are untouched.
+ */
+function migrateV11(
+  projects: ProjectDef[],
+  library: LibraryData,
+): { projects: ProjectDef[]; library: LibraryData } {
+  const seeded = seedLibraryAdditions(projects, library, languageSeedModels(), languageSeedEndpoints())
+  const nextProjects = seeded.projects.map((p) => {
+    if (p.id !== 'seed-project-country') return p
+    const pages = p.snapshot.pages.map((pg) => {
+      if (pg.id !== 'seed-page-country-detail') return pg
+      if (pg.grid.items.some((it) => it.id === LANGUAGES_ITEM_ID)) return pg
+      return { ...pg, grid: { ...pg.grid, items: [...pg.grid.items, countryLanguagesSeedItem()] } }
+    })
+    return { ...p, snapshot: { ...p.snapshot, pages } }
+  })
+  return { projects: nextProjects, library: seeded.library }
+}
+
+/**
+ * v12 → v13: the Form list demo page. The shared library gains the seeded
+ * `contacts` / `notes` models and endpoints, the seeded Country manager
+ * attaches them and gets the "Form list" page (+ sidebar link) unless that
+ * page id already exists. Other projects are untouched.
+ */
+function migrateV12(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  const seeded = seedLibraryAdditions(
+    data.projects,
+    data.library,
+    formListDemoSeedModels(),
+    formListDemoSeedEndpoints(),
+  )
+  return {
+    projects: seeded.projects.map((p) =>
+      p.id === 'seed-project-country' ? appendDemoPages(p, [formListDemoPage()]) : p,
+    ),
+    library: seeded.library,
+  }
+}
+
+/**
+ * v13 → v14: form lists gain Add / Remove button icons, placement and display
+ * (`addIcon/addPosition/addAlign/addDisplay`, `removeIcon/removePosition/
+ * removeDisplay`), filled with the component's defaults on every canvas
+ * (pages and templates). v14 → v15 reruns the same fill for `*Display`.
+ */
+function migrateFormListChrome(items: GridItemData[]): void {
+  walkItems(items, (item) => {
+    if (item.type !== 'formlist' || !item.config) return
+    const c = item.config as FormListConfig
+    c.addIcon ??= ''
+    c.addPosition ??= 'bottom'
+    c.addAlign ??= 'start'
+    c.removeIcon ??= ''
+    c.removePosition ??= 'end'
+    c.addDisplay ??= 'both'
+    c.removeDisplay ??= 'both'
+  })
+}
+
+function migrateV13(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  for (const p of data.projects) for (const pg of p.snapshot.pages) migrateFormListChrome(pg.grid.items)
+  for (const t of data.library.templates) migrateFormListChrome(t.grid.items)
+  return data
+}
+
+/**
+ * v15 → v16: the repeater. Text / Typography / Avatar configs gain their
+ * item bindings (`binding`, `srcBinding` / `fallbackBinding`), filled `null`
+ * (static) on every canvas — pages and templates. The shared library gains
+ * the seeded `regions` model and endpoint, and the seeded Country manager
+ * attaches them and gets the "Repeater" page (+ sidebar link) unless that
+ * page id already exists. Other projects are untouched.
+ */
+function migrateItemBindings(items: GridItemData[]): void {
+  walkItems(items, (item) => {
+    if (!item.config) return
+    if (item.type === 'text' || item.type === 'typography') {
+      ;(item.config as TextConfig | TypographyConfig).binding ??= null
+    } else if (item.type === 'avatar') {
+      const c = item.config as AvatarConfig
+      c.srcBinding ??= null
+      c.fallbackBinding ??= null
+    }
+  })
+}
+
+function migrateV15(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  for (const p of data.projects) for (const pg of p.snapshot.pages) migrateItemBindings(pg.grid.items)
+  for (const t of data.library.templates) migrateItemBindings(t.grid.items)
+  const seeded = seedLibraryAdditions(
+    data.projects,
+    data.library,
+    repeaterDemoSeedModels(),
+    repeaterDemoSeedEndpoints(),
+  )
+  return {
+    projects: seeded.projects.map((p) =>
+      p.id === 'seed-project-country' ? appendDemoPages(p, [repeaterDemoPage()]) : p,
+    ),
+    library: seeded.library,
+  }
+}
+
+/**
+ * v16 → v17: the file upload's preview + accept presets. Every Upload File —
+ * pages and templates — gains `acceptPresets: []` (its free-text `accept`
+ * carries on as the extra types), `preview: true` and `previewLayout: 'list'`,
+ * the engine defaults.
+ */
+function migrateUploadFiles(items: GridItemData[]): void {
+  walkItems(items, (item) => {
+    if (item.type !== 'uploadfile' || !item.config) return
+    const c = item.config as UploadFileConfig
+    c.acceptPresets ??= []
+    c.preview ??= true
+    c.previewLayout ??= 'list'
+  })
+}
+
+function migrateV16(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  for (const p of data.projects) for (const pg of p.snapshot.pages) migrateUploadFiles(pg.grid.items)
+  for (const t of data.library.templates) migrateUploadFiles(t.grid.items)
+  return data
+}
+
+/**
+ * v17 → v18: the seeded Country manager gets the "Upload" demo page (+ sidebar
+ * link) unless that page id already exists. Other projects are untouched.
+ */
+function migrateV17(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  return {
+    projects: data.projects.map((p) =>
+      p.id === 'seed-project-country' ? appendDemoPages(p, [uploadDemoPage()]) : p,
+    ),
+    library: data.library,
+  }
+}
+
+/**
+ * v18 → v19: the button `variant`. Every button — standalone items and the
+ * modal / popover trigger buttons, pages and templates — gains
+ * `variant: 'contained'`, the engine default.
+ */
+function migrateButtonVariants(items: GridItemData[]): void {
+  walkItems(items, (item) => {
+    if (!item.config) return
+    if (item.type === 'button') (item.config as ButtonItemConfig).variant ??= 'contained'
+    else if (item.type === 'modal') (item.config as ModalConfig).trigger.variant ??= 'contained'
+    else if (item.type === 'popover') (item.config as PopoverConfig).triggerButton.variant ??= 'contained'
+  })
+}
+
+function migrateV18(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  for (const p of data.projects) for (const pg of p.snapshot.pages) migrateButtonVariants(pg.grid.items)
+  for (const t of data.library.templates) migrateButtonVariants(t.grid.items)
+  return data
+}
+
+/**
+ * v19 → v20: data table server pagination. Every data table (pages and
+ * templates) gains the `pagination` block, off. The shared library gains the
+ * GET page endpoint (+ its query model), the seeded Country manager attaches
+ * it, and its seeded Countries table — only while still on the seed search
+ * endpoint, so a re-wired table is left alone — moves onto it with pagination
+ * on, demoing the query-string placement.
+ */
+function migrateDataTablePagination(items: GridItemData[]): void {
+  walkItems(items, (item) => {
+    if (item.type === 'datatable' && item.config) {
+      ;(item.config as DataTableConfig).pagination ??= createDefaultPaginationConfig()
+    }
+  })
+}
+
+function migrateV19(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  for (const p of data.projects) for (const pg of p.snapshot.pages) migrateDataTablePagination(pg.grid.items)
+  for (const t of data.library.templates) migrateDataTablePagination(t.grid.items)
+  const seeded = seedLibraryAdditions(
+    data.projects,
+    data.library,
+    pagedCountriesSeedModels(),
+    pagedCountriesSeedEndpoints(),
+  )
+  for (const p of seeded.projects) {
+    if (p.id !== 'seed-project-country') continue
+    for (const pg of p.snapshot.pages) {
+      walkItems(pg.grid.items, (item) => {
+        if (item.id !== COUNTRY_TABLE_ITEM_ID || item.type !== 'datatable' || !item.config) return
+        const config = item.config as DataTableConfig
+        if (config.endpointId !== SEARCH_COUNTRIES_ENDPOINT_ID) return
+        config.endpointId = COUNTRIES_PAGED_GET_ENDPOINT_ID
+        config.pagination = countryTablePagination()
+      })
+    }
+  }
+  return seeded
+}
+
+/**
+ * v20 → v21: the seeded Country manager gets the "Pagination" demo page (+
+ * sidebar link) unless that page id already exists. Other projects are
+ * untouched.
+ */
+function migrateV20(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  return {
+    projects: data.projects.map((p) =>
+      p.id === 'seed-project-country' ? appendDemoPages(p, [paginationDemoPage()]) : p,
+    ),
+    library: data.library,
+  }
+}
+
+/**
+ * v21 → v22: column pinning. Every data table column (pages and templates)
+ * gains `pin: ''`, and the seeded Country manager gets the "Data table" demo
+ * page (+ sidebar link) unless that page id already exists.
+ */
+function migrateColumnPins(items: GridItemData[]): void {
+  walkItems(items, (item) => {
+    if (item.type !== 'datatable' || !item.config) return
+    for (const col of (item.config as DataTableConfig).columns) col.pin ??= ''
+  })
+}
+
+function migrateV21(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  for (const p of data.projects) for (const pg of p.snapshot.pages) migrateColumnPins(pg.grid.items)
+  for (const t of data.library.templates) migrateColumnPins(t.grid.items)
+  return {
+    projects: data.projects.map((p) =>
+      p.id === 'seed-project-country' ? appendDemoPages(p, [dataTableDemoPage()]) : p,
+    ),
+    library: data.library,
+  }
+}
+
+/**
+ * v22 → v23: the data table's Add action. Every table (pages and templates)
+ * gains `canAdd: false` + the default `addButton`. The seeded Country manager
+ * moves from its standalone "Add Country" modal to the table's own Add:
+ * while both seed items are still present, the modal is removed, the table
+ * gets `canAdd` + "Add Country", its modal canvas gains the Create button
+ * (`showWhen: 'adding'`) and the Update button becomes editing-only.
+ */
+function migrateAddAction(items: GridItemData[]): void {
+  walkItems(items, (item) => {
+    if (item.type !== 'datatable' || !item.config) return
+    const config = item.config as DataTableConfig
+    config.canAdd ??= false
+    config.addButton ??= { ...DEFAULT_ADD_BUTTON }
+  })
+}
+
+/**
+ * v29 → v30: server filters + sort. Every data table (pages and templates)
+ * gains its second child canvas (the filter form — and its first, where a seed
+ * never had one), the filter / request-mapping / sort defaults and `sortField:
+ * ''` on every column. The library gains the `:region` page endpoint + params
+ * model, its page body / query models the filter + sort fields they lack, and
+ * the seeded project the "Server filter" demo page.
+ */
+function migrateV29(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  const fill = (items: GridItemData[]) => {
+    ensureDataTableCanvases(items)
+    walkItems(items, (item) => {
+      if (item.type !== 'datatable' || !item.config) return
+      const config = item.config as DataTableConfig
+      config.filtersEnabled ??= false
+      config.filterButton ??= { ...DEFAULT_FILTER_BUTTON }
+      config.filterDisplay ??= 'popover'
+      config.filterDefaults ??= []
+      config.requestMapping ??= []
+      config.sort ??= createDefaultSortConfig()
+      for (const col of config.columns) col.sortField ??= ''
+    })
+  }
+  for (const p of data.projects) for (const pg of p.snapshot.pages) fill(pg.grid.items)
+  for (const t of data.library.templates) fill(t.grid.items)
+  for (const model of data.library.models) {
+    if (model.id !== COUNTRY_PAGE_BODY_MODEL_ID && model.id !== COUNTRY_PAGE_QUERY_MODEL_ID) continue
+    const have = new Set(model.fields.map((f) => f.name))
+    model.fields.push(...pageFilterFields().filter((f) => !have.has(f.name)))
+  }
+  const seeded = seedLibraryAdditions(data.projects, data.library, serverFilterSeedModels(), serverFilterSeedEndpoints())
+  return {
+    projects: seeded.projects.map((p) =>
+      p.id === 'seed-project-country' ? appendDemoPages(p, [serverFilterDemoPage()]) : p,
+    ),
+    library: seeded.library,
+  }
+}
+
+/**
+ * v33 → v34: the data table's layout keys. Every data table column (pages and
+ * templates) gains `rowHeader` / `mergeRows` / `mergeColumns: false` and
+ * `group: ''`, every editable table column `rowHeader: false` + `group: ''`;
+ * the library gains the `regionCountries` endpoint + model and the seeded
+ * project the "Table layout" demo page.
+ */
+function migrateV33(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  const fill = (items: GridItemData[]) =>
+    walkItems(items, (item) => {
+      if (!item.config) return
+      if (item.type === 'datatable') {
+        for (const col of (item.config as DataTableConfig).columns) {
+          col.rowHeader ??= false
+          col.mergeRows ??= false
+          col.mergeColumns ??= false
+          col.group ??= ''
+        }
+      } else if (item.type === 'datatableeditable') {
+        for (const col of (item.config as DataTableEditableConfig).columns) {
+          col.rowHeader ??= false
+          col.group ??= ''
+        }
+      }
+    })
+  for (const p of data.projects) for (const pg of p.snapshot.pages) fill(pg.grid.items)
+  for (const t of data.library.templates) fill(t.grid.items)
+  const seeded = seedLibraryAdditions(data.projects, data.library, tableLayoutSeedModels(), tableLayoutSeedEndpoints())
+  return {
+    projects: seeded.projects.map((p) =>
+      p.id === 'seed-project-country' ? appendDemoPages(p, [tableLayoutDemoPage()]) : p,
+    ),
+    library: seeded.library,
+  }
+}
+
+const DESIGN_ONLY_TYPES_V49 = new Set([
+  'hero', 'image', 'gallery', 'video', 'linkcard', 'quicklinks', 'spacer',
+  'barchart', 'linechart', 'piechart', 'people', 'orgchart', 'stat',
+  'alert', 'banner', 'progress', 'toast', 'dialog',
+])
+const REMOVED_TEMPLATE_IDS_V49 = new Set(['seed-tpl-dashboard', 'seed-tpl-report'])
+
+/**
+ * v49 → v50: the design-only layer is gone (see the grilled library / CLI
+ * design — the engine renders every project at runtime, so the studio authors
+ * only what the engine draws). Design-only items are dropped from every
+ * canvas and template, the Style annotation is stripped (a container's
+ * background / border become its `ContainerConfig`), a button's design-only
+ * `navigation` (link / toast / dialog) is removed, and the two builtin
+ * templates made of stats and charts go.
+ */
+function migrateV49Only(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  const strip = (items: GridItemData[]): GridItemData[] =>
+    items
+      .filter((item) => !DESIGN_ONLY_TYPES_V49.has(item.type))
+      .map((item) => {
+        const { style, ...rest } = item as GridItemData & { style?: { bg?: string; line?: string } }
+        const next: GridItemData = { ...rest }
+        if (item.type === 'container') {
+          const c = (item.config ?? {}) as Partial<ContainerConfig>
+          next.config = { background: c.background ?? !!style?.bg, border: c.border ?? !!style?.line }
+        }
+        if (item.type === 'button' && next.config && 'navigation' in next.config) {
+          const { navigation: _navigation, ...config } = next.config as ButtonItemConfig & { navigation?: unknown }
+          void _navigation
+          next.config = config
+        }
+        if (next.childCanvases) next.childCanvases = next.childCanvases.map((c) => ({ ...c, items: strip(c.items) }))
+        return next
+      })
+  const projects = data.projects.map((p) => ({
+    ...p,
+    snapshot: {
+      ...p.snapshot,
+      pages: p.snapshot.pages.map((pg) => ({ ...pg, grid: { ...pg.grid, items: strip(pg.grid.items) } })),
+    },
+  }))
+  const library: LibraryData = {
+    ...data.library,
+    templates: data.library.templates
+      .filter((t) => !(t.builtin && REMOVED_TEMPLATE_IDS_V49.has(t.id)))
+      .map((t) => ({ ...t, grid: { ...t.grid, items: strip(t.grid.items) } })),
+  }
+  return { projects, library }
+}
+
+/** v49 → v50 chained onto v49 (every older payload passes through here). */
+function migrateV49(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  return migrateV50(migrateV49Only(data))
+}
+
+/** v50 → v51 → v52 → v53 (every v50 payload passes through here). */
+function migrateV50(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  return migrateV51(migrateV50Only(data))
+}
+
+/**
+ * v51 → v52: the app bar's paint — `logoSize`, the `custom` variant with
+ * `background` / `gradient` / `foreground`, and `padding` — filled with the
+ * defaults on every project's shell (`normalizeAppBar`).
+ */
+function migrateV51Only(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  return {
+    ...data,
+    projects: data.projects.map((p) => ({
+      ...p,
+      snapshot: { ...p.snapshot, shell: { ...p.snapshot.shell, appBar: normalizeAppBar(p.snapshot.shell?.appBar, p.name) } },
+    })),
+  }
+}
+
+/** v51 → v52 → v53 (every v51 payload passes through here). */
+function migrateV51(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  return migrateV52(migrateV51Only(data))
+}
+
+/**
+ * v52 → v53: the sidebar look (see the grilled design `sidebar-pill-variant`)
+ * — `shell.sidebar` filled with the plain defaults on every project
+ * (`normalizeSidebar`), so nothing changes until a project picks Pill or the
+ * footer toggle.
+ */
+function migrateV52(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  return {
+    ...data,
+    projects: data.projects.map((p) => ({
+      ...p,
+      snapshot: { ...p.snapshot, shell: { ...p.snapshot.shell, sidebar: normalizeSidebar(p.snapshot.shell?.sidebar) } },
+    })),
+  }
+}
+
+/**
+ * v50 → v51: Azure SSO (see the grilled design `azure-sso-auth`). The
+ * library gains `auth` with the seeded **Azure** entry and the
+ * `profileByEmail` endpoint + query model (by id, so re-runs and edits are
+ * safe); every project gets `authId` (null); the seeded Country manager
+ * picks the entry (unless it already picked one), gets the four `AZURE_*`
+ * Env rows seeded + locked, and its Profile page's own `me` load goes — the
+ * sign-in fills that slice now — with every binding to that load repointed
+ * at the auth profile pseudo-load.
+ */
+function migrateV50Only(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  const seeded = seedLibraryAdditions(data.projects, data.library, profileByEmailSeedModels(), profileByEmailSeedEndpoints())
+  const existing = (seeded.library.auth ?? []).map((a) => normalizeAuthDef(a))
+  const auth = existing.some((a) => a.id === AZURE_AUTH_ID) ? existing : [...existing, azureSeedAuth()]
+  const library: LibraryData = { ...seeded.library, auth }
+  const seedDef = auth.find((a) => a.id === AZURE_AUTH_ID)!
+  const projects = seeded.projects.map((p) => {
+    const authId = p.snapshot.authId ?? null
+    if (p.id !== 'seed-project-country') return { ...p, snapshot: { ...p.snapshot, authId } }
+    const picked = authId ?? AZURE_AUTH_ID
+    const env = authId ? p.snapshot.env : authEnvRows(seedDef, p.snapshot.env)
+    const pages = p.snapshot.pages.map((pg) => {
+      if (pg.id !== PROFILE_PAGE_ID) return pg
+      const loads = (pg.loads ?? []).filter((l) => l.id !== LOAD_ME_ID)
+      const items = JSON.parse(JSON.stringify(pg.grid.items).split(LOAD_ME_ID).join(AUTH_PROFILE_LOAD_ID)) as GridItemData[]
+      return { ...pg, loads, grid: { ...pg.grid, items } }
+    })
+    return { ...p, snapshot: { ...p.snapshot, authId: picked, env, pages } }
+  })
+  return { projects, library }
+}
+
+/**
+ * v48 → v49: Switch Profile per the profile spec (see the grilled design).
+ * Every profile element gets the `primary` key (the primary-assignment flag)
+ * and every switch its `display` / `showSubtitle`; the seeded profile models
+ * gain `isPrimaryAssignment`, and the seeded Profile page the dropdown switch
+ * + the `profileList` block (guarded on the item id).
+ */
+function migrateV48(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  const fill = (items: GridItemData[]) =>
+    walkItems(items, (item) => {
+      if ((item.type !== 'switchprofile' && item.type !== 'replaceprofile') || !item.config) return
+      const config = item.config as SwitchProfileConfig | ReplaceProfileConfig
+      config.keys = { ...createDefaultProfileKeysConfig(), ...config.keys }
+      if (item.type === 'switchprofile') {
+        const sw = config as SwitchProfileConfig
+        sw.display ??= 'list'
+        sw.showSubtitle ??= true
+      }
+    })
+  for (const p of data.projects) for (const pg of p.snapshot.pages) fill(pg.grid.items)
+  for (const t of data.library.templates) fill(t.grid.items)
+  for (const id of [PROFILE_RES_MODEL_ID, PROFILE_LIST_RES_MODEL_ID]) {
+    const rows = data.library.models.find((m) => m.id === id)?.fields.find((f) => f.name === 'data')
+    if (rows && !rows.children.some((f) => f.name === 'isPrimaryAssignment')) {
+      const after = rows.children.findIndex((f) => f.name === 'jobStatus')
+      rows.children.splice(after + 1, 0, { id: `${id}-field-primary`, name: 'isPrimaryAssignment', kind: 'string', children: [], arrayOf: 'string' })
+    }
+  }
+  const page = data.projects.find((p) => p.id === 'seed-project-country')?.snapshot.pages.find((pg) => pg.id === PROFILE_PAGE_ID)
+  // Confirm's fetch now feeds the switch list directly — the seeded reload only refetched it.
+  const replace = page?.grid.items.find((item) => item.id === 'seed-item-profile-replace')?.config as ReplaceProfileConfig | undefined
+  if (replace && replace.reload.length === 1 && replace.reload[0] === 'switchProfile') replace.reload = []
+  if (page && !page.grid.items.some((item) => item.id === PROFILE_SWITCH_DROPDOWN_ITEM_ID)) {
+    const at = page.grid.items.findIndex((item) => item.id === 'seed-item-profile-switch')
+    page.grid.items.splice(at < 0 ? page.grid.items.length : at + 1, 0, ...profileSwitchSeedItems())
+  }
+  return data
+}
+
+/**
+ * v47 → v48: the profile elements (see the grilled design). The shared
+ * library gains the seeded profile models + endpoints (by id), the seeded
+ * project attaches them and gets the "Profile" demo page.
+ */
+function migrateV47(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  const seeded = seedLibraryAdditions(data.projects, data.library, profileSeedModels(), profileSeedEndpoints())
+  return {
+    projects: seeded.projects.map((p) => (p.id === 'seed-project-country' ? appendDemoPages(p, [profileDemoPage()]) : p)),
+    library: seeded.library,
+  }
+}
+
+/**
+ * v46 → v47: custom components (see the grilled design). Every project gets
+ * a `customComponents` list (empty), and the seeded one the example app's
+ * declarations plus the seeded "Custom components" page.
+ */
+function migrateV46(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  return {
+    projects: data.projects.map((p) => {
+      const customComponents = p.snapshot.customComponents ?? []
+      if (p.id !== 'seed-project-country') return { ...p, snapshot: { ...p.snapshot, customComponents } }
+      const have = new Set(customComponents.map((c) => c.id))
+      const seeded = [...customComponents, ...customComponentsSeedDefs().filter((c) => !have.has(c.id))]
+      const next = appendDemoPages(p, [customComponentsDemoPage()])
+      return { ...next, snapshot: { ...next.snapshot, customComponents: seeded } }
+    }),
+    library: data.library,
+  }
+}
+
+/**
+ * v45 → v46: custom button actions (see the grilled design). Every project
+ * gets a `customActions` list (empty), and the seeded one the example app's
+ * declarations plus the seeded "Custom actions" page.
+ */
+function migrateV45(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  return {
+    projects: data.projects.map((p) => {
+      const customActions = p.snapshot.customActions ?? []
+      if (p.id !== 'seed-project-country') return { ...p, snapshot: { ...p.snapshot, customActions } }
+      const have = new Set(customActions.map((a) => a.id))
+      const seeded = [...customActions, ...customActionsSeedDefs().filter((a) => !have.has(a.id))]
+      const next = appendDemoPages(p, [customActionsDemoPage()])
+      return { ...next, snapshot: { ...next.snapshot, customActions: seeded } }
+    }),
+    library: data.library,
+  }
+}
+
+/**
+ * v44 → v45: the seeded "Loading mode" page (its route needs a `:code`, so
+ * the sidebar link fixes one).
+ */
+function migrateV44(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  return {
+    projects: data.projects.map((p) => {
+      if (p.id !== 'seed-project-country') return p
+      const hadPage = p.snapshot.pages.some((pg) => pg.id === LOADING_MODE_PAGE_ID)
+      const next = appendDemoPages(p, [loadingModeDemoPage()])
+      if (hadPage) return next
+      return {
+        ...next,
+        snapshot: {
+          ...next.snapshot,
+          menu: next.snapshot.menu.map((m) =>
+            m.kind === 'page' && m.navigate.pageId === LOADING_MODE_PAGE_ID ? { ...loadingModeMenuItem(), id: m.id } : m,
+          ),
+        },
+      }
+    }),
+    library: data.library,
+  }
+}
+
+/**
+ * v43 → v44: the loading mode (see the grilled design). Every page / global
+ * load's `blocking` becomes `loading` — `true` → `'cycle'`, else `'none'`,
+ * so nothing authored changes its look — and the seeded demo loads take
+ * the example app's modes: `country` stays `cycle`, `region` /
+ * `regionCountries` / the global `lookups` / `approval` / `workflow` go
+ * `skeleton`.
+ */
+function migrateV43(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  const SKELETON_SEEDS = new Set([LOAD_REGION_ID, LOAD_REGION_COUNTRIES_ID, LOAD_LOOKUPS_ID, LOAD_APPROVAL_ID, LOAD_WORKFLOW_ID])
+  const loadOf = (l: PageLoadDef & { blocking?: boolean }, seeded: boolean): PageLoadDef => {
+    const { blocking, ...rest } = l
+    const loading: LoadingMode = l.loading ?? (blocking ? 'cycle' : 'none')
+    return { ...rest, loading: seeded && SKELETON_SEEDS.has(l.id) ? 'skeleton' : loading }
+  }
+  return {
+    projects: data.projects.map((p) => {
+      const seeded = p.id === 'seed-project-country'
+      return {
+        ...p,
+        snapshot: {
+          ...p.snapshot,
+          pages: p.snapshot.pages.map((pg) => (pg.loads ? { ...pg, loads: pg.loads.map((l) => loadOf(l, seeded)) } : pg)),
+          ...(p.snapshot.globalLoads ? { globalLoads: p.snapshot.globalLoads.map((l) => loadOf(l, seeded)) } : {}),
+        },
+      }
+    }),
+    library: data.library,
+  }
+}
+
+/**
+ * v42 → v43: the Workflow editor demo — the `users` / `workflowDetail` /
+ * `updateWorkflow` seed endpoints + models and the seeded "Workflow editor"
+ * page (its route needs an `:id`, so the sidebar link fixes one).
+ */
+function migrateV42(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  const seeded = seedLibraryAdditions(data.projects, data.library, workflowSeedModels(), workflowSeedEndpoints())
+  return {
+    projects: seeded.projects.map((p) => {
+      if (p.id !== 'seed-project-country') return p
+      const hadPage = p.snapshot.pages.some((pg) => pg.id === WORKFLOW_PAGE_ID)
+      const next = appendDemoPages(p, [workflowDemoPage()])
+      if (hadPage) return next
+      return {
+        ...next,
+        snapshot: {
+          ...next.snapshot,
+          menu: next.snapshot.menu.map((m) =>
+            m.kind === 'page' && m.navigate.pageId === WORKFLOW_PAGE_ID ? { ...workflowMenuItem(), id: m.id } : m,
+          ),
+        },
+      }
+    }),
+    library: seeded.library,
+  }
+}
+
+/**
+ * v41 → v42: the approval line's sources (see the grilled design, round 2).
+ * Every approval line gains `source: 'binding'` + the endpoint-mode fields
+ * (its `items` binding already is one); the seeded `approvalRes` model's
+ * `ReviewerUser` / `ApproverUser` become objects while still `any`, so the
+ * studio's pickers can offer their fields; and the seeded page gets the
+ * Endpoint-mode line after its main one (only when absent).
+ */
+function migrateV41(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  const defaults = createDefaultApprovalLineConfig('')
+  const fill = (items: GridItemData[]) => {
+    for (const item of items) {
+      if (item.type === 'approvalline' && item.config) {
+        const c = item.config as Partial<ApprovalLineConfig>
+        item.config = {
+          ...defaults,
+          ...c,
+          name: c.name ?? '',
+          source: c.source ?? 'binding',
+          read: c.read ?? createFormListCrudRef(),
+        } as ApprovalLineConfig
+      }
+      item.childCanvases?.forEach((canvas) => fill(canvas.items))
+    }
+  }
+  for (const p of data.projects) for (const pg of p.snapshot.pages) fill(pg.grid.items)
+  for (const t of data.library.templates) fill(t.grid.items)
+  for (const model of data.library.models) {
+    if (model.id !== APPROVAL_RES_MODEL_ID) continue
+    const steps = model.fields.find((f) => f.name === 'data')?.children.find((f) => f.name === 'steps')
+    for (const name of ['ReviewerUser', 'ApproverUser']) {
+      const f = steps?.children.find((x) => x.name === name)
+      if (f && f.kind === 'any') {
+        f.kind = 'object'
+        f.children = approvalUserFields()
+      }
+    }
+  }
+  return {
+    projects: data.projects.map((p) => {
+      if (p.id !== 'seed-project-country') return p
+      return {
+        ...p,
+        snapshot: {
+          ...p.snapshot,
+          pages: p.snapshot.pages.map((pg) => {
+            if (pg.id !== APPROVAL_LINE_PAGE_ID || pg.grid.items.some((i) => i.id === APPROVAL_OWN_ITEM_ID)) return pg
+            const at = pg.grid.items.findIndex((i) => i.id === 'seed-item-approval-main')
+            if (at < 0) return pg
+            const demo = approvalLineDemoSeedItems()
+            const added = demo.filter((i) => i.id.startsWith('seed-item-approval-own'))
+            const items = [...pg.grid.items.slice(0, at + 1), ...added, ...pg.grid.items.slice(at + 1)]
+            return { ...pg, grid: { ...pg.grid, items } }
+          }),
+        },
+      }
+    }),
+    library: data.library,
+  }
+}
+
+/**
+ * v40 → v41: the Approval line demo — the `approvals` / `approvalDetail` seed
+ * endpoints + models and the seeded "Approval line" page (its route needs an
+ * `:id`, so the sidebar link fixes one).
+ */
+function migrateV40(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  const seeded = seedLibraryAdditions(data.projects, data.library, approvalSeedModels(), approvalSeedEndpoints())
+  return {
+    projects: seeded.projects.map((p) => {
+      if (p.id !== 'seed-project-country') return p
+      const hadPage = p.snapshot.pages.some((pg) => pg.id === APPROVAL_LINE_PAGE_ID)
+      const next = appendDemoPages(p, [approvalLineDemoPage()])
+      if (hadPage) return next
+      return {
+        ...next,
+        snapshot: {
+          ...next.snapshot,
+          menu: next.snapshot.menu.map((m) =>
+            m.kind === 'page' && m.navigate.pageId === APPROVAL_LINE_PAGE_ID ? { ...approvalLineMenuItem(), id: m.id } : m,
+          ),
+        },
+      }
+    }),
+    library: seeded.library,
+  }
+}
+
+/**
+ * v39 → v40: page data (see the grilled page-data design). Every page's
+ * `loads` stays optional (absent = none), so nothing needs filling; the
+ * seeded Country manager gains the `regionByCountry` endpoint + models, the
+ * global `lookups` load (only when it has no global loads yet) and the
+ * "Page data" demo page — whose route needs a `:code`, so its sidebar link
+ * fixes one.
+ */
+function migrateV39(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  const seeded = seedLibraryAdditions(data.projects, data.library, pageDataSeedModels(), pageDataSeedEndpoints())
+  return {
+    projects: seeded.projects.map((p) => {
+      if (p.id !== 'seed-project-country') return p
+      const hadPage = p.snapshot.pages.some((pg) => pg.id === PAGE_DATA_PAGE_ID)
+      const next = appendDemoPages(p, [pageDataDemoPage()])
+      const menu = hadPage
+        ? next.snapshot.menu
+        : next.snapshot.menu.map((m) =>
+            m.kind === 'page' && m.navigate.pageId === PAGE_DATA_PAGE_ID ? { ...pageDataMenuItem(), id: m.id } : m,
+          )
+      return {
+        ...next,
+        snapshot: {
+          ...next.snapshot,
+          menu,
+          globalLoads: next.snapshot.globalLoads?.length ? next.snapshot.globalLoads : seedGlobalLoads(),
+        },
+      }
+    }),
+    library: seeded.library,
+  }
+}
+
+/**
+ * v38 → v39: the "Switch" demo page on the seeded project.
+ */
+function migrateV38(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  return {
+    projects: data.projects.map((p) =>
+      p.id === 'seed-project-country' ? appendDemoPages(p, [switchDemoPage()]) : p,
+    ),
+    library: data.library,
+  }
+}
+
+/**
+ * v37 → v38: the "Chips" demo page on the seeded project.
+ */
+function migrateV37(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  return {
+    projects: data.projects.map((p) =>
+      p.id === 'seed-project-country' ? appendDemoPages(p, [chipsDemoPage()]) : p,
+    ),
+    library: data.library,
+  }
+}
+
+/**
+ * v36 → v37: the "Drawer" demo page on the seeded project.
+ */
+function migrateV36(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  return {
+    projects: data.projects.map((p) =>
+      p.id === 'seed-project-country' ? appendDemoPages(p, [drawerDemoPage()]) : p,
+    ),
+    library: data.library,
+  }
+}
+
+/**
+ * v35 → v36: the "HTML content" demo page on the seeded project.
+ */
+function migrateV35(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  return {
+    projects: data.projects.map((p) =>
+      p.id === 'seed-project-country' ? appendDemoPages(p, [htmlContentDemoPage()]) : p,
+    ),
+    library: data.library,
+  }
+}
+
+/**
+ * v34 → v35: the "Card" demo page on the seeded project, and the `image`
+ * field (the wide flag the mock API returns) on every seeded country row
+ * model, so a card's media can bind to it.
+ */
+function migrateV34(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  for (const model of data.library.models) {
+    const rows = model.fields.find((f) => f.name === 'data')
+    const children = rows?.children ?? model.fields
+    const isCountryRow = children.some((f) => f.name === 'avatar') && children.some((f) => f.name === 'code')
+    if (!isCountryRow || children.some((f) => f.name === 'image')) continue
+    const avatar = children.findIndex((f) => f.name === 'avatar')
+    children.splice(avatar + 1, 0, {
+      id: `seed-field-image-${model.id}`,
+      name: 'image',
+      kind: 'string',
+      children: [],
+      arrayOf: 'string',
+    })
+  }
+  return {
+    projects: data.projects.map((p) =>
+      p.id === 'seed-project-country' ? appendDemoPages(p, [cardDemoPage()]) : p,
+    ),
+    library: data.library,
+  }
+}
+
+/**
+ * v32 → v33: the "Cell tooltip" demo page on the seeded project.
+ */
+function migrateV32(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  return {
+    projects: data.projects.map((p) =>
+      p.id === 'seed-project-country' ? appendDemoPages(p, [cellTooltipDemoPage()]) : p,
+    ),
+    library: data.library,
+  }
+}
+
+/**
+ * v31 → v32: the data table's line clamp. Every data table (pages and
+ * templates) gains `cellLines: 2` (the engine default) and every column
+ * `lines: ''` (the table's setting); the seeded `regionRes` model gains
+ * `about` and the seeded "Data table" page the two regions tables.
+ */
+function migrateV31(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  const fill = (items: GridItemData[]) =>
+    walkItems(items, (item) => {
+      if (item.type !== 'datatable' || !item.config) return
+      const config = item.config as DataTableConfig
+      config.cellLines ??= DEFAULT_CELL_LINES
+      for (const col of config.columns) col.lines ??= ''
+    })
+  for (const p of data.projects) for (const pg of p.snapshot.pages) fill(pg.grid.items)
+  for (const t of data.library.templates) fill(t.grid.items)
+  const regionRes = data.library.models.find((m) => m.id === REGION_RES_MODEL_ID)
+  const rows = regionRes?.fields.find((f) => f.name === 'data')
+  if (rows && !rows.children.some((f) => f.name === 'about')) {
+    const description = rows.children.findIndex((f) => f.name === 'description')
+    rows.children.splice(description + 1, 0, {
+      id: 'seed-field-region-about',
+      name: 'about',
+      kind: 'string',
+      children: [],
+      arrayOf: 'string',
+    })
+  }
+  const page = data.projects
+    .find((p) => p.id === 'seed-project-country')
+    ?.snapshot.pages.find((pg) => pg.id === DATA_TABLE_PAGE_ID)
+  if (page && !page.grid.items.some((item) => item.id === DATA_TABLE_CLAMP_ITEM_ID)) {
+    page.grid.items.push(...dataTableClampSeedItems())
+  }
+  return data
+}
+
+/**
+ * v30 → v31: the "Filter via API" demo page. The seeded page body / query
+ * models gain the `codes` filter (the fields they lack, as in v29) and the
+ * seeded project the page.
+ */
+function migrateV30(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  for (const model of data.library.models) {
+    if (model.id !== COUNTRY_PAGE_BODY_MODEL_ID && model.id !== COUNTRY_PAGE_QUERY_MODEL_ID) continue
+    const have = new Set(model.fields.map((f) => f.name))
+    model.fields.push(...pageFilterFields().filter((f) => !have.has(f.name)))
+  }
+  return {
+    projects: data.projects.map((p) =>
+      p.id === 'seed-project-country' ? appendDemoPages(p, [filterApiDemoPage()]) : p,
+    ),
+    library: data.library,
+  }
+}
+
+/**
+ * v28 → v29: column resizing. Every data table and editable table (pages and
+ * templates) gains `canResizeColumns: true`, every column of both the unset
+ * sizing (`size` / `minSize` / `maxSize` = `''`, `resizable: true`), and the
+ * seeded project the "Column resize" demo page.
+ */
+function migrateV28(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  const fill = (items: GridItemData[]) =>
+    walkItems(items, (item) => {
+      if ((item.type !== 'datatable' && item.type !== 'datatableeditable') || !item.config) return
+      const config = item.config as DataTableConfig | DataTableEditableConfig
+      config.canResizeColumns ??= true
+      for (const col of config.columns) {
+        col.size ??= ''
+        col.minSize ??= ''
+        col.maxSize ??= ''
+        col.resizable ??= true
+      }
+    })
+  for (const p of data.projects) for (const pg of p.snapshot.pages) fill(pg.grid.items)
+  for (const t of data.library.templates) fill(t.grid.items)
+  return {
+    projects: data.projects.map((p) =>
+      p.id === 'seed-project-country' ? appendDemoPages(p, [columnResizeDemoPage()]) : p,
+    ),
+    library: data.library,
+  }
+}
+
+/**
+ * v27 → v28: the rich-cells table's first seed drew the profile flag as an
+ * `<img>` (a broken image where `avatar` isn't a URL) and pinned the summary
+ * to a min-width that overflowed narrow columns. Columns still carrying those
+ * exact templates take the current seed's; edited ones are left alone.
+ */
+function migrateV27(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  const stale = (html: string) =>
+    html.includes('<img src="{{avatar}}" alt="" style="width:32px') || html.includes('min-width:220px;max-width:300px')
+  const table = data.projects
+    .find((p) => p.id === 'seed-project-country')
+    ?.snapshot.pages.find((pg) => pg.id === HTML_COLUMNS_PAGE_ID)
+    ?.grid.items.find((item) => item.id === 'seed-item-html-columns-rich')
+  if (table?.type === 'datatable' && table.config) {
+    const seed = htmlColumnDemoSeedItems().find((item) => item.id === table.id)?.config as DataTableConfig
+    for (const col of (table.config as DataTableConfig).columns) {
+      const fresh = seed.columns.find((c) => c.id === col.id)
+      if (fresh && stale(col.html)) col.html = fresh.html
+    }
+  }
+  return data
+}
+
+/**
+ * v26 → v27: the seeded "HTML columns" page — while it still exists and doesn't
+ * carry it yet — gets the rich-cells table, placed after the helpers table
+ * (before the styled section's caption; at the end when that was removed).
+ */
+function migrateV26(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  const page = data.projects
+    .find((p) => p.id === 'seed-project-country')
+    ?.snapshot.pages.find((pg) => pg.id === HTML_COLUMNS_PAGE_ID)
+  if (page && !page.grid.items.some((item) => HTML_COLUMNS_RICH_ITEM_IDS.includes(item.id))) {
+    const rich = htmlColumnDemoSeedItems().filter((item) => HTML_COLUMNS_RICH_ITEM_IDS.includes(item.id))
+    const at = page.grid.items.findIndex((item) => item.id === 'seed-item-html-columns-styled-caption')
+    page.grid.items.splice(at === -1 ? page.grid.items.length : at, 0, ...rich)
+  }
+  return data
+}
+
+/**
+ * v25 → v26: the seeded project gains the dedicated "HTML columns" demo page
+ * (skipped when the page id is already there, so a deleted page stays deleted).
+ */
+function migrateV25(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  return {
+    projects: data.projects.map((p) =>
+      p.id === 'seed-project-country' ? appendDemoPages(p, [htmlColumnDemoPage()]) : p,
+    ),
+    library: data.library,
+  }
+}
+
+/**
+ * v24 → v25: HTML columns. Every data table column (pages and templates) gains
+ * `html: ''`, and the seeded "Data table" page — while it still exists and
+ * doesn't carry the item yet — gets the HTML-columns demo table appended.
+ */
+function migrateV24(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  const fill = (items: GridItemData[]) =>
+    walkItems(items, (item) => {
+      if (item.type !== 'datatable' || !item.config) return
+      for (const col of (item.config as DataTableConfig).columns) col.html ??= ''
+    })
+  for (const p of data.projects) for (const pg of p.snapshot.pages) fill(pg.grid.items)
+  for (const t of data.library.templates) fill(t.grid.items)
+  const page = data.projects
+    .find((p) => p.id === 'seed-project-country')
+    ?.snapshot.pages.find((pg) => pg.id === DATA_TABLE_PAGE_ID)
+  if (page && !page.grid.items.some((item) => item.id === DATA_TABLE_HTML_ITEM_ID)) {
+    page.grid.items.push(...dataTableHtmlSeedItems())
+  }
+  return data
+}
+
+/** v23 → v24: the data table's `headerGap` (`''` = engine default) on every table. */
+function migrateV23(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  const fill = (items: GridItemData[]) =>
+    walkItems(items, (item) => {
+      if (item.type === 'datatable' && item.config) (item.config as DataTableConfig).headerGap ??= ''
+    })
+  for (const p of data.projects) for (const pg of p.snapshot.pages) fill(pg.grid.items)
+  for (const t of data.library.templates) fill(t.grid.items)
+  return data
+}
+
+function migrateV22(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  for (const p of data.projects) for (const pg of p.snapshot.pages) migrateAddAction(pg.grid.items)
+  for (const t of data.library.templates) migrateAddAction(t.grid.items)
+  const projects = data.projects.map((p) => {
+    if (p.id !== 'seed-project-country') return p
+    const pages = p.snapshot.pages.map((pg) => {
+      const modal = pg.grid.items.find((i) => i.id === COUNTRY_MODAL_ITEM_ID)
+      const table = pg.grid.items.find((i) => i.id === COUNTRY_TABLE_ITEM_ID && i.type === 'datatable' && i.config)
+      const canvas = table?.childCanvases?.[0]
+      if (!modal || !table || !canvas) return pg
+      const config = table.config as DataTableConfig
+      config.canAdd = true
+      config.addButton = { ...COUNTRY_ADD_BUTTON }
+      if (!canvas.items.some((i) => i.id === COUNTRY_CREATE_BUTTON_ITEM_ID)) {
+        canvas.items.push(countryCreateButtonSeedItem())
+      }
+      for (const i of canvas.items) if (i.id === COUNTRY_UPDATE_BUTTON_ITEM_ID) i.showWhen = 'editing'
+      return { ...pg, grid: { ...pg.grid, items: pg.grid.items.filter((i) => i.id !== COUNTRY_MODAL_ITEM_ID) } }
+    })
+    return { ...p, snapshot: { ...p.snapshot, pages } }
+  })
+  return { projects, library: data.library }
+}
+
+function migrateV3(projects: V3Project[], library: LibraryData): { projects: V4Project[]; library: LibraryData } {
+  const out: V4Project[] = projects.map((p) => {
+    const taken: string[] = []
+    const pages: PageDef[] = p.snapshot.pages.map((pg) => {
+      const key = uniquePageKey(pg.key?.trim() || pg.name, taken)
+      taken.push(key)
+      migrateButtonNavigation(pg.grid.items)
+      return { ...pg, key }
+    })
+    return { ...p, snapshot: { ...p.snapshot, pages } }
+  })
+  for (const t of library.templates) migrateButtonNavigation(t.grid.items)
+  return { projects: out, library }
+}
+
+
+/** The library with every seed group / model / endpoint it lacks added (by id); the same object when nothing is missing. */
+export function withSeedLibrary(library: LibraryData): LibraryData {
+  const seed = countryLibrary()
+  const missing = <T extends { id: string }>(have: T[], want: T[]) => {
+    const ids = new Set(have.map((x) => x.id))
+    return want.filter((x) => !ids.has(x.id))
+  }
+  const groups = missing(library.groups, seed.groups)
+  const models = missing(library.models, seed.models)
+  const endpoints = missing(library.endpoints, seed.endpoints)
+  if (!groups.length && !models.length && !endpoints.length) return library
+  return {
+    ...library,
+    groups: [...library.groups, ...groups],
+    models: [...library.models, ...models],
+    endpoints: [...library.endpoints, ...endpoints],
+  }
+}
+
+/** The workspace version this build writes (and the newest it reads). */
+export const WORKSPACE_VERSION = 53
+
+/** What a persisted payload migrates to: the stored fields at the current shape. */
+export type MigratedWorkspace = Pick<WorkspaceData, 'appearance' | 'user' | 'activity' | 'projects' | 'library'>
+
+/**
+ * A persisted workspace (any version since 1) → the current shape, or `null`
+ * when it is unreadable or newer than this build (the caller keeps / refuses
+ * its own state). The `persist` middleware's `merge` and the headless
+ * `gummy mcp` both call it, so a workspace migrates the same way everywhere.
+ */
+export function migrateWorkspace(persisted: unknown): MigratedWorkspace | null {
+  const data = persisted as
+    | (Partial<Omit<WorkspaceData, 'version'>> & { version?: number })
+    | undefined
+  if (!data || !Array.isArray(data.projects)) return null
+  const appearance = data.appearance === 'dark' ? 'dark' : 'light'
+  // A stored identity that is no longer in MOCK_USERS (a renamed entry)
+  // falls back to the first one rather than lingering as a ghost.
+  const user =
+    typeof data.user === 'string' && MOCK_USERS.some((u) => u.name === data.user)
+      ? data.user
+      : MOCK_USERS[0].name
+  const activity = Array.isArray(data.activity) ? data.activity : seedActivity()
+  if (data.version === 1) {
+    const v1 = migrateV1(data.projects as unknown as V1Project[])
+    const { projects, library } = migrateV3(migrateV2(v1.projects), v1.library)
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47(migrateV46(migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(migrateV7(migrateV6(migrateV5(migrateV4(projects))))), library)), library)))))))))))))))))))))))))))))))))))))) }
+  }
+  if (!data.library) return null
+  // Libraries saved before templates existed get the builtin set.
+  const library: LibraryData = {
+    ...data.library,
+    templates: Array.isArray(data.library.templates)
+      ? data.library.templates
+      : builtinTemplates(),
+  }
+  if (data.version === 2) {
+    const migrated = migrateV3(migrateV2(data.projects as unknown as V2Project[]), library)
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47(migrateV46(migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(migrateV7(migrateV6(migrateV5(migrateV4(migrated.projects))))), migrated.library)), migrated.library)))))))))))))))))))))))))))))))))))))) }
+  }
+  if (data.version === 3) {
+    const migrated = migrateV3(data.projects as unknown as V3Project[], library)
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47(migrateV46(migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(migrateV7(migrateV6(migrateV5(migrateV4(migrated.projects))))), migrated.library)), migrated.library)))))))))))))))))))))))))))))))))))))) }
+  }
+  if (data.version === 4) {
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47(migrateV46(migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(migrateV7(migrateV6(migrateV5(migrateV4(data.projects as unknown as V4Project[]))))), library)), library)))))))))))))))))))))))))))))))))))))) }
+  }
+  if (data.version === 5) {
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47(migrateV46(migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(migrateV7(migrateV6(migrateV5(data.projects as unknown as V5Project[])))), library)), library)))))))))))))))))))))))))))))))))))))) }
+  }
+  if (data.version === 6) {
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47(migrateV46(migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(migrateV7(migrateV6(data.projects as unknown as V6Project[]))), library)), library)))))))))))))))))))))))))))))))))))))) }
+  }
+  if (data.version === 7) {
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47(migrateV46(migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(migrateV7(data.projects as unknown as V7Project[])), library)), library)))))))))))))))))))))))))))))))))))))) }
+  }
+  if (data.version === 8) {
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47(migrateV46(migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(migrateV8(data.projects as unknown as V8Project[]), library)), library)))))))))))))))))))))))))))))))))))))) }
+  }
+  if (data.version === 9) {
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47(migrateV46(migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(migrateV9(data.projects, library)), library)))))))))))))))))))))))))))))))))))))) }
+  }
+  if (data.version === 10) {
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47(migrateV46(migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(migrateV10(data.projects), library)))))))))))))))))))))))))))))))))))))) }
+  }
+  if (data.version === 11) {
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47(migrateV46(migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12(migrateV11(data.projects, library)))))))))))))))))))))))))))))))))))))) }
+  }
+  if (data.version === 12) {
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47(migrateV46(migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13(migrateV12({ projects: data.projects, library }))))))))))))))))))))))))))))))))))))) }
+  }
+  if (data.version === 13) {
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47(migrateV46(migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13({ projects: data.projects, library })))))))))))))))))))))))))))))))))))) }
+  }
+  if (data.version === 14) {
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47(migrateV46(migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15(migrateV13({ projects: data.projects, library })))))))))))))))))))))))))))))))))))) }
+  }
+  if (data.version === 15) {
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47(migrateV46(migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16(migrateV15({ projects: data.projects, library }))))))))))))))))))))))))))))))))))) }
+  }
+  if (data.version === 16) {
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47(migrateV46(migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17(migrateV16({ projects: data.projects, library })))))))))))))))))))))))))))))))))) }
+  }
+  if (data.version === 17) {
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47(migrateV46(migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18(migrateV17({ projects: data.projects, library }))))))))))))))))))))))))))))))))) }
+  }
+  if (data.version === 18) {
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47(migrateV46(migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19(migrateV18({ projects: data.projects, library })))))))))))))))))))))))))))))))) }
+  }
+  if (data.version === 19) {
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47(migrateV46(migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20(migrateV19({ projects: data.projects, library }))))))))))))))))))))))))))))))) }
+  }
+  if (data.version === 20) {
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47(migrateV46(migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21(migrateV20({ projects: data.projects, library })))))))))))))))))))))))))))))) }
+  }
+  if (data.version === 21) {
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47(migrateV46(migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22(migrateV21({ projects: data.projects, library }))))))))))))))))))))))))))))) }
+  }
+  if (data.version === 22) {
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47(migrateV46(migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23(migrateV22({ projects: data.projects, library })))))))))))))))))))))))))))) }
+  }
+  if (data.version === 23) {
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47(migrateV46(migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24(migrateV23({ projects: data.projects, library }))))))))))))))))))))))))))) }
+  }
+  if (data.version === 24) {
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47(migrateV46(migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25(migrateV24({ projects: data.projects, library })))))))))))))))))))))))))) }
+  }
+  if (data.version === 25) {
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47(migrateV46(migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26(migrateV25({ projects: data.projects, library }))))))))))))))))))))))))) }
+  }
+  if (data.version === 26) {
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47(migrateV46(migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27(migrateV26({ projects: data.projects, library })))))))))))))))))))))))) }
+  }
+  if (data.version === 27) {
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47(migrateV46(migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28(migrateV27({ projects: data.projects, library }))))))))))))))))))))))) }
+  }
+  if (data.version === 28) {
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47(migrateV46(migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29(migrateV28({ projects: data.projects, library })))))))))))))))))))))) }
+  }
+  if (data.version === 29) {
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47(migrateV46(migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30(migrateV29({ projects: data.projects, library }))))))))))))))))))))) }
+  }
+  if (data.version === 30) {
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47(migrateV46(migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31(migrateV30({ projects: data.projects, library })))))))))))))))))))) }
+  }
+  if (data.version === 31) {
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47(migrateV46(migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32(migrateV31({ projects: data.projects, library }))))))))))))))))))) }
+  }
+  if (data.version === 32) {
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47(migrateV46(migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33(migrateV32({ projects: data.projects, library })))))))))))))))))) }
+  }
+  if (data.version === 33) {
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47(migrateV46(migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34(migrateV33({ projects: data.projects, library }))))))))))))))))) }
+  }
+  if (data.version === 34) {
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47(migrateV46(migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35(migrateV34({ projects: data.projects, library })))))))))))))))) }
+  }
+  if (data.version === 35) {
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47(migrateV46(migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36(migrateV35({ projects: data.projects, library }))))))))))))))) }
+  }
+  if (data.version === 36) {
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47(migrateV46(migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37(migrateV36({ projects: data.projects, library })))))))))))))) }
+  }
+  if (data.version === 37) {
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47(migrateV46(migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38(migrateV37({ projects: data.projects, library }))))))))))))) }
+  }
+  if (data.version === 38) {
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47(migrateV46(migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39(migrateV38({ projects: data.projects, library })))))))))))) }
+  }
+  if (data.version === 39) {
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47(migrateV46(migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40(migrateV39({ projects: data.projects, library }))))))))))) }
+  }
+  if (data.version === 40) {
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47(migrateV46(migrateV45(migrateV44(migrateV43(migrateV42(migrateV41(migrateV40({ projects: data.projects, library })))))))))) }
+  }
+  if (data.version === 41) {
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47(migrateV46(migrateV45(migrateV44(migrateV43(migrateV42(migrateV41({ projects: data.projects, library }))))))))) }
+  }
+  if (data.version === 42) {
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47(migrateV46(migrateV45(migrateV44(migrateV43(migrateV42({ projects: data.projects, library })))))))) }
+  }
+  if (data.version === 43) {
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47(migrateV46(migrateV45(migrateV44(migrateV43({ projects: data.projects, library }))))))) }
+  }
+  if (data.version === 44) {
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47(migrateV46(migrateV45(migrateV44({ projects: data.projects, library })))))) }
+  }
+  if (data.version === 45) {
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47(migrateV46(migrateV45({ projects: data.projects, library }))))) }
+  }
+  if (data.version === 46) {
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47(migrateV46({ projects: data.projects, library })))) }
+  }
+  if (data.version === 47) {
+    return { appearance, user, activity, ...migrateV49(migrateV48(migrateV47({ projects: data.projects, library }))) }
+  }
+  if (data.version === 48) {
+    return { appearance, user, activity, ...migrateV49(migrateV48({ projects: data.projects, library })) }
+  }
+  if (data.version === 49) {
+    return { appearance, user, activity, ...migrateV49({ projects: data.projects, library }) }
+  }
+  if (data.version === 50) {
+    return { appearance, user, activity, ...migrateV50({ projects: data.projects, library }) }
+  }
+  if (data.version === 51) {
+    return { appearance, user, activity, ...migrateV51({ projects: data.projects, library }) }
+  }
+  if (data.version === 52) {
+    const normalized = { ...library, auth: (library.auth ?? []).map((a) => normalizeAuthDef(a)) }
+    return { appearance, user, activity, ...migrateV52({ projects: data.projects, library: normalized }) }
+  }
+  if (data.version !== 53) return null
+  // Same version, possibly older entry shapes (fields added without a bump): fill the defaults.
+  return { appearance, user, activity, projects: data.projects, library: { ...library, auth: (library.auth ?? []).map((a) => normalizeAuthDef(a)) } }
+}

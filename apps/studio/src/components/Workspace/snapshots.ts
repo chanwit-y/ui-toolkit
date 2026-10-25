@@ -1,9 +1,5 @@
-import { useApiStore } from '../Api/apiStore'
-import { useApiTestStore } from '../Api/testStore'
 import type { EndpointDef } from '../Api/types'
 import { MODEL_REF_KEYS } from '../Api/types'
-import { useEnvStore } from '../Env/envStore'
-import { useGridStore } from '../Layout/gridStore'
 import {
   createDefaultButtonItemConfig,
   createDefaultItemSettings,
@@ -12,8 +8,6 @@ import {
   type GridItemData,
 } from '../Layout/types'
 import { ensureDataTableCanvases } from '../Layout/types'
-import { useGroupStore } from '../Library/groupStore'
-import { useModelStore } from '../Model/modelStore'
 import type { ModelDef } from '../Model/types'
 import {
   countryLanguagesSeedItem,
@@ -87,7 +81,6 @@ import {
   azureSeedAuth,
 } from '../seed/country'
 import { builtinTemplates } from '../seed/templates'
-import { useThemeStore } from '../Theme/themeStore'
 import type { StudioThemeConfig } from '../Theme/types'
 import type { LibraryData, MenuItemDef, PageDef, PageGrid, ProjectSnapshot, AppBarSettings, ShellSettings, SidebarSettings } from './types'
 import { defaultMenu } from './menu'
@@ -938,67 +931,9 @@ export function emptyProjectSnapshot(name = 'My app'): ProjectSnapshot {
 /** The project-owned part of the live stores: the active page's grid, env, theme. */
 export type ProjectStateSnapshot = Pick<ProjectSnapshot, 'env' | 'theme'> & { grid: PageGrid }
 
-export function collectProjectState(): ProjectStateSnapshot {
-  const grid = useGridStore.getState()
-  return {
-    grid: { items: grid.items, containerSettings: grid.containerSettings, fieldSeq: grid.fieldSeq },
-    env: useEnvStore.getState().vars,
-    theme: useThemeStore.getState().config,
-  }
-}
-
 /** The library part of the live stores (groups / models / endpoints).
  * Templates have no live store — they are edited in the workspace directly. */
 export type LiveLibrary = Omit<LibraryData, 'templates'>
-
-export function collectLibrary(): LiveLibrary {
-  return {
-    groups: useGroupStore.getState().groups,
-    models: useModelStore.getState().models,
-    endpoints: useApiStore.getState().endpoints,
-  }
-}
-
-/**
- * True while a hydration is writing the stores, so the autosave subscribers
- * can tell a hydration from an edit.
- */
-let hydrating = false
-export const isHydrating = () => hydrating
-
-/** Load a project's shared state (env / theme) into the live stores. */
-export function applyProjectState(snapshot: Pick<ProjectSnapshot, 'env' | 'theme'>): void {
-  hydrating = true
-  try {
-    useEnvStore.getState().hydrate(snapshot.env)
-    useThemeStore.getState().hydrate(snapshot.theme)
-    useApiTestStore.getState().clear()
-  } finally {
-    hydrating = false
-  }
-}
-
-/** Load one page's canvas into the grid store (project open / page switch). */
-export function applyPageGrid(grid: PageGrid): void {
-  hydrating = true
-  try {
-    useGridStore.getState().hydrate(grid)
-  } finally {
-    hydrating = false
-  }
-}
-
-/** Load the shared library into the group / model / api stores. */
-export function applyLibrary(library: LiveLibrary): void {
-  hydrating = true
-  try {
-    useGroupStore.getState().hydrate(library.groups)
-    useModelStore.getState().hydrate(library.models)
-    useApiStore.getState().hydrate(library.endpoints)
-  } finally {
-    hydrating = false
-  }
-}
 
 /** Every cell across every page of a project (child canvases included). */
 export function countProjectComponents(pages: PageDef[]): number {

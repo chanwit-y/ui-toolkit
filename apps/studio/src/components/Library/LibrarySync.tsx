@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useApiStore } from '../Api/apiStore'
 import { useModelStore } from '../Model/modelStore'
-import { applyLibrary, collectLibrary, isHydrating } from '../Workspace/snapshots'
+import { applyLibrary, collectLibrary, isHydrating } from '../Workspace/liveStores'
 import type { ActivityKind } from '../Workspace/types'
 import { useWorkspaceStore } from '../Workspace/workspaceStore'
 import { useGroupStore } from './groupStore'

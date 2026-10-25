@@ -1,52 +1,30 @@
-import { arrayMove } from '@dnd-kit/sortable'
 import { create } from 'zustand'
 import type { Breakpoint } from './breakpoints'
 import type { ComponentType } from './componentCatalog'
 import { ENTER_DURATION_MS, prefersReducedMotion } from './gridAnimation'
-import { updateContainerBreakpoint, updateItemBreakpoint } from './gridSettings'
 import { ancestorRepeaters, isBlockedInRepeater, withoutBlockedItems } from './repeaterRules'
 import { readSeedCount } from './perf'
 import { countrySeedGridItems } from '../seed/country'
 import {
-  childCanvasCount,
-  createChildCanvas,
-  createDefaultAutocompleteConfig,
-  createDefaultAvatarConfig,
-  createDefaultButtonItemConfig,
-  createDefaultCheckboxConfig,
-  createDefaultSwitchConfig,
-  createDefaultDataTableConfig,
-  createDefaultDataTableEditableConfig,
-  createDefaultFormListConfig,
-  createDefaultRepeaterConfig,
-  createDefaultDateConfig,
-  createDefaultDividerConfig,
-  createDefaultHiddenConfig,
+  addTab,
+  canvasAtPath,
+  createItem,
+  insertItems,
+  mergeItemConfig,
+  moveItemOver,
+  removeItem,
+  removeTab,
+  resolvePath,
+  setCanvasLayout,
+  setItemLabel,
+  setItemLayout,
+  setItemPageData,
+  setItemShowWhen,
+  updateCanvasAtPath,
+  type PathSeg,
+} from './canvasCommands'
+import {
   createDefaultItemSettings,
-  createDefaultModalConfig,
-  createDefaultDrawerConfig,
-  createDefaultMultiAutocompleteConfig,
-  createDefaultPaperConfig,
-  createDefaultCardConfig,
-  createDefaultHtmlContentConfig,
-  createDefaultCustomComponentConfig,
-  type CustomComponentConfig,
-  createDefaultContainerConfig,
-  type ContainerConfig,
-  createDefaultApprovalLineConfig,
-  createDefaultSwitchProfileConfig,
-  createDefaultReplaceProfileConfig,
-  createDefaultWorkflowEditorConfig,
-  createDefaultPopoverConfig,
-  createDefaultRadioConfig,
-  createDefaultSelectFieldConfig,
-  createDefaultTabConfig,
-  createDefaultTextareaConfig,
-  createDefaultTextConfig,
-  createDefaultTextFieldConfig,
-  createDefaultTypographyConfig,
-  createDefaultUploadFileConfig,
-  createDefaultUploadImageConfig,
   defaultContainerSettings,
   type AvatarConfig,
   type ButtonItemConfig,
@@ -66,12 +44,6 @@ import {
   type DrawerConfig,
   type MultiAutocompleteConfig,
   type PaperConfig,
-  type CardConfig,
-  type HtmlContentConfig,
-  type ApprovalLineConfig,
-  type SwitchProfileConfig,
-  type ReplaceProfileConfig,
-  type WorkflowEditorConfig,
   type PopoverConfig,
   type RadioConfig,
   type SelectFieldConfig,
@@ -85,83 +57,17 @@ import {
   type TypographyConfig,
   type UploadFileConfig,
   type UploadImageConfig,
+  type ContainerConfig,
 } from './types'
 
-/** A palette component being dropped onto the canvas. */
-/** `StatBadge` → `statBadge`: the item-name base for a declared custom component. */
-function lowerFirst(s: string): string {
-  return s ? s[0].toLowerCase() + s.slice(1) : s
-}
+export type { PathSeg } from './canvasCommands'
 
+/** A palette component being dropped onto the canvas. */
 export type NewComponent = {
   type: ComponentType
   label: string
   /** `custom` only: the registry declaration the new item is mapped onto. */
   componentId?: string
-}
-
-/**
- * One step of the drill-in path: which item's child canvas the editor is inside
- * (`canvasIndex` distinguishes a tab's canvases; it is 0 for the single-canvas
- * types). The root canvas is the empty path — see the grilled design: only one
- * flat canvas is ever active, so dnd-kit/selection/inspector work unchanged.
- */
-export type PathSeg = { itemId: string; canvasIndex: number }
-
-/**
- * Walk `path` down from the root canvas, returning each step's canvas. Stops at
- * the first dangling segment (item removed / canvas gone), so callers can heal
- * by truncating to what resolved.
- */
-function resolvePath(
-  root: ChildCanvas,
-  path: PathSeg[],
-): { canvases: ChildCanvas[]; items: GridItemData[] } {
-  const canvases: ChildCanvas[] = [root]
-  const pathItems: GridItemData[] = []
-  let current = root
-  for (const seg of path) {
-    const item = current.items.find((i) => i.id === seg.itemId)
-    const child = item?.childCanvases?.[seg.canvasIndex]
-    if (!item || !child) break
-    canvases.push(child)
-    pathItems.push(item)
-    current = child
-  }
-  return { canvases, items: pathItems }
-}
-
-/** The canvas at `path` (or the deepest resolvable ancestor). */
-function canvasAtPath(root: ChildCanvas, path: PathSeg[]): ChildCanvas {
-  const { canvases } = resolvePath(root, path)
-  return canvases[canvases.length - 1]
-}
-
-/**
- * Immutably apply `fn` to the canvas at `path`, rebuilding only the spine of
- * ancestors (untouched siblings keep their references, preserving the memoized
- * GridItem no-rerender behavior).
- */
-function updateCanvasAtPath(
-  canvas: ChildCanvas,
-  path: PathSeg[],
-  fn: (canvas: ChildCanvas) => ChildCanvas,
-): ChildCanvas {
-  if (path.length === 0) return fn(canvas)
-  const [head, ...rest] = path
-  let changed = false
-  const items = canvas.items.map((item) => {
-    if (item.id !== head.itemId || !item.childCanvases) return item
-    const child = item.childCanvases[head.canvasIndex]
-    if (!child) return item
-    const next = updateCanvasAtPath(child, rest, fn)
-    if (next === child) return item
-    changed = true
-    const childCanvases = item.childCanvases.slice()
-    childCanvases[head.canvasIndex] = next
-    return { ...item, childCanvases }
-  })
-  return changed ? { ...canvas, items } : canvas
 }
 
 /** Which panel the right sidebar shows. `inspector` resolves to the selected
@@ -524,223 +430,17 @@ export const useGridStore = create<GridState>((set, get) => {
     // snapshot, so it gets the enter "pop" animation while shifted neighbors FLIP.
     addItem: (component, index) =>
       animated(() => {
-        const { fieldSeq } = get()
         const { items, settings } = activeCanvas()
-        const bpCols = settings.columns
         const type: ComponentType = component?.type ?? 'empty'
         // A repeater's item template is read-only: no form-bound types inside.
         if (isBlockedInRepeater(type) && insideRepeater()) return
-
-        // Textfields and textareas get a unique binding name + a default config
-        // (sharing the one `fieldSeq` counter for global uniqueness); other types
-        // are config-less.
-        let config:
-          | TextFieldConfig
-          | TextareaConfig
-          | SelectFieldConfig
-          | MultiAutocompleteConfig
-          | CheckboxConfig
-          | SwitchConfig
-          | RadioConfig
-          | DateConfig
-          | UploadImageConfig
-          | UploadFileConfig
-          | DataTableConfig
-          | DataTableEditableConfig
-          | FormListConfig
-          | RepeaterConfig
-          | TextConfig
-          | TypographyConfig
-          | AvatarConfig
-          | DividerConfig
-          | ButtonItemConfig
-          | HiddenConfig
-          | PaperConfig
-          | CardConfig
-          | HtmlContentConfig
-          | ApprovalLineConfig
-          | SwitchProfileConfig
-          | ReplaceProfileConfig
-          | WorkflowEditorConfig
-          | TabConfig
-          | ModalConfig
-          | DrawerConfig
-          | PopoverConfig
-          | ContainerConfig
-          | CustomComponentConfig
-          | undefined
-        let nextSeq = fieldSeq
-        if (type === 'textfield') {
-          nextSeq = fieldSeq + 1
-          config = createDefaultTextFieldConfig(`textField_${nextSeq}`)
-        } else if (type === 'textarea') {
-          nextSeq = fieldSeq + 1
-          config = createDefaultTextareaConfig(`textArea_${nextSeq}`)
-        } else if (type === 'select') {
-          nextSeq = fieldSeq + 1
-          config = createDefaultSelectFieldConfig(`select_${nextSeq}`)
-        } else if (type === 'autocomplete') {
-          nextSeq = fieldSeq + 1
-          config = createDefaultAutocompleteConfig(`autocomplete_${nextSeq}`)
-        } else if (type === 'multiAutocomplete') {
-          nextSeq = fieldSeq + 1
-          config = createDefaultMultiAutocompleteConfig(`multiAutocomplete_${nextSeq}`)
-        } else if (type === 'checkbox') {
-          nextSeq = fieldSeq + 1
-          config = createDefaultCheckboxConfig(`checkbox_${nextSeq}`)
-        } else if (type === 'switch') {
-          nextSeq = fieldSeq + 1
-          config = createDefaultSwitchConfig(`switch_${nextSeq}`)
-        } else if (type === 'radio') {
-          nextSeq = fieldSeq + 1
-          config = createDefaultRadioConfig(`radio_${nextSeq}`)
-        } else if (type === 'datepicker') {
-          nextSeq = fieldSeq + 1
-          config = createDefaultDateConfig('date', `datePicker_${nextSeq}`)
-        } else if (type === 'daterangepicker') {
-          nextSeq = fieldSeq + 1
-          config = createDefaultDateConfig('range', `dateRange_${nextSeq}`)
-        } else if (type === 'datetimepicker') {
-          nextSeq = fieldSeq + 1
-          config = createDefaultDateConfig('datetime', `dateTime_${nextSeq}`)
-        } else if (type === 'uploadimage') {
-          nextSeq = fieldSeq + 1
-          config = createDefaultUploadImageConfig(`uploadImage_${nextSeq}`)
-        } else if (type === 'uploadfile') {
-          nextSeq = fieldSeq + 1
-          config = createDefaultUploadFileConfig(`uploadFile_${nextSeq}`)
-        } else if (type === 'datatable') {
-          nextSeq = fieldSeq + 1
-          config = createDefaultDataTableConfig(`dataTable_${nextSeq}`)
-        } else if (type === 'datatableeditable') {
-          nextSeq = fieldSeq + 1
-          config = createDefaultDataTableEditableConfig(`editableTable_${nextSeq}`)
-        } else if (type === 'formlist') {
-          nextSeq = fieldSeq + 1
-          config = createDefaultFormListConfig(`formList_${nextSeq}`)
-        } else if (type === 'repeater') {
-          nextSeq = fieldSeq + 1
-          config = createDefaultRepeaterConfig(`repeater_${nextSeq}`)
-        } else if (type === 'text') {
-          config = createDefaultTextConfig()
-        } else if (type === 'typography') {
-          config = createDefaultTypographyConfig()
-        } else if (type === 'avatar') {
-          nextSeq = fieldSeq + 1
-          config = createDefaultAvatarConfig(`avatar_${nextSeq}`)
-        } else if (type === 'divider') {
-          config = createDefaultDividerConfig()
-        } else if (type === 'button') {
-          config = createDefaultButtonItemConfig()
-        } else if (type === 'hidden') {
-          nextSeq = fieldSeq + 1
-          config = createDefaultHiddenConfig(`hidden_${nextSeq}`)
-        } else if (type === 'paper') {
-          config = createDefaultPaperConfig()
-        } else if (type === 'card') {
-          nextSeq = fieldSeq + 1
-          config = createDefaultCardConfig(`card_${nextSeq}`)
-        } else if (type === 'html') {
-          nextSeq = fieldSeq + 1
-          config = createDefaultHtmlContentConfig(`html_${nextSeq}`)
-        } else if (type === 'custom') {
-          nextSeq = fieldSeq + 1
-          // A tile for a declared component names the item after it
-          // (`statBadge_3`) and maps it at once; the generic tile stays unmapped.
-          const declared = component?.componentId
-          const base = declared ? lowerFirst(component.label) : 'custom'
-          config = {
-            ...createDefaultCustomComponentConfig(`${base}_${nextSeq}`),
-            ...(declared ? { componentId: declared } : {}),
-          }
-        } else if (type === 'approvalline') {
-          nextSeq = fieldSeq + 1
-          config = createDefaultApprovalLineConfig(`approval_${nextSeq}`)
-        } else if (type === 'switchprofile') {
-          nextSeq = fieldSeq + 1
-          config = createDefaultSwitchProfileConfig(`switchProfile_${nextSeq}`)
-        } else if (type === 'replaceprofile') {
-          nextSeq = fieldSeq + 1
-          config = createDefaultReplaceProfileConfig(`replaceProfile_${nextSeq}`)
-        } else if (type === 'workfloweditor') {
-          nextSeq = fieldSeq + 1
-          config = createDefaultWorkflowEditorConfig(`workflow_${nextSeq}`)
-        } else if (type === 'tab') {
-          config = createDefaultTabConfig()
-        } else if (type === 'modal') {
-          nextSeq = fieldSeq + 1
-          config = createDefaultModalConfig(`modal_${nextSeq}`)
-        } else if (type === 'drawer') {
-          nextSeq = fieldSeq + 1
-          config = createDefaultDrawerConfig(`drawer_${nextSeq}`)
-        } else if (type === 'popover') {
-          config = createDefaultPopoverConfig()
-        } else if (type === 'container') {
-          config = createDefaultContainerConfig()
-        }
-
-        // Container-hosting types start with their (empty) child canvases —
-        // one for container/paper/modal/popover, one per starter tab for tab.
-        const canvasCount = childCanvasCount(type, config)
-        const childCanvases =
-          canvasCount > 0
-            ? Array.from({ length: canvasCount }, () => createChildCanvas())
-            : undefined
-
-        // Default span (of 12) by component kind: a data table (and a divider —
-        // a rule reads edge to edge) is full-bleed, so it spans the full width at
-        // every breakpoint, as are the content-hosting containers (container/
-        // paper/tab — a nested layout needs room); uploads need room for their
-        // dropzone (lg 6); the common text-ish inputs (and standalone text/
-        // typography) read better a touch wider (lg 4); everything else —
-        // including the trigger-only modal/popover — falls back to the standard 2.
-        const isFullBleed =
-          type === 'datatable' ||
-          type === 'datatableeditable' ||
-          type === 'formlist' ||
-          type === 'repeater' ||
-          type === 'divider' ||
-          type === 'container' ||
-          type === 'paper' ||
-          type === 'card' ||
-          type === 'html' ||
-          type === 'custom' ||
-          type === 'approvalline' ||
-          type === 'switchprofile' ||
-          type === 'replaceprofile' ||
-          type === 'workfloweditor' ||
-          type === 'tab'
-        const isUpload = type === 'uploadimage' || type === 'uploadfile'
-        const isWideInput =
-          type === 'textfield' ||
-          type === 'textarea' ||
-          type === 'select' ||
-          type === 'autocomplete' ||
-          type === 'multiAutocomplete' ||
-          type === 'checkbox' ||
-          type === 'switch' ||
-          type === 'radio' ||
-          type === 'text' ||
-          type === 'typography'
-        const defaultLg = isUpload ? 6 : isWideInput ? 4 : 2
-        const colSpan = isFullBleed
-          ? { xs: bpCols.xs, sm: bpCols.sm, md: bpCols.md, lg: bpCols.lg }
-          : {
-              xs: bpCols.xs,
-              sm: Math.min(3, bpCols.sm),
-              md: Math.min(2, bpCols.md),
-              lg: Math.min(defaultLg, bpCols.lg),
-            }
-        const newItem: GridItemData = {
-          id: createId(),
-          label: component?.label ?? `Item ${items.length + 1}`,
-          type,
-          settings: createDefaultItemSettings({ colSpan }),
-          config,
-          ...(childCanvases ? { childCanvases } : {}),
-        }
-        const at =
-          index == null ? items.length : Math.max(0, Math.min(index, items.length))
+        const { item: newItem, fieldSeq } = createItem(type, {
+          fieldSeq: get().fieldSeq,
+          columns: settings.columns,
+          label: component?.label,
+          componentId: component?.componentId,
+          siblingCount: items.length,
+        })
 
         // The new cell lands as a chip and upgrades to its live preview only once
         // the enter "pop" finishes — so the pop is byte-identical across types.
@@ -748,12 +448,8 @@ export const useGridStore = create<GridState>((set, get) => {
         const enteringIds = willEnter
           ? new Set(get().enteringIds).add(newItem.id)
           : get().enteringIds
-        setActiveCanvas((canvas) => {
-          const next = canvas.items.slice()
-          next.splice(at, 0, newItem)
-          return { ...canvas, items: next }
-        })
-        set({ fieldSeq: nextSeq, enteringIds })
+        setActiveCanvas((canvas) => insertItems(canvas, [newItem], index))
+        set({ fieldSeq, enteringIds })
         if (willEnter) scheduleEnterClear(newItem.id)
       }),
 
@@ -767,10 +463,7 @@ export const useGridStore = create<GridState>((set, get) => {
         if (strandDepth !== -1) {
           set({ activePath: activePath.slice(0, strandDepth), selectedItemId: null })
         }
-        setActiveCanvas((canvas) => ({
-          ...canvas,
-          items: canvas.items.filter((item) => item.id !== id),
-        }))
+        setActiveCanvas((canvas) => removeItem(canvas, id))
         set((s) => {
           if (!s.enteringIds.has(id)) return {}
           const next = new Set(s.enteringIds)
@@ -791,76 +484,28 @@ export const useGridStore = create<GridState>((set, get) => {
     // keystroke. Discrete controls (selects, span buttons) pass `animate: true`.
     updateContainer: (bp, key, value, animate = true) => {
       const run = () =>
-        setActiveCanvas((canvas) => ({
-          ...canvas,
-          settings: updateContainerBreakpoint(canvas.settings, bp, key, value),
-        }))
+        setActiveCanvas((canvas) => setCanvasLayout(canvas, bp, key, value))
       if (animate) animated(run, 'all')
       else run()
     },
 
     updateItem: (id, bp, key, value, animate = true) => {
       const run = () =>
-        setActiveCanvas((canvas) => ({
-          ...canvas,
-          items: canvas.items.map((item) =>
-            item.id === id
-              ? { ...item, settings: updateItemBreakpoint(item.settings, bp, key, value) }
-              : item,
-          ),
-        }))
+        setActiveCanvas((canvas) => setItemLayout(canvas, id, bp, key, value))
       if (animate) animated(run, id)
       else run()
     },
 
-    updateItemLabel: (id, label) =>
-      setActiveCanvas((canvas) => ({
-        ...canvas,
-        items: canvas.items.map((item) =>
-          item.id === id ? { ...item, label } : item,
-        ),
-      })),
+    updateItemLabel: (id, label) => setActiveCanvas((canvas) => setItemLabel(canvas, id, label)),
 
     // `always` is the absent default, so it is stored as absence.
-    updateItemShowWhen: (id, showWhen) =>
-      setActiveCanvas((canvas) => ({
-        ...canvas,
-        items: canvas.items.map((item) => {
-          if (item.id !== id) return item
-          const { showWhen: _prev, ...rest } = item
-          return showWhen === 'always' ? rest : { ...rest, showWhen }
-        }),
-      })),
+    updateItemShowWhen: (id, showWhen) => setActiveCanvas((canvas) => setItemShowWhen(canvas, id, showWhen)),
 
-    updateItemPageData: (id, patch) =>
-      setActiveCanvas((canvas) => ({
-        ...canvas,
-        items: canvas.items.map((item) => {
-          if (item.id !== id) return item
-          const next = { ...item, ...patch }
-          if (next.dataWhen === null) delete next.dataWhen
-          if (next.initialValue === null) delete next.initialValue
-          return next
-        }),
-      })),
+    updateItemPageData: (id, patch) => setActiveCanvas((canvas) => setItemPageData(canvas, id, patch)),
 
     // Config edits change the cell's preview but never the grid layout, so they
     // skip the FLIP animation. No-op for items without a config (non-textfield).
-    updateItemConfig: (id, patch) =>
-      setActiveCanvas((canvas) => ({
-        ...canvas,
-        items: canvas.items.map((item) =>
-          item.id === id && item.config
-            ? // Spreading the config *union* widens shared keys (e.g. `dataType`,
-              // absent on CheckboxConfig) to optional, so cast back to the union —
-              // the patch only ever carries keys valid for this item's config.
-              ({
-                ...item,
-                config: { ...item.config, ...patch } as GridItemData['config'],
-              } as GridItemData)
-            : item,
-        ),
-      })),
+    updateItemConfig: (id, patch) => setActiveCanvas((canvas) => mergeItemConfig(canvas, id, patch)),
 
     appendItems: (incoming) =>
       animated(() => {
@@ -870,7 +515,7 @@ export const useGridStore = create<GridState>((set, get) => {
         const willEnter = canEnter()
         const enteringIds = new Set(get().enteringIds)
         if (willEnter) newItems.forEach((it) => enteringIds.add(it.id))
-        setActiveCanvas((canvas) => ({ ...canvas, items: [...canvas.items, ...newItems] }))
+        setActiveCanvas((canvas) => insertItems(canvas, newItems))
         set({ enteringIds })
         if (willEnter) newItems.forEach((it) => scheduleEnterClear(it.id))
       }),
@@ -880,32 +525,11 @@ export const useGridStore = create<GridState>((set, get) => {
     // lands the dragged item via the DragOverlay drop animation, so we only
     // commit the new order here (no custom FLIP animation).
     moveItem: (activeId, overId) => {
-      setActiveCanvas((canvas) => {
-        const oldIndex = canvas.items.findIndex((i) => i.id === activeId)
-        const newIndex = canvas.items.findIndex((i) => i.id === overId)
-        if (oldIndex === -1 || newIndex === -1) return canvas
-        return { ...canvas, items: arrayMove(canvas.items, oldIndex, newIndex) }
-      })
+      setActiveCanvas((canvas) => moveItemOver(canvas, activeId, overId))
     },
 
     // Append a tab header + its child canvas in one commit (index-aligned).
-    addTab: (itemId) =>
-      setActiveCanvas((canvas) => ({
-        ...canvas,
-        items: canvas.items.map((item) => {
-          if (item.id !== itemId || item.type !== 'tab' || !item.config) return item
-          const config = item.config as TabConfig
-          const n = config.tabs.length + 1
-          return {
-            ...item,
-            config: {
-              ...config,
-              tabs: [...config.tabs, { label: `Tab ${n}`, value: `tab_${n}` }],
-            },
-            childCanvases: [...(item.childCanvases ?? []), createChildCanvas()],
-          }
-        }),
-      })),
+    addTab: (itemId) => setActiveCanvas((canvas) => addTab(canvas, itemId)),
 
     // Remove a tab header + its child canvas (and heal a path drilled into a
     // canvas of this tab item — indexes shift, so exit to this canvas).
@@ -915,18 +539,7 @@ export const useGridStore = create<GridState>((set, get) => {
       if (strandDepth !== -1) {
         set({ activePath: activePath.slice(0, strandDepth), selectedItemId: null })
       }
-      setActiveCanvas((canvas) => ({
-        ...canvas,
-        items: canvas.items.map((item) => {
-          if (item.id !== itemId || item.type !== 'tab' || !item.config) return item
-          const config = item.config as TabConfig
-          return {
-            ...item,
-            config: { ...config, tabs: config.tabs.filter((_, i) => i !== index) },
-            childCanvases: (item.childCanvases ?? []).filter((_, i) => i !== index),
-          }
-        }),
-      }))
+      setActiveCanvas((canvas) => removeTab(canvas, itemId, index))
     },
 
     // Drill into an item's child canvas. Only valid for an item of the active

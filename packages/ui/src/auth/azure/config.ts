@@ -1,6 +1,6 @@
 import { get } from "lodash";
 import type { API, CondExpression, PageLoad } from "../../components/@types";
-import { urlParamNames } from "../../components/core/readApi";
+import { urlParamNames } from "../../components/core/urlParams";
 
 /**
  * Azure SSO (see the grilled design `azure-sso-auth`): the auth block a

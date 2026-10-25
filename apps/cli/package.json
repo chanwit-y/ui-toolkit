@@ -14,9 +14,11 @@
     "node": ">=18"
   },
   "scripts": {
-    "check": "node --check bin/gummy.mjs"
+    "check": "node --check bin/gummy.mjs && node --check bin/mcp.mjs && node --check bin/lib/files.mjs",
+    "test": "bun test"
   },
   "dependencies": {
-    "@gummy-ui/studio": "workspace:*"
+    "@gummy-ui/studio": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.32.2"
   }
 }

@@ -10,7 +10,9 @@ import type { PageTransition, PageTransitionType } from "../@types";
  * scroll). Enter-only, transform / opacity only, off under reduced motion.
  */
 
-export const DEFAULT_PAGE_TRANSITION_DURATION = 250;
+import { DEFAULT_PAGE_TRANSITION_DURATION } from "./pageTransitionDefaults";
+
+export { DEFAULT_PAGE_TRANSITION_DURATION };
 const EASINGS = new Set(["ease-out", "ease-in-out", "linear"]);
 
 const KEYFRAMES: Record<Exclude<PageTransitionType, "none">, Keyframe[]> = {

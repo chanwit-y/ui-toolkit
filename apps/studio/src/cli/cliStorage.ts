@@ -19,6 +19,11 @@ import type { StateStorage } from 'zustand/middleware'
  * answers from the payload loaded at boot and `setItem` caches + debounces a
  * PUT; a write the CLI refuses (the file changed on disk since this tab loaded
  * it) flips the status to `stale` and stops further writes until a reload.
+ *
+ * When the file changes on disk (`gummy mcp`, a `git pull`), a **clean** tab —
+ * no save pending here or in the live editor stores — loads the new file in
+ * place (`setLiveReload`, see the grilled design `mcp-server`); a tab with
+ * unsaved edits goes `stale` as before, so neither side's work is overwritten.
  */
 export const WORKSPACE_API = '/__gummy'
 
@@ -48,6 +53,11 @@ let timer: ReturnType<typeof setTimeout> | null = null
 export type DerivedProjects = { projectFolders: Record<string, unknown>; commit: () => void }
 let deriveProjects: ((payload: string) => DerivedProjects) | null = null
 const listeners = new Set<Listener>()
+
+/** The app side of a live reload: whether its editor stores hold edits not yet handed to the storage, and how to load the new payload into them. */
+export type LiveReload = { hasPendingEdits: () => boolean; apply: () => void }
+let liveReload: LiveReload | null = null
+let reloading = false
 
 const SAVE_DEBOUNCE_MS = 500
 
@@ -94,6 +104,39 @@ export function installCli(next: CliInfo, loaded: { revision: string; workspace:
  */
 export function setDeriveProjects(fn: (payload: string) => DerivedProjects) {
   deriveProjects = fn
+}
+
+/** Registered once the app is imported (it needs the stores). Without it a disk change marks the tab stale. */
+export function setLiveReload(next: LiveReload) {
+  liveReload = next
+}
+
+/** Nothing of this tab's would be lost by loading the file: no write pending or in flight, no editor autosave waiting. */
+function isClean(): boolean {
+  return !dirty && !inFlight && timer === null && status !== 'stale' && status !== 'error' && !!liveReload && !liveReload.hasPendingEdits()
+}
+
+/** The file moved under this tab: load it when the tab is clean, else stop saving (`stale`). */
+async function reloadOrStale() {
+  if (reloading) return
+  if (!isClean()) return setStatus('stale')
+  reloading = true
+  try {
+    const res = await fetch(`${WORKSPACE_API}/workspace`)
+    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
+    const body = (await res.json()) as { revision: string; workspace: unknown | null }
+    // A deleted file, or an edit that landed while the request was out: keep the tab's copy.
+    if (body.workspace == null || !isClean()) return setStatus('stale')
+    cache = JSON.stringify(body.workspace)
+    revision = body.revision
+    liveReload!.apply()
+    setStatus('saved')
+  } catch (err) {
+    console.warn('[gummy studio] could not reload the workspace from disk:', err)
+    setStatus('stale')
+  } finally {
+    reloading = false
+  }
 }
 
 function schedule() {
@@ -174,7 +217,7 @@ function watchDiskChanges() {
     const source = new EventSource(`${WORKSPACE_API}/events`)
     source.addEventListener('changed', (event) => {
       const data = JSON.parse((event as MessageEvent).data) as { revision: string }
-      if (data.revision !== revision) setStatus('stale')
+      if (data.revision !== revision) void reloadOrStale()
     })
   } catch (err) {
     console.warn('[gummy studio] disk watch unavailable:', err)
