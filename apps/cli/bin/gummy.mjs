@@ -4,6 +4,11 @@
  *
  *   gummy init [dir] [--name <package name>] [--force]
  *   gummy studio [--port 3300] [--dir gummy] [--host 127.0.0.1] [--open] [--demo]
+ *   gummy mcp [--dir gummy]
+ *
+ * `mcp` is the Gummy Studio MCP server over stdio (`mcp.mjs`): Claude authors
+ * the workspace through the studio's own editing rules
+ * (`@gummy-ui/studio/headless`) — see the grilled design `mcp-server`.
  *
  * `init` scaffolds the consumer starter (this package's `template/`, the
  * monorepo's `demo/` as a template): a Vite + React app that mounts
@@ -34,13 +39,13 @@
  * folder or file is never deleted.
  * Node 18+, no dependencies, localhost only by default.
  */
-import { createHash } from 'node:crypto'
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, unlinkSync, watch, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, watch, writeFileSync } from 'node:fs'
 import { createServer } from 'node:http'
 import { createRequire } from 'node:module'
 import { basename, dirname, extname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawn } from 'node:child_process'
+import { hash, PROJECT_KEY, projectName, slug, writeIfChanged, writeProjectFolder } from './lib/files.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const pkg = JSON.parse(readFileSync(join(here, '..', 'package.json'), 'utf8'))
@@ -78,12 +83,13 @@ function usage() {
 Usage:
   gummy init [dir] [options]   scaffold a starter app that renders gummy/projects/<key>/ with <GummyApp>
   gummy studio [options]       serve the studio over ./gummy in the current folder
+  gummy mcp [--dir <path>]     the Gummy Studio MCP server (stdio) over ./gummy — for Claude
 
 init options:
   --name <name>  the package name (default: the folder's name)
   --force        write into a folder that is not empty (existing files are overwritten)
 
-studio options:
+studio / mcp options:
   --port <n>     port to listen on (default 3300)
   --host <h>     interface to bind (default 127.0.0.1)
   --dir <path>   the folder holding workspace.json and projects/ (default gummy)
@@ -119,17 +125,6 @@ function parseArgs(argv) {
   return opts
 }
 
-/** The consumer package's name without its scope, else the folder name. */
-function projectName(cwd) {
-  try {
-    const name = JSON.parse(readFileSync(join(cwd, 'package.json'), 'utf8')).name
-    if (typeof name === 'string' && name.trim()) return name.replace(/^@[^/]+\//, '')
-  } catch {
-    // no package.json
-  }
-  return basename(cwd)
-}
-
 /** A path inside the served folder: plain segments, none of them `.` or `..`, no leading slash. */
 const safeRelativePath = (rel) =>
   typeof rel === 'string' &&
@@ -137,14 +132,6 @@ const safeRelativePath = (rel) =>
   rel.split('/').every((s) => /^[A-Za-z0-9._-]+$/.test(s) && s !== '.' && s !== '..')
 
 const TEMPLATE = join(here, '..', 'template')
-
-/** The file key a project is written under: its name as a slug. */
-const slug = (name) =>
-  name
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '') || 'project'
 
 /** Every file under `dir`, as paths relative to it. */
 function listFiles(dir, prefix = '') {
@@ -198,53 +185,6 @@ Next:
   ${rel === '.' ? '' : `cd ${rel}\n  `}npm install
   npm run dev        # the app at http://localhost:5173 (renders gummy/projects/${key}/)
   npm run studio     # the studio at http://127.0.0.1:3300 — every save updates gummy/projects/${key}/`)
-}
-
-const hash = (text) => createHash('sha1').update(text).digest('hex').slice(0, 16)
-
-/** Write `text` unless the file already holds exactly that; true when it wrote. */
-function writeIfChanged(file, text) {
-  if (existsSync(file) && readFileSync(file, 'utf8') === text) return false
-  mkdirSync(dirname(file), { recursive: true })
-  writeFileSync(file, text)
-  return true
-}
-
-const PROJECT_KEY = /^[a-z0-9][a-z0-9-]*$/
-const PAGE_FILE = /^[A-Za-z0-9_-]+$/
-
-/**
- * One project as a folder (see the grilled design `split-pages-lazy-load`):
- * `projects/<key>/project.json` + `pages/<name>.json`, unchanged files left
- * alone, page files the manifest no longer names removed. Returns the files
- * written and removed (relative to `projectsDir`).
- */
-function writeProjectFolder(projectsDir, key, folder) {
-  const out = { written: [], removed: [] }
-  if (!folder || typeof folder !== 'object' || !folder.project || typeof folder.project !== 'object') return out
-  const dir = join(projectsDir, key)
-  const pagesDir = join(dir, 'pages')
-  const pages = folder.pages && typeof folder.pages === 'object' ? folder.pages : {}
-  const keep = new Set()
-  for (const [name, body] of Object.entries(pages)) {
-    if (!PAGE_FILE.test(name)) continue
-    keep.add(`${name}.json`)
-    if (writeIfChanged(join(pagesDir, `${name}.json`), JSON.stringify(body, null, 2) + '\n')) out.written.push(`${key}/pages/${name}.json`)
-  }
-  // A page the manifest still points at but that came without a body (already split) is kept too.
-  for (const page of Object.values(folder.project.pages ?? {})) {
-    const m = typeof page?.src === 'string' ? /^pages\/([A-Za-z0-9_-]+\.json)$/.exec(page.src) : null
-    if (m) keep.add(m[1])
-  }
-  if (writeIfChanged(join(dir, 'project.json'), JSON.stringify(folder.project, null, 2) + '\n')) out.written.push(`${key}/project.json`)
-  if (existsSync(pagesDir)) {
-    for (const file of readdirSync(pagesDir)) {
-      if (!file.endsWith('.json') || keep.has(file)) continue
-      unlinkSync(join(pagesDir, file))
-      out.removed.push(`${key}/pages/${file}`)
-    }
-  }
-  return out
 }
 
 function readJson(req) {
@@ -421,6 +361,13 @@ if (opts.help || !opts.command) {
 }
 if (opts.command === 'studio') studio(opts)
 else if (opts.command === 'init') init(opts)
+else if (opts.command === 'mcp')
+  import('./mcp.mjs')
+    .then(({ mcp }) => mcp(opts, pkg.version))
+    .catch((err) => {
+      console.error(err)
+      process.exit(1)
+    })
 else {
   console.error(`Unknown command: ${opts.command}\n`)
   usage()

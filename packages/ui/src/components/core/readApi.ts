@@ -5,6 +5,7 @@ import type { TApiMaster } from "../../api/APIMaster";
 import type { TModelMaster } from "../../model/master";
 import type { ElementContext } from "./elementBuilder";
 import { getStateStore } from "./stateStore";
+import { urlParamNames } from "./urlParams";
 import type { DataValueScope } from "./dataValue";
 
 type Row = Record<string, any>;
@@ -71,11 +72,7 @@ export function callArgs(
   return hasParams ? [params, body] : [body];
 }
 
-/** `:param` placeholders of an endpoint URL. */
-export function urlParamNames(url: string | undefined): string[] {
-  if (!url) return [];
-  return [...url.matchAll(/:([A-Za-z_$][A-Za-z0-9_$]*)/g)].map((m) => m[1]);
-}
+export { urlParamNames } from "./urlParams";
 
 /**
  * An API name resolved against the ApiMaster: the built caller, its declared

@@ -8,7 +8,7 @@ import { createRoot } from 'react-dom/client'
 // studio's Tailwind via the `@source` directive in index.css.
 import '@radix-ui/themes/styles.css'
 import './index.css'
-import { installCli, setDeriveProjects, WORKSPACE_API, type CliInfo } from './cli/cliStorage'
+import { installCli, setDeriveProjects, setLiveReload, WORKSPACE_API, type CliInfo } from './cli/cliStorage'
 
 /**
  * Boot: find out how the studio is served, then load the app.
@@ -38,14 +38,17 @@ async function boot() {
     // No CLI behind this origin: localStorage mode.
   }
 
-  const [{ default: App }, runtime, store] = await Promise.all([
+  const [{ default: App }, runtime, store, reload] = await Promise.all([
     import('./App.tsx'),
     import('./components/Workspace/runtimeProject'),
     import('./components/Workspace/workspaceStore'),
+    import('./cli/liveReload'),
   ])
 
   if (cli) {
     setDeriveProjects(runtime.createProjectFolderDeriver())
+    // A clean tab loads a workspace.json changed on disk (`gummy mcp`, git) in place.
+    setLiveReload(reload.liveReload())
     // A fresh folder: one empty project named after the consumer package
     // (the Country demo seeds only on `--demo`).
     if (cli.workspace === null) {

@@ -1,0 +1,4433 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "ApprovalLineConfig": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "binding",
+            "endpoint"
+          ],
+          "description": "`binding`: the rows are `items` (a page load / the repeater item); `endpoint`: the line fetches `read` itself."
+        },
+        "items": {
+          "$ref": "#/definitions/ItemBinding"
+        },
+        "read": {
+          "$ref": "#/definitions/FormListCrudRef"
+        },
+        "recordPath": {
+          "type": "string",
+          "description": "Dot path from the response to the request record (engine `api.paths`)."
+        },
+        "stepsPath": {
+          "type": "string",
+          "description": "Dot path from the record to the step rows (engine `stepsPath`); empty = the record is the list."
+        },
+        "keys": {
+          "$ref": "#/definitions/ApprovalLineKeyConfig"
+        },
+        "roleRules": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ApprovalRoleRuleConfig"
+          }
+        },
+        "statuses": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ApprovalStatusConfig"
+          }
+        },
+        "requesterEnabled": {
+          "type": "boolean"
+        },
+        "requesterName": {
+          "type": "string"
+        },
+        "requesterNameBinding": {
+          "$ref": "#/definitions/ItemBinding"
+        },
+        "requesterJobTitle": {
+          "type": "string"
+        },
+        "requesterJobTitleBinding": {
+          "$ref": "#/definitions/ItemBinding"
+        },
+        "requesterRole": {
+          "type": "string"
+        },
+        "requesterNamePath": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Endpoint mode: paths into the fetched record (fallbacks, like the keys)."
+        },
+        "requesterJobTitlePath": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "requesterPersonIdPath": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "requesterAvatarPath": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "avatarUrl": {
+          "type": "string",
+          "description": "`{{personId}}` template; `''` = initials only."
+        },
+        "orientation": {
+          "type": "string",
+          "enum": [
+            "horizontal",
+            "vertical"
+          ]
+        },
+        "size": {
+          "type": "string",
+          "enum": [
+            "sm",
+            "md",
+            "lg"
+          ]
+        },
+        "showJobTitle": {
+          "type": "boolean"
+        },
+        "showIndex": {
+          "type": "boolean"
+        },
+        "stepMinWidth": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": ""
+            }
+          ]
+        },
+        "verticalBelow": {
+          "type": "string",
+          "enum": [
+            "",
+            "sm",
+            "md"
+          ]
+        },
+        "emptyText": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "source",
+        "items",
+        "read",
+        "recordPath",
+        "stepsPath",
+        "keys",
+        "roleRules",
+        "statuses",
+        "requesterEnabled",
+        "requesterName",
+        "requesterNameBinding",
+        "requesterJobTitle",
+        "requesterJobTitleBinding",
+        "requesterRole",
+        "requesterNamePath",
+        "requesterJobTitlePath",
+        "requesterPersonIdPath",
+        "requesterAvatarPath",
+        "avatarUrl",
+        "orientation",
+        "size",
+        "showJobTitle",
+        "showIndex",
+        "stepMinWidth",
+        "verticalBelow",
+        "emptyText"
+      ],
+      "additionalProperties": false,
+      "description": "Editable config for an approval line (see the grilled design). Maps onto the engine `ApprovalLineElement`: the raw step rows come from `items` (a page load or the enclosing repeater's item), read through `keys` — each a list of fallback paths, typed one per line — labelled by `roleRules`, and mapped by `statuses` (the defaults are the engine's; exported only when changed). The requester is a fixed first step with its own bindings."
+    },
+    "ApprovalLineKeyConfig": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "status": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "jobTitle": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "personId": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "avatar": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "role": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "remark": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "date": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sequence": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "name",
+        "status",
+        "jobTitle",
+        "personId",
+        "avatar",
+        "role",
+        "remark",
+        "date",
+        "sequence"
+      ],
+      "additionalProperties": false,
+      "description": "One key of an approval line's row mapping: paths tried in order (see the engine `ApprovalKeyPath`)."
+    },
+    "ApprovalRoleRuleConfig": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "sequence": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "path",
+        "sequence",
+        "role"
+      ],
+      "additionalProperties": false
+    },
+    "ApprovalStatusConfig": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "state": {
+          "$ref": "#/definitions/ApprovalStepStateConfig"
+        },
+        "label": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "state",
+        "label"
+      ],
+      "additionalProperties": false,
+      "description": "One row of the status map: a backend code, its step state and its tooltip label."
+    },
+    "ApprovalStepStateConfig": {
+      "type": "string",
+      "enum": [
+        "done",
+        "current",
+        "pending",
+        "rejected",
+        "revised",
+        "skipped"
+      ]
+    },
+    "ArrayOf": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/Primitive"
+        },
+        {
+          "type": "string",
+          "const": "object"
+        }
+      ],
+      "description": "What an `array` field holds: a primitive, or an object (nested fields)."
+    },
+    "AvatarConfig": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "src": {
+          "type": "string"
+        },
+        "alt": {
+          "type": "string"
+        },
+        "size": {
+          "type": "string",
+          "enum": [
+            "xs",
+            "sm",
+            "md",
+            "lg",
+            "xl"
+          ]
+        },
+        "fallback": {
+          "type": "string"
+        },
+        "srcBinding": {
+          "$ref": "#/definitions/ItemBinding",
+          "description": "Inside a repeater: image URL from this item field (`src` = fallback)."
+        },
+        "fallbackBinding": {
+          "$ref": "#/definitions/ItemBinding",
+          "description": "Inside a repeater: initials from this item field (`fallback` = fallback)."
+        }
+      },
+      "required": [
+        "name",
+        "src",
+        "alt",
+        "size",
+        "fallback",
+        "srcBinding",
+        "fallbackBinding"
+      ],
+      "additionalProperties": false,
+      "description": "Editable config for an avatar. Maps onto the library's `Avatar` / engine `AvatarElement` (`name` is the element's optional binding key). `src` empty shows the `fallback` text (or the first letter of `alt`); `size` sticks to the named steps — the numeric form stays hand-editable in the exported JSON."
+    },
+    "BuiltinButtonActionKey": {
+      "type": "string",
+      "enum": [
+        "StartLoading",
+        "StopLoading",
+        "SubmitFormToPostAPI",
+        "SubmitFormToPatchAPI",
+        "ClearCurrentFormSelected",
+        "CloseModal",
+        "Navigate",
+        "ReloadDataTable",
+        "SignIn",
+        "SignOut"
+      ],
+      "description": "The engine `ButtonAction`s studio offers in ordered lists. `ConfirmBox` is modelled as the panel's mode (not a list entry — the engine only honors it as `actions[0]`, and everything after it is dead), and `OpenModal` / `SubmitFormToDeleteAPI` are silent no-ops in the engine's `Button` switch, so they aren't offered (see the grilled design)."
+    },
+    "ButtonActionKey": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/BuiltinButtonActionKey"
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "description": "A built-in engine action, or a project custom action by its declaration\n**id** (`\"fn:action-…\"`, see `Workspace/customActions.ts`) — resolved to the engine's `\"fn:<name>\"` at export."
+    },
+    "ButtonConfig": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "icon": {
+          "type": "string",
+          "description": "`IconData` key; `''` = no icon."
+        },
+        "variant": {
+          "$ref": "#/definitions/ButtonVariant",
+          "description": "Exported only off the engine default (`contained`)."
+        },
+        "color": {
+          "type": "string",
+          "description": "A Radix colour name (`red`, `iris`, …) for this button; `''` / absent = the theme (its button colour, else the accent). Optional, so configs saved before it existed need no migration. Exported only when set."
+        }
+      },
+      "required": [
+        "label",
+        "icon",
+        "variant"
+      ],
+      "additionalProperties": false,
+      "description": "Editable config for a button's visual slice: `label`, its `variant` + an optional `icon` key into the library's `IconData` glyph map (`''` = no icon). Modal/popover trigger buttons carry exactly this (their behavior is owned by the host); standalone button items extend it with behavior via `ButtonItemConfig`. Color comes from the theme."
+    },
+    "ButtonItemConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "direct",
+            "confirm"
+          ],
+          "description": "`direct` runs `actions` on click; `confirm` opens a ConfirmBox and runs `confirmTrue`/`confirmFalse` (exports `actions: [\"ConfirmBox\"]`)."
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ButtonActionKey"
+          },
+          "description": "Direct-mode ordered action list."
+        },
+        "confirmTitle": {
+          "type": "string"
+        },
+        "confirmDescription": {
+          "type": "string"
+        },
+        "confirmTrue": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ButtonActionKey"
+          },
+          "description": "Ordered actions run when the ConfirmBox is accepted / dismissed."
+        },
+        "confirmFalse": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ButtonActionKey"
+          }
+        },
+        "modalItemId": {
+          "type": "string",
+          "description": "Grid-item id of the modal `CloseModal` targets (`''` = none); exports as the modal's current `ModalConfig.id`."
+        },
+        "reloadTableItemId": {
+          "type": "string",
+          "description": "Grid-item id of the (editable) data table to reload after a submit (`''` = none); exports as the table's current `name`."
+        },
+        "endpointId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "API page endpoint the submit actions call, by `EndpointDef.id` (`null` = unwired — the export omits `api`)."
+        },
+        "snackbarSuccessEnabled": {
+          "type": "boolean"
+        },
+        "snackbarSuccessType": {
+          "$ref": "#/definitions/ButtonSnackbarVariant"
+        },
+        "snackbarSuccessMessage": {
+          "type": "string"
+        },
+        "snackbarErrorException": {
+          "type": "boolean",
+          "description": "Exports `snackbarError: \"$exception\"` — the only form the engine reads (it shows the thrown API error's message)."
+        },
+        "navigate": {
+          "$ref": "#/definitions/StudioNavigate",
+          "description": "Target of the `Navigate` action (engine `ButtonElement.navigate`); absent until the action is added."
+        },
+        "label": {
+          "type": "string"
+        },
+        "icon": {
+          "type": "string",
+          "description": "`IconData` key; `''` = no icon."
+        },
+        "variant": {
+          "$ref": "#/definitions/ButtonVariant",
+          "description": "Exported only off the engine default (`contained`)."
+        },
+        "color": {
+          "type": "string",
+          "description": "A Radix colour name (`red`, `iris`, …) for this button; `''` / absent = the theme (its button colour, else the accent). Optional, so configs saved before it existed need no migration. Exported only when set."
+        }
+      },
+      "required": [
+        "actions",
+        "confirmDescription",
+        "confirmFalse",
+        "confirmTitle",
+        "confirmTrue",
+        "endpointId",
+        "icon",
+        "label",
+        "modalItemId",
+        "mode",
+        "reloadTableItemId",
+        "snackbarErrorException",
+        "snackbarSuccessEnabled",
+        "snackbarSuccessMessage",
+        "snackbarSuccessType",
+        "variant"
+      ],
+      "description": "Full editable config for a *standalone* button item — the visual slice plus the engine `ButtonElement` behavior (see the grilled design). References are stored by stable id (grid-item id / `EndpointDef.id`) and resolved to current names at export, so renames can't strand the button."
+    },
+    "ButtonSnackbarVariant": {
+      "type": "string",
+      "enum": [
+        "success",
+        "error",
+        "info",
+        "warning",
+        "neutral"
+      ]
+    },
+    "ButtonVariant": {
+      "type": "string",
+      "enum": [
+        "contained",
+        "outlined",
+        "text"
+      ],
+      "description": "A button's visual weight. Mirrors the library's `ButtonVariant`."
+    },
+    "CardActionConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "direct",
+            "confirm"
+          ],
+          "description": "`direct` runs `actions` on click; `confirm` opens a ConfirmBox and runs `confirmTrue`/`confirmFalse` (exports `actions: [\"ConfirmBox\"]`)."
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ButtonActionKey"
+          },
+          "description": "Direct-mode ordered action list."
+        },
+        "confirmTitle": {
+          "type": "string"
+        },
+        "confirmDescription": {
+          "type": "string"
+        },
+        "confirmTrue": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ButtonActionKey"
+          },
+          "description": "Ordered actions run when the ConfirmBox is accepted / dismissed."
+        },
+        "confirmFalse": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ButtonActionKey"
+          }
+        },
+        "modalItemId": {
+          "type": "string",
+          "description": "Grid-item id of the modal `CloseModal` targets (`''` = none); exports as the modal's current `ModalConfig.id`."
+        },
+        "reloadTableItemId": {
+          "type": "string",
+          "description": "Grid-item id of the (editable) data table to reload after a submit (`''` = none); exports as the table's current `name`."
+        },
+        "endpointId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "API page endpoint the submit actions call, by `EndpointDef.id` (`null` = unwired — the export omits `api`)."
+        },
+        "snackbarSuccessEnabled": {
+          "type": "boolean"
+        },
+        "snackbarSuccessType": {
+          "$ref": "#/definitions/ButtonSnackbarVariant"
+        },
+        "snackbarSuccessMessage": {
+          "type": "string"
+        },
+        "snackbarErrorException": {
+          "type": "boolean",
+          "description": "Exports `snackbarError: \"$exception\"` — the only form the engine reads (it shows the thrown API error's message)."
+        },
+        "navigate": {
+          "$ref": "#/definitions/StudioNavigate",
+          "description": "Target of the `Navigate` action (engine `ButtonElement.navigate`); absent until the action is added."
+        },
+        "label": {
+          "type": "string"
+        },
+        "icon": {
+          "type": "string",
+          "description": "`IconData` key; `''` = no icon."
+        },
+        "variant": {
+          "$ref": "#/definitions/ButtonVariant",
+          "description": "Exported only off the engine default (`contained`)."
+        },
+        "color": {
+          "type": "string",
+          "description": "A Radix colour name (`red`, `iris`, …) for this button; `''` / absent = the theme (its button colour, else the accent). Optional, so configs saved before it existed need no migration. Exported only when set."
+        }
+      },
+      "required": [
+        "actions",
+        "confirmDescription",
+        "confirmFalse",
+        "confirmTitle",
+        "confirmTrue",
+        "endpointId",
+        "icon",
+        "id",
+        "label",
+        "modalItemId",
+        "mode",
+        "reloadTableItemId",
+        "snackbarErrorException",
+        "snackbarSuccessEnabled",
+        "snackbarSuccessMessage",
+        "snackbarSuccessType",
+        "variant"
+      ],
+      "description": "One footer button (or the header action). A `ButtonItemConfig` so the full button editor could take it over later; the card panel edits its label / icon / variant and a `Navigate` target (`actions` is `['Navigate']` while a target is set, else `[]`). `id` keys the sortable list."
+    },
+    "CardConfig": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "header": {
+          "$ref": "#/definitions/CardHeaderConfig"
+        },
+        "media": {
+          "$ref": "#/definitions/CardMediaConfig"
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/CardActionConfig"
+          }
+        },
+        "actionsAlign": {
+          "type": "string",
+          "enum": [
+            "start",
+            "end"
+          ]
+        },
+        "collapseEnabled": {
+          "type": "boolean"
+        },
+        "collapseLabel": {
+          "type": "string"
+        },
+        "defaultExpanded": {
+          "type": "boolean"
+        },
+        "navigate": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/StudioNavigate"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Whole-card link (MUI `CardActionArea`)."
+        },
+        "variant": {
+          "type": "string",
+          "enum": [
+            "elevation",
+            "outlined"
+          ]
+        },
+        "elevation": {
+          "type": "number"
+        },
+        "square": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name",
+        "header",
+        "media",
+        "actions",
+        "actionsAlign",
+        "collapseEnabled",
+        "collapseLabel",
+        "defaultExpanded",
+        "navigate",
+        "variant",
+        "elevation",
+        "square"
+      ],
+      "additionalProperties": false,
+      "description": "Editable config for a card. Maps onto the engine `CardElement` minus the two nested containers — `content` is child canvas 0 and the expandable section child canvas 1 (exported only while `collapseEnabled`)."
+    },
+    "CardHeaderConfig": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "titleBinding": {
+          "$ref": "#/definitions/ItemBinding"
+        },
+        "subheader": {
+          "type": "string"
+        },
+        "subheaderBinding": {
+          "$ref": "#/definitions/ItemBinding"
+        },
+        "avatarEnabled": {
+          "type": "boolean"
+        },
+        "avatar": {
+          "$ref": "#/definitions/AvatarConfig"
+        },
+        "actionEnabled": {
+          "type": "boolean"
+        },
+        "action": {
+          "$ref": "#/definitions/CardActionConfig"
+        }
+      },
+      "required": [
+        "title",
+        "titleBinding",
+        "subheader",
+        "subheaderBinding",
+        "avatarEnabled",
+        "avatar",
+        "actionEnabled",
+        "action"
+      ],
+      "additionalProperties": false,
+      "description": "The card's header slot (MUI `CardHeader`): title / subheader (static or bound to the enclosing repeater item), an optional avatar and an optional action button at the end (icon-only by default — MUI's ⋮)."
+    },
+    "CardMediaConfig": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "src": {
+          "type": "string"
+        },
+        "srcBinding": {
+          "$ref": "#/definitions/ItemBinding"
+        },
+        "alt": {
+          "type": "string"
+        },
+        "height": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "enabled",
+        "src",
+        "srcBinding",
+        "alt",
+        "height"
+      ],
+      "additionalProperties": false,
+      "description": "The card's image band (MUI `CardMedia`)."
+    },
+    "CellLines": {
+      "type": "number",
+      "enum": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "description": "Line-clamp choices for a data table cell / column: `0` = wrap freely."
+    },
+    "CheckboxConfig": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "helperText": {
+          "type": "string"
+        },
+        "isRequired": {
+          "type": "boolean"
+        },
+        "errorMessage": {
+          "type": "string"
+        },
+        "variant": {
+          "type": "string",
+          "enum": [
+            "classic",
+            "surface",
+            "soft"
+          ]
+        },
+        "size": {
+          "type": "string",
+          "enum": [
+            "1",
+            "2",
+            "3"
+          ]
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "single",
+            "group"
+          ]
+        },
+        "defaultChecked": {
+          "type": "boolean",
+          "description": "Single-mode initial checked state (emitted as the element's `checked`)."
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/CheckboxOption"
+          },
+          "description": "Group-mode options. Carried in single mode too (so a mode switch is lossless)."
+        },
+        "orientation": {
+          "type": "string",
+          "enum": [
+            "horizontal",
+            "vertical"
+          ],
+          "description": "Group-mode layout direction."
+        }
+      },
+      "required": [
+        "name",
+        "label",
+        "helperText",
+        "isRequired",
+        "errorMessage",
+        "variant",
+        "size",
+        "mode",
+        "defaultChecked",
+        "options",
+        "orientation"
+      ],
+      "additionalProperties": false,
+      "description": "Editable config for a checkbox component. The checkbox is dual-natured, so `mode` discriminates a single boolean toggle from a multi-option group (mirroring how `SelectFieldConfig.mode` forks static/source). Both halves are always carried so switching modes loses nothing: `defaultChecked` drives the single toggle's initial state, `options`/`orientation` drive the group. Maps onto the library's `CheckboxBase` / engine `CheckboxElement`; `dataType` is derived on export (single→`boolean`, group→`any`), not edited here."
+    },
+    "CheckboxOption": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "disabled": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "value",
+        "label",
+        "disabled"
+      ],
+      "additionalProperties": false,
+      "description": "A single option in a checkbox group. Maps onto the library `CheckboxProps` option shape (`value`/`label`/`disabled`) minus `helperText` — per-option sub-labels are out of studio's scope. Carried even in `single` mode so toggling to `group` doesn't start empty."
+    },
+    "ContainerConfig": {
+      "type": "object",
+      "properties": {
+        "background": {
+          "type": "boolean"
+        },
+        "border": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "background",
+        "border"
+      ],
+      "additionalProperties": false,
+      "description": "A plain nested container: the engine `Container.surface` flags — a themed panel background and / or a border."
+    },
+    "CustomComponentConfig": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "componentId": {
+          "type": "string"
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "binding": {
+          "$ref": "#/definitions/ItemBinding"
+        }
+      },
+      "required": [
+        "name",
+        "componentId",
+        "props",
+        "binding"
+      ],
+      "additionalProperties": false,
+      "description": "Editable config for a custom component (see the grilled design). Maps onto the engine `CustomComponentElement`: `componentId` is the project declaration (`Workspace/customComponents.ts`) resolved to its `name` at export, `props` the authored text per declared prop key (parsed to the prop's kind at export), `binding` the one bound `value`."
+    },
+    "DataCondition": {
+      "type": "object",
+      "properties": {
+        "loadId": {
+          "type": "string"
+        },
+        "test": {
+          "type": "string",
+          "enum": [
+            "loaded",
+            "loading",
+            "failed",
+            "compare"
+          ]
+        },
+        "path": {
+          "type": "string"
+        },
+        "op": {
+          "type": "string",
+          "enum": [
+            "eq",
+            "neq",
+            "gt",
+            "gte",
+            "lt",
+            "lte",
+            "set",
+            "unset"
+          ]
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "loadId",
+        "test",
+        "path",
+        "op",
+        "value"
+      ],
+      "additionalProperties": false,
+      "description": "Show an item only while a page load is in a state, or while one of its fields compares to a value (see the grilled page-data design) — exported as a `source: \"state\"` engine condition. `set` / `unset` compare against `undefined`; the other operators against `value` (JSON-parsed when it spells a number / boolean / null, else the text)."
+    },
+    "DataTableColumnConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Studio-only stable card identity; never exported."
+        },
+        "accessor": {
+          "type": "string"
+        },
+        "header": {
+          "type": "string"
+        },
+        "enableSorting": {
+          "type": "boolean"
+        },
+        "enableColumnFilter": {
+          "type": "boolean"
+        },
+        "align": {
+          "type": "string",
+          "enum": [
+            "start",
+            "center",
+            "end"
+          ]
+        },
+        "useDateFormat": {
+          "type": "string",
+          "description": "dayjs format tokens; `''` = no date formatting."
+        },
+        "pin": {
+          "type": "string",
+          "enum": [
+            "",
+            "left",
+            "right"
+          ],
+          "description": "Engine `ColumnDef.pin` — sticky while the table scrolls sideways; `''` = not pinned."
+        },
+        "html": {
+          "type": "string",
+          "description": "Engine `ColumnDef.html` — the cell's HTML template (`{{field}}` placeholders); `''` = plain value."
+        },
+        "sortField": {
+          "type": "string",
+          "description": "Engine `ColumnDef.sortField` — the field `api.sort` sends; `''` = the accessor."
+        },
+        "lines": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CellLines"
+            },
+            {
+              "type": "string",
+              "const": ""
+            }
+          ],
+          "description": "Engine `ColumnDef.lines` — this column's line clamp (`0` = none); `''` = the table's `cellLines`."
+        },
+        "rowHeader": {
+          "type": "boolean",
+          "description": "Engine `ColumnDef.rowHeader` — the row's label column (`<th scope=\"row\">`, pinned left); one per table."
+        },
+        "mergeRows": {
+          "type": "boolean",
+          "description": "Engine `ColumnDef.mergeRows` — consecutive equal values share one cell."
+        },
+        "mergeColumns": {
+          "type": "boolean",
+          "description": "Engine `ColumnDef.mergeColumns` — adjacent equal values (both flagged) share one cell."
+        },
+        "group": {
+          "type": "string",
+          "description": "Engine `ColumnDef.group` — adjacent columns with the same label share a group header; `''` = none."
+        },
+        "size": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": ""
+            }
+          ]
+        },
+        "minSize": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": ""
+            }
+          ]
+        },
+        "maxSize": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": ""
+            }
+          ]
+        },
+        "resizable": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "accessor",
+        "align",
+        "enableColumnFilter",
+        "enableSorting",
+        "group",
+        "header",
+        "html",
+        "id",
+        "lines",
+        "maxSize",
+        "mergeColumns",
+        "mergeRows",
+        "minSize",
+        "pin",
+        "resizable",
+        "rowHeader",
+        "size",
+        "sortField",
+        "useDateFormat"
+      ],
+      "description": "One column of a data table. Maps 1:1 onto the engine's `ColumnDef` (`accessor`/`header`/`enableSorting`/`enableColumnFilter`/`align`/`useDateFormat`) so the exported JSON is lossless. `useDateFormat` holds dayjs tokens and is `''` when the raw value should render untouched (dropped on export). `id` is a studio-only stable identity for the sortable column cards (dnd-kit keys) — every export path maps fields explicitly, so it never reaches engine JSON."
+    },
+    "DataTableConfig": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "canEdit": {
+          "type": "boolean"
+        },
+        "canDelete": {
+          "type": "boolean"
+        },
+        "canSearchAllColumns": {
+          "type": "boolean",
+          "description": "The header's \"Search all columns\" box (engine `canSearch`; exported only when off)."
+        },
+        "columns": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/DataTableColumnConfig"
+          }
+        },
+        "endpointId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The API page endpoint feeding the table, by `EndpointDef.id` (`null` = unwired — the export omits `api` and the consumer wires it). Resolved to the endpoint's current name at export; also what the Live Preview fetches."
+        },
+        "rowsBinding": {
+          "$ref": "#/definitions/ItemBinding",
+          "description": "Rows from a page load instead of the endpoint (engine `items`, in-memory only): while set the export drops the read `api` — pagination, server sort and filters with it. `null` / absent = the endpoint."
+        },
+        "apiPaths": {
+          "type": "string",
+          "description": "Dot-path into the response to the row array (engine `api.paths`, e.g. `data`); `''` = the response is the array itself."
+        },
+        "modalMaxWidth": {
+          "type": "string",
+          "description": "Edit-modal sizing (engine `modalMaxWidth`/`modalMinWidth`/`modalMaxHeight`, CSS lengths; `''` = unset, dropped on export). The modal's *content* is the item's child canvas (drill-in), exported as `modalContainer` with `contextData` set to the table's binding name so the selected row prefills the form."
+        },
+        "modalMinWidth": {
+          "type": "string"
+        },
+        "modalMaxHeight": {
+          "type": "string"
+        },
+        "deleteEndpointId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The row-delete endpoint, by `EndpointDef.id` (`null` = unwired — the export omits `apiDeleteInfo` and `canDelete` stays as authored)."
+        },
+        "deleteParams": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "URL `:param` → row-field accessor (engine `apiDeleteInfo.params`, e.g. `{ id: \"_id\" }`). Keys derive from the endpoint URL's placeholders — the panel prunes on endpoint change and the export drops empty values."
+        },
+        "deleteConfirmEnabled": {
+          "type": "boolean"
+        },
+        "deleteConfirmTitle": {
+          "type": "string"
+        },
+        "deleteConfirmDescription": {
+          "type": "string"
+        },
+        "deleteIsReload": {
+          "type": "boolean",
+          "description": "Engine `apiDeleteInfo.isReload`: refetch the table after a delete."
+        },
+        "deleteSnackbarSuccessEnabled": {
+          "type": "boolean"
+        },
+        "deleteSnackbarSuccessType": {
+          "$ref": "#/definitions/ButtonSnackbarVariant"
+        },
+        "deleteSnackbarSuccessMessage": {
+          "type": "string"
+        },
+        "deleteSnackbarErrorException": {
+          "type": "boolean",
+          "description": "Exports `snackbarError: \"$exception\"` — the only form the engine reads (shows the API error message)."
+        },
+        "rowNavigate": {
+          "$ref": "#/definitions/StudioNavigate",
+          "description": "Row click → page (engine `DataTableElement.rowNavigate`); absent = off."
+        },
+        "pagination": {
+          "$ref": "#/definitions/DataTablePaginationConfig",
+          "description": "Server-side paging (engine `api.pagination`, emitted only while `enabled`)."
+        },
+        "canAdd": {
+          "type": "boolean",
+          "description": "Engine `canAdd` / `addButton`: an Add button in the table header opening the edit modal canvas over an empty row. Items in that canvas pick which mode shows them with `GridItemData.showWhen`. `addButton` is exported only off its defaults."
+        },
+        "addButton": {
+          "$ref": "#/definitions/ButtonConfig"
+        },
+        "headerGap": {
+          "type": "string",
+          "enum": [
+            "",
+            "0",
+            "1",
+            "2",
+            "3",
+            "4",
+            "6",
+            "8"
+          ],
+          "description": "Engine `headerGap` — spacing between title, Add button and search box; `''` = default (2)."
+        },
+        "canResizeColumns": {
+          "type": "boolean",
+          "description": "Engine `canResizeColumns` — drag a header edge to resize; exported only when off."
+        },
+        "cellLines": {
+          "$ref": "#/definitions/CellLines",
+          "description": "Engine `cellLines` — lines a plain cell shows before it is cut (a cut cell gets a tooltip); `0` = no clamp. Engine default 2."
+        },
+        "filtersEnabled": {
+          "type": "boolean",
+          "description": "Server-side custom filters (engine `filterContainer`): the filter form is the item's **second** child canvas (index 1), emitted while enabled and non-empty. `filterButton` / `filterDisplay` / `filterDefaults` export only off the engine defaults."
+        },
+        "filterButton": {
+          "$ref": "#/definitions/ButtonConfig"
+        },
+        "filterDisplay": {
+          "type": "string",
+          "enum": [
+            "popover",
+            "inline"
+          ]
+        },
+        "filterDefaults": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/FilterDefaultRow"
+          }
+        },
+        "requestMapping": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/RequestMapRow"
+          },
+          "description": "Engine `api.params` / `api.query` / `api.body` — one row per request key."
+        },
+        "sort": {
+          "$ref": "#/definitions/DataTableSortConfig"
+        }
+      },
+      "required": [
+        "name",
+        "title",
+        "canEdit",
+        "canDelete",
+        "canSearchAllColumns",
+        "columns",
+        "endpointId",
+        "apiPaths",
+        "modalMaxWidth",
+        "modalMinWidth",
+        "modalMaxHeight",
+        "deleteEndpointId",
+        "deleteParams",
+        "deleteConfirmEnabled",
+        "deleteConfirmTitle",
+        "deleteConfirmDescription",
+        "deleteIsReload",
+        "deleteSnackbarSuccessEnabled",
+        "deleteSnackbarSuccessType",
+        "deleteSnackbarSuccessMessage",
+        "deleteSnackbarErrorException",
+        "pagination",
+        "canAdd",
+        "addButton",
+        "headerGap",
+        "canResizeColumns",
+        "cellLines",
+        "filtersEnabled",
+        "filterButton",
+        "filterDisplay",
+        "filterDefaults",
+        "requestMapping",
+        "sort"
+      ],
+      "additionalProperties": false,
+      "description": "Editable config for a data table. Maps onto the engine's `DataTableElement` minus the pieces studio can't author yet: the `modalContainer`/sizing block is omitted on export (the consumer wires it). `canSearchAllColumns` is the engine's `canSearch` (emitted only when off). The `delete*` group authors the engine's `apiDeleteInfo` (`APIDelete`) and exports only when `canDelete` and an endpoint are set; the confirmBox True/False action arrays are baked export constants (see the grilled design), and the snackbar fields mirror `ButtonItemConfig`'s."
+    },
+    "DataTableEditableColumnConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Studio-only stable card identity; never exported."
+        },
+        "accessorKey": {
+          "type": "string"
+        },
+        "header": {
+          "type": "string"
+        },
+        "editable": {
+          "type": "boolean"
+        },
+        "editor": {
+          "$ref": "#/definitions/EditableTableEditor"
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/EditableTableOption"
+          }
+        },
+        "isRequired": {
+          "type": "boolean"
+        },
+        "requiredMessage": {
+          "type": "string"
+        },
+        "min": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": ""
+            }
+          ]
+        },
+        "max": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": ""
+            }
+          ]
+        },
+        "minLength": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": ""
+            }
+          ]
+        },
+        "maxLength": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": ""
+            }
+          ]
+        },
+        "pattern": {
+          "type": "string"
+        },
+        "patternMessage": {
+          "type": "string"
+        },
+        "enableSorting": {
+          "type": "boolean"
+        },
+        "enableColumnFilter": {
+          "type": "boolean"
+        },
+        "align": {
+          "type": "string",
+          "enum": [
+            "start",
+            "center",
+            "end"
+          ]
+        },
+        "rowHeader": {
+          "type": "boolean",
+          "description": "Engine `rowHeader` — the row's label column."
+        },
+        "group": {
+          "type": "string",
+          "description": "Engine `group` — group header label; `''` = none."
+        },
+        "size": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": ""
+            }
+          ]
+        },
+        "minSize": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": ""
+            }
+          ]
+        },
+        "maxSize": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": ""
+            }
+          ]
+        },
+        "resizable": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "accessorKey",
+        "align",
+        "editable",
+        "editor",
+        "enableColumnFilter",
+        "enableSorting",
+        "group",
+        "header",
+        "id",
+        "isRequired",
+        "max",
+        "maxLength",
+        "maxSize",
+        "min",
+        "minLength",
+        "minSize",
+        "options",
+        "pattern",
+        "patternMessage",
+        "requiredMessage",
+        "resizable",
+        "rowHeader",
+        "size"
+      ],
+      "description": "One column of an editable table. Maps onto the library's `DataTableEditableColumn` minus `size`, `defaultValue`, and the `validate` fn (not JSON-authorable) — see the grilled design. Every field is always carried so switching `editor` is lossless; the panel shows and the export emits only the fields relevant to the current editor: `options` for `select`, `min`/`max` for `number`, `minLength`/`maxLength`/`pattern`/`patternMessage` for `text`, and `requiredMessage` when `isRequired`. Numeric bounds are `''` when unset (mirroring `width`/`maxLength` elsewhere). `id` is a studio-only stable identity for the sortable column cards (dnd-kit keys); never exported."
+    },
+    "DataTableEditableConfig": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "idKey": {
+          "type": "string"
+        },
+        "canResizeColumns": {
+          "type": "boolean",
+          "description": "Engine `canResizeColumns` — drag a header edge to resize; exported only when off."
+        },
+        "canCreate": {
+          "type": "boolean"
+        },
+        "canUpdate": {
+          "type": "boolean"
+        },
+        "canDelete": {
+          "type": "boolean"
+        },
+        "columns": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/DataTableEditableColumnConfig"
+          }
+        },
+        "readEndpointId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional API page endpoint refs for the CRUD calls, by `EndpointDef.id` (`null` = unwired). A set ref exports its endpoint's current name (and the Live Preview fetches `read` live); an unset one keeps the empty-name skeleton the consumer fills in. The action toggles above stay authoritative for which actions exist."
+        },
+        "createEndpointId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "updateEndpointId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "deleteEndpointId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "title",
+        "idKey",
+        "canResizeColumns",
+        "canCreate",
+        "canUpdate",
+        "canDelete",
+        "columns",
+        "readEndpointId",
+        "createEndpointId",
+        "updateEndpointId",
+        "deleteEndpointId"
+      ],
+      "additionalProperties": false,
+      "description": "Editable config for an editable table. Maps onto the engine's `DataTableEditableElement`. The three action toggles model `apiCrud` presence — in this component the Add/Edit/Delete actions exist only when their CRUD API is set — and export as skeleton refs with empty `name`s the consumer fills in (the engine throws loudly until the read API resolves, so a skeleton can't silently look wired). `idKey` is the row field used as the record id for update/delete calls."
+    },
+    "DataTablePaginationConfig": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "placement": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "query",
+            "body"
+          ]
+        },
+        "offsetKey": {
+          "type": "string"
+        },
+        "limitKey": {
+          "type": "string"
+        },
+        "searchKey": {
+          "type": "string"
+        },
+        "totalPath": {
+          "type": "string"
+        },
+        "defaultPageSize": {
+          "type": "number"
+        },
+        "pageSizeOptions": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        }
+      },
+      "required": [
+        "enabled",
+        "placement",
+        "offsetKey",
+        "limitKey",
+        "searchKey",
+        "totalPath",
+        "defaultPageSize",
+        "pageSizeOptions"
+      ],
+      "additionalProperties": false,
+      "description": "Server pagination authoring — the engine `DataTablePagination` with the studio's `''` / `'auto'` \"unset\" idioms. `placement: 'auto'` follows the engine's inference (the endpoint declares a body model ⇒ body, else query) and is dropped from the export; `searchKey: ''` = no server search; `totalPath` is a dot path split at export."
+    },
+    "DataTableSortConfig": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "placement": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "query",
+            "body"
+          ]
+        },
+        "sortKey": {
+          "type": "string"
+        },
+        "orderKey": {
+          "type": "string"
+        },
+        "ascValue": {
+          "type": "string"
+        },
+        "descValue": {
+          "type": "string"
+        },
+        "defaultField": {
+          "type": "string"
+        },
+        "defaultOrder": {
+          "type": "string",
+          "enum": [
+            "asc",
+            "desc"
+          ]
+        }
+      },
+      "required": [
+        "enabled",
+        "placement",
+        "sortKey",
+        "orderKey",
+        "ascValue",
+        "descValue",
+        "defaultField",
+        "defaultOrder"
+      ],
+      "additionalProperties": false,
+      "description": "Engine `api.sort`. Exported only while `enabled` with both keys set; `placement: 'auto'` leaves the engine to infer it, `ascValue` / `descValue` export as `orderValues` only off `asc` / `desc` (numeric text → numbers), `defaultField` (`''` = none) as `default`."
+    },
+    "DateConfig": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "date",
+            "datetime",
+            "range"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "placeholder": {
+          "type": "string"
+        },
+        "helperText": {
+          "type": "string"
+        },
+        "isRequired": {
+          "type": "boolean"
+        },
+        "errorMessage": {
+          "type": "string"
+        },
+        "variant": {
+          "type": "string",
+          "enum": [
+            "classic",
+            "surface",
+            "soft"
+          ]
+        },
+        "size": {
+          "type": "string",
+          "enum": [
+            "1",
+            "2",
+            "3"
+          ]
+        },
+        "radius": {
+          "type": "string",
+          "enum": [
+            "none",
+            "small",
+            "medium",
+            "large",
+            "full"
+          ]
+        },
+        "clearable": {
+          "type": "boolean"
+        },
+        "displayFormat": {
+          "type": "string",
+          "description": "dayjs tokens for date/datetime; one of the 3 range enums for `kind: 'range'`."
+        },
+        "min": {
+          "type": "string",
+          "description": "Earliest selectable value as an ISO string; `''` = unset."
+        },
+        "max": {
+          "type": "string",
+          "description": "Latest selectable value as an ISO string; `''` = unset."
+        },
+        "weekStartsOn": {
+          "type": "number",
+          "enum": [
+            0,
+            1
+          ],
+          "description": "First day of week (date/datetime only): 0 = Sunday, 1 = Monday."
+        },
+        "minuteStep": {
+          "type": "number",
+          "description": "Time step in minutes (datetime only)."
+        }
+      },
+      "required": [
+        "kind",
+        "name",
+        "label",
+        "placeholder",
+        "helperText",
+        "isRequired",
+        "errorMessage",
+        "variant",
+        "size",
+        "radius",
+        "clearable",
+        "displayFormat",
+        "min",
+        "max",
+        "weekStartsOn",
+        "minuteStep"
+      ],
+      "additionalProperties": false,
+      "description": "Editable config for the three date pickers, discriminated by `kind`: `'date'` → `DatePickerBase`/`DatePickerElement`, `'datetime'` → `DateTimePickerBase`/`DateTimePickerElement`, `'range'` → `DateRangePickerBase`/`DateRangePickerElement`. One shared config (mirroring how `SelectFieldConfig` is shared across select/autocomplete) carries every field; the panel and the exporter switch on `kind` to show/emit only the relevant ones: `weekStartsOn` is date+datetime only, `minuteStep` is datetime only, and `range` uses a fixed `displayFormat` enum. `min`/`max` are ISO strings (`''` = unset); the exporter maps them to `minDate`/`maxDate` (date, range) or `minDateTime`/`maxDateTime` (datetime). `dataType` is derived on export (date/datetime→`string`, range→`any`) so isn't edited here."
+    },
+    "DividerConfig": {
+      "type": "object",
+      "properties": {
+        "variant": {
+          "type": "string",
+          "enum": [
+            "fullWidth",
+            "inset",
+            "middle"
+          ]
+        },
+        "spacing": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": ""
+            }
+          ]
+        }
+      },
+      "required": [
+        "variant",
+        "spacing"
+      ],
+      "additionalProperties": false,
+      "description": "Editable config for a divider. Maps onto the library's `Divider` / engine `DividerElement`. `spacing` is the vertical margin in px (`''` = the component's 8px default)."
+    },
+    "DrawerAnchor": {
+      "type": "string",
+      "enum": [
+        "left",
+        "right",
+        "top",
+        "bottom"
+      ]
+    },
+    "DrawerConfig": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "anchor": {
+          "$ref": "#/definitions/DrawerAnchor"
+        },
+        "size": {
+          "type": "string"
+        },
+        "hideHeader": {
+          "type": "boolean"
+        },
+        "trigger": {
+          "$ref": "#/definitions/ButtonConfig"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "description",
+        "anchor",
+        "size",
+        "hideHeader",
+        "trigger"
+      ],
+      "additionalProperties": false,
+      "description": "Editable config for a drawer (MUI's temporary drawer). Maps onto the engine's `DrawerElement` minus the nested `container` (the item's child canvas). Like the modal, the trigger is a `ButtonConfig` (the engine takes any element; studio authors a button) and `id` is the engine registry key a `CloseModal` button inside it targets. `size` is any CSS length (`''` = the engine default: 360px for left / right, 50vh for top / bottom)."
+    },
+    "EditableTableEditor": {
+      "type": "string",
+      "enum": [
+        "text",
+        "number",
+        "date",
+        "select",
+        "checkbox"
+      ],
+      "description": "Inline editor kinds for an editable-table column. Mirrors the library's `DataTableEditableEditor`."
+    },
+    "EditableTableOption": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "value",
+        "label"
+      ],
+      "additionalProperties": false,
+      "description": "One option for the `select` editor — fixed `{value, label}` shape (unlike the select field's open records), so it gets a structured row editor."
+    },
+    "EndpointDef": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Stable id for React keys + store ops; never serialized."
+        },
+        "name": {
+          "type": "string",
+          "description": "Becomes the endpoint's key in the exported `TApiMaster` object."
+        },
+        "description": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string",
+          "description": "Endpoint path; `:param` placeholders are filled from the parameter model."
+        },
+        "method": {
+          "$ref": "#/definitions/HttpMethod"
+        },
+        "withOptions": {
+          "type": "boolean",
+          "description": "Only meaningful on GET — wraps the caller with `.use(options)`."
+        },
+        "response": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Model refs by `ModelDef.id`; null = unset."
+        },
+        "query": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "parameter": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "body": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "groupId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Shared-library group (`GroupDef.id`); null/absent = Ungrouped. Never serialized."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description",
+        "url",
+        "method",
+        "withOptions",
+        "response",
+        "query",
+        "parameter",
+        "body"
+      ],
+      "additionalProperties": false
+    },
+    "FieldKind": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/Primitive"
+        },
+        {
+          "type": "string",
+          "const": "object"
+        },
+        {
+          "type": "string",
+          "const": "array"
+        }
+      ],
+      "description": "A field is a primitive, a nested object, or an array."
+    },
+    "FilterDefaultRow": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "field": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "field",
+        "value"
+      ],
+      "additionalProperties": false,
+      "description": "A filter's opening value (engine `filterDefaults`); `value` is text, parsed as JSON when it is a number / boolean / array."
+    },
+    "FormListConfig": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "idKey": {
+          "type": "string"
+        },
+        "addLabel": {
+          "type": "string"
+        },
+        "addIcon": {
+          "type": "string",
+          "description": "`IconData` key; `''` = the component's default glyph."
+        },
+        "addPosition": {
+          "type": "string",
+          "enum": [
+            "top",
+            "bottom"
+          ]
+        },
+        "addAlign": {
+          "type": "string",
+          "enum": [
+            "start",
+            "center",
+            "end"
+          ]
+        },
+        "addDisplay": {
+          "type": "string",
+          "enum": [
+            "both",
+            "icon",
+            "label"
+          ],
+          "description": "What the Add button shows: icon + label, icon only, or label only."
+        },
+        "saveLabel": {
+          "type": "string"
+        },
+        "removeLabel": {
+          "type": "string"
+        },
+        "removeIcon": {
+          "type": "string",
+          "description": "`IconData` key; `''` = the component's default glyph."
+        },
+        "removePosition": {
+          "type": "string",
+          "enum": [
+            "start",
+            "end",
+            "below"
+          ],
+          "description": "Where a row's Save / Remove controls sit relative to its fields."
+        },
+        "removeDisplay": {
+          "type": "string",
+          "enum": [
+            "both",
+            "icon",
+            "label"
+          ]
+        },
+        "emptyText": {
+          "type": "string"
+        },
+        "readPaths": {
+          "type": "string",
+          "description": "Dot path into the read response to the row array (`data`)."
+        },
+        "canCreate": {
+          "type": "boolean"
+        },
+        "canUpdate": {
+          "type": "boolean"
+        },
+        "canDelete": {
+          "type": "boolean"
+        },
+        "read": {
+          "$ref": "#/definitions/FormListCrudRef"
+        },
+        "create": {
+          "$ref": "#/definitions/FormListCrudRef"
+        },
+        "update": {
+          "$ref": "#/definitions/FormListCrudRef"
+        },
+        "delete": {
+          "$ref": "#/definitions/FormListCrudRef"
+        },
+        "deleteConfirmEnabled": {
+          "type": "boolean"
+        },
+        "deleteConfirmTitle": {
+          "type": "string"
+        },
+        "deleteConfirmDescription": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "title",
+        "idKey",
+        "addLabel",
+        "addIcon",
+        "addPosition",
+        "addAlign",
+        "addDisplay",
+        "saveLabel",
+        "removeLabel",
+        "removeIcon",
+        "removePosition",
+        "removeDisplay",
+        "emptyText",
+        "readPaths",
+        "canCreate",
+        "canUpdate",
+        "canDelete",
+        "read",
+        "create",
+        "update",
+        "delete",
+        "deleteConfirmEnabled",
+        "deleteConfirmTitle",
+        "deleteConfirmDescription"
+      ],
+      "additionalProperties": false,
+      "description": "Editable config for a form list. Maps onto the engine's `FormListElement`; the row template is the item's single child canvas (drill-in like a container). The three action toggles model `apiCrud.create/update/delete` presence — Add / Save / Remove exist only when their API is set — and the read call is always emitted (the engine throws loudly until it resolves). Empty labels fall back to the component's defaults at export."
+    },
+    "FormListCrudRef": {
+      "type": "object",
+      "properties": {
+        "endpointId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "params": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/NavParamSource"
+          }
+        },
+        "extra": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/NavParamSource"
+          }
+        }
+      },
+      "required": [
+        "endpointId",
+        "params",
+        "extra"
+      ],
+      "additionalProperties": false,
+      "description": "One CRUD call of a form list (see the grilled design). `endpointId` is the API page ref (`null` = unwired). `params` holds one source per `:param` of the endpoint URL (seeded on pick, pruned at export): a `row` source maps the param to a row field (engine `params`), any other source resolves from the route / state / a literal (engine `extraParams`, or `params` on the read call — `row` isn't offered there). `extra` is a free-form key → source map: the read call's `query`, a mutation's `extraBody`."
+    },
+    "GridContainerSettings": {
+      "type": "object",
+      "properties": {
+        "columns": {
+          "$ref": "#/definitions/Responsive%3Cnumber%3E"
+        },
+        "gap": {
+          "$ref": "#/definitions/Responsive%3Cstring%3E"
+        },
+        "rowGap": {
+          "$ref": "#/definitions/Responsive%3Cstring%3E"
+        },
+        "columnGap": {
+          "$ref": "#/definitions/Responsive%3Cstring%3E"
+        },
+        "justifyItems": {
+          "$ref": "#/definitions/Responsive%3Cstring%3E"
+        },
+        "alignItems": {
+          "$ref": "#/definitions/Responsive%3Cstring%3E"
+        },
+        "justifyContent": {
+          "$ref": "#/definitions/Responsive%3Cstring%3E"
+        },
+        "alignContent": {
+          "$ref": "#/definitions/Responsive%3Cstring%3E"
+        },
+        "gridAutoRows": {
+          "$ref": "#/definitions/Responsive%3Cstring%3E"
+        },
+        "gridAutoFlow": {
+          "$ref": "#/definitions/Responsive%3Cstring%3E"
+        }
+      },
+      "required": [
+        "columns",
+        "gap",
+        "rowGap",
+        "columnGap",
+        "justifyItems",
+        "alignItems",
+        "justifyContent",
+        "alignContent",
+        "gridAutoRows",
+        "gridAutoFlow"
+      ],
+      "additionalProperties": false
+    },
+    "GridItemSettings": {
+      "type": "object",
+      "properties": {
+        "colSpan": {
+          "$ref": "#/definitions/Responsive%3Cnumber%3E"
+        },
+        "colStart": {
+          "$ref": "#/definitions/Responsive%3Cnumber%3E"
+        },
+        "rowSpan": {
+          "$ref": "#/definitions/Responsive%3Cnumber%3E"
+        },
+        "gridArea": {
+          "$ref": "#/definitions/Responsive%3Cstring%3E"
+        },
+        "justifySelf": {
+          "$ref": "#/definitions/Responsive%3Cstring%3E"
+        },
+        "alignSelf": {
+          "$ref": "#/definitions/Responsive%3Cstring%3E"
+        },
+        "order": {
+          "$ref": "#/definitions/Responsive%3Cstring%3E"
+        }
+      },
+      "required": [
+        "colSpan",
+        "colStart",
+        "rowSpan",
+        "gridArea",
+        "justifySelf",
+        "alignSelf",
+        "order"
+      ],
+      "additionalProperties": false
+    },
+    "HiddenConfig": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "dataType": {
+          "type": "string",
+          "enum": [
+            "string",
+            "number",
+            "boolean",
+            "any"
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "dataType"
+      ],
+      "additionalProperties": false,
+      "description": "Editable config for a hidden field. Maps 1:1 onto the engine's `HiddenElement` (`name` + `dataType`) — it renders nothing at runtime, so the canvas always shows its chip and the only authoring is the binding."
+    },
+    "HtmlContentConfig": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "html": {
+          "type": "string"
+        },
+        "binding": {
+          "$ref": "#/definitions/ItemBinding"
+        },
+        "prose": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name",
+        "html",
+        "binding",
+        "prose"
+      ],
+      "additionalProperties": false,
+      "description": "Editable config for an HTML content block. Maps onto the engine `HtmlContentElement`: `html` is the `{{path}}` template, `binding` (inside a repeater's template) what the placeholders read — `key: 'none'` is the item itself — and `prose` the typographic defaults."
+    },
+    "HttpMethod": {
+      "type": "string",
+      "enum": [
+        "GET",
+        "POST",
+        "PUT",
+        "PATCH",
+        "DELETE"
+      ],
+      "description": "Editor-side shapes for the API page. Endpoints reference models by their stable `ModelDef.id` — rename-safe, since a model rename on the Model page must not break endpoints — and `serialize.ts` resolves ids to current model names when lowering onto the engine's `TApiMaster` shape."
+    },
+    "ItemBinding": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "key": {
+              "type": "string"
+            },
+            "path": {
+              "type": "string"
+            },
+            "source": {
+              "type": "string",
+              "enum": [
+                "row",
+                "state"
+              ]
+            }
+          },
+          "required": [
+            "key",
+            "path"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A bound display value. `source` absent / `'row'`: `key` is a field of the enclosing repeater's item (`'none'` = the item itself). `'state'`: `key` is a page load's id (resolved to its key at export), `path` drills its data or reads `$status`."
+    },
+    "ModalConfig": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "maxWidth": {
+          "type": "string"
+        },
+        "minWidth": {
+          "type": "string"
+        },
+        "maxHeight": {
+          "type": "string"
+        },
+        "trigger": {
+          "$ref": "#/definitions/ButtonConfig"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "description",
+        "maxWidth",
+        "minWidth",
+        "maxHeight",
+        "trigger"
+      ],
+      "additionalProperties": false,
+      "description": "Editable config for a modal. Maps onto the engine's `ModalElement` minus the nested `container` (the item's child canvas). The trigger is a full `ButtonConfig` (a modal's trigger is a `ButtonElement`); on export it gets `actions: [\"OpenModal\"]` wired for it. Sizing strings are any CSS length (`''` = unset)."
+    },
+    "ModelField": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Stable id for React keys + store tree ops; never serialized."
+        },
+        "name": {
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/definitions/FieldKind"
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ModelField"
+          },
+          "description": "Nested fields — used when `kind === 'object'`, or `array` of object."
+        },
+        "arrayOf": {
+          "$ref": "#/definitions/ArrayOf",
+          "description": "Element type — only meaningful when `kind === 'array'`."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "kind",
+        "children",
+        "arrayOf"
+      ],
+      "additionalProperties": false
+    },
+    "MultiAutocompleteConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "maxSelections": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": ""
+            }
+          ],
+          "description": "Max selectable items; `''` means unlimited."
+        },
+        "showSelectedCount": {
+          "type": "boolean",
+          "description": "Show the `(n/max)` count label and chip-overflow summary."
+        },
+        "name": {
+          "type": "string"
+        },
+        "dataType": {
+          "type": "string",
+          "enum": [
+            "date",
+            "datetime-local",
+            "email",
+            "hidden",
+            "month",
+            "number",
+            "password",
+            "search",
+            "tel",
+            "text",
+            "time",
+            "url",
+            "week"
+          ]
+        },
+        "label": {
+          "type": "string"
+        },
+        "placeholder": {
+          "type": "string"
+        },
+        "helperText": {
+          "type": "string"
+        },
+        "isRequired": {
+          "type": "boolean"
+        },
+        "errorMessage": {
+          "type": "string"
+        },
+        "variant": {
+          "type": "string",
+          "enum": [
+            "classic",
+            "surface",
+            "soft"
+          ]
+        },
+        "size": {
+          "type": "string",
+          "enum": [
+            "1",
+            "2",
+            "3"
+          ]
+        },
+        "radius": {
+          "type": "string",
+          "enum": [
+            "none",
+            "small",
+            "medium",
+            "large",
+            "full"
+          ]
+        },
+        "isFullWidth": {
+          "type": "boolean"
+        },
+        "isFixedHeight": {
+          "type": "boolean"
+        },
+        "width": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": ""
+            }
+          ]
+        },
+        "regex": {
+          "type": "string"
+        },
+        "regexErrorMessage": {
+          "type": "string"
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "static",
+            "source"
+          ]
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SelectOption"
+          }
+        },
+        "optionsBinding": {
+          "$ref": "#/definitions/ItemBinding",
+          "description": "Options from a page load instead (`source: 'state'` — engine `optionsValue`): wins over both modes while set, which keep their config so switching back loses nothing. Rows are read with the same keys."
+        },
+        "idKey": {
+          "type": "string",
+          "description": "Which option-record key holds the stored value (Autocomplete2 `idKey`)."
+        },
+        "displayKey": {
+          "type": "string",
+          "description": "The option's title — shown in the list and the trigger (`displayKey`)."
+        },
+        "searchKey": {
+          "type": "string",
+          "description": "Which option-record key the type-ahead filters on (`searchKey`)."
+        },
+        "subtitleKey": {
+          "type": "string",
+          "description": "Second line under the title (engine `itemSubtitle`); also matched by search."
+        },
+        "avatarKey": {
+          "type": "string",
+          "description": "Field holding an image URL or `{ src, alt, fallback }` (engine `itemAvatar`). Wins over `itemIcon` — a row has one leading visual."
+        },
+        "inputIcon": {
+          "type": "string",
+          "description": "`IconData` key shown in the trigger (engine `inputIcon`); `''` = the default search glyph."
+        },
+        "itemIcon": {
+          "type": "string",
+          "description": "`IconData` key shown on every option row (engine `itemIcon`)."
+        },
+        "dataSource": {
+          "type": "object",
+          "properties": {
+            "endpointId": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "paths": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "endpointId",
+            "paths"
+          ],
+          "additionalProperties": false,
+          "description": "Runtime data source (`source` mode): the API page endpoint, referenced by `EndpointDef.id` (rename-safe like model refs; `null` = none picked) and resolved to the endpoint's current name at export. `paths` is the dot-path into the response to the option array (engine `api.paths`; `''` = the response is the array itself)."
+        },
+        "observeToItemId": {
+          "type": "string",
+          "description": "`GridItemData.id` of another select-family item this one observes for a cascading refetch (engine `observeTo`); `''` = none. Stored by id so renaming the target's binding key can't break the link — `gridConfig` resolves it to the target's current name at export (see `observe.ts`). Only meaningful in `source` mode."
+        }
+      },
+      "required": [
+        "avatarKey",
+        "dataSource",
+        "dataType",
+        "displayKey",
+        "errorMessage",
+        "helperText",
+        "idKey",
+        "inputIcon",
+        "isFixedHeight",
+        "isFullWidth",
+        "isRequired",
+        "itemIcon",
+        "label",
+        "maxSelections",
+        "mode",
+        "name",
+        "observeToItemId",
+        "options",
+        "placeholder",
+        "radius",
+        "regex",
+        "regexErrorMessage",
+        "searchKey",
+        "showSelectedCount",
+        "size",
+        "subtitleKey",
+        "variant",
+        "width"
+      ],
+      "description": "Editable config for a multi-select autocomplete. A superset of `SelectFieldConfig` (it previews with the library's `MultiAutocompleteBase`, which shares the record-array option model) plus the two multi-only knobs the base component adds: `maxSelections` caps how many items can be chosen (`''` = unlimited, mirroring `width`/`maxLength`), and `showSelectedCount` toggles the `(n/max)` label + chip overflow. Both are exported on the `multiAutocomplete` element (`maxSelections` only when it is a number)."
+    },
+    "NavParamSource": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "value"
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "url"
+            },
+            "key": {
+              "type": "string"
+            },
+            "source": {
+              "type": "string",
+              "enum": [
+                "param",
+                "query"
+              ]
+            }
+          },
+          "required": [
+            "type",
+            "key",
+            "source"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "state"
+            },
+            "key": {
+              "type": "string"
+            },
+            "path": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "key",
+            "path"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "row"
+            },
+            "key": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "key"
+          ],
+          "additionalProperties": false
+        }
+      ],
+      "description": "Where one `:param` (or query key) of a navigation target gets its value — the studio-side mirror of the engine `DataValue` sources `NavigateTarget` accepts. `row` is only offered on a data table's row navigation."
+    },
+    "PaperConfig": {
+      "type": "object",
+      "properties": {
+        "elevation": {
+          "type": "number"
+        },
+        "variant": {
+          "type": "string",
+          "enum": [
+            "elevation",
+            "outlined"
+          ]
+        },
+        "square": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "elevation",
+        "variant",
+        "square"
+      ],
+      "additionalProperties": false
+    },
+    "PopoverConfig": {
+      "type": "object",
+      "properties": {
+        "placement": {
+          "type": "string",
+          "enum": [
+            "top",
+            "bottom",
+            "left",
+            "right",
+            "top-start",
+            "top-end",
+            "bottom-start",
+            "bottom-end"
+          ]
+        },
+        "triggerMode": {
+          "type": "string",
+          "enum": [
+            "click",
+            "hover"
+          ]
+        },
+        "offset": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": ""
+            }
+          ]
+        },
+        "triggerKind": {
+          "type": "string",
+          "enum": [
+            "button",
+            "text"
+          ]
+        },
+        "triggerButton": {
+          "$ref": "#/definitions/ButtonConfig"
+        },
+        "triggerText": {
+          "$ref": "#/definitions/TextConfig"
+        }
+      },
+      "required": [
+        "placement",
+        "triggerMode",
+        "offset",
+        "triggerKind",
+        "triggerButton",
+        "triggerText"
+      ],
+      "additionalProperties": false,
+      "description": "Editable config for a popover. Maps onto the engine's `PopoverElement` minus the nested `container` (the item's child canvas). The trigger is a mini-Bin; studio restricts it to `button` | `text` (see the grilled design) and carries both configs so switching kinds is lossless. `offset` is the px gap (`''` = the component's 8px default)."
+    },
+    "Primitive": {
+      "type": "string",
+      "enum": [
+        "string",
+        "number",
+        "boolean",
+        "integer",
+        "any"
+      ],
+      "description": "The five primitives `convertValue` accepts in the engine converter."
+    },
+    "ProfileKeysConfig": {
+      "type": "object",
+      "properties": {
+        "personId": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "userId": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Unique per profile (one person holds several)."
+        },
+        "name": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "nameTemplate": {
+          "type": "string",
+          "description": "`{{path}}` template for the display name; `''` = the engine default (`{{firstNameEn}} {{lastNameEN}}`)."
+        },
+        "jobTitle": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "company": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "department": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "email": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "avatar": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "primary": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The primary-assignment flag (`Y` / `true` / `1`): the profile picked when nobody chose one."
+        }
+      },
+      "required": [
+        "personId",
+        "userId",
+        "name",
+        "nameTemplate",
+        "jobTitle",
+        "company",
+        "department",
+        "email",
+        "avatar",
+        "primary"
+      ],
+      "additionalProperties": false,
+      "description": "Paths into one profile record — a fallback list per key, tried top to bottom (the engine `ProfileKeys`); an empty list keeps the engine default, which fits the default user-profile shape."
+    },
+    "RadioConfig": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "helperText": {
+          "type": "string"
+        },
+        "isRequired": {
+          "type": "boolean"
+        },
+        "errorMessage": {
+          "type": "string"
+        },
+        "variant": {
+          "type": "string",
+          "enum": [
+            "classic",
+            "surface",
+            "soft"
+          ]
+        },
+        "size": {
+          "type": "string",
+          "enum": [
+            "1",
+            "2",
+            "3"
+          ]
+        },
+        "orientation": {
+          "type": "string",
+          "enum": [
+            "horizontal",
+            "vertical"
+          ]
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/RadioOption"
+          }
+        },
+        "defaultValue": {
+          "type": "string",
+          "description": "Preselected option value; `''` means nothing is selected."
+        }
+      },
+      "required": [
+        "name",
+        "label",
+        "helperText",
+        "isRequired",
+        "errorMessage",
+        "variant",
+        "size",
+        "orientation",
+        "options",
+        "defaultValue"
+      ],
+      "additionalProperties": false,
+      "description": "Editable config for a radio component. Unlike the checkbox there is no single/group fork — a radio is always a single-select group of `options`. Static-only for now (no API/source mode); the engine `RadioElement` supports API-driven options, but studio defers that. `defaultValue` preselects one option (`''` = none). Maps onto the library's `RadioButtonBase` / engine `RadioElement`; `dataType` is fixed to `string` on export (a radio stores one scalar value) and so isn't edited here."
+    },
+    "RadioOption": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "disabled": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "value",
+        "label",
+        "disabled"
+      ],
+      "additionalProperties": false,
+      "description": "A single radio option. Maps onto the library `RadioButtonProps` option shape (`value`/`label`/`disabled`) minus `helperText` — per-option sub-labels are out of studio's scope, matching the checkbox option editor."
+    },
+    "RepeaterConfig": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "idKey": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "endpoint",
+            "parent",
+            "state"
+          ]
+        },
+        "read": {
+          "$ref": "#/definitions/FormListCrudRef"
+        },
+        "stateBinding": {
+          "$ref": "#/definitions/ItemBinding",
+          "description": "The page load (array) the items come from (source `state`)."
+        },
+        "readPaths": {
+          "type": "string",
+          "description": "Dot path into the read response to the item array (`data`)."
+        },
+        "parentField": {
+          "type": "string",
+          "description": "Array field of the enclosing repeater's item (source `parent`)."
+        },
+        "itemSpan": {
+          "$ref": "#/definitions/Responsive%3Cnumber%3E"
+        },
+        "gap": {
+          "type": "string",
+          "description": "Tailwind spacing scale key (`'4'`) or a CSS length."
+        },
+        "itemSurface": {
+          "type": "string",
+          "enum": [
+            "none",
+            "outlined",
+            "elevation"
+          ]
+        },
+        "itemPadding": {
+          "type": "string",
+          "description": "`''` = the component default (4 with a surface, else 0)."
+        },
+        "emptyText": {
+          "type": "string"
+        },
+        "itemNavigate": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/StudioNavigate"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Whole-item link; `null` = items aren't clickable."
+        }
+      },
+      "required": [
+        "name",
+        "title",
+        "idKey",
+        "source",
+        "read",
+        "readPaths",
+        "parentField",
+        "itemSpan",
+        "gap",
+        "itemSurface",
+        "itemPadding",
+        "emptyText",
+        "itemNavigate"
+      ],
+      "additionalProperties": false,
+      "description": "Editable config for a repeater. Maps onto the engine's `RepeaterElement`; the item template is the item's single child canvas (drill-in like a container). The array comes from an endpoint (`read` — endpoint, `:param` sources, query extras — drilled by `readPaths`) or, inside another repeater's template, from an array field of the parent item (`parentField` → engine `items: { type:'row', key }`). `itemSpan` is out of 12 per studio breakpoint (exported like a bin: xs→sm, sm→md, md→lg, lg→lg+xl)."
+    },
+    "ReplaceProfileConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "search": {
+          "$ref": "#/definitions/FormListCrudRef"
+        },
+        "searchPaths": {
+          "type": "string"
+        },
+        "searchParam": {
+          "type": "string",
+          "description": "The query key receiving the typed text; `''` = `search`."
+        },
+        "debounceMs": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": ""
+            }
+          ],
+          "description": "`''` = 300."
+        },
+        "read": {
+          "$ref": "#/definitions/FormListCrudRef"
+        },
+        "readPaths": {
+          "type": "string"
+        },
+        "personParam": {
+          "type": "string"
+        },
+        "canReplace": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/DataCondition"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Who may replace, over the page's loads; null = everyone."
+        },
+        "trigger": {
+          "$ref": "#/definitions/ButtonConfig"
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "placeholder": {
+          "type": "string"
+        },
+        "confirmLabel": {
+          "type": "string"
+        },
+        "cancelLabel": {
+          "type": "string"
+        },
+        "returnLabel": {
+          "type": "string"
+        },
+        "emptyText": {
+          "type": "string"
+        },
+        "showBanner": {
+          "type": "boolean"
+        },
+        "name": {
+          "type": "string"
+        },
+        "stateKey": {
+          "type": "string",
+          "description": "The global-state slice holding the active profile; `''` = the engine default `profile`."
+        },
+        "initial": {
+          "$ref": "#/definitions/ItemBinding",
+          "description": "The logged-in profile (a page load), seeding the slice while it is empty."
+        },
+        "keys": {
+          "$ref": "#/definitions/ProfileKeysConfig"
+        },
+        "persist": {
+          "type": "boolean",
+          "description": "Remember the choice (a switch in localStorage, a replacement in sessionStorage)."
+        },
+        "reload": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Names registered for reload (tables, lists, page loads) refetched after the profile changes."
+        },
+        "navigate": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/StudioNavigate"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Where to go after the profile changes; null = stay."
+        }
+      },
+      "required": [
+        "canReplace",
+        "cancelLabel",
+        "confirmLabel",
+        "debounceMs",
+        "description",
+        "emptyText",
+        "initial",
+        "keys",
+        "name",
+        "navigate",
+        "persist",
+        "personParam",
+        "placeholder",
+        "read",
+        "readPaths",
+        "reload",
+        "returnLabel",
+        "search",
+        "searchParam",
+        "searchPaths",
+        "showBanner",
+        "stateKey",
+        "title",
+        "trigger"
+      ],
+      "description": "Editable config for a Replace Profile trigger + dialog: people `search` (the typed text in `searchParam`), the picked person's profiles from `read`, who may replace (a page-data condition), the trigger button and the dialog's texts."
+    },
+    "RequestMapRow": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Studio-only stable row identity; never exported."
+        },
+        "slot": {
+          "type": "string",
+          "enum": [
+            "params",
+            "query",
+            "body"
+          ]
+        },
+        "key": {
+          "type": "string"
+        },
+        "source": {
+          "$ref": "#/definitions/RequestSource"
+        }
+      },
+      "required": [
+        "id",
+        "slot",
+        "key",
+        "source"
+      ],
+      "additionalProperties": false,
+      "description": "One row of a data table's request mapping → a key of engine `api.params` / `api.query` / `api.body`."
+    },
+    "RequestSource": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/NavParamSource"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "filter"
+            },
+            "key": {
+              "type": "string"
+            },
+            "fallback": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "key",
+            "fallback"
+          ],
+          "additionalProperties": false
+        }
+      ],
+      "description": "Where one request key of a data table's read call comes from: any  {@link  NavParamSource }  (literal / URL / global state — `row` has no meaning here), or a **filter field** of the table's filter form, with the fallback sent while that filter is blank (required when it feeds a URL `:param`)."
+    },
+    "Responsive<number>": {
+      "type": "object",
+      "properties": {
+        "xs": {
+          "type": "number"
+        },
+        "sm": {
+          "type": "number"
+        },
+        "md": {
+          "type": "number"
+        },
+        "lg": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "xs",
+        "sm",
+        "md",
+        "lg"
+      ],
+      "additionalProperties": false
+    },
+    "Responsive<string>": {
+      "type": "object",
+      "properties": {
+        "xs": {
+          "type": "string"
+        },
+        "sm": {
+          "type": "string"
+        },
+        "md": {
+          "type": "string"
+        },
+        "lg": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "xs",
+        "sm",
+        "md",
+        "lg"
+      ],
+      "additionalProperties": false
+    },
+    "SelectFieldConfig": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "dataType": {
+          "type": "string",
+          "enum": [
+            "date",
+            "datetime-local",
+            "email",
+            "hidden",
+            "month",
+            "number",
+            "password",
+            "search",
+            "tel",
+            "text",
+            "time",
+            "url",
+            "week"
+          ]
+        },
+        "label": {
+          "type": "string"
+        },
+        "placeholder": {
+          "type": "string"
+        },
+        "helperText": {
+          "type": "string"
+        },
+        "isRequired": {
+          "type": "boolean"
+        },
+        "errorMessage": {
+          "type": "string"
+        },
+        "variant": {
+          "type": "string",
+          "enum": [
+            "classic",
+            "surface",
+            "soft"
+          ]
+        },
+        "size": {
+          "type": "string",
+          "enum": [
+            "1",
+            "2",
+            "3"
+          ]
+        },
+        "radius": {
+          "type": "string",
+          "enum": [
+            "none",
+            "small",
+            "medium",
+            "large",
+            "full"
+          ]
+        },
+        "isFullWidth": {
+          "type": "boolean"
+        },
+        "isFixedHeight": {
+          "type": "boolean"
+        },
+        "width": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": ""
+            }
+          ]
+        },
+        "regex": {
+          "type": "string"
+        },
+        "regexErrorMessage": {
+          "type": "string"
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "static",
+            "source"
+          ]
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SelectOption"
+          }
+        },
+        "optionsBinding": {
+          "$ref": "#/definitions/ItemBinding",
+          "description": "Options from a page load instead (`source: 'state'` — engine `optionsValue`): wins over both modes while set, which keep their config so switching back loses nothing. Rows are read with the same keys."
+        },
+        "idKey": {
+          "type": "string",
+          "description": "Which option-record key holds the stored value (Autocomplete2 `idKey`)."
+        },
+        "displayKey": {
+          "type": "string",
+          "description": "The option's title — shown in the list and the trigger (`displayKey`)."
+        },
+        "searchKey": {
+          "type": "string",
+          "description": "Which option-record key the type-ahead filters on (`searchKey`)."
+        },
+        "subtitleKey": {
+          "type": "string",
+          "description": "Second line under the title (engine `itemSubtitle`); also matched by search."
+        },
+        "avatarKey": {
+          "type": "string",
+          "description": "Field holding an image URL or `{ src, alt, fallback }` (engine `itemAvatar`). Wins over `itemIcon` — a row has one leading visual."
+        },
+        "inputIcon": {
+          "type": "string",
+          "description": "`IconData` key shown in the trigger (engine `inputIcon`); `''` = the default search glyph."
+        },
+        "itemIcon": {
+          "type": "string",
+          "description": "`IconData` key shown on every option row (engine `itemIcon`)."
+        },
+        "dataSource": {
+          "type": "object",
+          "properties": {
+            "endpointId": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "paths": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "endpointId",
+            "paths"
+          ],
+          "additionalProperties": false,
+          "description": "Runtime data source (`source` mode): the API page endpoint, referenced by `EndpointDef.id` (rename-safe like model refs; `null` = none picked) and resolved to the endpoint's current name at export. `paths` is the dot-path into the response to the option array (engine `api.paths`; `''` = the response is the array itself)."
+        },
+        "observeToItemId": {
+          "type": "string",
+          "description": "`GridItemData.id` of another select-family item this one observes for a cascading refetch (engine `observeTo`); `''` = none. Stored by id so renaming the target's binding key can't break the link — `gridConfig` resolves it to the target's current name at export (see `observe.ts`). Only meaningful in `source` mode."
+        }
+      },
+      "required": [
+        "name",
+        "dataType",
+        "label",
+        "placeholder",
+        "helperText",
+        "isRequired",
+        "errorMessage",
+        "variant",
+        "size",
+        "radius",
+        "isFullWidth",
+        "isFixedHeight",
+        "width",
+        "regex",
+        "regexErrorMessage",
+        "mode",
+        "options",
+        "idKey",
+        "displayKey",
+        "searchKey",
+        "subtitleKey",
+        "avatarKey",
+        "inputIcon",
+        "itemIcon",
+        "dataSource",
+        "observeToItemId"
+      ],
+      "additionalProperties": false,
+      "description": "Editable config for a select component. The select previews with the library's `Autocomplete2`; `options`/`idKey`/`displayKey`/`searchKey` map onto its record-array option model. The presentational fields (`variant`, `size`, `radius`) and the textfield-parity fields (`dataType`, `isFullWidth`, `isFixedHeight`, `width`, `regex`, `regexErrorMessage`) are kept for a uniform panel + exported JSON — `Autocomplete2` ignores them. `mode` discriminates a hand-authored static `options` array from a `dataSource` the declarative engine resolves at runtime; both halves are always carried (and exported) regardless of the active mode."
+    },
+    "SelectOption": {
+      "type": "object",
+      "additionalProperties": {},
+      "description": "A single static option for the select. The select's live preview renders the library's `Autocomplete2`, whose options are arbitrary records keyed by `idKey`/`displayKey`/`searchKey` (not a fixed `{ value, label }`), so an option is an open record. The author picks which keys carry the id/label via the config's `idKey`/`displayKey`/`searchKey`."
+    },
+    "ShowWhen": {
+      "type": "string",
+      "enum": [
+        "always",
+        "adding",
+        "editing"
+      ],
+      "description": "When an item inside a data table's modal canvas is shown: always, only while adding (no row selected) or only while editing. Exported as the engine `condition` on `<table name>._id`; absent = always."
+    },
+    "StudioNavigate": {
+      "type": "object",
+      "properties": {
+        "pageId": {
+          "type": "string"
+        },
+        "params": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/NavParamSource"
+          }
+        },
+        "replace": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "pageId",
+        "params",
+        "replace"
+      ],
+      "additionalProperties": false,
+      "description": "A config-driven page change (see the grilled page-router design): the target page by stable id (resolved to its `key` at export — the engine `NavigateTarget.page`), one source per `:param` of the target's route, and whether to replace the history entry. Authored on a button (played by the `Navigate` action) or on a data table's row click."
+    },
+    "SwitchConfig": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "labelPosition": {
+          "type": "string",
+          "enum": [
+            "start",
+            "end"
+          ]
+        },
+        "helperText": {
+          "type": "string"
+        },
+        "isRequired": {
+          "type": "boolean"
+        },
+        "errorMessage": {
+          "type": "string"
+        },
+        "variant": {
+          "type": "string",
+          "enum": [
+            "classic",
+            "surface",
+            "soft"
+          ]
+        },
+        "size": {
+          "type": "string",
+          "enum": [
+            "1",
+            "2",
+            "3"
+          ]
+        },
+        "defaultChecked": {
+          "type": "boolean"
+        },
+        "disabled": {
+          "type": "boolean"
+        },
+        "enabledWhen": {
+          "$ref": "#/definitions/SwitchEnabledWhen"
+        }
+      },
+      "required": [
+        "name",
+        "label",
+        "labelPosition",
+        "helperText",
+        "isRequired",
+        "errorMessage",
+        "variant",
+        "size",
+        "defaultChecked",
+        "disabled",
+        "enabledWhen"
+      ],
+      "additionalProperties": false,
+      "description": "Editable config for a `switch` item — the engine `SwitchElement`: one boolean field drawn as an on / off toggle. `isRequired` means it must be on. `enabledWhen` names another switch on the same canvas (by item id, so a rename is safe); export turns it into the engine `enabledWhen` condition on this item and `canObserve: true` on the gating one."
+    },
+    "SwitchEnabledWhen": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "itemId": {
+              "type": "string"
+            },
+            "when": {
+              "type": "string",
+              "enum": [
+                "on",
+                "off"
+              ]
+            }
+          },
+          "required": [
+            "itemId",
+            "when"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Which value of the gating switch enables this one."
+    },
+    "SwitchProfileConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "read": {
+          "$ref": "#/definitions/FormListCrudRef"
+        },
+        "readPaths": {
+          "type": "string"
+        },
+        "personParam": {
+          "type": "string",
+          "description": "The URL `:param` the element fills with the active person's id; `''` = the endpoint's only one."
+        },
+        "title": {
+          "type": "string"
+        },
+        "emptyText": {
+          "type": "string"
+        },
+        "hideWhenSingle": {
+          "type": "boolean"
+        },
+        "display": {
+          "$ref": "#/definitions/SwitchProfileDisplay",
+          "description": "A list with the active row checked, or a dropdown (value = userId, label = job title)."
+        },
+        "showSubtitle": {
+          "type": "boolean",
+          "description": "Show \"company · department\" after the job title."
+        },
+        "name": {
+          "type": "string"
+        },
+        "stateKey": {
+          "type": "string",
+          "description": "The global-state slice holding the active profile; `''` = the engine default `profile`."
+        },
+        "initial": {
+          "$ref": "#/definitions/ItemBinding",
+          "description": "The logged-in profile (a page load), seeding the slice while it is empty."
+        },
+        "keys": {
+          "$ref": "#/definitions/ProfileKeysConfig"
+        },
+        "persist": {
+          "type": "boolean",
+          "description": "Remember the choice (a switch in localStorage, a replacement in sessionStorage)."
+        },
+        "reload": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Names registered for reload (tables, lists, page loads) refetched after the profile changes."
+        },
+        "navigate": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/StudioNavigate"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Where to go after the profile changes; null = stay."
+        }
+      },
+      "required": [
+        "display",
+        "emptyText",
+        "hideWhenSingle",
+        "initial",
+        "keys",
+        "name",
+        "navigate",
+        "persist",
+        "personParam",
+        "read",
+        "readPaths",
+        "reload",
+        "showSubtitle",
+        "stateKey",
+        "title"
+      ],
+      "description": "Editable config for a Switch Profile list: the active person's profiles from `read` (drilled by `readPaths`; the person id fills `personParam`), the active one checked."
+    },
+    "SwitchProfileDisplay": {
+      "type": "string",
+      "enum": [
+        "list",
+        "dropdown"
+      ]
+    },
+    "TabConfig": {
+      "type": "object",
+      "properties": {
+        "tabs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TabItemConfig"
+          }
+        },
+        "defaultValue": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "tabs",
+        "defaultValue"
+      ],
+      "additionalProperties": false,
+      "description": "Editable config for a tab widget. The inspector manages the header list (add/remove — see the grilled design); each tab's content is authored by drilling into its child canvas. `defaultValue` picks the initially active tab (`''` = the first)."
+    },
+    "TabItemConfig": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "label",
+        "value"
+      ],
+      "additionalProperties": false,
+      "description": "One tab header. The tab's content is the child canvas at the same index in the item's `childCanvases` (kept aligned by the store's tab actions)."
+    },
+    "TextConfig": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string"
+        },
+        "isLabel": {
+          "type": "boolean"
+        },
+        "binding": {
+          "$ref": "#/definitions/ItemBinding",
+          "description": "Inside a repeater: show this item field instead (`text` = fallback)."
+        }
+      },
+      "required": [
+        "text",
+        "isLabel",
+        "binding"
+      ],
+      "additionalProperties": false,
+      "description": "Editable config for a text component. Maps onto the library's `Text` / engine `TextElement`: `text` is the content and `isLabel` renders it as a form-label (block, small, medium-weight) instead of inline text. No binding `name` — TextElement carries none."
+    },
+    "TextFieldConfig": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "dataType": {
+          "type": "string",
+          "enum": [
+            "date",
+            "datetime-local",
+            "email",
+            "hidden",
+            "month",
+            "number",
+            "password",
+            "search",
+            "tel",
+            "text",
+            "time",
+            "url",
+            "week"
+          ]
+        },
+        "label": {
+          "type": "string"
+        },
+        "placeholder": {
+          "type": "string"
+        },
+        "helperText": {
+          "type": "string"
+        },
+        "isRequired": {
+          "type": "boolean"
+        },
+        "errorMessage": {
+          "type": "string"
+        },
+        "variant": {
+          "type": "string",
+          "enum": [
+            "classic",
+            "surface",
+            "soft"
+          ]
+        },
+        "size": {
+          "type": "string",
+          "enum": [
+            "1",
+            "2",
+            "3"
+          ]
+        },
+        "radius": {
+          "type": "string",
+          "enum": [
+            "none",
+            "small",
+            "medium",
+            "large",
+            "full"
+          ]
+        },
+        "isFullWidth": {
+          "type": "boolean"
+        },
+        "isFixedHeight": {
+          "type": "boolean"
+        },
+        "width": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": ""
+            }
+          ]
+        },
+        "regex": {
+          "type": "string"
+        },
+        "regexErrorMessage": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "dataType",
+        "label",
+        "placeholder",
+        "helperText",
+        "isRequired",
+        "errorMessage",
+        "variant",
+        "size",
+        "radius",
+        "isFullWidth",
+        "isFixedHeight",
+        "width",
+        "regex",
+        "regexErrorMessage"
+      ],
+      "additionalProperties": false,
+      "description": "Editable config for a textfield component. Maps 1:1 onto the library's `TextFieldElement` / `TextFieldProps` so the exported JSON can drive the declarative engine. `width` is `''` when unset (otherwise a pixel number)."
+    },
+    "TextareaConfig": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "dataType": {
+          "type": "string",
+          "enum": [
+            "date",
+            "datetime-local",
+            "email",
+            "hidden",
+            "month",
+            "number",
+            "password",
+            "search",
+            "tel",
+            "text",
+            "time",
+            "url",
+            "week"
+          ]
+        },
+        "label": {
+          "type": "string"
+        },
+        "placeholder": {
+          "type": "string"
+        },
+        "helperText": {
+          "type": "string"
+        },
+        "isRequired": {
+          "type": "boolean"
+        },
+        "errorMessage": {
+          "type": "string"
+        },
+        "rows": {
+          "type": "number"
+        },
+        "resize": {
+          "type": "string",
+          "enum": [
+            "none",
+            "both",
+            "horizontal",
+            "vertical"
+          ]
+        },
+        "autoResize": {
+          "type": "boolean"
+        },
+        "maxLength": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": ""
+            }
+          ]
+        },
+        "showCharCount": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name",
+        "dataType",
+        "label",
+        "placeholder",
+        "helperText",
+        "isRequired",
+        "errorMessage",
+        "rows",
+        "resize",
+        "autoResize",
+        "maxLength",
+        "showCharCount"
+      ],
+      "additionalProperties": false,
+      "description": "Editable config for a textarea component. Maps onto the library's `TextareaElement` / `TextareaProps`. `dataType` is fixed to `'text'` (the base component ignores it) but kept so the exported `TextareaElement` stays contract-valid. `maxLength` is `''` when unset (mirrors `TextFieldConfig.width`)."
+    },
+    "TypographyConfig": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string"
+        },
+        "variant": {
+          "type": "string",
+          "enum": [
+            "display1",
+            "display2",
+            "h1",
+            "h2",
+            "h3",
+            "h4",
+            "h5",
+            "h6",
+            "subtitle1",
+            "subtitle2",
+            "body1",
+            "body2",
+            "caption",
+            "overline",
+            "button"
+          ]
+        },
+        "weight": {
+          "type": "string",
+          "enum": [
+            "",
+            "light",
+            "regular",
+            "medium",
+            "bold"
+          ]
+        },
+        "color": {
+          "type": "string"
+        },
+        "align": {
+          "type": "string",
+          "enum": [
+            "",
+            "left",
+            "center",
+            "right",
+            "justify"
+          ]
+        },
+        "truncate": {
+          "type": "boolean"
+        },
+        "href": {
+          "type": "string"
+        },
+        "binding": {
+          "$ref": "#/definitions/ItemBinding",
+          "description": "Inside a repeater: show this item field instead (`text` = fallback)."
+        }
+      },
+      "required": [
+        "text",
+        "variant",
+        "weight",
+        "color",
+        "align",
+        "truncate",
+        "href",
+        "binding"
+      ],
+      "additionalProperties": false,
+      "description": "Editable config for a typography component — the curated slice of the engine's `TypographyElement` (see the grilled design): the props that visibly change a static preview (`variant`/`weight`/`color`/`align`/`truncate`) plus `href`. The rest (component/transform/decoration/noWrap/tooltip trio/rel/target) stays hand-editable in the exported JSON. `''` means \"component default\" for `weight`/`color`/`align` (Typography derives them from `variant`), and no link for `href`."
+    },
+    "UploadAcceptPreset": {
+      "type": "string",
+      "enum": [
+        "image",
+        "pdf",
+        "document",
+        "spreadsheet",
+        "presentation",
+        "text",
+        "archive",
+        "audio",
+        "video"
+      ],
+      "description": "Accept presets offered as chips. Mirrors the library's `AcceptPreset`."
+    },
+    "UploadApiSettings": {
+      "type": "object",
+      "properties": {
+        "uploadUrl": {
+          "type": "string"
+        },
+        "deleteUrl": {
+          "type": "string"
+        },
+        "fieldName": {
+          "type": "string"
+        },
+        "responsePath": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "uploadUrl",
+        "deleteUrl",
+        "fieldName",
+        "responsePath"
+      ],
+      "additionalProperties": false,
+      "description": "API-upload wiring, used only when `valueFormat` is `'api'`. Mirrors the library's `UploadApiConfig`: the file is POSTed to `uploadUrl`, optionally DELETEd from `deleteUrl` (carrying a `:filename` placeholder), sent under `fieldName`, and the stored URL is read from `responsePath` in the response. Always carried (so toggling `valueFormat` away from `'api'` and back is lossless) but only emitted in `'api'` mode."
+    },
+    "UploadFileConfig": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "helperText": {
+          "type": "string"
+        },
+        "isRequired": {
+          "type": "boolean"
+        },
+        "errorMessage": {
+          "type": "string"
+        },
+        "acceptPresets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/UploadAcceptPreset"
+          }
+        },
+        "accept": {
+          "type": "string"
+        },
+        "multiple": {
+          "type": "boolean"
+        },
+        "maxFiles": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": ""
+            }
+          ]
+        },
+        "maxSizeMB": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": ""
+            }
+          ]
+        },
+        "preview": {
+          "type": "boolean"
+        },
+        "previewLayout": {
+          "type": "string",
+          "enum": [
+            "list",
+            "grid"
+          ]
+        },
+        "valueFormat": {
+          "$ref": "#/definitions/UploadValueFormat"
+        },
+        "api": {
+          "$ref": "#/definitions/UploadApiSettings"
+        }
+      },
+      "required": [
+        "name",
+        "label",
+        "helperText",
+        "isRequired",
+        "errorMessage",
+        "acceptPresets",
+        "accept",
+        "multiple",
+        "maxFiles",
+        "maxSizeMB",
+        "preview",
+        "previewLayout",
+        "valueFormat",
+        "api"
+      ],
+      "additionalProperties": false,
+      "description": "Editable config for a file upload. Maps onto the library's `UploadFileBase` / engine `UploadFileElement`. The engine `accept` is authored in two parts: `acceptPresets` (chips) plus `accept`, a comma list of extra raw types (e.g. `.dwg,.psd`) — see `uploadAccept`. `preview`/`previewLayout` drive the thumbnails + viewer. `multiple` enables multi-file selection with an optional `maxFiles` cap (`''` = unset). `valueFormat`/`api` behave as in the image upload. `dataType` is fixed to the engine's `any` on export (a file upload stores an array of files), so isn't edited here."
+    },
+    "UploadImageConfig": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "helperText": {
+          "type": "string"
+        },
+        "isRequired": {
+          "type": "boolean"
+        },
+        "errorMessage": {
+          "type": "string"
+        },
+        "accept": {
+          "type": "string"
+        },
+        "maxSizeMB": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": ""
+            }
+          ]
+        },
+        "shape": {
+          "type": "string",
+          "enum": [
+            "square",
+            "circle"
+          ]
+        },
+        "previewHeight": {
+          "type": "number"
+        },
+        "valueFormat": {
+          "$ref": "#/definitions/UploadValueFormat"
+        },
+        "api": {
+          "$ref": "#/definitions/UploadApiSettings"
+        }
+      },
+      "required": [
+        "name",
+        "label",
+        "helperText",
+        "isRequired",
+        "errorMessage",
+        "accept",
+        "maxSizeMB",
+        "shape",
+        "previewHeight",
+        "valueFormat",
+        "api"
+      ],
+      "additionalProperties": false,
+      "description": "Editable config for an image upload. Maps onto the library's `UploadImageBase` / engine `UploadImageElement`. `accept` defaults to `image/*`; `maxSizeMB` is `''` when unset (mirroring `width`/`maxLength`). `valueFormat` chooses how the value is stored, and when it is `'api'` the `api` wiring is emitted too. Unlike the input components, `UploadImageBase` has its own `isRequired` prop, so the marker isn't baked into the label. `dataType` is derived on export (bytes→`any`, else `string`) so isn't edited here."
+    },
+    "UploadValueFormat": {
+      "type": "string",
+      "enum": [
+        "dataUrl",
+        "base64",
+        "bytes",
+        "api"
+      ],
+      "description": "How an upload stores its value. Mirrors the library's `UploadValueFormat`."
+    },
+    "WorkflowEditorConfig": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "helperText": {
+          "type": "string"
+        },
+        "isRequired": {
+          "type": "boolean"
+        },
+        "errorMessage": {
+          "type": "string"
+        },
+        "roles": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/WorkflowRoleConfig"
+          }
+        },
+        "users": {
+          "$ref": "#/definitions/WorkflowUsersConfig"
+        },
+        "stepKeys": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string"
+            },
+            "sequence": {
+              "type": "string"
+            },
+            "incharge": {
+              "type": "string"
+            },
+            "cc": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "role",
+            "sequence",
+            "incharge",
+            "cc"
+          ],
+          "additionalProperties": false
+        },
+        "minInchargeUsers": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": ""
+            }
+          ]
+        },
+        "allowDuplicateUsers": {
+          "type": "boolean"
+        },
+        "labels": {
+          "type": "object",
+          "properties": {
+            "add": {
+              "type": "string"
+            },
+            "dialogTitle": {
+              "type": "string"
+            },
+            "editTitle": {
+              "type": "string"
+            },
+            "roleField": {
+              "type": "string"
+            },
+            "incharge": {
+              "type": "string"
+            },
+            "cc": {
+              "type": "string"
+            },
+            "userPlaceholder": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "add",
+            "dialogTitle",
+            "editTitle",
+            "roleField",
+            "incharge",
+            "cc",
+            "userPlaceholder"
+          ],
+          "additionalProperties": false
+        },
+        "disabled": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name",
+        "label",
+        "helperText",
+        "isRequired",
+        "errorMessage",
+        "roles",
+        "users",
+        "stepKeys",
+        "minInchargeUsers",
+        "allowDuplicateUsers",
+        "labels",
+        "disabled"
+      ],
+      "additionalProperties": false,
+      "description": "Editable config for a workflow editor (see the grilled design). Maps onto the engine `WorkflowEditorElement`: the field (`name`, required ⇒ at least one step), the roles with their rules, the dialog's user source, the saved step field names (`stepKeys`, the engine defaults pre-filled) and the dialog labels (exported only when changed)."
+    },
+    "WorkflowRoleConfig": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "max": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": ""
+            }
+          ]
+        },
+        "position": {
+          "type": "string",
+          "enum": [
+            "",
+            "first",
+            "last"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "value",
+        "label",
+        "max",
+        "position"
+      ],
+      "additionalProperties": false,
+      "description": "One role of a workflow editor (engine `WorkflowRole`; `max` / `position` as studio \"unset\" idioms)."
+    },
+    "WorkflowUsersConfig": {
+      "type": "object",
+      "properties": {
+        "endpointId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "paths": {
+          "type": "string"
+        },
+        "idKey": {
+          "type": "string"
+        },
+        "displayKey": {
+          "type": "string"
+        },
+        "subtitleKey": {
+          "type": "string"
+        },
+        "avatarKey": {
+          "type": "string"
+        },
+        "searchKey": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "endpointId",
+        "paths",
+        "idKey",
+        "displayKey",
+        "subtitleKey",
+        "avatarKey",
+        "searchKey"
+      ],
+      "additionalProperties": false,
+      "description": "The dialog's user list: an endpoint walked along `paths` to the user rows, read with these keys."
+    }
+  }
+}

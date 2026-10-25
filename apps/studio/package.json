@@ -1,14 +1,21 @@
 {
   "name": "@gummy-ui/studio",
   "version": "0.0.0",
-  "description": "Gummy Studio \u2014 the visual builder for @gummy-ui/ui projects, as a prebuilt static app served by `gummy studio` (@gummy-ui/cli)",
+  "description": "Gummy Studio — the visual builder for @gummy-ui/ui projects, as a prebuilt static app served by `gummy studio` (@gummy-ui/cli)",
   "files": [
     "dist"
   ],
+  "exports": {
+    "./package.json": "./package.json",
+    "./headless": "./dist/headless.mjs"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite --port 3300",
-    "build": "tsc -b && vite build",
+    "build": "bun scripts/gen-schemas.ts && tsc -b && vite build && bun scripts/build-headless.ts",
+    "build:headless": "bun scripts/gen-schemas.ts && bun scripts/build-headless.ts",
+    "schemas": "bun scripts/gen-schemas.ts",
+    "test": "bun test",
     "lint": "eslint .",
     "preview": "vite preview --port 3300"
   },
@@ -34,11 +41,13 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
+    "ajv": "^8.20.0",
     "eslint": "^10.3.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.6.0",
     "tailwindcss": "^4.3.0",
+    "ts-json-schema-generator": "^2.9.0",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.59.2",
     "vite": "^8.0.12"

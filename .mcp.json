@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "gummy": {
+      "command": "bun",
+      "args": ["apps/cli/bin/gummy.mjs", "mcp", "--dir", "demo/gummy"]
+    }
+  }
+}

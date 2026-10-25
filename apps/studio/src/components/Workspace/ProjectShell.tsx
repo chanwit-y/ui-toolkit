@@ -6,7 +6,7 @@ import { useEnvStore } from '../Env/envStore'
 import { useGridStore } from '../Layout/gridStore'
 import { LibraryScopeContext } from '../Library/scope'
 import { useThemeStore } from '../Theme/themeStore'
-import { applyPageGrid, applyProjectState, collectProjectState, isHydrating } from './snapshots'
+import { applyPageGrid, applyProjectState, collectProjectState, isHydrating } from './liveStores'
 import { useProject, useWorkspaceStore } from './workspaceStore'
 
 const AUTOSAVE_DEBOUNCE_MS = 400

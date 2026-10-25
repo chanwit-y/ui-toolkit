@@ -1,43 +1,7 @@
 import { create } from 'zustand'
 import { countrySeedEndpoints } from '../seed/country'
+import { createEndpoint, nextCopyName, nextEndpointName, patchEndpoint, withEndpointPatch } from './endpointCommands'
 import type { EndpointDef } from './types'
-
-/** Mirror gridStore's id strategy. */
-function createId(): string {
-  return crypto.randomUUID()
-}
-
-function createEndpoint(name: string, groupId: string | null = null): EndpointDef {
-  return {
-    id: createId(),
-    groupId,
-    name,
-    description: '',
-    url: '',
-    method: 'GET',
-    withOptions: false,
-    response: null,
-    query: null,
-    parameter: null,
-    body: null,
-  }
-}
-
-/** Unique "endpointN" across the master. */
-function nextEndpointName(endpoints: EndpointDef[]): string {
-  let n = endpoints.length + 1
-  const taken = new Set(endpoints.map((e) => e.name))
-  while (taken.has(`endpoint${n}`)) n++
-  return `endpoint${n}`
-}
-
-/** Unique "<base>N" for a clone (updateCountry → updateCountry2). */
-function nextCopyName(endpoints: EndpointDef[], base: string): string {
-  const taken = new Set(endpoints.map((e) => e.name))
-  let n = 2
-  while (taken.has(`${base}${n}`)) n++
-  return `${base}${n}`
-}
 
 type ApiStore = {
   endpoints: EndpointDef[]
@@ -60,15 +24,6 @@ type ApiStore = {
 // endpoints the example app's config/country/api.ts defines.
 const initialEndpoints = countrySeedEndpoints()
 
-/** Apply `fn` to the endpoint with `id`, leaving the rest untouched. */
-function patchEndpoint(
-  endpoints: EndpointDef[],
-  id: string,
-  fn: (e: EndpointDef) => EndpointDef,
-): EndpointDef[] {
-  return endpoints.map((e) => (e.id === id ? fn(e) : e))
-}
-
 export const useApiStore = create<ApiStore>((set, get) => ({
   endpoints: initialEndpoints,
   selectedEndpointId: initialEndpoints[0]?.id ?? null,
@@ -89,7 +44,7 @@ export const useApiStore = create<ApiStore>((set, get) => ({
     if (!source) return null
     const copy: EndpointDef = {
       ...source,
-      id: createId(),
+      id: crypto.randomUUID(),
       name: nextCopyName(get().endpoints, source.name || 'endpoint'),
     }
     set((s) => {
@@ -117,13 +72,7 @@ export const useApiStore = create<ApiStore>((set, get) => ({
 
   updateEndpoint: (id, patch) =>
     set((s) => ({
-      endpoints: patchEndpoint(s.endpoints, id, (e) => {
-        const next: EndpointDef = { ...e, ...patch }
-        // withOptions only exists for GET — reset it when the method moves away,
-        // the same way modelStore drops children a kind-change made meaningless.
-        if (next.method !== 'GET') next.withOptions = false
-        return next
-      }),
+      endpoints: patchEndpoint(s.endpoints, id, (e) => withEndpointPatch(e, patch)),
     })),
 }))
 
