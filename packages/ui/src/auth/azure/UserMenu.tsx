@@ -6,7 +6,7 @@ import { authInitials, DEFAULT_USER_MENU_KEYS, readKeyPath } from "./config";
 import { useAuthOptional } from "./context";
 
 /**
- * The signed-in user in the app bar (the Banpu profile menu): a trigger with
+ * The signed-in user in the app bar (the corporate profile menu): a trigger with
  * the avatar, name and job title opening a card — the company and **Sign out**
  * on top, then the large avatar, name, `idLabel: id` and job title. Reads the
  * profile slice by the configured `userMenu` keys, falling back to the

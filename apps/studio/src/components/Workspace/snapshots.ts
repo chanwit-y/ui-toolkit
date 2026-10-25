@@ -83,8 +83,8 @@ import {
   PROFILE_PAGE_ID,
   profileDemoSeedItems,
   profileSeedLoads,
-  BANPU_AZURE_AUTH_ID,
-  banpuAzureSeedAuth,
+  AZURE_AUTH_ID,
+  azureSeedAuth,
 } from '../seed/country'
 import { builtinTemplates } from '../seed/templates'
 import { useThemeStore } from '../Theme/themeStore'
@@ -108,7 +108,7 @@ export function countryLibrary(): LibraryData {
     models: countrySeedModels().map((m) => ({ ...m, groupId: COUNTRIES_GROUP_ID })),
     endpoints: countrySeedEndpoints().map((e) => ({ ...e, groupId: COUNTRIES_GROUP_ID })),
     templates: builtinTemplates(),
-    auth: [banpuAzureSeedAuth()],
+    auth: [azureSeedAuth()],
   }
 }
 
@@ -864,12 +864,12 @@ export function countryProjectSnapshot(library: LibraryData): ProjectSnapshot {
     globalLoads: seedGlobalLoads(),
     shell: defaultShell('Country manager'),
     // The seeded sign-in entry is picked, so its four env rows ride along (locked, empty dev values).
-    env: authEnvRows(banpuAzureSeedAuth(), countrySeedEnvVars()),
+    env: authEnvRows(azureSeedAuth(), countrySeedEnvVars()),
     theme: countrySeedTheme(),
     endpointIds: countryEndpointIds(library),
     customActions: customActionsSeedDefs(),
     customComponents: customComponentsSeedDefs(),
-    authId: BANPU_AZURE_AUTH_ID,
+    authId: AZURE_AUTH_ID,
   }
 }
 

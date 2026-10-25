@@ -105,7 +105,7 @@ export class HttpClientBase {
       (error: AxiosError) => {
         const { response, code } = error;
 
-        //ignoreLoadingRequest check http Metho/Users/chanwit_y/Desktop/Projects/banpu/nx-library/workspace/packages/http-client/src/lib/HttpClientFactory.tsd
+        //ignoreLoadingRequest check http Method
         checkIgnoreLoading({
           ignoreLoadingRequest: ignoreLoadingRequest,
           url: response?.config?.url,

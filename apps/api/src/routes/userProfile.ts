@@ -3,7 +3,7 @@ import { USERS } from './workflows.js';
 
 /**
  * `/collection/profiles/*` — the Replace / Switch Profile demo's resources,
- * shaped like the Banpu user-profile service: `me` (the logged-in profile),
+ * shaped like a corporate user-profile service: `me` (the logged-in profile),
  * `search?search=` (people, one row per person) and `person/:personId
  * ?exceptJobStatus=T` (every profile a person holds — a person may have
  * several positions / companies). Read-only; the `{ data, status, success,
@@ -19,7 +19,7 @@ type Profile = {
   email: string;
   jobTitle: string;
   jobStatus: 'A' | 'T';
-  /** The primary assignment, 'Y' on one profile per person (the Banpu shape). */
+  /** The primary assignment, 'Y' on one profile per person (the default profile shape). */
   isPrimaryAssignment: 'Y' | 'N';
   isAdmin: boolean;
   avatar: string;
@@ -28,9 +28,9 @@ type Profile = {
 };
 
 const COMPANIES = {
-  BPP: { code: 'BPP', name: 'Banpu Public Company Limited' },
-  BPN: { code: 'BPN', name: 'Banpu NEXT' },
-  BPA: { code: 'BPA', name: 'Banpu Australia' },
+  BPP: { code: 'BPP', name: 'Gummy Public Company Limited' },
+  BPN: { code: 'BPN', name: 'Gummy NEXT' },
+  BPA: { code: 'BPA', name: 'Gummy Australia' },
 } as const;
 
 const UNITS = ['Digital', 'Finance', 'Operations', 'People', 'Sustainability'];
@@ -49,7 +49,7 @@ const profile = (
   userId: `${personId}-${n}`,
   firstNameEn: first,
   lastNameEN: last,
-  email: `${first.toLowerCase()}_${last[0]?.toLowerCase() ?? ''}@banpu.co.th`,
+  email: `${first.toLowerCase()}_${last[0]?.toLowerCase() ?? ''}@gummay.co.th`,
   jobTitle,
   jobStatus: 'A',
   isPrimaryAssignment: 'N',
@@ -96,7 +96,7 @@ const PROFILES: Profile[] = [
 ];
 
 /** The logged-in admin's email (the demo apps' mock account). */
-export const ME_EMAIL = 'chanwit_y@banpu.co.th';
+export const ME_EMAIL = 'chanwit_y@gummay.co.th';
 
 const envelope = <T>(data: T, message: string) => ({ data, status: 200, success: true, message });
 

@@ -446,11 +446,11 @@ describe('staff', () => {
   });
 
   test('by-email: 200 / 400 / 403 / 404', async () => {
-    const ok = await get('/api/staff/by-email?email=Chanwit_Y@banpu.co.th');
+    const ok = await get('/api/staff/by-email?email=Chanwit_Y@gummay.co.th');
     expect(ok.status).toBe(200);
     expect(ok.json.data).toMatchObject({
       _id: 's-1',
-      email: 'chanwit_y@banpu.co.th',
+      email: 'chanwit_y@gummay.co.th',
       firstNameEn: 'Chanwit',
       lastNameEN: 'Yimneam',
       name: 'Chanwit Yimneam',
@@ -462,8 +462,8 @@ describe('staff', () => {
     expect(ok.json.data.avatar).toStartWith(`${PUBLIC}/api/avatars/`);
     expect((await get('/api/staff/by-email?email=')).status).toBe(400);
     expect((await get('/api/staff/by-email')).status).toBe(400);
-    expect((await get('/api/staff/by-email?email=nadia_s@banpu.co.th')).status).toBe(403);
-    expect((await get('/api/staff/by-email?email=nobody@banpu.co.th')).status).toBe(404);
+    expect((await get('/api/staff/by-email?email=nadia_s@gummay.co.th')).status).toBe(403);
+    expect((await get('/api/staff/by-email?email=nobody@gummay.co.th')).status).toBe(404);
   });
 });
 
@@ -628,7 +628,7 @@ describe('display dates', () => {
 
 describe('cors', () => {
   test('a preflight allows the headers the engine client sends', async () => {
-    const res = await createApp({ anchorDate: '2026-10-24' }).request('/api/staff/by-email?email=chanwit_y@banpu.co.th', {
+    const res = await createApp({ anchorDate: '2026-10-24' }).request('/api/staff/by-email?email=chanwit_y@gummay.co.th', {
       method: 'OPTIONS',
       headers: {
         origin: 'http://localhost:3300',

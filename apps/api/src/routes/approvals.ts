@@ -13,7 +13,7 @@ export const approvalRoutes = new Hono();
 type User = { Email: string; FirstNameEN: string; FullNameEN: string; JobTitle: string; LastNameEN: string; PersonId: string; UserId: string };
 
 const user = (first: string, last: string, title: string, id: string): User => ({
-  Email: `${first}_${last[0]}@banpu.co.th`,
+  Email: `${first}_${last[0]}@gummay.co.th`,
   FirstNameEN: first,
   FullNameEN: `${first} ${last}`,
   JobTitle: title,

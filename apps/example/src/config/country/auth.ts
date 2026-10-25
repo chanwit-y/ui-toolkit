@@ -18,10 +18,10 @@ export const auth: AzureAuthConfig = {
     stateKey: "me",
   },
   screens: {
-    landing: { message: "Sign in with your Banpu account to open the example." },
+    landing: { message: "Sign in with your work account to open the example." },
   },
   userMenu: { show: true },
 };
 
 /** The mock API's admin (apps/api/src/routes/userProfile.ts `ME_EMAIL`). */
-export const MOCK_EMAIL = "chanwit_y@banpu.co.th";
+export const MOCK_EMAIL = "chanwit_y@gummay.co.th";

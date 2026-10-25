@@ -47,8 +47,8 @@ import {
   profileSeedEndpoints,
   profileByEmailSeedModels,
   profileByEmailSeedEndpoints,
-  banpuAzureSeedAuth,
-  BANPU_AZURE_AUTH_ID,
+  azureSeedAuth,
+  AZURE_AUTH_ID,
   LOAD_ME_ID,
   tableLayoutSeedEndpoints,
   REGION_RES_MODEL_ID,
@@ -162,10 +162,10 @@ export type SaveState = 'saved' | 'pending' | 'error'
 export const MOCK_USERS: { name: string; role: string; email: string }[] = [
   // The emails are the Live Preview's mock sign-in account (see the grilled
   // design `azure-sso-auth`): the first is the mock API's admin.
-  { name: 'Chanwit Yimneam', role: 'Product design', email: 'chanwit_y@banpu.co.th' },
-  { name: 'Pimchanok S.', role: 'Backend', email: 'pimchanok_s@banpu.co.th' },
-  { name: 'Thanapat R.', role: 'QA', email: 'thanapat_r@banpu.co.th' },
-  { name: 'Nattapong V.', role: 'Head of Digital', email: 'nattapong_v@banpu.co.th' },
+  { name: 'Chanwit Yimneam', role: 'Product design', email: 'chanwit_y@gummay.co.th' },
+  { name: 'Pimchanok S.', role: 'Backend', email: 'pimchanok_s@gummay.co.th' },
+  { name: 'Thanapat R.', role: 'QA', email: 'thanapat_r@gummay.co.th' },
+  { name: 'Nattapong V.', role: 'Head of Digital', email: 'nattapong_v@gummay.co.th' },
 ]
 
 type WorkspaceStore = WorkspaceData & {
@@ -1076,7 +1076,7 @@ function migrateV51(data: { projects: ProjectDef[]; library: LibraryData }): {
 
 /**
  * v50 → v51: Azure SSO (see the grilled design `azure-sso-auth`). The
- * library gains `auth` with the seeded **Banpu Azure** entry and the
+ * library gains `auth` with the seeded **Azure** entry and the
  * `profileByEmail` endpoint + query model (by id, so re-runs and edits are
  * safe); every project gets `authId` (null); the seeded Country manager
  * picks the entry (unless it already picked one), gets the four `AZURE_*`
@@ -1090,13 +1090,13 @@ function migrateV50Only(data: { projects: ProjectDef[]; library: LibraryData }):
 } {
   const seeded = seedLibraryAdditions(data.projects, data.library, profileByEmailSeedModels(), profileByEmailSeedEndpoints())
   const existing = (seeded.library.auth ?? []).map((a) => normalizeAuthDef(a))
-  const auth = existing.some((a) => a.id === BANPU_AZURE_AUTH_ID) ? existing : [...existing, banpuAzureSeedAuth()]
+  const auth = existing.some((a) => a.id === AZURE_AUTH_ID) ? existing : [...existing, azureSeedAuth()]
   const library: LibraryData = { ...seeded.library, auth }
-  const seedDef = auth.find((a) => a.id === BANPU_AZURE_AUTH_ID)!
+  const seedDef = auth.find((a) => a.id === AZURE_AUTH_ID)!
   const projects = seeded.projects.map((p) => {
     const authId = p.snapshot.authId ?? null
     if (p.id !== 'seed-project-country') return { ...p, snapshot: { ...p.snapshot, authId } }
-    const picked = authId ?? BANPU_AZURE_AUTH_ID
+    const picked = authId ?? AZURE_AUTH_ID
     const env = authId ? p.snapshot.env : authEnvRows(seedDef, p.snapshot.env)
     const pages = p.snapshot.pages.map((pg) => {
       if (pg.id !== PROFILE_PAGE_ID) return pg
@@ -1110,7 +1110,7 @@ function migrateV50Only(data: { projects: ProjectDef[]; library: LibraryData }):
 }
 
 /**
- * v48 → v49: Switch Profile per the Banpu spec (see the grilled design).
+ * v48 → v49: Switch Profile per the profile spec (see the grilled design).
  * Every profile element gets the `primary` key (the primary-assignment flag)
  * and every switch its `display` / `showSubtitle`; the seeded profile models
  * gain `isPrimaryAssignment`, and the seeded Profile page the dropdown switch

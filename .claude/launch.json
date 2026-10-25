@@ -99,7 +99,7 @@
       "runtimeExecutable": "/bin/bash",
       "runtimeArgs": [
         "-c",
-        "cd demo && PATH=/opt/homebrew/bin:$PATH VITE_AUTH_MOCK_EMAIL=pimchanok_s@banpu.co.th exec bun x vite --port 3401 --strictPort"
+        "cd demo && PATH=/opt/homebrew/bin:$PATH VITE_AUTH_MOCK_EMAIL=pimchanok_s@gummay.co.th exec bun x vite --port 3401 --strictPort"
       ],
       "port": 3401,
       "autoPort": false

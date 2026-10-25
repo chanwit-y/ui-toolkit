@@ -2267,7 +2267,7 @@ export function createDefaultItemSettings(
 /**
  * Paths into one profile record — a fallback list per key, tried top to
  * bottom (the engine `ProfileKeys`); an empty list keeps the engine default,
- * which fits the Banpu user-profile shape.
+ * which fits the default user-profile shape.
  */
 export type ProfileKeysConfig = {
   personId: string[]

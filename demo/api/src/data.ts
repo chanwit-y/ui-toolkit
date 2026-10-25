@@ -484,7 +484,7 @@ function staffSeed(): StaffRec[] {
   return rows.map(([first, last, role, jobTitle, active], i) => ({
     _id: `s-${i + 1}`,
     employeeId: `GB-${1001 + i}`,
-    email: `${first.toLowerCase()}_${last[0]!.toLowerCase()}@banpu.co.th`,
+    email: `${first.toLowerCase()}_${last[0]!.toLowerCase()}@gummay.co.th`,
     firstNameEn: first,
     lastNameEN: last,
     name: `${first} ${last}`,

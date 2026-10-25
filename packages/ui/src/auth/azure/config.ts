@@ -58,7 +58,7 @@ export type AzureAuthScreensText = {
  * The app-bar user menu: paths into the profile slice (fallback: the
  * account). The trigger shows avatar · name / subtitle; the card shows the
  * company and Sign out on top, then the avatar, name, `idLabel: id` and the
- * subtitle (the Banpu profile menu).
+ * subtitle (the corporate profile menu).
  */
 export type AuthUserMenuConfig = {
   /** Default true. */

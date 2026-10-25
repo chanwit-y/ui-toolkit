@@ -48,10 +48,10 @@ describe("profileLoad", () => {
 });
 
 describe("readKeyPath", () => {
-  const profile = { firstNameEn: "Chanwit", lastNameEN: "Yimneam", jobTitle: "", companyModel: { name: "Banpu" }, avatar: null };
+  const profile = { firstNameEn: "Chanwit", lastNameEN: "Yimneam", jobTitle: "", companyModel: { name: "Gummy" }, avatar: null };
 
   test("a lodash path", () => {
-    expect(readKeyPath(profile, "companyModel.name")).toBe("Banpu");
+    expect(readKeyPath(profile, "companyModel.name")).toBe("Gummy");
   });
 
   test("a template joins the parts and collapses blanks", () => {
@@ -60,7 +60,7 @@ describe("readKeyPath", () => {
   });
 
   test("a list takes the first non-empty value", () => {
-    expect(readKeyPath(profile, ["jobTitle", "avatar", "companyModel.name"])).toBe("Banpu");
+    expect(readKeyPath(profile, ["jobTitle", "avatar", "companyModel.name"])).toBe("Gummy");
     expect(readKeyPath(profile, ["jobTitle", "avatar"])).toBe("");
   });
 
@@ -73,7 +73,7 @@ describe("readKeyPath", () => {
 describe("authInitials", () => {
   test("two initials from a name, one from an email, ? when blank", () => {
     expect(authInitials("Chanwit Yimneam")).toBe("CY");
-    expect(authInitials("chanwit_y@banpu.co.th")).toBe("CY");
+    expect(authInitials("chanwit_y@gummay.co.th")).toBe("CY");
     expect(authInitials("")).toBe("?");
   });
 });

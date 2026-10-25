@@ -1,27 +1,27 @@
 import { describe, expect, it } from "bun:test";
 import { isPrimaryValue, normalizeProfile, parseImpersonationRecord, pickDefaultProfile, pickRestoredProfile, profileSubtitle } from "./profileSession";
 
-const banpu = {
+const gummy = {
   personId: "p-1",
   userId: "u-1",
   firstNameEn: "Chanwit",
   lastNameEN: "Yimneam",
   jobTitle: "Section Manager - Application Development",
-  companyModel: { name: "Banpu Public Company Limited" },
+  companyModel: { name: "Gummy Public Company Limited" },
   businessUnitModel: { name: "Digital" },
-  email: "k@banpu.co.th",
+  email: "k@gummay.co.th",
 };
 
 describe("normalizeProfile", () => {
-  it("reads the Banpu shape with the default keys", () => {
-    const p = normalizeProfile(banpu);
+  it("reads the default shape with the default keys", () => {
+    const p = normalizeProfile(gummy);
     expect(p.personId).toBe("p-1");
     expect(p.userId).toBe("u-1");
     expect(p.name).toBe("Chanwit Yimneam");
-    expect(p.jobTitle).toBe(banpu.jobTitle);
-    expect(p.company).toBe("Banpu Public Company Limited");
+    expect(p.jobTitle).toBe(gummy.jobTitle);
+    expect(p.company).toBe("Gummy Public Company Limited");
     expect(p.department).toBe("Digital");
-    expect(profileSubtitle(p)).toBe(`${banpu.jobTitle} · Banpu Public Company Limited · Digital`);
+    expect(profileSubtitle(p)).toBe(`${gummy.jobTitle} · Gummy Public Company Limited · Digital`);
   });
 
   it("falls back from the template to the name paths, then the email, then the id", () => {
@@ -65,12 +65,12 @@ describe("parseImpersonationRecord", () => {
 });
 
 describe("primary assignment", () => {
-  it("reads the Banpu flag permissively", () => {
-    expect(normalizeProfile({ ...banpu, isPrimaryAssignment: "Y" }).primary).toBe(true);
-    expect(normalizeProfile({ ...banpu, isPrimaryAssignment: "true" }).primary).toBe(true);
-    expect(normalizeProfile({ ...banpu, isPrimaryAssignment: 1 }).primary).toBe(true);
-    expect(normalizeProfile({ ...banpu, isPrimaryAssignment: "N" }).primary).toBe(false);
-    expect(normalizeProfile(banpu).primary).toBe(false);
+  it("reads the primary flag permissively", () => {
+    expect(normalizeProfile({ ...gummy, isPrimaryAssignment: "Y" }).primary).toBe(true);
+    expect(normalizeProfile({ ...gummy, isPrimaryAssignment: "true" }).primary).toBe(true);
+    expect(normalizeProfile({ ...gummy, isPrimaryAssignment: 1 }).primary).toBe(true);
+    expect(normalizeProfile({ ...gummy, isPrimaryAssignment: "N" }).primary).toBe(false);
+    expect(normalizeProfile(gummy).primary).toBe(false);
     expect(isPrimaryValue("  y ")).toBe(true);
     expect(isPrimaryValue(0)).toBe(false);
   });
@@ -92,7 +92,7 @@ describe("primary assignment", () => {
   });
 
   it("drops company · department from the subtitle on request", () => {
-    const p = normalizeProfile(banpu);
-    expect(profileSubtitle(p, false)).toBe(banpu.jobTitle);
+    const p = normalizeProfile(gummy);
+    expect(profileSubtitle(p, false)).toBe(gummy.jobTitle);
   });
 });

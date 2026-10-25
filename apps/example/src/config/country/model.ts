@@ -271,7 +271,7 @@ export const model: TModelMaster = {
     id: "string",
   },
   // Workflow editor demo.
-  // Replace / Switch Profile demo: the Banpu-shaped user profile.
+  // Replace / Switch Profile demo: the corporate-shaped user profile.
   profileRes: {
     data: {
       type: "object",

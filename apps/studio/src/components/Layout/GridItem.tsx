@@ -1507,11 +1507,11 @@ const PROFILE_PREVIEW: NormalizedProfile[] = [
     userId: 'u-1',
     name: 'Chanwit Yimneam',
     jobTitle: 'Section Manager - Application Development',
-    company: 'Banpu Public Company Limited',
+    company: 'Gummy Public Company Limited',
     primary: false,
     raw: {},
   },
-  { personId: 'p-1', userId: 'u-2', name: 'Chanwit Yimneam', jobTitle: 'Product Owner - Employee Platforms', company: 'Banpu NEXT', primary: true, raw: {} },
+  { personId: 'p-1', userId: 'u-2', name: 'Chanwit Yimneam', jobTitle: 'Product Owner - Employee Platforms', company: 'Gummy NEXT', primary: true, raw: {} },
 ]
 
 /** The real `SwitchProfileView` over two sample profiles (the list is fetched at runtime). Always live and inert. */

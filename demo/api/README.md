@@ -155,12 +155,12 @@ library's user-menu defaults.
 
 | Name | Email | Role | Active |
 |---|---|---|---|
-| Chanwit Yimneam | `chanwit_y@banpu.co.th` | manager (Store Manager) | yes |
-| Pimchanok Saelim | `pimchanok_s@banpu.co.th` | clerk (Sales Clerk) | yes |
-| Thanapat Rattanakul | `thanapat_r@banpu.co.th` | clerk (Inventory Clerk) | yes |
-| Kanokwan Srisuk | `kanokwan_s@banpu.co.th` | manager (Finance Manager) | yes |
-| Arthit Wongsa | `arthit_w@banpu.co.th` | clerk (Sales Clerk) | yes |
-| Nadia Samae | `nadia_s@banpu.co.th` | clerk (Former Sales Clerk) | **no** |
+| Chanwit Yimneam | `chanwit_y@gummay.co.th` | manager (Store Manager) | yes |
+| Pimchanok Saelim | `pimchanok_s@gummay.co.th` | clerk (Sales Clerk) | yes |
+| Thanapat Rattanakul | `thanapat_r@gummay.co.th` | clerk (Inventory Clerk) | yes |
+| Kanokwan Srisuk | `kanokwan_s@gummay.co.th` | manager (Finance Manager) | yes |
+| Arthit Wongsa | `arthit_w@gummay.co.th` | clerk (Sales Clerk) | yes |
+| Nadia Samae | `nadia_s@gummay.co.th` | clerk (Former Sales Clerk) | **no** |
 
 - `GET /api/staff` → `{ data: Staff[], total }`, active staff only, sorted by name (the workflow editor's user list)
 - `GET /api/staff/by-email?email=` → `{ data: Staff }` for an active person; 400 blank, 404 unknown,

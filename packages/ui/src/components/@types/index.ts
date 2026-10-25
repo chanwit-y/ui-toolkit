@@ -1695,7 +1695,7 @@ export type TElement =
 
 /**
  * Paths into one profile record — each a lodash path or a list of fallback
- * paths (see {@link ApprovalKeyPath}). The defaults fit the Banpu
+ * paths (see {@link ApprovalKeyPath}). The defaults fit a common
  * user-profile shape (`personId`, `userId`, `firstNameEn` + `lastNameEN`,
  * `jobTitle`, `companyModel.name`, `businessUnitModel.name`).
  */

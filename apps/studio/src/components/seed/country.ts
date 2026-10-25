@@ -4604,9 +4604,9 @@ export const LOAD_ME_ID = 'load-seed-me'
 export const PROFILE_BY_EMAIL_ENDPOINT_ID = 'seed-endpoint-profile-by-email'
 export const PROFILE_EMAIL_QUERY_MODEL_ID = 'seed-model-profile-email-query'
 /** The seeded shared auth entry (Azure SSO, see the grilled design `azure-sso-auth`). */
-export const BANPU_AZURE_AUTH_ID = 'seed-auth-banpu-azure'
+export const AZURE_AUTH_ID = 'seed-auth-azure'
 
-/** One Banpu-shaped profile record (the mock `/collection/profiles/*`). */
+/** One corporate-shaped profile record (the mock `/collection/profiles/*`). */
 function profileFields(): ModelField[] {
   return [
     field('personId'),
@@ -4711,15 +4711,15 @@ export function profileByEmailSeedEndpoints(): EndpointDef[] {
 }
 
 /**
- * The seeded shared auth entry: Banpu's Azure tenant by the default var
+ * The seeded shared auth entry: an Azure tenant by the default var
  * names (dev values left empty — nothing tenant-specific in the repo), the
  * profile fetch over `profileByEmail` into `me`, default texts, the user menu
- * with the Banpu profile keys.
+ * with the default profile keys.
  */
-export function banpuAzureSeedAuth(): AuthDef {
+export function azureSeedAuth(): AuthDef {
   return {
-    ...createAuthDef('Banpu Azure'),
-    id: BANPU_AZURE_AUTH_ID,
+    ...createAuthDef('Azure'),
+    id: AZURE_AUTH_ID,
     profile: {
       enabled: true,
       read: { endpointId: PROFILE_BY_EMAIL_ENDPOINT_ID, params: {}, extra: {} },
@@ -4728,7 +4728,7 @@ export function banpuAzureSeedAuth(): AuthDef {
       stateKey: 'me',
     },
     screens: {
-      landing: { title: '', message: 'Sign in with your Banpu account to continue.', buttonLabel: '' },
+      landing: { title: '', message: 'Sign in with your work account to continue.', buttonLabel: '' },
       denied: { title: '', message: '', buttonLabel: '' },
       loading: { message: '' },
     },
