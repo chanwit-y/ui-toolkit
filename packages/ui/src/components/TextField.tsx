@@ -16,6 +16,7 @@ const TextFieldBase = forwardRef<
 	label,
 	placeholder,
 	helperText,
+	isRequired = false,
 	error = false,
 	errorMessage,
 	variant = "surface",
@@ -76,6 +77,7 @@ const TextFieldBase = forwardRef<
 			{label && (
 				<Text as="label" size="2" weight="medium" className="block mb-1">
 					{label}
+					{isRequired && <span className="text-red-500 ml-0.5">*</span>}
 				</Text>
 			)}
 
@@ -113,6 +115,7 @@ const TextFieldBase = forwardRef<
 				// )}
 
 				{...props}
+				aria-required={isRequired || undefined}
 				onChange={handleChange}
 				{...(hasError && { 'data-error': 'true' })}
 			/>

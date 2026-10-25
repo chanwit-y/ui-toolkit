@@ -16,11 +16,19 @@ import { useCore } from "./core/context";
 import { debounce, distinct, interval, Subject, switchMap } from "rxjs";
 import { isEmpty } from "lodash";
 import { useObservableCleanup } from "../hooks";
+import { useFormContext } from "react-hook-form";
 import { ConditionExpression } from "./core/expression";
 import { useData } from "./context/DataProvider";
 import { OptionRow, SelectedChip, matchesOptionQuery, resolveIcon, resolveItemAvatar, resolveItemIcon, resolveItemSubtitle } from "./OptionRow";
 import { OptionSearch, OPTION_SEARCH_HEIGHT } from "./OptionSearch";
 import { callArgs } from "./core/readApi";
+import { followFormField } from "./core/observedField";
+
+/** A form value as the selected ids: a saved array, one id, or nothing. */
+export const toSelectedValues = (value: unknown): string[] => {
+	if (value === undefined || value === null || value === "") return [];
+	return (Array.isArray(value) ? value : [value]).map(String);
+}
 
 const createMultiAutocomplete = <T extends Record<string, any>>() => {
 	return forwardRef<
@@ -39,7 +47,8 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 		searchKey,
 		idKey,
 		displayKey,
-		values = [],
+		value,
+		values,
 		helperText,
 		error,
 		errorMessage,
@@ -82,7 +91,15 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 		const [query, setQuery] = useState('');
 		const [triggerElement, setTriggerElement] = useState<HTMLButtonElement | null>(null);
 		const [observeData, setObserveData] = useState<unknown>();
-		const [internalValues, setInternalValues] = useState<string[]>(values);
+		// The form's value (from `withForm`) wins over a plain `values` prop.
+		const controlledValues = value !== undefined ? value : values;
+		const [internalValues, setInternalValues] = useState<string[]>(() => toSelectedValues(controlledValues));
+		// Follow the value when it changes from outside (the edit modal's `reset`
+		// to the row), keyed by content: a fresh array per render is no change.
+		const controlledKey = JSON.stringify(toSelectedValues(controlledValues));
+		useEffect(() => {
+			setInternalValues(JSON.parse(controlledKey));
+		}, [controlledKey]);
 		const [isObserveEnabled, setIsObserveEnabled] = useState(true);
 
 		const dropdownRef = useRef<HTMLDivElement>(null);
@@ -348,11 +365,6 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 			canObserve && name && addObserveTable(name);
 		}, [canObserve, name, addObserveTable]);
 
-		// Sync internal state with prop changes
-		// useEffect(() => {
-		// 	setInternalValues(values);
-		// }, [values]);
-
 		useObservableCleanup(
 			observeTo ? getDataValue({ key: observeTo, type: "observe" }) : null,
 			(data: unknown) => {
@@ -363,6 +375,12 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 			},
 			[observeTo, onChange, onValuesChange]
 		)
+
+		// A prefilled parent loads this list too (see Autocomplete2).
+		const form = useFormContext()
+		useEffect(() => followFormField(form, observeTo, setObserveData),
+			// eslint-disable-next-line react-hooks/exhaustive-deps
+			[form?.control, observeTo])
 
 		const getItems = useCallback((res: any) => {
 			let data = res

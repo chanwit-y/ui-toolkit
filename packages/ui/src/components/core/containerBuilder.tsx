@@ -142,7 +142,7 @@ function BinCell({ bin, className, children }: { bin: Bin; className: string; ch
 }
 
 /** A container's grid inside its optional themed surface. */
-function ContainerSection(props: ContainerGridProps) {
+export function ContainerSection(props: ContainerGridProps) {
 	const surface = getContainerSurface(props.container);
 	const grid = <ContainerGrid {...props} />;
 	if (!surface) return <div>{grid}</div>;

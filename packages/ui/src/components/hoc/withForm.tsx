@@ -15,6 +15,16 @@ type FormComponentProps = {
 	onBlur?: () => void
 }
 
+/**
+ * A number input's raw text as the form value: blank is `null`, not `undefined`
+ * (which react-hook-form reads as "no value" and swaps for the default value,
+ * so a cleared field snapped back). `NaN` is not a number yet: the caller drops it.
+ */
+export const toNumberValue = (raw: unknown): number | null => {
+	if (raw === '' || raw === null || raw === undefined) return null
+	return Number(raw)
+}
+
 export const withForm = <T extends any>(Component:
 	ComponentType<T>) => {
 	return <TFieldValues extends FieldValues = FieldValues>(
@@ -37,17 +47,10 @@ export const withForm = <T extends any>(Component:
 				const handleChange = (event: any) => {
 					if (isNumberType) {
 						// Extract value from event object or use directly if it's already a value
-						const stringValue = event?.target?.value ?? event
-						
-						// Convert empty string to undefined, otherwise parse as number
-						if (stringValue === '' || stringValue === null || stringValue === undefined) {
-							onChange(undefined)
-						} else {
-							const numValue = Number(stringValue)
-							// Only update if it's a valid number (not NaN)
-							if (!isNaN(numValue)) {
-								onChange(numValue)
-							}
+						const numValue = toNumberValue(event?.target?.value ?? event)
+						// Only update if it's a valid number (not NaN)
+						if (numValue === null || !isNaN(numValue)) {
+							onChange(numValue)
 						}
 					} else {
 						// For non-number types, extract value from event if needed
@@ -62,7 +65,8 @@ export const withForm = <T extends any>(Component:
 						name={name}
 						onChange={handleChange}
 						onBlur={onBlur}
-						value={value}
+						// A cleared number field holds `null`; the input shows it blank.
+						value={isNumberType ? value ?? '' : value}
 						error={!!error}
 						errorMessage={error?.message}
 						// fields={fields}
