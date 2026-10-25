@@ -116,7 +116,7 @@ function ProfileSessionFields<C extends ProfileSessionConfig>({
       )}
 
       <Heading>Record keys</Heading>
-      <p className="text-ui-xs text-ink-3">How a profile record is read — paths tried top to bottom. Empty keeps the engine default (the Banpu shape).</p>
+      <p className="text-ui-xs text-ink-3">How a profile record is read — paths tried top to bottom. Empty keeps the engine default (the default profile shape).</p>
       <Field label="Name template" hint="{{path}} placeholders; wins over the Name paths. Empty = {{firstNameEn}} {{lastNameEN}}.">
         <Input
           value={config.keys.nameTemplate}

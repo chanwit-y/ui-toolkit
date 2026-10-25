@@ -9,8 +9,8 @@ import type { Bin, Container } from "@gummy-ui/ui";
  *
  * Try: Sign out (the landing card replaces the app; Sign in brings it back —
  * instantly in mock mode), then start the app with
- * `VITE_AUTH_MOCK_EMAIL=nobody@banpu.co.th` for the denied card (404), or
- * `nadia_s@banpu.co.th` (only a terminated profile ⇒ 403).
+ * `VITE_AUTH_MOCK_EMAIL=nobody@gummay.co.th` for the denied card (404), or
+ * `nadia_s@gummay.co.th` (only a terminated profile ⇒ 403).
  */
 const full = { sm: "12", md: "12", lg: "12", xl: "12" } as const;
 const half = { sm: "12", md: "6", lg: "6", xl: "6" } as const;

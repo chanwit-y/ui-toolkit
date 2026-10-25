@@ -15,7 +15,7 @@ const user = (id: string, name: string, title: string): User => ({
   PersonId: id,
   FullNameEN: name,
   JobTitle: title,
-  Email: `${name.toLowerCase().replace(/\s+/g, '_')}@banpu.co.th`,
+  Email: `${name.toLowerCase().replace(/\s+/g, '_')}@gummay.co.th`,
 });
 
 export const USERS: User[] = [

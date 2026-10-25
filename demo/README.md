@@ -46,9 +46,9 @@ API (`GET /api/staff/by-email`):
 
 | `VITE_AUTH_MOCK_EMAIL` | Sees |
 |---|---|
-| `chanwit_y@banpu.co.th` (default) | Chanwit Yimneam, **manager** — Delete in the book form, Approve refund, Save settings |
-| `pimchanok_s@banpu.co.th` | Pimchanok Saelim, **clerk** — the same pages without those, plus "waiting for a manager" / read-only notes |
-| `nadia_s@banpu.co.th` | a former employee — the "No access" screen |
+| `chanwit_y@gummay.co.th` (default) | Chanwit Yimneam, **manager** — Delete in the book form, Approve refund, Save settings |
+| `pimchanok_s@gummay.co.th` | Pimchanok Saelim, **clerk** — the same pages without those, plus "waiting for a manager" / read-only notes |
+| `nadia_s@gummay.co.th` | a former employee — the "No access" screen |
 
 The gates are plain config: items shown only while the signed-in profile's
 `role` equals `manager` (or `clerk`) — the studio's **Show when (page data)**

@@ -23,7 +23,7 @@ import { getStateStore, type StateStore } from "./stateStore";
 
 export const DEFAULT_PROFILE_STATE_KEY = "profile";
 
-/** Paths that fit the Banpu user-profile shape out of the box. */
+/** Paths that fit the default user-profile shape out of the box. */
 export const DEFAULT_PROFILE_KEYS: Required<Omit<ProfileKeys, "nameTemplate">> & Pick<ProfileKeys, "nameTemplate"> = {
   personId: ["personId", "PersonId"],
   userId: ["userId", "UserId"],

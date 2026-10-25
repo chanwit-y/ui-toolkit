@@ -48,7 +48,7 @@ describe('book-shop project ↔ mock API', () => {
   for (const [name, ep] of Object.entries(project.api)) {
     test(`${name}: ${ep.methods} ${ep.url}`, async () => {
       const app = createApp({ anchorDate: '2026-10-24' });
-      const query = ep.url === '/api/staff/by-email' ? '?email=chanwit_y@banpu.co.th' : '';
+      const query = ep.url === '/api/staff/by-email' ? '?email=chanwit_y@gummay.co.th' : '';
       const res = await app.request(fill(ep.url) + query, {
         method: ep.methods,
         headers: ep.methods === 'GET' || ep.methods === 'DELETE' ? undefined : { 'content-type': 'application/json' },

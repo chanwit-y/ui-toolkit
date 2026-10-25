@@ -28,7 +28,7 @@ Launch entries from `.claude/launch.json`, or the same commands by hand:
 |---|---|---|
 | `demo-api` | 9100 | the Book shop mock API — **restart it before a full build** (scene 5 approves a refund) |
 | `demo` | 3400 | the app, signed in as the manager |
-| `demo-clerk` | 3401 | the app again, signed in as a clerk (`VITE_AUTH_MOCK_EMAIL=pimchanok_s@banpu.co.th`) |
+| `demo-clerk` | 3401 | the app again, signed in as a clerk (`VITE_AUTH_MOCK_EMAIL=pimchanok_s@gummay.co.th`) |
 | `demo-studio` | 3398 | `gummy studio` over `demo/gummy` |
 
 Close any other studio tab while recording; a second studio session would autosave over the first.
