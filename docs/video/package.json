@@ -1,0 +1,12 @@
+{
+  "name": "gummy-intro-video",
+  "private": true,
+  "type": "module",
+  "description": "Builds the Gummy Studio intro video (see README.md). Not a workspace package.",
+  "scripts": {
+    "build": "bun build.ts"
+  },
+  "devDependencies": {
+    "playwright-core": "1.64.1"
+  }
+}
