@@ -1,6 +1,11 @@
 import type { AutocompleteElement, Bin, CardElement, Container, TabElement, TextFieldElement } from "../@types";
 import { z } from "zod";
 
+/** No value at all: nothing, a blank string or an empty list. */
+function isEmptyValue(v: unknown): boolean {
+	return v === undefined || v === null || (typeof v === 'string' && v.trim() === '') || (Array.isArray(v) && v.length === 0);
+}
+
 export class Schema {
 	constructor(private containers: Container[]) { }
 
@@ -91,11 +96,11 @@ export class Schema {
 
 	private createElementSchema(element: AutocompleteElement | TextFieldElement): z.ZodTypeAny | null {
 		// Check if element is AutocompleteElement (has dataType property)
-		if ('dataType' in element) {
+		if ('dataType' in element && element.dataType) {
 			const requiredMessage = element?.errorMessage ?? 'Required';
 			const normalizedDataType = element.dataType.toLowerCase();
 			let schema = this.getZodTypeFromDataType(normalizedDataType, requiredMessage);
-			const isRequired = element.isRequired ?? element.isRequired ?? false;
+			const isRequired = element.isRequired ?? false;
 
 			// Apply required validation
 			if (isRequired && normalizedDataType === 'boolean') {
@@ -109,24 +114,29 @@ export class Schema {
 					invalid_type_error: requiredMessage,
 				}).min(1, requiredMessage);
 			}
+			if (isRequired && normalizedDataType === 'any') {
+				// Anything goes (a checkbox group's array, a date range's object), but not nothing.
+				schema = z.any().refine((v) => !isEmptyValue(v), requiredMessage);
+			}
+			// An optional field may be empty: `undefined`, or `null` as an API sends it.
 			if (!isRequired) {
 				if (normalizedDataType === 'string') {
 					schema = z.string({
 						invalid_type_error: requiredMessage,
 					})
 						.trim()
-						.optional();
+						.nullish();
 				} else {
-					schema = schema.optional();
+					schema = schema.nullish();
 				}
 			}
 
 			return schema;
 		}
 
-		// Handle TextFieldElement - for now assume string type
-		// This can be extended when TextFieldElement has more properties
-		return z.string();
+		// A `name` without a `dataType` (an `html` item, ...) is no form field:
+		// whatever it holds passes through unvalidated.
+		return z.any().optional();
 	}
 
 	private getZodTypeFromDataType(dataType: string, requiredMessage?: string): z.ZodTypeAny {
@@ -140,7 +150,14 @@ export class Schema {
 					.trim()
 					.min(1, requiredMessage);
 			case 'number':
-				return z.number();
+				// A cleared number field holds `null` (see `withForm`): "Required", not a type error.
+				return z.number({
+					errorMap: (issue, ctx) => ({
+						message: issue.code === 'invalid_type' && (issue.received === 'null' || issue.received === 'undefined')
+							? requiredMessage ?? ctx.defaultError
+							: ctx.defaultError,
+					}),
+				});
 			case 'boolean':
 				return z.boolean();
 			case 'date':
@@ -160,6 +177,8 @@ export class Schema {
 				return z.array(z.unknown());
 			case 'object':
 				return z.object({});
+			case 'any':
+				return z.any();
 			default:
 				// Default to string for unknown types
 				return z.string();

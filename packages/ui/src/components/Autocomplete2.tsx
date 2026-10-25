@@ -16,6 +16,7 @@ import { useCore } from "./core/context";
 import { debounce, distinct, interval, Subject, switchMap } from "rxjs";
 import { isEmpty } from "lodash";
 import { useQuery } from "@tanstack/react-query";
+import { useFormContext } from "react-hook-form";
 import { useObservableCleanup } from "../hooks";
 import { ConditionExpression } from "./core/expression";
 import { useData } from "./context/DataProvider";
@@ -23,6 +24,7 @@ import { Avatar } from "./Avatar";
 import { OptionRow, matchesOptionQuery, resolveIcon, resolveItemAvatar, resolveItemIcon, resolveItemSubtitle } from "./OptionRow";
 import { OptionSearch, OPTION_SEARCH_HEIGHT } from "./OptionSearch";
 import { callArgs } from "./core/readApi";
+import { followFormField } from "./core/observedField";
 
 const createAutocomplete = <T extends Record<string, any>>() => {
 	return forwardRef<
@@ -420,6 +422,17 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 			},
 			[observeTo, onChange, onValueChange]
 		)
+
+		// The parent's value as the form holds it, so a prefilled parent (an edit
+		// modal's row) loads this list too. Unlike a pick, it keeps this value.
+		const form = useFormContext()
+		useEffect(() => followFormField(form, observeTo, (data) => {
+			setObserveApiData(data)
+			if (isEmpty(data)) setItems([])
+		}),
+			// `form` is a new object per render; its `control` is the form's identity.
+			// eslint-disable-next-line react-hooks/exhaustive-deps
+			[form?.control, observeTo])
 
 		const getItems = useCallback((res: any) => {
 			let data = res

@@ -115,6 +115,8 @@ export type TextFieldProps = BaseComponentProps<
     label?: string;
     placeholder?: string;
     helperText?: string;
+    /** Marks the label with `*` and the input `aria-required` (the form's schema enforces it). */
+    isRequired?: boolean;
     error?: boolean;
     dataType: DataType;
     errorMessage?: string;
@@ -413,6 +415,8 @@ export type MultiAutocompleteProps<T extends Record<string, any> = {}> =
       idKey: keyof T;
       displayKey: keyof T;
       values?: string[];
+      /** The form's value (`withForm` passes it): the selected ids. Wins over `values`. */
+      value?: unknown;
       onValuesChange?: (values: string[]) => void;
       onChange?: (values: string[]) => void;
       onBlur?: () => void;

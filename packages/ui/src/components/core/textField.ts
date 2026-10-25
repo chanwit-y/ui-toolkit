@@ -19,6 +19,8 @@ export class TextField<M extends TModelMaster, A extends TApiMaster<M>>
       label: props.label,
       dataType: props.dataType,
       placeholder: props.placeholder,
+      helperText: props.helperText,
+      isRequired: props.isRequired,
       regex: props.regex,
       regexErrorMessage: props.regexErrorMessage,
     });
