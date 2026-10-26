@@ -124,6 +124,16 @@ function savePage(s: Session, projectId: string, page: PageDef, root: ChildCanva
   s.setPage(projectId, withRoot(page, root, fieldSeq))
 }
 
+/** Tell the client when its route was normalised (the studio has no `/` route: the app sends `/` to the first page). */
+function notePath(s: Session, wanted: unknown, stored: string) {
+  if (typeof wanted !== 'string' || wanted.trim() === stored) return
+  s.warn(
+    wanted.trim() === '/' || !wanted.trim()
+      ? `a page cannot claim "/" — it is ${stored}; the app redirects / to the first page, so move this page first (move_page) to make it the landing page`
+      : `the path was normalised to ${stored}`,
+  )
+}
+
 function confirmOrPreview(confirm: unknown, preview: () => unknown): unknown | null {
   return confirm === true ? null : { confirmRequired: true, wouldRemove: preview(), hint: 'Call again with confirm: true to delete.' }
 }
@@ -181,6 +191,7 @@ export const structureTools: Tool[] = [
       const next = cmd.addPage(s.ws.projects, p.id, { name: String(i.name), path: i.path as string | undefined, key: i.key as string | undefined })
       s.setProjects(next.projects)
       if (i.key && next.page.key !== String(i.key).trim()) s.warn(`key "${i.key}" was taken or invalid — the page is "${next.page.key}"`)
+      notePath(s, i.path, next.page.path)
       s.log('created', 'page', next.page.name, 'blank page', p.id)
       return pageSummary(next.page)
     },
@@ -221,6 +232,7 @@ export const structureTools: Tool[] = [
       const after = s.page(s.project(p.id), page.id)
       if (i.key !== undefined && after.key !== String(i.key).trim()) throw new ToolError(`"${i.key}" is not a valid identifier or another page uses it`, 'key')
       if (parentId && after.parentId !== parentId) throw new ToolError('would make a breadcrumb cycle', 'parent')
+      notePath(s, i.path, after.path)
       if (after.name !== page.name || after.path !== page.path)
         s.log(after.name !== page.name ? 'renamed' : 'updated', 'page', after.name, after.name !== page.name ? `was ${page.name}` : `route ${after.path}`, p.id)
       return pageSummary(after)

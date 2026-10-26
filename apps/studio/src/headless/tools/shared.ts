@@ -18,7 +18,8 @@ export type Tool = {
   inputSchema: JsonSchema
   /** Changes the workspace (takes `dryRun`; the server saves after it). */
   write: boolean
-  run: (session: Session, input: Record<string, unknown>) => unknown
+  /** May be async (`test_endpoint` awaits a request). */
+  run: (session: Session, input: Record<string, unknown>) => unknown | Promise<unknown>
 }
 
 // ------------------------------------------------------------ input schema

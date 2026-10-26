@@ -1,5 +1,6 @@
 import type { NavParamSource } from '../Layout/types'
 import { builtinTemplates } from '../seed/templates'
+import { authEnvRows, authProfileEndpointId } from './auth'
 import { withSeedLibrary } from './migrate'
 import type { PageLoadDef } from './pageLoads'
 import {
@@ -216,4 +217,34 @@ export function detachEverywhere(projects: ProjectDef[], endpointId: string): Pr
       ? { ...p, snapshot: { ...p.snapshot, endpointIds: p.snapshot.endpointIds.filter((id) => id !== endpointId) } }
       : p,
   )
+}
+
+/**
+ * Pick the shared sign-in entry a project uses (`null` = none): sets
+ * `authId` and attaches the entry's profile endpoint. With `withEnv`, also
+ * the env rows the pick implies (the four var names present and locked,
+ * unlocked on a change of entry) — the studio leaves that to its live env
+ * store, the headless side applies it to the snapshot.
+ */
+export function setProjectAuth(
+  data: { projects: ProjectDef[]; library: LibraryData },
+  projectId: string,
+  authId: string | null,
+  withEnv = false,
+): ProjectDef[] {
+  const auth = data.library.auth ?? []
+  const def = authId ? auth.find((a) => a.id === authId) : undefined
+  const endpointId = authProfileEndpointId(def)
+  return patchProject(data.projects, projectId, (p) => {
+    const previous = p.snapshot.authId ? (auth.find((a) => a.id === p.snapshot.authId) ?? null) : null
+    return {
+      snapshot: {
+        ...p.snapshot,
+        authId,
+        endpointIds:
+          endpointId && !p.snapshot.endpointIds.includes(endpointId) ? [...p.snapshot.endpointIds, endpointId] : p.snapshot.endpointIds,
+        ...(withEnv ? { env: authEnvRows(def ?? null, p.snapshot.env, previous) } : {}),
+      },
+    }
+  })
 }

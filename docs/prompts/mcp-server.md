@@ -63,6 +63,14 @@ the studio grows.
 
 ## Phases
 
+Status: **phase 1 done** (PR #18), **phase 2 done** — every area below has
+tools, every item type a guide, and the proof project (a three-page portal
+with menu, pill sidebar, gradient app bar, theme, tabs, cards and a custom
+action) was built through the MCP and rendered by the studio's Live Preview
+and the demo app. Tools grew past the ~25 estimate (≈ 50): one per area
+rather than a single generic settings tool, so each is checked against its
+own schema.
+
 - **Phase 1** — pure commands extracted (projects, pages, items / canvases, item
   config, library endpoints / models), stores call them; schema generation +
   defaults registry + `dist/headless.mjs`; `gummy mcp` with read / page / item /

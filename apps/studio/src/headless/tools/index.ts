@@ -3,9 +3,13 @@ import { ToolError } from '../errors'
 import { Session } from '../session'
 import { libraryTools } from './library'
 import { outputTools, validateProject } from './output'
+import { projectTools } from './project'
 import { readTools } from './read'
 import { input, type JsonSchema, type Tool } from './shared'
+import { signinTools } from './signin'
 import { structureTools } from './structure'
+import { templateTools } from './templates'
+import { testEndpointTool } from './testEndpoint'
 
 /*
  * The MCP's tool surface (see the grilled design `mcp-server`): a small,
@@ -17,7 +21,16 @@ import { structureTools } from './structure'
 
 export type { Tool } from './shared'
 
-const BASE_TOOLS: Tool[] = [...readTools, ...structureTools, ...libraryTools, ...outputTools]
+const BASE_TOOLS: Tool[] = [
+  ...readTools,
+  ...structureTools,
+  ...projectTools,
+  ...libraryTools,
+  ...signinTools,
+  ...templateTools,
+  testEndpointTool,
+  ...outputTools,
+]
 const BY_NAME = new Map(BASE_TOOLS.map((t) => [t.name, t]))
 
 const BATCH: Tool = {
@@ -40,11 +53,11 @@ const BATCH: Tool = {
     ['operations'],
   ),
   write: true,
-  run: (s, i) => {
+  run: async (s, i) => {
     const ops = i.operations
     if (!Array.isArray(ops) || !ops.length) throw new ToolError('needs at least one operation', 'operations')
     const outputs: unknown[] = []
-    ops.forEach((op, k) => {
+    for (const [k, op] of ops.entries()) {
       const { tool, input: opInput } = (op ?? {}) as { tool?: string; input?: Record<string, unknown> }
       const def = tool ? BY_NAME.get(tool) : undefined
       if (!def) throw new ToolError(`unknown tool "${tool}"${tool === 'batch' ? ' (batches don’t nest)' : ''}`, `operations[${k}].tool`)
@@ -52,12 +65,12 @@ const BATCH: Tool = {
         // One batch, one dry-run switch: an operation's own `dryRun` is ignored.
         const opArgs = { ...(substitute(opInput ?? {}, outputs) as Record<string, unknown>) }
         delete opArgs.dryRun
-        outputs.push(def.run(s, opArgs))
+        outputs.push(await def.run(s, opArgs))
       } catch (err) {
         if (err instanceof ToolError) throw new ToolError(`${tool}: ${err.message}`, `operations[${k}]`)
         throw err
       }
-    })
+    }
     return outputs
   },
 }
@@ -136,14 +149,14 @@ export function toolList(): { name: string; description: string; inputSchema: Js
  * refuses (the workspace is then untouched). A write answers its output plus
  * the changes and, for every project it touched, the validation warnings.
  */
-export function runTool(workspace: WorkspaceData, name: string, args: unknown, opts: { actor?: string } = {}): ToolRun {
+export async function runTool(workspace: WorkspaceData, name: string, args: unknown, opts: { actor?: string } = {}): Promise<ToolRun> {
   const tool = TOOLS.find((t) => t.name === name)
   if (!tool) throw new ToolError(`unknown tool "${name}"`)
   const raw = (args ?? {}) as Record<string, unknown>
   if (typeof raw !== 'object' || Array.isArray(raw)) throw new ToolError('arguments must be an object')
   const { dryRun, ...rest } = raw
   const session = new Session(workspace, opts.actor ?? 'Claude (MCP)')
-  const result = tool.run(session, tool.name === 'batch' ? raw : rest)
+  const result = await tool.run(session, tool.name === 'batch' ? raw : rest)
   if (!tool.write) return { output: result, workspace: null }
   const changed = session.ws !== workspace
   const changes = changed ? describeChanges(workspace, session.ws) : []

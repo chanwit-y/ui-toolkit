@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "gummy": {
+      "command": "npx",
+      "args": ["gummy", "mcp"]
+    }
+  }
+}

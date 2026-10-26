@@ -164,6 +164,19 @@ export const readTools: Tool[] = [
     },
   },
   {
+    name: 'get_activity',
+    description: 'The Activity log, newest first: who changed what (the studio’s users and "Claude (MCP)").',
+    inputSchema: input({ limit: { type: 'number', description: 'Default 30.' }, project: { ...PROJECT, description: 'Only this project’s lines.' } }),
+    write: false,
+    run: (s, i) => {
+      const projectId = i.project ? s.project(i.project).id : null
+      return s.ws.activity
+        .filter((a) => !projectId || a.projectId === projectId)
+        .slice(0, Number(i.limit ?? 30))
+        .map((a) => ({ when: new Date(a.ts).toISOString(), user: a.user, verb: a.verb, kind: a.kind, name: a.name, detail: a.detail }))
+    },
+  },
+  {
     name: 'get_library',
     description: 'The shared library: models (field trees) and endpoints (method, url, model refs by name), optionally only what one project attaches.',
     inputSchema: input({

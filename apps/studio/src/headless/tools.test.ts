@@ -19,8 +19,8 @@ const studioRoot = join(dirname(fileURLToPath(import.meta.url)), '../..')
 /** Run a tool; on a write, carry the saved workspace forward. */
 function make(initial: WorkspaceData) {
   let ws = initial
-  const call = (name: string, args: Record<string, unknown> = {}) => {
-    const run = runTool(ws, name, args)
+  const call = async (name: string, args: Record<string, unknown> = {}) => {
+    const run = await runTool(ws, name, args)
     if (run.workspace) ws = run.workspace
     return run.output as Record<string, unknown> & { result?: unknown }
   }
@@ -35,22 +35,22 @@ const COLUMN = {
 describe('building a CRUD page through the tools', () => {
   const t = make(newWorkspace('Book store'))
 
-  test('library: models and endpoints by name', () => {
-    t.call('upsert_model', { name: 'book', fields: [{ name: '_id', kind: 'string' }, { name: 'title', kind: 'string' }, { name: 'price', kind: 'number' }] })
-    t.call('upsert_model', { name: 'bookList', fields: [{ name: 'data', kind: 'array', arrayOf: 'object', children: [{ name: '_id', kind: 'string' }, { name: 'title', kind: 'string' }] }] })
-    t.call('upsert_model', { name: 'bookIdParams', fields: [{ name: 'id', kind: 'string' }] })
-    t.call('upsert_endpoint', { name: 'listBooks', method: 'GET', url: '/api/books', response: 'bookList', group: 'Books' })
-    t.call('upsert_endpoint', { name: 'createBook', method: 'POST', url: '/api/books', body: 'book', group: 'Books' })
-    const out = t.call('upsert_endpoint', { name: 'updateBook', method: 'PATCH', url: '/api/books/:id', parameter: 'bookIdParams', body: 'book', group: 'Books' })
+  test('library: models and endpoints by name', async () => {
+    await t.call('upsert_model', { name: 'book', fields: [{ name: '_id', kind: 'string' }, { name: 'title', kind: 'string' }, { name: 'price', kind: 'number' }] })
+    await t.call('upsert_model', { name: 'bookList', fields: [{ name: 'data', kind: 'array', arrayOf: 'object', children: [{ name: '_id', kind: 'string' }, { name: 'title', kind: 'string' }] }] })
+    await t.call('upsert_model', { name: 'bookIdParams', fields: [{ name: 'id', kind: 'string' }] })
+    await t.call('upsert_endpoint', { name: 'listBooks', method: 'GET', url: '/api/books', response: 'bookList', group: 'Books' })
+    await t.call('upsert_endpoint', { name: 'createBook', method: 'POST', url: '/api/books', body: 'book', group: 'Books' })
+    const out = await t.call('upsert_endpoint', { name: 'updateBook', method: 'PATCH', url: '/api/books/:id', parameter: 'bookIdParams', body: 'book', group: 'Books' })
     expect(out.changes).toEqual(['+ endpoint updateBook'])
     expect(t.ws.library.groups.map((g) => g.name)).toEqual(['Books'])
-    const lib = t.call('get_library', { kind: 'endpoints' }) as unknown as { endpoints: { name: string; body: string | null }[] }
+    const lib = await t.call('get_library', { kind: 'endpoints' }) as unknown as { endpoints: { name: string; body: string | null }[] }
     expect(lib.endpoints.find((e) => e.name === 'updateBook')?.body).toBe('book')
   })
 
-  test('a page with a table, its modal form and buttons in one batch', () => {
-    t.call('add_page', { project: 'book-store', name: 'Books', path: '/books' })
-    const out = t.call('batch', {
+  test('a page with a table, its modal form and buttons in one batch', async () => {
+    await t.call('add_page', { project: 'book-store', name: 'Books', path: '/books' })
+    const out = await t.call('batch', {
       operations: [
         {
           tool: 'add_item',
@@ -84,7 +84,7 @@ describe('building a CRUD page through the tools', () => {
     expect(out.notes).toBeDefined()
     expect(t.ws.projects[0].snapshot.endpointIds.length).toBe(3)
 
-    const page = t.call('get_page', { project: 'book-store', page: '/books' }) as unknown as { items: { type: string; canvases: { items: { type: string; showWhen?: string }[] }[] }[] }
+    const page = await t.call('get_page', { project: 'book-store', page: '/books' }) as unknown as { items: { type: string; canvases: { items: { type: string; showWhen?: string }[] }[] }[] }
     const table = page.items[0]
     expect(table.type).toBe('datatable')
     expect(table.canvases[0].items.map((i) => i.type)).toEqual(['hidden', 'textfield', 'button', 'button'])
@@ -96,16 +96,16 @@ describe('building a CRUD page through the tools', () => {
     expect(save.reloadTableItemId).toBe(t.ws.projects[0].snapshot.pages[1].grid.items[0].id)
   })
 
-  test('the project validates and exports the table wired to its endpoint', () => {
-    const report = t.call('validate_project', { project: 'book-store' }) as unknown as { ok: boolean; errors: string[]; warnings: string[] }
+  test('the project validates and exports the table wired to its endpoint', async () => {
+    const report = await t.call('validate_project', { project: 'book-store' }) as unknown as { ok: boolean; errors: string[]; warnings: string[] }
     expect(report.errors).toEqual([])
     expect(report.warnings).toEqual([])
-    const doc = t.call('export_project', { project: 'book-store' }) as unknown as { api: Record<string, unknown>; pages: Record<string, unknown> }
+    const doc = await t.call('export_project', { project: 'book-store' }) as unknown as { api: Record<string, unknown>; pages: Record<string, unknown> }
     expect(Object.keys(doc.api).sort()).toEqual(['createBook', 'listBooks', 'updateBook'])
     expect(JSON.stringify(doc.pages.books)).toContain('"listBooks"')
   })
 
-  test('the saved workspace round-trips through the studio’s own load', () => {
+  test('the saved workspace round-trips through the studio’s own load', async () => {
     const text = writeWorkspace(t.ws)
     const again = readWorkspace(text)
     expect(again).toEqual(t.ws)
@@ -117,50 +117,50 @@ describe('building a CRUD page through the tools', () => {
 describe('refusals and guards', () => {
   const t = make(newWorkspace('App'))
 
-  test('a config patch is checked against the schema', () => {
-    expect(() => runTool(t.ws, 'add_item', { project: 'app', page: 'page1', type: 'textfield', config: { dataType: 'colour' } })).toThrow(ToolError)
-    expect(() => runTool(t.ws, 'add_item', { project: 'app', page: 'page1', type: 'textfield', config: { nope: 1 } })).toThrow(/nope/)
+  test('a config patch is checked against the schema', async () => {
+    await expect(runTool(t.ws, 'add_item', { project: 'app', page: 'page1', type: 'textfield', config: { dataType: 'colour' } })).rejects.toThrow(ToolError)
+    await expect(runTool(t.ws, 'add_item', { project: 'app', page: 'page1', type: 'textfield', config: { nope: 1 } })).rejects.toThrow(/nope/)
   })
 
-  test('an unknown reference name is refused with its path', () => {
-    expect(() => runTool(t.ws, 'add_item', { project: 'app', page: 'page1', type: 'button', config: { endpointId: 'missing' } })).toThrow(/config\.endpointId: no endpoint "missing"/)
+  test('an unknown reference name is refused with its path', async () => {
+    await expect(runTool(t.ws, 'add_item', { project: 'app', page: 'page1', type: 'button', config: { endpointId: 'missing' } })).rejects.toThrow(/config\.endpointId: no endpoint "missing"/)
   })
 
-  test('form fields are refused inside a repeater template', () => {
-    const r = t.call('add_item', { project: 'app', page: 'page1', type: 'repeater' }) as { result: { id: string } }
-    expect(() => runTool(t.ws, 'add_item', { project: 'app', page: 'page1', type: 'textfield', parent: { item: r.result.id, canvas: 0 } })).toThrow(/repeater/)
-    expect(() => runTool(t.ws, 'add_item', { project: 'app', page: 'page1', type: 'typography', parent: { item: r.result.id, canvas: 0 } })).not.toThrow()
+  test('form fields are refused inside a repeater template', async () => {
+    const r = await t.call('add_item', { project: 'app', page: 'page1', type: 'repeater' }) as { result: { id: string } }
+    await expect(runTool(t.ws, 'add_item', { project: 'app', page: 'page1', type: 'textfield', parent: { item: r.result.id, canvas: 0 } })).rejects.toThrow(/repeater/)
+    await expect(runTool(t.ws, 'add_item', { project: 'app', page: 'page1', type: 'typography', parent: { item: r.result.id, canvas: 0 } })).resolves.toBeDefined()
   })
 
-  test('tabs keep their canvases aligned', () => {
-    const tab = t.call('add_item', { project: 'app', page: 'page1', type: 'tab' }) as { result: { id: string; canvases: unknown[] } }
+  test('tabs keep their canvases aligned', async () => {
+    const tab = await t.call('add_item', { project: 'app', page: 'page1', type: 'tab' }) as { result: { id: string; canvases: unknown[] } }
     const n = tab.result.canvases.length
-    expect(() => runTool(t.ws, 'update_item', { project: 'app', page: 'page1', item: tab.result.id, config: { tabs: [{ label: 'Only', value: 'only' }] } })).toThrow(/add_tab/)
-    const added = t.call('add_tab', { project: 'app', page: 'page1', item: tab.result.id, label: 'Extra' }) as { result: { canvases: unknown[] } }
+    await expect(runTool(t.ws, 'update_item', { project: 'app', page: 'page1', item: tab.result.id, config: { tabs: [{ label: 'Only', value: 'only' }] } })).rejects.toThrow(/add_tab/)
+    const added = await t.call('add_tab', { project: 'app', page: 'page1', item: tab.result.id, label: 'Extra' }) as { result: { canvases: unknown[] } }
     expect(added.result.canvases.length).toBe(n + 1)
   })
 
-  test('a dry run reports and saves nothing; a failing batch changes nothing', () => {
+  test('a dry run reports and saves nothing; a failing batch changes nothing', async () => {
     const before = t.ws
-    const dry = runTool(before, 'add_page', { project: 'app', name: 'Draft', dryRun: true })
+    const dry = await runTool(before, 'add_page', { project: 'app', name: 'Draft', dryRun: true })
     expect(dry.workspace).toBeNull()
     expect((dry.output as { changes: string[] }).changes[0]).toContain('+ page (App) draft')
-    expect(() =>
+    await expect(
       runTool(before, 'batch', { operations: [{ tool: 'add_page', input: { project: 'app', name: 'Ok' } }, { tool: 'add_item', input: { project: 'app', page: 'ok', type: 'nope' } }] }),
-    ).toThrow(/operations\[1\]/)
+    ).rejects.toThrow(/operations\[1\]/)
     expect(t.ws).toBe(before)
   })
 
-  test('deletes need confirm', () => {
-    t.call('add_page', { project: 'app', name: 'Spare' })
-    const preview = runTool(t.ws, 'delete_page', { project: 'app', page: 'spare' })
+  test('deletes need confirm', async () => {
+    await t.call('add_page', { project: 'app', name: 'Spare' })
+    const preview = await runTool(t.ws, 'delete_page', { project: 'app', page: 'spare' })
     expect((preview.output as { result: { confirmRequired: boolean } }).result.confirmRequired).toBe(true)
     expect(preview.workspace).toBeNull()
-    const done = runTool(t.ws, 'delete_page', { project: 'app', page: 'spare', confirm: true })
+    const done = await runTool(t.ws, 'delete_page', { project: 'app', page: 'spare', confirm: true })
     expect(done.workspace?.projects[0].snapshot.pages.some((p) => p.key === 'spare')).toBe(false)
   })
 
-  test('a newer workspace is refused, an older one migrated', () => {
+  test('a newer workspace is refused, an older one migrated', async () => {
     const text = writeWorkspace(t.ws)
     expect(() => readWorkspace(text.replace('"version": 53', '"version": 99'))).toThrow(/newer studio/)
     const demo = readFileSync(join(studioRoot, '../../demo/gummy/workspace.json'), 'utf8')

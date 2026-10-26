@@ -5,7 +5,7 @@ import type { ThemeAppearance } from '../Theme/types'
 import type { PageLoadDef } from './pageLoads'
 import type { CustomActionDef } from './customActions'
 import type { CustomComponentDef } from './customComponents'
-import { authProfileEndpointId, createAuthDef, type AuthDef } from './auth'
+import { createAuthDef, type AuthDef } from './auth'
 import { seedActivity } from '../seed/activity'
 import {
   countryLibrary,
@@ -252,19 +252,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
 
       setProjectAuth: (id, authId) => {
         const def = authId ? (get().library.auth ?? []).find((a) => a.id === authId) : undefined
-        const endpointId = authProfileEndpointId(def)
-        set((s) => ({
-          projects: patchProject(s.projects, id, (p) => ({
-            snapshot: {
-              ...p.snapshot,
-              authId,
-              endpointIds:
-                endpointId && !p.snapshot.endpointIds.includes(endpointId)
-                  ? [...p.snapshot.endpointIds, endpointId]
-                  : p.snapshot.endpointIds,
-            },
-          })),
-        }))
+        set((s) => ({ projects: cmd.setProjectAuth(s, id, authId) }))
         log(def ? 'updated' : 'updated', 'auth', def?.name ?? 'none', def ? `${projectName(id)} signs in with it` : `${projectName(id)} has no sign-in`, id)
       },
 

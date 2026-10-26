@@ -42,16 +42,17 @@ export async function mcp(opts, version) {
   const workspaceFile = join(dir, 'workspace.json')
   const projectsDir = join(dir, 'projects')
   const appName = projectName(cwd)
-  const rel = (file) => relative(cwd, file) || file
+  // Reported relative to the folder holding `gummy/` (the app), whatever directory the client started us in.
+  const rel = (file) => relative(dirname(dir), file) || file
 
   const readText = () => (existsSync(workspaceFile) ? readFileSync(workspaceFile, 'utf8') : null)
 
   /** Run one tool against the file, saving when it changed something. */
-  function call(name, args) {
+  async function call(name, args) {
     for (let attempt = 0; attempt < RETRIES; attempt++) {
       const text = readText()
       const before = text === null ? h.newWorkspace(appName) : h.readWorkspace(text)
-      const run = h.runTool(before, name, args)
+      const run = await h.runTool(before, name, args)
       if (!run.workspace) return run.output
       // Someone (the studio, git, an editor) wrote the file while we worked: start over from theirs.
       if (readText() !== text) continue
@@ -80,7 +81,7 @@ export async function mcp(opts, version) {
   server.setRequestHandler(CallToolRequestSchema, async (req) => {
     const { name, arguments: args } = req.params
     try {
-      const output = call(name, args ?? {})
+      const output = await call(name, args ?? {})
       return { content: [{ type: 'text', text: JSON.stringify(output, null, 2) }] }
     } catch (err) {
       // A refusal (bad input, unknown reference…) goes back to the client to act on; anything else is logged too.

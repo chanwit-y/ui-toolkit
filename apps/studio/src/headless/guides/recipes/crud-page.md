@@ -21,4 +21,4 @@ Goal: `/books` lists books; Add and Edit open one modal form; Delete confirms.
      StopLoading, CloseModal]`, `endpointId: createBook`, `reloadTableItemId: books`)
      and a **Save** button (`showWhen: "editing"`, `SubmitFormToPatchAPI`,
      `updateBook`).
-5. Add a menu link to the page (phase 2 tools) and `validate_project`.
+5. `update_menu` with a page link to `books`, then `validate_project`.
