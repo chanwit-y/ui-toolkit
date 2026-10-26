@@ -11,9 +11,39 @@ import type { ThemeProps } from '@gummy-ui/ui'
 export type ThemeAppearance = 'light' | 'dark'
 export type ThemeRadius = 'none' | 'small' | 'medium' | 'large' | 'full'
 export type ThemePanelBackground = 'solid' | 'translucent'
-export type AccentColor = NonNullable<ThemeProps['accentColor']>
+/**
+ * The Radix palette — every name `ThemeProps['accentColor']` accepts, spelled
+ * out (rather than derived from Radix's type) so the MCP's generated JSON
+ * Schema lists them; `ACCENT_COLORS` below must stay assignable to Radix's.
+ */
+export type AccentColor =
+  | 'gray'
+  | 'gold'
+  | 'bronze'
+  | 'brown'
+  | 'yellow'
+  | 'amber'
+  | 'orange'
+  | 'tomato'
+  | 'red'
+  | 'ruby'
+  | 'crimson'
+  | 'pink'
+  | 'plum'
+  | 'purple'
+  | 'violet'
+  | 'iris'
+  | 'indigo'
+  | 'blue'
+  | 'cyan'
+  | 'teal'
+  | 'jade'
+  | 'green'
+  | 'grass'
+  | 'lime'
+  | 'mint'
+  | 'sky'
 
-/** The Radix palette — every name `ThemeProps['accentColor']` accepts. */
 export const ACCENT_COLORS: AccentColor[] = [
   'gray',
   'gold',
@@ -42,6 +72,10 @@ export const ACCENT_COLORS: AccentColor[] = [
   'mint',
   'sky',
 ]
+
+// Every name above is one Radix accepts (a wrong one fails to compile).
+const RADIX_ACCENTS: NonNullable<ThemeProps['accentColor']>[] = ACCENT_COLORS
+void RADIX_ACCENTS
 
 export const RADIUS_VALUES: ThemeRadius[] = ['none', 'small', 'medium', 'large', 'full']
 

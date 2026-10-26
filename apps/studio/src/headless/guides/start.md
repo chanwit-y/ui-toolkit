@@ -14,7 +14,8 @@ reloads by itself, so the user watches you build.
   global data loads, custom action / component declarations, and the library
   endpoints it **attaches** (only attached endpoints reach the app).
 - **Page** → `key` (identifier, unique per project), `name`, `path`
-  (`/books/:id` — `:params` are URL parameters), a **canvas** of items.
+  (`/books/:id` — `:params` are URL parameters; no page claims `/`, the app
+  sends `/` to the first page), a **canvas** of items.
 - **Item** → `type` (see `list_item_types`), `label` (editor name), `config`
   (per-type, see `describe_item_type`), `settings` (grid layout) and optional
   `showWhen` / `dataWhen` / `initialValue`.
@@ -81,5 +82,17 @@ several things):
 - `SubmitFormToDeleteAPI` does nothing — delete through a POST endpoint or the
   table's own delete (`canDelete` + `deleteEndpointId`).
 
-Guides: `gummy://guide/<topic>` — `start`, `recipes/crud-page` and one per
-item type (`describe_item_type` returns the right one).
+## Beyond the pages
+
+`update_menu`, `update_shell`, `update_theme`, `set_env` (API_URL is the base
+URL every endpoint is called against), `upsert_load` / `delete_load` (page
+and global data), `upsert_custom_action` / `upsert_custom_component`,
+`upsert_auth` + `set_project_auth` (sign-in), `list_templates` /
+`insert_template` / `save_as_template`, `test_endpoint` (a real request,
+checked against the response model) and `get_activity`.
+
+Guides: `gummy://guide/<topic>` — one per item type (`describe_item_type`
+returns the right one), the concepts `concepts/page-data`,
+`concepts/navigation`, `concepts/shell-theme`, `concepts/custom-code`,
+`concepts/sign-in`, and the recipes `recipes/crud-page`,
+`recipes/detail-page`, `recipes/master-detail`.

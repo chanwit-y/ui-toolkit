@@ -1,6 +1,140 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "definitions": {
+    "AccentColor": {
+      "type": "string",
+      "enum": [
+        "gray",
+        "gold",
+        "bronze",
+        "brown",
+        "yellow",
+        "amber",
+        "orange",
+        "tomato",
+        "red",
+        "ruby",
+        "crimson",
+        "pink",
+        "plum",
+        "purple",
+        "violet",
+        "iris",
+        "indigo",
+        "blue",
+        "cyan",
+        "teal",
+        "jade",
+        "green",
+        "grass",
+        "lime",
+        "mint",
+        "sky"
+      ],
+      "description": "The Radix palette — every name `ThemeProps['accentColor']` accepts, spelled out (rather than derived from Radix's type) so the MCP's generated JSON Schema lists them; `ACCENT_COLORS` below must stay assignable to Radix's."
+    },
+    "AppBarSettings": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "icon": {
+          "type": "string",
+          "description": "`IconData` key shown before the title."
+        },
+        "logo": {
+          "type": "string",
+          "description": "Logo image URL — or the `data:` URL of an uploaded image — shown before the title (wins over `icon`)."
+        },
+        "logoSize": {
+          "type": "string",
+          "description": "CSS height of the logo (empty = the library's `1.5rem`)."
+        },
+        "variant": {
+          "type": "string",
+          "enum": [
+            "panel",
+            "accent",
+            "custom"
+          ],
+          "description": "Neutral panel surface, painted in the theme accent, or a custom colour / gradient."
+        },
+        "background": {
+          "type": "string",
+          "description": "The custom bar's colour (any CSS colour)."
+        },
+        "gradient": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "from": {
+              "type": "string"
+            },
+            "to": {
+              "type": "string"
+            },
+            "angle": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "enabled",
+            "from",
+            "to",
+            "angle"
+          ],
+          "additionalProperties": false,
+          "description": "The custom bar's gradient (wins over `background` while enabled): `from` → `to` at `angle` degrees."
+        },
+        "foreground": {
+          "type": "string",
+          "enum": [
+            "",
+            "light",
+            "dark"
+          ],
+          "description": "Text / icon colour on the custom bar; empty = picked from the paint's luminance."
+        },
+        "padding": {
+          "type": "string",
+          "description": "CSS padding of the bar (empty = the library's `0 0.75rem`)."
+        },
+        "sidebarToggle": {
+          "type": "object",
+          "properties": {
+            "hide": {
+              "type": "string"
+            },
+            "show": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "hide",
+            "show"
+          ],
+          "additionalProperties": false,
+          "description": "`IconData` keys of the desktop collapse button (empty = library chevrons)."
+        }
+      },
+      "required": [
+        "title",
+        "icon",
+        "logo",
+        "logoSize",
+        "variant",
+        "background",
+        "gradient",
+        "foreground",
+        "padding",
+        "sidebarToggle"
+      ],
+      "additionalProperties": false,
+      "description": "The exported app's top bar (the library `AppBarConfig`); empty strings mean unset."
+    },
     "ApprovalLineConfig": {
       "type": "object",
       "properties": {
@@ -306,6 +440,231 @@
         }
       ],
       "description": "What an `array` field holds: a primitive, or an object (nested fields)."
+    },
+    "AuthDef": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Stable id (`auth-…`) the projects reference."
+        },
+        "name": {
+          "type": "string"
+        },
+        "provider": {
+          "type": "string",
+          "const": "azure"
+        },
+        "env": {
+          "type": "object",
+          "properties": {
+            "tenantId": {
+              "type": "string"
+            },
+            "clientId": {
+              "type": "string"
+            },
+            "redirectUri": {
+              "type": "string"
+            },
+            "scope": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "tenantId",
+            "clientId",
+            "redirectUri",
+            "scope"
+          ],
+          "additionalProperties": false,
+          "description": "Env var names per setting."
+        },
+        "devValues": {
+          "type": "object",
+          "properties": {
+            "tenantId": {
+              "type": "string"
+            },
+            "clientId": {
+              "type": "string"
+            },
+            "redirectUri": {
+              "type": "string"
+            },
+            "scope": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "tenantId",
+            "clientId",
+            "redirectUri",
+            "scope"
+          ],
+          "additionalProperties": false,
+          "description": "Dev default values per setting, seeded into a project's Env rows on pick."
+        },
+        "loginMode": {
+          "type": "string",
+          "enum": [
+            "redirect",
+            "popup"
+          ]
+        },
+        "cacheLocation": {
+          "type": "string",
+          "enum": [
+            "localStorage",
+            "sessionStorage"
+          ]
+        },
+        "profile": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "read": {
+              "$ref": "#/definitions/FormListCrudRef"
+            },
+            "paths": {
+              "type": "string",
+              "description": "Dot path to the profile record inside the response (`data`)."
+            },
+            "emailParam": {
+              "type": "string",
+              "description": "The `:param` / query key that receives the signed-in email."
+            },
+            "stateKey": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "enabled",
+            "read",
+            "paths",
+            "emailParam",
+            "stateKey"
+          ],
+          "additionalProperties": false
+        },
+        "screens": {
+          "type": "object",
+          "properties": {
+            "landing": {
+              "$ref": "#/definitions/AuthScreenTextDef"
+            },
+            "denied": {
+              "$ref": "#/definitions/AuthScreenTextDef"
+            },
+            "loading": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "message"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "landing",
+            "denied",
+            "loading"
+          ],
+          "additionalProperties": false,
+          "description": "`''` = the engine default text."
+        },
+        "userMenu": {
+          "type": "object",
+          "properties": {
+            "show": {
+              "type": "boolean"
+            },
+            "nameKey": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "subtitleKey": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "avatarKey": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "companyKey": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "idKey": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "idLabel": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "show",
+            "nameKey",
+            "subtitleKey",
+            "avatarKey",
+            "companyKey",
+            "idKey",
+            "idLabel"
+          ],
+          "additionalProperties": false,
+          "description": "Paths into the profile record (fallback lists; a `{{a}} {{b}}` template is allowed)."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "provider",
+        "env",
+        "devValues",
+        "loginMode",
+        "cacheLocation",
+        "profile",
+        "screens",
+        "userMenu"
+      ],
+      "additionalProperties": false
+    },
+    "AuthScreenTextDef": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "buttonLabel": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "title",
+        "message",
+        "buttonLabel"
+      ],
+      "additionalProperties": false
     },
     "AvatarConfig": {
       "type": "object",
@@ -943,6 +1302,52 @@
       ],
       "additionalProperties": false,
       "description": "Editable config for a custom component (see the grilled design). Maps onto the engine `CustomComponentElement`: `componentId` is the project declaration (`Workspace/customComponents.ts`) resolved to its `name` at export, `props` the authored text per declared prop key (parsed to the prop's kind at export), `binding` the one bound `value`."
+    },
+    "CustomPropDef": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "description": "The key on the engine `props` object: a JS identifier."
+        },
+        "kind": {
+          "$ref": "#/definitions/CustomPropKind"
+        },
+        "label": {
+          "type": "string",
+          "description": "Field label in the inspector (the key when empty)."
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "`select` only: the allowed values."
+        },
+        "defaultValue": {
+          "type": "string",
+          "description": "Pre-fills the inspector field; omitted from the export when unchanged."
+        }
+      },
+      "required": [
+        "key",
+        "kind",
+        "label",
+        "options",
+        "defaultValue"
+      ],
+      "additionalProperties": false
+    },
+    "CustomPropKind": {
+      "type": "string",
+      "enum": [
+        "text",
+        "number",
+        "boolean",
+        "select",
+        "json"
+      ],
+      "description": "Custom components (see the grilled design in the library's `core/components.tsx`): React components the developer codes in the app and hands to `<ComponentsProvider components={{ Chart, … }}>`, which a `custom` Bin places by name (`element.component`). The studio only knows the *declarations*: a project declares them once (the Env page's \"Custom components\" section) — a name plus the props the component accepts, each with a kind so the inspector can draw a typed field — items pick one, the export writes a typed `components.tsx` stub for every declared name, and the Live Preview mounts a placeholder stub per name that shows the resolved value.\n\nItem configs store the declaration's stable **id**, so a rename propagates and a deleted declaration shows as dangling; the export resolves it to the name, or `MISSING_COMPONENT` when it is gone — loud in the config, a placeholder in the engine (same pattern as `MISSING_ACTION`)."
     },
     "DataCondition": {
       "type": "object",
@@ -1663,6 +2068,55 @@
       "additionalProperties": false,
       "description": "Engine `api.sort`. Exported only while `enabled` with both keys set; `placement: 'auto'` leaves the engine to infer it, `ascValue` / `descValue` export as `orderValues` only off `asc` / `desc` (numeric text → numbers), `defaultField` (`''` = none) as `default`."
     },
+    "DataTableThemeConfig": {
+      "type": "object",
+      "properties": {
+        "headerColor": {
+          "type": "string"
+        },
+        "headerTextColor": {
+          "type": "string"
+        },
+        "headerFontSize": {
+          "$ref": "#/definitions/HeaderFontSize"
+        },
+        "headerFontWeight": {
+          "$ref": "#/definitions/HeaderFontWeight"
+        },
+        "headerHoverColor": {
+          "type": "string"
+        },
+        "paginationButtonColor": {
+          "type": "string"
+        },
+        "paginationButtonHoverColor": {
+          "type": "string"
+        },
+        "rowHoverColor": {
+          "type": "string"
+        },
+        "editButtonColor": {
+          "type": "string"
+        },
+        "deleteButtonColor": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "headerColor",
+        "headerTextColor",
+        "headerFontSize",
+        "headerFontWeight",
+        "headerHoverColor",
+        "paginationButtonColor",
+        "paginationButtonHoverColor",
+        "rowHoverColor",
+        "editButtonColor",
+        "deleteButtonColor"
+      ],
+      "additionalProperties": false,
+      "description": "Per-role DataTable overrides — mirrors `ThemeComponents['dataTable']` with `''` = unset (follows accent / component default; edit = the button colour, delete = red). The two action-button roles are Radix buttons, so a pinned color is dark-safe; the rest route into the legacy light-only map when pinned."
+    },
     "DateConfig": {
       "type": "object",
       "properties": {
@@ -1766,6 +2220,52 @@
       ],
       "additionalProperties": false,
       "description": "Editable config for the three date pickers, discriminated by `kind`: `'date'` → `DatePickerBase`/`DatePickerElement`, `'datetime'` → `DateTimePickerBase`/`DateTimePickerElement`, `'range'` → `DateRangePickerBase`/`DateRangePickerElement`. One shared config (mirroring how `SelectFieldConfig` is shared across select/autocomplete) carries every field; the panel and the exporter switch on `kind` to show/emit only the relevant ones: `weekStartsOn` is date+datetime only, `minuteStep` is datetime only, and `range` uses a fixed `displayFormat` enum. `min`/`max` are ISO strings (`''` = unset); the exporter maps them to `minDate`/`maxDate` (date, range) or `minDateTime`/`maxDateTime` (datetime). `dataType` is derived on export (date/datetime→`string`, range→`any`) so isn't edited here."
+    },
+    "DesignSurfaces": {
+      "type": "object",
+      "properties": {
+        "surface": {
+          "type": "string"
+        },
+        "panel": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "border": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "surface",
+        "panel",
+        "text",
+        "border"
+      ],
+      "additionalProperties": false,
+      "description": "Surface colours of one mode ('' = the library default for that mode)."
+    },
+    "DesignTheme": {
+      "type": "object",
+      "properties": {
+        "font": {
+          "type": "string"
+        },
+        "light": {
+          "$ref": "#/definitions/DesignSurfaces"
+        },
+        "dark": {
+          "$ref": "#/definitions/DesignSurfaces"
+        }
+      },
+      "required": [
+        "font",
+        "light",
+        "dark"
+      ],
+      "additionalProperties": false,
+      "description": "The mockup's design-only theme values (see the grilled design): per-mode surfaces and a font have no ThemeProvider equivalent, so they paint the canvas frame and the Live Preview wrapper, ship in project.json, and stay out of theme.ts."
     },
     "DividerConfig": {
       "type": "object",
@@ -2232,6 +2732,27 @@
       ],
       "additionalProperties": false
     },
+    "HeaderFontSize": {
+      "type": "string",
+      "enum": [
+        "",
+        "xs",
+        "sm",
+        "base",
+        "lg",
+        "xl"
+      ]
+    },
+    "HeaderFontWeight": {
+      "type": "string",
+      "enum": [
+        "",
+        "normal",
+        "medium",
+        "semibold",
+        "bold"
+      ]
+    },
     "HiddenConfig": {
       "type": "object",
       "properties": {
@@ -2321,6 +2842,134 @@
         }
       ],
       "description": "A bound display value. `source` absent / `'row'`: `key` is a field of the enclosing repeater's item (`'none'` = the item itself). `'state'`: `key` is a page load's id (resolved to its key at export), `path` drills its data or reads `$status`."
+    },
+    "LoadingMode": {
+      "type": "string",
+      "enum": [
+        "cycle",
+        "skeleton",
+        "none"
+      ]
+    },
+    "MenuItemDef": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "const": "page"
+            },
+            "label": {
+              "type": "string"
+            },
+            "icon": {
+              "type": "string"
+            },
+            "navigate": {
+              "$ref": "#/definitions/StudioNavigate"
+            }
+          },
+          "required": [
+            "id",
+            "kind",
+            "label",
+            "icon",
+            "navigate"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "const": "link"
+            },
+            "label": {
+              "type": "string"
+            },
+            "icon": {
+              "type": "string"
+            },
+            "href": {
+              "type": "string"
+            },
+            "newTab": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "id",
+            "kind",
+            "label",
+            "icon",
+            "href",
+            "newTab"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "const": "group"
+            },
+            "label": {
+              "type": "string"
+            },
+            "icon": {
+              "type": "string"
+            },
+            "collapsed": {
+              "type": "boolean"
+            },
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/MenuItemDef"
+              }
+            }
+          },
+          "required": [
+            "id",
+            "kind",
+            "label",
+            "icon",
+            "collapsed",
+            "items"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "const": "divider"
+            }
+          },
+          "required": [
+            "id",
+            "kind"
+          ],
+          "additionalProperties": false
+        }
+      ],
+      "description": "One entry of the project's app-shell menu (see the grilled app-shell design) — the studio-side mirror of the library `MenuItem`, with a stable `id` for the sortable editor and an explicit `kind`. Page links store the page id and resolve to its key at export."
     },
     "ModalConfig": {
       "type": "object",
@@ -2684,6 +3333,40 @@
         }
       ],
       "description": "Where one `:param` (or query key) of a navigation target gets its value — the studio-side mirror of the engine `DataValue` sources `NavigateTarget` accepts. `row` is only offered on a data table's row navigation."
+    },
+    "PageLoadDef": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "key": {
+          "type": "string"
+        },
+        "read": {
+          "$ref": "#/definitions/FormListCrudRef"
+        },
+        "paths": {
+          "type": "string"
+        },
+        "loading": {
+          "$ref": "#/definitions/LoadingMode",
+          "description": "How the page waits (the engine `PageLoad.loading`): the overlay, skeletons on the bound components, or nothing."
+        },
+        "errorMessage": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "key",
+        "read",
+        "paths",
+        "loading",
+        "errorMessage"
+      ],
+      "additionalProperties": false,
+      "description": "A page-level data load (see the grilled page-data design): the engine `PageLoad` as the studio edits it. `id` is stable — bindings, conditions and other loads' `state` sources store it, and export resolves it to the current `key` (the global-state slice name), so the key can be renamed freely. `read` is the same endpoint + `:param` sources + query extras the repeater and form list use; `paths` is the dot path into the response."
     },
     "PaperConfig": {
       "type": "object",
@@ -3473,6 +4156,55 @@
       "additionalProperties": {},
       "description": "A single static option for the select. The select's live preview renders the library's `Autocomplete2`, whose options are arbitrary records keyed by `idKey`/`displayKey`/`searchKey` (not a fixed `{ value, label }`), so an option is an open record. The author picks which keys carry the id/label via the config's `idKey`/`displayKey`/`searchKey`."
     },
+    "ShellSettings": {
+      "type": "object",
+      "properties": {
+        "navigation": {
+          "type": "string",
+          "enum": [
+            "sidebar",
+            "top"
+          ],
+          "description": "Where the menu renders: the collapsible sidebar or a strip in the top bar."
+        },
+        "breadcrumbs": {
+          "type": "boolean",
+          "description": "Show the breadcrumb strip under the top bar."
+        },
+        "appBar": {
+          "$ref": "#/definitions/AppBarSettings"
+        },
+        "menuIcons": {
+          "type": "boolean",
+          "description": "Show the icons of menu items (sidebar, drawer, top strip)."
+        },
+        "menuActiveColor": {
+          "type": "string",
+          "description": "Text colour of the active sidebar / drawer item (any CSS colour) on its accent background; `''` / absent = the accent's contrast colour. Optional, so shells saved before it existed need no migration."
+        },
+        "pageTransition": {
+          "$ref": "#/definitions/StudioPageTransition",
+          "description": "How a page enters on a route change (the engine `shell.pageTransition`, see the grilled design `page-transition`). Optional: absent = none, so older shells need no migration. `duration: ''` = the engine's 250 ms."
+        },
+        "collapsible": {
+          "type": "boolean",
+          "description": "Sidebar placement: offer the collapse-to-rail toggle."
+        },
+        "sidebar": {
+          "$ref": "#/definitions/SidebarSettings",
+          "description": "Sidebar look and collapse-toggle placement (workspace v53)."
+        }
+      },
+      "required": [
+        "navigation",
+        "breadcrumbs",
+        "appBar",
+        "menuIcons",
+        "collapsible",
+        "sidebar"
+      ],
+      "additionalProperties": false
+    },
     "ShowWhen": {
       "type": "string",
       "enum": [
@@ -3481,6 +4213,91 @@
         "editing"
       ],
       "description": "When an item inside a data table's modal canvas is shown: always, only while adding (no row selected) or only while editing. Exported as the engine `condition` on `<table name>._id`; absent = always."
+    },
+    "SidebarSettings": {
+      "type": "object",
+      "properties": {
+        "variant": {
+          "type": "string",
+          "enum": [
+            "plain",
+            "pill"
+          ]
+        },
+        "toggle": {
+          "type": "string",
+          "enum": [
+            "header",
+            "footer"
+          ],
+          "description": "Collapse toggle in the top bar, or an icon + label row at the sidebar's foot."
+        },
+        "toggleLabel": {
+          "type": "string",
+          "description": "The footer toggle's label (empty = the library's \"Hide Menu\")."
+        },
+        "railWidth": {
+          "type": "string",
+          "description": "CSS width of the icon rail (empty = 3.5rem plain / 4.5rem pill)."
+        },
+        "itemBackground": {
+          "type": "string",
+          "description": "Idle pill colour (empty = `--accent-2`)."
+        },
+        "activeBackground": {
+          "type": "string",
+          "description": "Active pill colour, used while the gradient is off (empty = the accent gradient)."
+        },
+        "activeGradient": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "from": {
+              "type": "string"
+            },
+            "to": {
+              "type": "string"
+            },
+            "angle": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "enabled",
+            "from",
+            "to",
+            "angle"
+          ],
+          "additionalProperties": false,
+          "description": "Active pill gradient (wins while enabled, both stops needed)."
+        },
+        "indicator": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "The edge bar beside the active item; `null` = the variant's default (pill on, plain off)."
+        },
+        "indicatorColor": {
+          "type": "string",
+          "description": "Indicator colour (empty = `--accent-11`)."
+        }
+      },
+      "required": [
+        "variant",
+        "toggle",
+        "toggleLabel",
+        "railWidth",
+        "itemBackground",
+        "activeBackground",
+        "activeGradient",
+        "indicator",
+        "indicatorColor"
+      ],
+      "additionalProperties": false,
+      "description": "The exported app's sidebar look (the library `SidebarConfig`, see the grilled design `sidebar-pill-variant`); empty strings mean unset."
     },
     "StudioNavigate": {
       "type": "object",
@@ -3505,6 +4322,88 @@
       ],
       "additionalProperties": false,
       "description": "A config-driven page change (see the grilled page-router design): the target page by stable id (resolved to its `key` at export — the engine `NavigateTarget.page`), one source per `:param` of the target's route, and whether to replace the history entry. Authored on a button (played by the `Navigate` action) or on a data table's row click."
+    },
+    "StudioPageTransition": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "none",
+            "fade",
+            "fade-up",
+            "slide",
+            "scale"
+          ]
+        },
+        "duration": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": ""
+            }
+          ]
+        },
+        "easing": {
+          "type": "string",
+          "enum": [
+            "ease-out",
+            "ease-in-out",
+            "linear"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "duration",
+        "easing"
+      ],
+      "additionalProperties": false,
+      "description": "The studio side of the engine `PageTransition`."
+    },
+    "StudioThemeConfig": {
+      "type": "object",
+      "properties": {
+        "appearance": {
+          "$ref": "#/definitions/ThemeAppearance"
+        },
+        "accentColor": {
+          "$ref": "#/definitions/AccentColor"
+        },
+        "radius": {
+          "$ref": "#/definitions/ThemeRadius"
+        },
+        "panelBackground": {
+          "$ref": "#/definitions/ThemePanelBackground"
+        },
+        "scaling": {
+          "$ref": "#/definitions/ThemeScaling",
+          "description": "Radix `scaling`; absent = 100%. Exported in theme.ts."
+        },
+        "buttonColor": {
+          "type": "string",
+          "description": "`ThemeComponents.button.color`; `''` = no button override."
+        },
+        "dataTable": {
+          "$ref": "#/definitions/DataTableThemeConfig"
+        },
+        "design": {
+          "$ref": "#/definitions/DesignTheme",
+          "description": "Design-only surfaces + font; absent on configs saved before it existed."
+        }
+      },
+      "required": [
+        "appearance",
+        "accentColor",
+        "radius",
+        "panelBackground",
+        "buttonColor",
+        "dataTable"
+      ],
+      "additionalProperties": false
     },
     "SwitchConfig": {
       "type": "object",
@@ -3948,6 +4847,40 @@
       ],
       "additionalProperties": false,
       "description": "Editable config for a textarea component. Maps onto the library's `TextareaElement` / `TextareaProps`. `dataType` is fixed to `'text'` (the base component ignores it) but kept so the exported `TextareaElement` stays contract-valid. `maxLength` is `''` when unset (mirrors `TextFieldConfig.width`)."
+    },
+    "ThemeAppearance": {
+      "type": "string",
+      "enum": [
+        "light",
+        "dark"
+      ],
+      "description": "The Theme page's editable state — the app-wide ThemeProvider config a consumer keeps as `config/theme.ts` (see the grilled design). Color roles use `''` for \"unset\": unset dataTable roles follow the accent (dark-safe), an unset buttonColor omits the `button` override entirely, and unset keys are dropped from the export so the snippet stays minimal."
+    },
+    "ThemePanelBackground": {
+      "type": "string",
+      "enum": [
+        "solid",
+        "translucent"
+      ]
+    },
+    "ThemeRadius": {
+      "type": "string",
+      "enum": [
+        "none",
+        "small",
+        "medium",
+        "large",
+        "full"
+      ]
+    },
+    "ThemeScaling": {
+      "type": "string",
+      "enum": [
+        "90%",
+        "100%",
+        "110%"
+      ],
+      "description": "Radix `scaling` — the mockup's density: Compact / Cozy / Comfortable."
     },
     "TypographyConfig": {
       "type": "object",

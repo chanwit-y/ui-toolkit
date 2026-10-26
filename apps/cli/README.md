@@ -11,7 +11,7 @@ npm run dev                       # the app, rendering gummy/projects/my-app/
 npm run studio                    # the studio, updating that folder on every save
 ```
 
-`init` writes the starter: a Vite + React app whose `src/App.tsx` mounts
+`init` writes the starter (with a `.mcp.json` registering `gummy mcp`): a Vite + React app whose `src/App.tsx` mounts
 `<GummyApp>` over `gummy/projects/<key>/` (`src/project.ts` picks the project and
 wires its lazy page loader),
 `src/actions.ts` / `src/components.tsx` for the code only the app can supply, and a
@@ -53,14 +53,18 @@ would. Register it with your client, e.g. a `.mcp.json` in the app:
 ```
 
 Tools: reads (`get_workspace_summary`, `get_project`, `get_page`, `get_item`,
-`list_item_types`, `describe_item_type`, `get_library`), structure (projects,
-pages, `add_item` / `update_item` / `move_item` / `remove_item`, tabs, canvas
-grids), the library (`upsert_model`, `upsert_endpoint`, attach / detach,
-deletes) and `validate_project` / `export_project`; `batch` runs several
-calls as one all-or-nothing save and every write takes `dryRun`. Config edits
-are deep-merge patches checked against JSON Schemas generated from the
-studio's types; references may be written by name. Guides are resources
-(`gummy://guide/start`, one per component type, recipes).
+`list_item_types`, `describe_item_type`, `get_library`, `get_activity`),
+structure (projects, pages, `add_item` / `update_item` / `move_item` /
+`remove_item`, tabs, canvas grids), project settings (`update_menu`,
+`update_shell`, `update_theme`, `set_env`, `upsert_load`, custom action /
+component declarations, `set_project_auth`), the library (`upsert_model`,
+`upsert_endpoint`, attach / detach, sign-in entries, templates, deletes),
+`test_endpoint` (a real request through the engine's client, checked against
+the response model) and `validate_project` / `export_project`; `batch` runs
+several calls as one all-or-nothing save and every write takes `dryRun`.
+Config edits are deep-merge patches checked against JSON Schemas generated
+from the studio's types; references may be written by name. Guides are
+resources (`gummy://guide/start`, one per component type, concepts, recipes).
 
 Run it beside `gummy studio`: a studio tab with no unsaved edits reloads
 by itself when the MCP writes; a tab with unsaved edits pauses saving and

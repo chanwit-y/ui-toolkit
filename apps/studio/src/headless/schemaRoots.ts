@@ -1,7 +1,8 @@
 /**
  * The types `scripts/gen-schemas.ts` turns into JSON Schema for the MCP: every
- * item config (the registry in `itemTypes.ts` names one per component type) plus
- * the shapes the tools take besides a config. A new config type is added here
+ * item config (the registry in `itemTypes.ts` names one per component type),
+ * the project settings (shell, menu, theme, loads, sign-in, custom component
+ * props) and the other shapes the tools take. A new config type is added here
  * and in the registry; the drift test fails until both agree.
  */
 export const SCHEMA_ROOTS: { file: string; types: string[] }[] = [
@@ -49,5 +50,10 @@ export const SCHEMA_ROOTS: { file: string; types: string[] }[] = [
     ],
   },
   { file: 'src/components/Api/types.ts', types: ['EndpointDef'] },
+  { file: 'src/components/Workspace/types.ts', types: ['ShellSettings', 'MenuItemDef'] },
+  { file: 'src/components/Theme/types.ts', types: ['StudioThemeConfig'] },
+  { file: 'src/components/Workspace/auth.ts', types: ['AuthDef'] },
+  { file: 'src/components/Workspace/pageLoads.ts', types: ['PageLoadDef'] },
+  { file: 'src/components/Workspace/customComponents.ts', types: ['CustomPropDef'] },
   { file: 'src/components/Model/types.ts', types: ['ModelField'] },
 ]
