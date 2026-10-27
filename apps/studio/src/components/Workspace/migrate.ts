@@ -58,6 +58,7 @@ import {
   COUNTRY_PAGED_RES_MODEL_ID,
   COUNTRY_DETAIL_RES_MODEL_ID,
   FORMAT_DEMO_FIELDS,
+  dataGridSeedEndpoints,
   DATA_TABLE_PAGE_ID,
   HTML_COLUMNS_PAGE_ID,
   COUNTRY_PAGE_BODY_MODEL_ID,
@@ -107,6 +108,7 @@ import {
   cellTooltipDemoPage,
   tableLayoutDemoPage,
   formatsDemoPage,
+  dataGridDemoPage,
   cardDemoPage,
   htmlContentDemoPage,
   drawerDemoPage,
@@ -1008,9 +1010,26 @@ function migrateV55(data: { projects: ProjectDef[]; library: LibraryData }): {
       rows.children.push({ id: `seed-field-country-${name}`, name, kind, children: [], arrayOf: 'string' })
     }
   }
-  return {
+  return migrateV56({
     projects: data.projects.map((p) => (p.id === 'seed-project-country' ? appendDemoPages(p, [formatsDemoPage()]) : p)),
     library: data.library,
+  })
+}
+
+/**
+ * v56 → v57: the data table's AG Grid-style features (see the grilled design
+ * `datatable-ag-grid-features`). Their config keys are optional (absent = the
+ * engine default), so no table changes; the library gains the
+ * `countriesLarge` endpoint and the seeded project the **Data grid** page.
+ */
+function migrateV56(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  const seeded = seedLibraryAdditions(data.projects, data.library, [], dataGridSeedEndpoints())
+  return {
+    projects: seeded.projects.map((p) => (p.id === 'seed-project-country' ? appendDemoPages(p, [dataGridDemoPage()]) : p)),
+    library: seeded.library,
   }
 }
 
@@ -1737,7 +1756,7 @@ export function withSeedLibrary(library: LibraryData): LibraryData {
 }
 
 /** The workspace version this build writes (and the newest it reads). */
-export const WORKSPACE_VERSION = 56
+export const WORKSPACE_VERSION = 57
 
 /** What a persisted payload migrates to: the stored fields at the current shape. */
 export type MigratedWorkspace = Pick<WorkspaceData, 'appearance' | 'user' | 'activity' | 'projects' | 'library'>
@@ -1942,7 +1961,11 @@ export function migrateWorkspace(persisted: unknown): MigratedWorkspace | null {
     const normalized = { ...library, auth: (library.auth ?? []).map((a) => normalizeAuthDef(a)) }
     return { appearance, user, activity, ...migrateV55({ projects: data.projects, library: normalized }) }
   }
-  if (data.version !== 56) return null
+  if (data.version === 56) {
+    const normalized = { ...library, auth: (library.auth ?? []).map((a) => normalizeAuthDef(a)) }
+    return { appearance, user, activity, ...migrateV56({ projects: data.projects, library: normalized }) }
+  }
+  if (data.version !== 57) return null
   // Same version, possibly older entry shapes (fields added without a bump): fill the defaults.
   return { appearance, user, activity, projects: data.projects, library: { ...library, auth: (library.auth ?? []).map((a) => normalizeAuthDef(a)) } }
 }

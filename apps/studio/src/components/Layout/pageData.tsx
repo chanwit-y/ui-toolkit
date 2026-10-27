@@ -5,6 +5,9 @@ import type { ModelField } from '../Model/types'
 import { loadShape, type LoadShape, type PageLoadDef } from '../Workspace/pageLoads'
 import { useActivePage, useActiveProject, useWorkspaceStore } from '../Workspace/workspaceStore'
 import { authProfileLoad, type AuthDef } from '../Workspace/auth'
+import { useGridStore } from './gridStore'
+import { selectionLoads } from '../Workspace/selectionLoads'
+
 
 const NO_LOADS: PageLoadDef[] = []
 
@@ -27,10 +30,13 @@ export function usePageLoads(): PageLoadDef[] {
   const own = useOwnPageLoads()
   const global = useGlobalLoads()
   const auth = useAuthProfileLoad()
+  const rootItems = useGridStore((s) => s.items)
+  const selections = useMemo(() => selectionLoads(rootItems), [rootItems])
   return useMemo(() => {
     const list = global.length ? [...own, ...global] : own
-    return auth ? [...list, auth] : list
-  }, [own, global, auth])
+    const withSel = selections.length ? [...list, ...selections] : list
+    return auth ? [...withSel, auth] : withSel
+  }, [own, global, auth, selections])
 }
 
 /** The shared auth entry the active project signs in with (null = none / deleted). */

@@ -30,6 +30,8 @@ import {
   cellTooltipDemoSeedItems,
   FORMATS_PAGE_ID,
   formatsDemoSeedItems,
+  DATA_GRID_PAGE_ID,
+  dataGridDemoSeedItems,
   TABLE_LAYOUT_PAGE_ID,
   tableLayoutDemoSeedItems,
   CARD_PAGE_ID,
@@ -520,6 +522,26 @@ export function formatsDemoPage(): PageDef {
   }
 }
 
+/**
+ * The "Data grid" demo page of the seeded project (the example app's
+ * `/data-grid`). Used by the fresh seed and appended to an existing seeded
+ * project by `migrateV56`.
+ */
+export function dataGridDemoPage(): PageDef {
+  return {
+    id: DATA_GRID_PAGE_ID,
+    key: 'dataGrid',
+    name: 'Data grid',
+    path: '/data-grid',
+    grid: {
+      items: dataGridDemoSeedItems(),
+      containerSettings: defaultContainerSettings,
+      fieldSeq: 0,
+    },
+    parentId: 'seed-page-countries',
+  }
+}
+
 export function cellTooltipDemoPage(): PageDef {
   return {
     id: CELL_TOOLTIP_PAGE_ID,
@@ -817,6 +839,7 @@ export const OPTION_DEMO_MENU_ICONS: Record<string, string> = {
   [CELL_TOOLTIP_PAGE_ID]: 'info',
   [TABLE_LAYOUT_PAGE_ID]: 'table',
   [FORMATS_PAGE_ID]: 'hash',
+  [DATA_GRID_PAGE_ID]: 'table',
   [CARD_PAGE_ID]: 'creditCard',
   [HTML_CONTENT_PAGE_ID]: 'code',
   [DRAWER_PAGE_ID]: 'panelRight',
@@ -872,6 +895,7 @@ export function countryProjectSnapshot(library: LibraryData): ProjectSnapshot {
       cellTooltipDemoPage(),
       tableLayoutDemoPage(),
       formatsDemoPage(),
+      dataGridDemoPage(),
       cardDemoPage(),
       htmlContentDemoPage(),
       drawerDemoPage(),

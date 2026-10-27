@@ -892,6 +892,10 @@
   text-align: start;
 }
 
+.datatable-group-toggle {
+  white-space: nowrap;
+}
+
 .datatable-group-toggle svg {
   flex: none;
   color: var(--accent-11);
@@ -900,6 +904,13 @@
 
 .datatable-group-toggle[aria-expanded="true"] svg {
   transform: rotate(90deg);
+}
+
+.datatable-group-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .datatable-group-count {

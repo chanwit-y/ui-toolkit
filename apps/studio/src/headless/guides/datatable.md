@@ -41,3 +41,27 @@ child canvas **1** the table's own filter form (Apply / Clear), and
 `actionSize` (`"" | "1" | "2" | "3"` — 24 / 32 / 40px, `""` = default 32px)
 sizes the row's Edit / Delete buttons and their glyphs; the ACTION column
 widens to fit.
+
+**AG Grid-style features** (every key optional; absent = the engine default):
+- Columns menu — `canChooseColumns` (default on), `columnsButton`,
+  `columnPersist: local | session | none`; per column `hide` (starts hidden)
+  and `lockVisible`. The layout (order, visibility, widths, pins, grouping) is
+  remembered in the browser.
+- Row selection — `selection: { enabled, mode: multi | single, idKey,
+  stateKey, headerCheckbox: page | all | none, keepAcrossPages }`. The picks
+  are page data `<stateKey>` (default `<name>Selected`) = `{ ids, rows,
+  count }`: bind a text / HTML / button request to `{ source: "state", key:
+  "<name>Selected", path: "ids" }`. Reload data on the table clears them.
+- Style rules — `rowStyles` and per column `cellStyles`: `[{ id, field:
+  value | row, path, op: eq | neq | gt | gte | lt | lte | set | unset, value,
+  tone (a Radix colour), fill, bold, italic, strike }]`; the first matching
+  rule's tone wins.
+- Grouping — `grouping: { enabled, by: [accessors], expanded: "0".."3" |
+  "all", userCanGroup, showCount, totalRow: none | top | bottom }` and per
+  column `aggregate: sum | avg | min | max | count`. Client-side only (off
+  with server pagination / sort).
+- Export — `canExport`, `exportButton`, `exportOptions: { fileName
+  ("orders-{{date}}"), columns: visible | all, values: formatted | raw, rows:
+  all | page }`; a button's `ExportTable` action does the same from outside.
+- `paging: pages | scroll` — scroll drops the pager (client-side only); more
+  than 60 rendered rows are virtualised either way.

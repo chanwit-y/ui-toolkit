@@ -14,6 +14,8 @@ import { NavigateEditor, SNACKBAR_VARIANT_OPTIONS, WiringHint } from './ButtonCo
 import { ColumnHtmlField } from './ColumnHtmlField'
 import { ColumnSizeFields } from './ColumnSizeFields'
 import { ColumnFormatFields } from './ColumnFormatFields'
+import { DataTableGridPanel } from './DataTableGridPanel'
+import { StyleRulesField } from './StyleRulesField'
 import { RequestMappingSection, seedRequestParams, ServerFiltersSection, ServerSortSection } from './DataTableRequestPanel'
 import { buildDataTablePreviewRows } from './dataTablePreview'
 import { paginationPlacement, rowModelFields, segmentFields, type RowModel } from './rowFields'
@@ -207,6 +209,15 @@ function PaginationSection({
     </>
   )
 }
+
+const AGGREGATE_OPTIONS = [
+  { value: '', label: 'none' },
+  { value: 'sum', label: 'sum' },
+  { value: 'avg', label: 'average' },
+  { value: 'min', label: 'min' },
+  { value: 'max', label: 'max' },
+  { value: 'count', label: 'count' },
+]
 
 const ALIGN_OPTIONS = [
   { value: 'start', label: 'start' },
@@ -413,6 +424,30 @@ function ColumnsEditor({
                       className="font-mono"
                     />
                   </Field>
+                  <Toggle
+                    label="Hide (starts hidden; the Columns menu shows it)"
+                    checked={!!column.hide}
+                    onChange={(v) => patch(index, { hide: v })}
+                  />
+                  <Toggle
+                    label="Lock visible (the Columns menu can’t hide it)"
+                    checked={!!column.lockVisible}
+                    onChange={(v) => patch(index, { lockVisible: v })}
+                  />
+                  <Field label="Aggregate (group and total rows)">
+                    <Select
+                      options={AGGREGATE_OPTIONS}
+                      value={column.aggregate ?? ''}
+                      onChange={(v) => patch(index, { aggregate: v as DataTableColumnConfig['aggregate'] })}
+                    />
+                  </Field>
+                  <StyleRulesField
+                    label="Cell styles"
+                    scope="cell"
+                    rules={column.cellStyles}
+                    onChange={(cellStyles) => patch(index, { cellStyles })}
+                    fieldSuggestions={columns.map((c) => c.accessor).filter(Boolean)}
+                  />
                   <ColumnSizeFields column={column} onChange={(sizing) => patch(index, sizing)} />
                   <Field label="Cell HTML (template)">
                     <ColumnHtmlField
@@ -819,6 +854,7 @@ export function DataTableConfigPanel({ itemId, config }: DataTableConfigPanelPro
           above — the API has to take the term.
         </WiringHint>
       )}
+      <DataTableGridPanel config={config} set={set} serverPaged={!rowsFromState && (config.pagination.enabled || config.sort.enabled)} />
     </div>
   )
 }

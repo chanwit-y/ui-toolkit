@@ -1,0 +1,150 @@
+{
+  "containers": [
+    {
+      "id": "page-columns",
+      "name": "page-columns",
+      "isArray": false,
+      "bins": [
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "Columns",
+            "variant": "h3",
+            "weight": "bold"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "Open Columns to show or hide a column (Email and Phone start hidden, the name is locked), drag a grip to reorder, or Reset. Drag a header edge to resize, pin with the header pin. The layout — order, visibility, widths, pins — is remembered in this browser.",
+            "variant": "body2",
+            "color": "gray"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "datatable",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "customers",
+            "title": "Customers",
+            "columns": [
+              {
+                "accessor": "avatar",
+                "header": "",
+                "enableSorting": false,
+                "enableColumnFilter": false,
+                "align": "start",
+                "pin": "left",
+                "html": "<img src=\"{{avatar}}\" alt=\"\" style=\"width:28px;height:28px;border-radius:9999px;display:block\">",
+                "size": 56,
+                "enableResizing": false
+              },
+              {
+                "accessor": "name",
+                "header": "Name",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "pin": "left",
+                "lockVisible": true,
+                "size": 220
+              },
+              {
+                "accessor": "email",
+                "header": "Email",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "hide": true,
+                "size": 260
+              },
+              {
+                "accessor": "phone",
+                "header": "Phone",
+                "enableSorting": false,
+                "enableColumnFilter": false,
+                "align": "start",
+                "hide": true,
+                "size": 150
+              },
+              {
+                "accessor": "city",
+                "header": "City",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "size": 150
+              },
+              {
+                "accessor": "joinedAt",
+                "header": "Joined",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "format": {
+                  "type": "date"
+                },
+                "size": 140
+              },
+              {
+                "accessor": "orderCount",
+                "header": "Orders",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "format": {
+                  "type": "number"
+                },
+                "size": 100
+              },
+              {
+                "accessor": "totalSpent",
+                "header": "Spent",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "format": {
+                  "type": "currency",
+                  "currency": "THB"
+                },
+                "size": 160
+              }
+            ],
+            "api": {
+              "name": "listCustomers",
+              "paths": [
+                "data"
+              ]
+            },
+            "cellLines": 1,
+            "canEdit": false,
+            "canDelete": false
+          }
+        }
+      ],
+      "gap": "16px",
+      "justifyItems": "stretch",
+      "alignItems": "stretch",
+      "justifyContent": "start",
+      "alignContent": "start",
+      "gridAutoFlow": "row"
+    }
+  ]
+}

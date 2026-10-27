@@ -6,6 +6,7 @@ import { assertGummyProject, type GummyPageBody, type GummyProject } from '@gumm
 import { bookshopFolders, bookshopWorkspace, bookshopWorkspaceFile, BOOKSHOP_KEY } from './project'
 import { PORTAL_KEY } from '../portal/project'
 import { GLASS_KEY } from '../glass/project'
+import { GRID_KEY } from '../grid/project'
 
 /**
  * The Book shop demo's workspace (see the grilled design `bookshop-demo`):
@@ -69,7 +70,7 @@ describe('Book shop workspace', () => {
 
   test('exports the Book shop as a valid, fully wired project folder', () => {
     const folders = bookshopFolders()
-    expect(Object.keys(folders)).toEqual([BOOKSHOP_KEY, PORTAL_KEY, GLASS_KEY])
+    expect(Object.keys(folders)).toEqual([BOOKSHOP_KEY, PORTAL_KEY, GLASS_KEY, GRID_KEY])
     const { project, pages } = folders[BOOKSHOP_KEY]
     const refs = checkProject(project, pages)
     expect(Object.keys(project.pages)).toHaveLength(11)
@@ -124,6 +125,8 @@ describe('Book shop workspace', () => {
     checkProject(portal.project, portal.bodies, 'Gummy Portal')
     const glass = tracked(GLASS_KEY)
     checkProject(glass.project, glass.bodies, 'Glass showcase')
+    const grid = tracked(GRID_KEY)
+    checkProject(grid.project, grid.bodies, 'Data grid showcase')
   })
 
   test("the studio opens the generated workspace.json without changing it", async () => {

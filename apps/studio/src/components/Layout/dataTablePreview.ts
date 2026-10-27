@@ -53,6 +53,8 @@ export function previewValueFor(format: ColumnFormatConfig | undefined, i: numbe
 }
 export function buildDataTablePreviewRows(
   columns: DataTableColumnConfig[],
+  /** Accessors the table groups by: their values repeat in pairs, so the preview shows real groups. */
+  groupBy: string[] = [],
 ): Record<string, unknown>[] {
   return Array.from({ length: DATATABLE_PREVIEW_ROW_COUNT }, (_, i) => {
     const row: Record<string, unknown> = {}
@@ -65,7 +67,7 @@ export function buildDataTablePreviewRows(
         row[column.accessor] = i + 1
       } else if (PROSE_ISH.test(column.accessor)) {
         row[column.accessor] = `${column.header || column.accessor} ${i + 1} — ${PROSE}`
-      } else if (column.mergeRows) {
+      } else if (column.mergeRows || groupBy.includes(column.accessor)) {
         // Repeat down the rows in pairs so a `mergeRows` column shows its spans.
         row[column.accessor] = `${column.header || column.accessor} ${Math.floor(i / 2) + 1}`
       } else if (column.mergeColumns) {

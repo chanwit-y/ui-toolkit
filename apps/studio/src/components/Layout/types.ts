@@ -1,4 +1,4 @@
-import type { CellFormat, DataType } from '@gummy-ui/ui'
+import type { CellFormat, DataTableAggregate, DataTableStyleRule, DataType } from '@gummy-ui/ui'
 import type { Breakpoint } from './breakpoints'
 import type { ComponentType } from './componentCatalog'
 
@@ -704,6 +704,116 @@ export function columnFormatToEngine(f: ColumnFormatConfig | undefined): CellFor
   }
 }
 
+/**
+ * A conditional style rule as the studio edits it — the engine's
+ * `DataTableStyleRule` (see the grilled design `datatable-ag-grid-features`).
+ * `field: 'value'` reads the cell's own value, `'row'` a field of the row
+ * (`path`); a row rule always reads the row. `value` is typed text, parsed at
+ * export (a number, `true` / `false`, else a string). `tone` is a Radix
+ * colour name (`''` = none).
+ */
+export type StyleRuleConfig = {
+  id: string
+  field: 'value' | 'row'
+  path: string
+  op: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'set' | 'unset'
+  value: string
+  tone: string
+  fill: boolean
+  bold: boolean
+  italic: boolean
+  strike: boolean
+}
+
+export function createStyleRule(field: StyleRuleConfig['field'] = 'value'): StyleRuleConfig {
+  return { id: crypto.randomUUID(), field, path: '', op: 'lt', value: '0', tone: 'red', fill: false, bold: false, italic: false, strike: false }
+}
+
+/** Typed rule text → the comparison's value: a number, a boolean, else the text. */
+export function ruleValue(text: string): string | number | boolean {
+  const t = text.trim()
+  if (t === 'true') return true
+  if (t === 'false') return false
+  if (t !== '' && Number.isFinite(Number(t))) return Number(t)
+  return text
+}
+
+/** The engine rules (`cellStyles` / `rowStyles`); `undefined` when there are none. */
+export function styleRulesToEngine(rules: StyleRuleConfig[] | undefined): DataTableStyleRule[] | undefined {
+  const out = (rules ?? [])
+    .filter((r) => r.tone || r.bold || r.italic || r.strike)
+    .map((r): DataTableStyleRule => {
+      const left = r.field === 'row' ? { key: 'row', path: r.path.trim() } : { key: 'value' }
+      const presence = r.op === 'set' || r.op === 'unset'
+      return {
+        when: {
+          left,
+          operator: presence ? (r.op === 'set' ? 'neq' : 'eq') : (r.op as Exclude<StyleRuleConfig['op'], 'set' | 'unset'>),
+          right: presence ? {} : { val: ruleValue(r.value) },
+        },
+        ...(r.tone ? { tone: r.tone as DataTableStyleRule['tone'] } : {}),
+        ...(r.tone && r.fill ? { fill: true } : {}),
+        ...(r.bold ? { weight: 'bold' as const } : {}),
+        ...(r.italic ? { italic: true } : {}),
+        ...(r.strike ? { strike: true } : {}),
+      }
+    })
+  return out.length ? out : undefined
+}
+
+/** Row selection (engine `DataTableElement.selection`), exported while `enabled`. */
+export type DataTableSelectionConfig = {
+  enabled: boolean
+  mode: 'single' | 'multi'
+  /** The row's id field; `''` = `_id`, else `id`. */
+  idKey: string
+  /** The state slice; `''` = `<name>Selected`. */
+  stateKey: string
+  headerCheckbox: 'page' | 'all' | 'none'
+  keepAcrossPages: boolean
+}
+
+export function createDefaultSelection(): DataTableSelectionConfig {
+  return { enabled: false, mode: 'multi', idKey: '', stateKey: '', headerCheckbox: 'page', keepAcrossPages: true }
+}
+
+/** The slice a table's selection is published as. */
+export function selectionStateKey(tableName: string, selection: DataTableSelectionConfig | undefined): string {
+  return selection?.stateKey.trim() || `${tableName}Selected`
+}
+
+/** Client-side grouping (engine `DataTableElement.grouping`), exported while `enabled`. `by` holds accessors. */
+export type DataTableGroupingConfig = {
+  enabled: boolean
+  by: string[]
+  expanded: '0' | '1' | '2' | '3' | 'all'
+  userCanGroup: boolean
+  showCount: boolean
+  totalRow: 'none' | 'top' | 'bottom'
+}
+
+export function createDefaultGrouping(): DataTableGroupingConfig {
+  return { enabled: false, by: [], expanded: '0', userCanGroup: true, showCount: true, totalRow: 'none' }
+}
+
+/** What the Export button writes (engine `exportOptions`); every value is the engine default here. */
+export type DataTableExportConfig = {
+  fileName: string
+  columns: 'visible' | 'all'
+  values: 'formatted' | 'raw'
+  rows: 'all' | 'page'
+}
+
+export function createDefaultExportOptions(): DataTableExportConfig {
+  return { fileName: '', columns: 'visible', values: 'formatted', rows: 'all' }
+}
+
+export const DEFAULT_COLUMNS_BUTTON: ButtonConfig = { label: 'Columns', icon: 'columns', variant: 'outlined' }
+export const DEFAULT_EXPORT_BUTTON: ButtonConfig = { label: 'Export', icon: 'download', variant: 'outlined' }
+
+/** A column's group-row / total-row summary; `''` = none. */
+export type ColumnAggregate = '' | DataTableAggregate
+
 /** `{ format }` for the export when the column has one, else nothing. */
 export function columnFormatExport(f: ColumnFormatConfig | undefined): { format: CellFormat } | Record<never, never> {
   const format = columnFormatToEngine(f)
@@ -749,6 +859,14 @@ export type DataTableColumnConfig = ColumnSizingConfig & {
   mergeColumns: boolean
   /** Engine `ColumnDef.group` — adjacent columns with the same label share a group header; `''` = none. */
   group: string
+  /** Engine `ColumnDef.hide` — starts hidden (the Columns menu can show it). Optional: absent = shown. */
+  hide?: boolean
+  /** Engine `ColumnDef.lockVisible` — the Columns menu can't hide it. Optional. */
+  lockVisible?: boolean
+  /** Engine `ColumnDef.cellStyles` — conditional tones. Optional: absent = none. */
+  cellStyles?: StyleRuleConfig[]
+  /** Engine `ColumnDef.aggregate` — the group / total row summary. Optional: absent / `''` = none. */
+  aggregate?: ColumnAggregate
 }
 
 /**
@@ -845,6 +963,26 @@ export type DataTableConfig = {
   /** Engine `api.params` / `api.query` / `api.body` — one row per request key. */
   requestMapping: RequestMapRow[]
   sort: DataTableSortConfig
+  /*
+   * The AG Grid-style features (see the grilled design
+   * `datatable-ag-grid-features`). All optional: absent = the engine default,
+   * so tables saved before them need no migration.
+   */
+  /** Engine `canChooseColumns` — the Columns menu; absent = on. */
+  canChooseColumns?: boolean
+  columnsButton?: ButtonConfig
+  /** Engine `columnState.persist`; absent = `local`. */
+  columnPersist?: 'local' | 'session' | 'none'
+  selection?: DataTableSelectionConfig
+  /** Engine `rowStyles` (rules read the row). */
+  rowStyles?: StyleRuleConfig[]
+  grouping?: DataTableGroupingConfig
+  /** Engine `canExport` — the Export (CSV) button; absent = off. */
+  canExport?: boolean
+  exportButton?: ButtonConfig
+  exportOptions?: DataTableExportConfig
+  /** Engine `paging`; absent = `pages`. */
+  paging?: 'pages' | 'scroll'
 }
 
 /**
@@ -1244,6 +1382,8 @@ export type DataTableEditableColumnConfig = ColumnSizingConfig & {
   rowHeader: boolean
   /** Engine `group` — group header label; `''` = none. */
   group: string
+  /** Engine `cellStyles` — conditional tones in read mode. Optional: absent = none. */
+  cellStyles?: StyleRuleConfig[]
 }
 
 /**
@@ -1518,6 +1658,8 @@ export type BuiltinButtonActionKey =
   | 'Navigate'
   /** Refetch `reloadTableItemId`: a table / form list / repeater, or a page load. */
   | 'ReloadDataTable'
+  /** Download `exportTableItemId` (a data table) as CSV. */
+  | 'ExportTable'
   /** Azure SSO (the project's auth entry): start the sign-in / sign out. */
   | 'SignIn'
   | 'SignOut'
@@ -1584,6 +1726,8 @@ export type ButtonItemConfig = ButtonConfig & {
   /** Grid-item id of the (editable) data table to reload after a submit
    * (`''` = none); exports as the table's current `name`. */
   reloadTableItemId: string
+  /** Grid-item id of the data table the `ExportTable` action downloads; exports as its `name`. Optional. */
+  exportTableItemId?: string
   /** API page endpoint the submit actions call, by `EndpointDef.id`
    * (`null` = unwired — the export omits `api`). */
   endpointId: string | null
@@ -2264,6 +2408,8 @@ export type ButtonRefTargets = {
   /** (Editable) data tables and form lists: grid-item id → the authored
    * binding `name` (the `fnCtxs` key they register their refetch under). */
   tables: { itemId: string; name: string }[]
+  /** Data tables only (what `ExportTable` can download). Optional for callers that build targets by hand. */
+  dataTables?: { itemId: string; name: string }[]
 }
 
 /**
@@ -2275,6 +2421,7 @@ export type ButtonRefTargets = {
 export function collectButtonTargets(items: GridItemData[]): ButtonRefTargets {
   const modals: ButtonRefTargets['modals'] = []
   const tables: ButtonRefTargets['tables'] = []
+  const dataTables: NonNullable<ButtonRefTargets['dataTables']> = []
   const walk = (list: GridItemData[]) => {
     for (const item of list) {
       if ((item.type === 'modal' || item.type === 'drawer') && item.config) {
@@ -2288,12 +2435,13 @@ export function collectButtonTargets(items: GridItemData[]): ButtonRefTargets {
         item.config
       ) {
         tables.push({ itemId: item.id, name: (item.config as { name: string }).name })
+        if (item.type === 'datatable') dataTables.push({ itemId: item.id, name: (item.config as { name: string }).name })
       }
       item.childCanvases?.forEach((canvas) => walk(canvas.items))
     }
   }
   walk(items)
-  return { modals, tables }
+  return { modals, tables, dataTables }
 }
 
 function responsive<T>(value: T): Responsive<T> {

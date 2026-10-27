@@ -72,7 +72,7 @@ import type {
   UploadImageConfig,
 } from './types'
 import type { ContainerConfig } from './types'
-import { columnFormatExport } from './types'
+import { columnFormatExport, DEFAULT_COLUMNS_BUTTON, DEFAULT_EXPORT_BUTTON, selectionStateKey, styleRulesToEngine } from './types'
 import { isBlockedInRepeater } from './repeaterRules'
 import type { DataCondition } from './types'
 import {
@@ -767,8 +767,13 @@ function dataTableElement(
       ...(col.mergeRows ? { mergeRows: true } : {}),
       ...(col.mergeColumns ? { mergeColumns: true } : {}),
       ...(col.group.trim() ? { group: col.group.trim() } : {}),
+      ...(col.hide ? { hide: true } : {}),
+      ...(col.lockVisible ? { lockVisible: true } : {}),
+      ...(styleRulesToEngine(col.cellStyles) ? { cellStyles: styleRulesToEngine(col.cellStyles) } : {}),
+      ...(col.aggregate ? { aggregate: col.aggregate } : {}),
       ...columnSizing(col),
     })),
+    ...dataTableGridFeatures(c),
     ...(rows ? { items: rows } : {}),
     ...(apiName
       ? {
@@ -893,6 +898,7 @@ function editableTableColumn(col: DataTableEditableColumnConfig): Record<string,
     enableColumnFilter: col.enableColumnFilter,
     align: col.align,
     ...columnFormatExport(col.format),
+    ...(styleRulesToEngine(col.cellStyles) ? { cellStyles: styleRulesToEngine(col.cellStyles) } : {}),
     ...(col.rowHeader ? { rowHeader: true } : {}),
     ...(col.group.trim() ? { group: col.group.trim() } : {}),
     ...columnSizing(col),
@@ -1546,7 +1552,9 @@ function buttonItemElement(
   const usesCloseModal = effective.includes('CloseModal')
   const usesNavigate = effective.includes('Navigate')
   const usesReload = effective.includes('ReloadDataTable')
+  const usesExport = effective.includes('ExportTable')
   const navigate = usesNavigate && c.navigate ? navigateTarget(c.navigate, refs) : undefined
+  const exportTable = usesExport && c.exportTableItemId ? refs.tableNameByItem.get(c.exportTableItemId) : undefined
 
   const apiName = usesSubmit ? resolveEndpoint(c.endpointId) : undefined
   const modalId = usesCloseModal && c.modalItemId
@@ -1577,6 +1585,7 @@ function buttonItemElement(
       : {}),
     ...(apiName ? { api: { name: apiName } } : {}),
     ...(reload ? { reloadDataTable: reload } : {}),
+    ...(exportTable ? { exportTable } : {}),
     ...(modalId ? { modalId } : {}),
     ...(usesSubmit && c.snackbarSuccessEnabled && c.snackbarSuccessMessage
       ? {
@@ -1588,6 +1597,69 @@ function buttonItemElement(
       : {}),
     ...(usesSubmit && c.snackbarErrorException ? { snackbarError: '$exception' } : {}),
     ...(navigate ? { navigate } : {}),
+  }
+}
+
+/** A toolbar button (Columns / Export) — only the keys off its default; `null` = all default. */
+function toolbarButton(b: ButtonConfig | undefined, fallback: ButtonConfig): Record<string, string> | null {
+  if (!b) return null
+  const out: Record<string, string> = {}
+  if (b.label !== fallback.label) out.label = b.label
+  if (b.icon && b.icon !== fallback.icon) out.icon = b.icon
+  if (b.variant !== fallback.variant) out.variant = b.variant
+  return Object.keys(out).length ? out : null
+}
+
+/**
+ * The AG Grid-style keys of a data table (see the grilled design
+ * `datatable-ag-grid-features`): only what differs from the engine defaults.
+ */
+export function dataTableGridFeatures(c: DataTableConfig): Record<string, unknown> {
+  const columnsButton = c.canChooseColumns !== false ? toolbarButton(c.columnsButton, DEFAULT_COLUMNS_BUTTON) : null
+  const exportButton = c.canExport ? toolbarButton(c.exportButton, DEFAULT_EXPORT_BUTTON) : null
+  const sel = c.selection
+  const grp = c.grouping
+  const exp = c.exportOptions
+  const exportOptions = exp
+    ? {
+        ...(exp.fileName.trim() ? { fileName: exp.fileName.trim() } : {}),
+        ...(exp.columns !== 'visible' ? { columns: exp.columns } : {}),
+        ...(exp.values !== 'formatted' ? { values: exp.values } : {}),
+        ...(exp.rows !== 'all' ? { rows: exp.rows } : {}),
+      }
+    : {}
+  const rowStyles = styleRulesToEngine(c.rowStyles)
+  return {
+    ...(c.canChooseColumns === false ? { canChooseColumns: false } : {}),
+    ...(columnsButton ? { columnsButton } : {}),
+    ...(c.columnPersist && c.columnPersist !== 'local' ? { columnState: { persist: c.columnPersist } } : {}),
+    ...(sel?.enabled
+      ? {
+          selection: {
+            mode: sel.mode,
+            ...(sel.idKey.trim() ? { idKey: sel.idKey.trim() } : {}),
+            ...(selectionStateKey(c.name, sel) !== `${c.name}Selected` ? { stateKey: selectionStateKey(c.name, sel) } : {}),
+            ...(sel.mode === 'multi' && sel.headerCheckbox !== 'page' ? { headerCheckbox: sel.headerCheckbox } : {}),
+            ...(sel.keepAcrossPages ? {} : { keepAcrossPages: false }),
+          },
+        }
+      : {}),
+    ...(rowStyles ? { rowStyles } : {}),
+    ...(grp?.enabled
+      ? {
+          grouping: {
+            by: grp.by,
+            ...(grp.expanded !== '0' ? { expanded: grp.expanded === 'all' ? 'all' : Number(grp.expanded) } : {}),
+            ...(grp.userCanGroup ? {} : { userCanGroup: false }),
+            ...(grp.showCount ? {} : { showCount: false }),
+            ...(grp.totalRow !== 'none' ? { totalRow: grp.totalRow } : {}),
+          },
+        }
+      : {}),
+    ...(c.canExport
+      ? { canExport: true, ...(exportButton ? { exportButton } : {}), ...(Object.keys(exportOptions).length ? { exportOptions } : {}) }
+      : {}),
+    ...(c.paging === 'scroll' ? { paging: 'scroll' } : {}),
   }
 }
 

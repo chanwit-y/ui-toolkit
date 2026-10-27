@@ -85,6 +85,8 @@ export const IconData = {
 	layoutDashboard: i.LayoutDashboard,
 	tag: i.Tag,
 	hash: i.Hash,
+	checkSquare: i.SquareCheck,
+	layers: i.Layers,
 	at: i.AtSign,
 	paperclip: i.Paperclip,
 	image: i.Image,

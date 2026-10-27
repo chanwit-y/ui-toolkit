@@ -801,6 +801,7 @@
         "CloseModal",
         "Navigate",
         "ReloadDataTable",
+        "ExportTable",
         "SignIn",
         "SignOut"
       ],
@@ -889,6 +890,10 @@
         "reloadTableItemId": {
           "type": "string",
           "description": "Grid-item id of the (editable) data table to reload after a submit (`''` = none); exports as the table's current `name`."
+        },
+        "exportTableItemId": {
+          "type": "string",
+          "description": "Grid-item id of the data table the `ExportTable` action downloads; exports as its `name`. Optional."
         },
         "endpointId": {
           "type": [
@@ -1017,6 +1022,10 @@
         "reloadTableItemId": {
           "type": "string",
           "description": "Grid-item id of the (editable) data table to reload after a submit (`''` = none); exports as the table's current `name`."
+        },
+        "exportTableItemId": {
+          "type": "string",
+          "description": "Grid-item id of the data table the `ExportTable` action downloads; exports as its `name`. Optional."
         },
         "endpointId": {
           "type": [
@@ -1336,6 +1345,26 @@
       "additionalProperties": false,
       "description": "A single option in a checkbox group. Maps onto the library `CheckboxProps` option shape (`value`/`label`/`disabled`) minus `helperText` — per-option sub-labels are out of studio's scope. Carried even in `single` mode so toggling to `group` doesn't start empty."
     },
+    "ColumnAggregate": {
+      "anyOf": [
+        {
+          "type": "string",
+          "const": ""
+        },
+        {
+          "type": "string",
+          "enum": [
+            "sum",
+            "avg",
+            "min",
+            "max",
+            "count"
+          ],
+          "description": "Group-row / total-row summaries of a column."
+        }
+      ],
+      "description": "A column's group-row / total-row summary; `''` = none."
+    },
     "ColumnFormatConfig": {
       "type": "object",
       "properties": {
@@ -1620,6 +1649,25 @@
           "type": "string",
           "description": "Engine `ColumnDef.group` — adjacent columns with the same label share a group header; `''` = none."
         },
+        "hide": {
+          "type": "boolean",
+          "description": "Engine `ColumnDef.hide` — starts hidden (the Columns menu can show it). Optional: absent = shown."
+        },
+        "lockVisible": {
+          "type": "boolean",
+          "description": "Engine `ColumnDef.lockVisible` — the Columns menu can't hide it. Optional."
+        },
+        "cellStyles": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/StyleRuleConfig"
+          },
+          "description": "Engine `ColumnDef.cellStyles` — conditional tones. Optional: absent = none."
+        },
+        "aggregate": {
+          "$ref": "#/definitions/ColumnAggregate",
+          "description": "Engine `ColumnDef.aggregate` — the group / total row summary. Optional: absent / `''` = none."
+        },
         "size": {
           "anyOf": [
             {
@@ -1840,6 +1888,53 @@
         },
         "sort": {
           "$ref": "#/definitions/DataTableSortConfig"
+        },
+        "canChooseColumns": {
+          "type": "boolean",
+          "description": "Engine `canChooseColumns` — the Columns menu; absent = on."
+        },
+        "columnsButton": {
+          "$ref": "#/definitions/ButtonConfig"
+        },
+        "columnPersist": {
+          "type": "string",
+          "enum": [
+            "local",
+            "session",
+            "none"
+          ],
+          "description": "Engine `columnState.persist`; absent = `local`."
+        },
+        "selection": {
+          "$ref": "#/definitions/DataTableSelectionConfig"
+        },
+        "rowStyles": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/StyleRuleConfig"
+          },
+          "description": "Engine `rowStyles` (rules read the row)."
+        },
+        "grouping": {
+          "$ref": "#/definitions/DataTableGroupingConfig"
+        },
+        "canExport": {
+          "type": "boolean",
+          "description": "Engine `canExport` — the Export (CSV) button; absent = off."
+        },
+        "exportButton": {
+          "$ref": "#/definitions/ButtonConfig"
+        },
+        "exportOptions": {
+          "$ref": "#/definitions/DataTableExportConfig"
+        },
+        "paging": {
+          "type": "string",
+          "enum": [
+            "pages",
+            "scroll"
+          ],
+          "description": "Engine `paging`; absent = `pages`."
         }
       },
       "required": [
@@ -1988,6 +2083,13 @@
           "type": "string",
           "description": "Engine `group` — group header label; `''` = none."
         },
+        "cellStyles": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/StyleRuleConfig"
+          },
+          "description": "Engine `cellStyles` — conditional tones in read mode. Optional: absent = none."
+        },
         "size": {
           "anyOf": [
             {
@@ -2130,6 +2232,91 @@
       ],
       "additionalProperties": false
     },
+    "DataTableExportConfig": {
+      "type": "object",
+      "properties": {
+        "fileName": {
+          "type": "string"
+        },
+        "columns": {
+          "type": "string",
+          "enum": [
+            "visible",
+            "all"
+          ]
+        },
+        "values": {
+          "type": "string",
+          "enum": [
+            "formatted",
+            "raw"
+          ]
+        },
+        "rows": {
+          "type": "string",
+          "enum": [
+            "all",
+            "page"
+          ]
+        }
+      },
+      "required": [
+        "fileName",
+        "columns",
+        "values",
+        "rows"
+      ],
+      "additionalProperties": false,
+      "description": "What the Export button writes (engine `exportOptions`); every value is the engine default here."
+    },
+    "DataTableGroupingConfig": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "by": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "expanded": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1",
+            "2",
+            "3",
+            "all"
+          ]
+        },
+        "userCanGroup": {
+          "type": "boolean"
+        },
+        "showCount": {
+          "type": "boolean"
+        },
+        "totalRow": {
+          "type": "string",
+          "enum": [
+            "none",
+            "top",
+            "bottom"
+          ]
+        }
+      },
+      "required": [
+        "enabled",
+        "by",
+        "expanded",
+        "userCanGroup",
+        "showCount",
+        "totalRow"
+      ],
+      "additionalProperties": false,
+      "description": "Client-side grouping (engine `DataTableElement.grouping`), exported while `enabled`. `by` holds accessors."
+    },
     "DataTablePaginationConfig": {
       "type": "object",
       "properties": {
@@ -2178,6 +2365,50 @@
       ],
       "additionalProperties": false,
       "description": "Server pagination authoring — the engine `DataTablePagination` with the studio's `''` / `'auto'` \"unset\" idioms. `placement: 'auto'` follows the engine's inference (the endpoint declares a body model ⇒ body, else query) and is dropped from the export; `searchKey: ''` = no server search; `totalPath` is a dot path split at export."
+    },
+    "DataTableSelectionConfig": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "single",
+            "multi"
+          ]
+        },
+        "idKey": {
+          "type": "string",
+          "description": "The row's id field; `''` = `_id`, else `id`."
+        },
+        "stateKey": {
+          "type": "string",
+          "description": "The state slice; `''` = `<name>Selected`."
+        },
+        "headerCheckbox": {
+          "type": "string",
+          "enum": [
+            "page",
+            "all",
+            "none"
+          ]
+        },
+        "keepAcrossPages": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "enabled",
+        "mode",
+        "idKey",
+        "stateKey",
+        "headerCheckbox",
+        "keepAcrossPages"
+      ],
+      "additionalProperties": false,
+      "description": "Row selection (engine `DataTableElement.selection`), exported while `enabled`."
     },
     "DataTableSortConfig": {
       "type": "object",
@@ -3004,6 +3235,79 @@
       ],
       "description": "A bound display value. `source` absent / `'row'`: `key` is a field of the enclosing repeater's item (`'none'` = the item itself). `'state'`: `key` is a page load's id (resolved to its key at export), `path` drills its data or reads `$status`."
     },
+    "LoadShape": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "shape": {
+              "type": "string",
+              "enum": [
+                "object",
+                "array"
+              ]
+            },
+            "fields": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ModelField"
+              }
+            },
+            "reason": {
+              "not": {}
+            }
+          },
+          "required": [
+            "shape",
+            "fields"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "shape": {
+              "type": "string",
+              "const": "value"
+            },
+            "fields": {
+              "type": "array",
+              "minItems": 0,
+              "maxItems": 0
+            },
+            "reason": {
+              "not": {}
+            }
+          },
+          "required": [
+            "shape",
+            "fields"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "shape": {
+              "type": "null"
+            },
+            "fields": {
+              "type": "null"
+            },
+            "reason": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "shape",
+            "fields",
+            "reason"
+          ],
+          "additionalProperties": false
+        }
+      ],
+      "description": "What a load's slice holds: the endpoint's response model walked along `paths`. `object` ⇒ `fields` are its fields; `array` of objects ⇒ `fields` are one row's (the slice is the array); `value` ⇒ a primitive / primitive array (bind it whole). `null` fields ⇒ unresolvable, with a `reason`."
+    },
     "LoadingMode": {
       "type": "string",
       "enum": [
@@ -3516,6 +3820,10 @@
         },
         "errorMessage": {
           "type": "string"
+        },
+        "shape": {
+          "$ref": "#/definitions/LoadShape",
+          "description": "A pseudo-load's fixed shape (a table's selection slice) — never on a stored load; `loadShape` returns it instead of walking an endpoint."
         }
       },
       "required": [
@@ -4579,6 +4887,69 @@
         "dataTable"
       ],
       "additionalProperties": false
+    },
+    "StyleRuleConfig": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "field": {
+          "type": "string",
+          "enum": [
+            "value",
+            "row"
+          ]
+        },
+        "path": {
+          "type": "string"
+        },
+        "op": {
+          "type": "string",
+          "enum": [
+            "eq",
+            "neq",
+            "gt",
+            "gte",
+            "lt",
+            "lte",
+            "set",
+            "unset"
+          ]
+        },
+        "value": {
+          "type": "string"
+        },
+        "tone": {
+          "type": "string"
+        },
+        "fill": {
+          "type": "boolean"
+        },
+        "bold": {
+          "type": "boolean"
+        },
+        "italic": {
+          "type": "boolean"
+        },
+        "strike": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "field",
+        "path",
+        "op",
+        "value",
+        "tone",
+        "fill",
+        "bold",
+        "italic",
+        "strike"
+      ],
+      "additionalProperties": false,
+      "description": "A conditional style rule as the studio edits it — the engine's `DataTableStyleRule` (see the grilled design `datatable-ag-grid-features`). `field: 'value'` reads the cell's own value, `'row'` a field of the row (`path`); a row rule always reads the row. `value` is typed text, parsed at export (a number, `true` / `false`, else a string). `tone` is a Radix colour name (`''` = none)."
     },
     "SwitchConfig": {
       "type": "object",

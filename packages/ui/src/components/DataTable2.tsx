@@ -281,7 +281,7 @@ export const DataTable2 = <T extends Record<string, any>>({
 		visibility: Object.fromEntries((hiddenColumns ?? []).map((id) => [id, false])),
 		sizing: {},
 		pinning: { left: [...(pinnedColumns?.left ?? [])], right: [...(pinnedColumns?.right ?? [])] },
-		grouping: groupingCfg?.by ?? [],
+		grouping: (groupingCfg?.by ?? []).map((id) => id.replace(/\./g, '_')),
 	// eslint-disable-next-line react-hooks/exhaustive-deps
 	}), [dataIds.join('|'), (hiddenColumns ?? []).join('|'), (pinnedColumns?.left ?? []).join('|'), (pinnedColumns?.right ?? []).join('|'), (groupingCfg?.by ?? []).join('|')])
 	const pages = usePages()
@@ -828,6 +828,9 @@ export const DataTable2 = <T extends Record<string, any>>({
 	)
 
 	const groupRow = (row: Row<T>) => {
+		// `getLeafRows()` also returns the nested group rows: summaries and the
+		// count read the records only.
+		const records = row.getLeafRows().filter((r) => !r.getIsGrouped())
 		const groupColumn = table.getColumn(row.groupingColumnId ?? '')
 		const value = row.groupingValue
 		const format = groupColumn ? columnMeta(groupColumn).format : undefined
@@ -847,10 +850,10 @@ export const DataTable2 = <T extends Record<string, any>>({
 									onClick={row.getToggleExpandedHandler()}
 								>
 									<GroupChevron size={14} />
-									<span>{headerLabel(groupColumn, row.groupingColumnId ?? '')}: {label}</span>
-									{showCount && <span className="datatable-group-count">({row.getLeafRows().length})</span>}
+									<span className="datatable-group-label">{headerLabel(groupColumn, row.groupingColumnId ?? '')}: {label}</span>
+									{showCount && <span className="datatable-group-count">({records.length})</span>}
 								</button>
-							) : aggregateText(cell.column, row.getLeafRows())}
+							) : aggregateText(cell.column, records)}
 						</div>
 					</td>
 				), fillerCell)}
@@ -1320,11 +1323,16 @@ export const DataTable2 = <T extends Record<string, any>>({
 						</div>
 						<div>
 							{(() => {
-								const totalRows = isServer ? total : table.getFilteredRowModel().rows.length
+								// Grouped, the pages hold group rows (and the open groups' rows), so
+								// the count is of those, with the records they stand for beside it.
+								const leaves = isServer ? total : table.getFilteredRowModel().rows.length
+								const totalRows = grouped ? table.getPrePaginationRowModel().rows.length : leaves
 								const { pageIndex, pageSize } = table.getState().pagination
 								const from = totalRows === 0 ? 0 : pageIndex * pageSize + 1
 								const to = Math.min((pageIndex + 1) * pageSize, totalRows)
-								return `Showing ${from} to ${to} of ${totalRows} entries`
+								return grouped
+									? `Showing ${from} to ${to} of ${totalRows} rows · ${leaves} records`
+									: `Showing ${from} to ${to} of ${totalRows} entries`
 							})()}
 						</div>
 					</div>

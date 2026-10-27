@@ -12,6 +12,7 @@ import { bookshopPages, P, PRINT_ORDER_ACTION_ID, SALES_CHART_COMPONENT_ID } fro
 import { navigate } from './ui'
 import { portalProject } from '../portal/project'
 import { glassProject } from '../glass/project'
+import { gridProject } from '../grid/project'
 
 /**
  * The Book shop demo as a studio workspace (see the grilled design
@@ -185,10 +186,10 @@ export function bookshopProject(library: LibraryData = bookshopLibrary()): Proje
 export function bookshopWorkspace(): WorkspaceData {
   const library = bookshopLibrary()
   return {
-    version: 56,
+    version: 57,
     appearance: 'light',
     user: 'Chanwit Yimneam',
-    projects: [bookshopProject(library), portalProject(), glassProject()],
+    projects: [bookshopProject(library), portalProject(), glassProject(), gridProject()],
     library,
     activity: [],
   }

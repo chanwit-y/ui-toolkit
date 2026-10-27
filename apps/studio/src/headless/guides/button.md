@@ -14,6 +14,8 @@ Actions:
 - `Navigate` — go to `navigate: { pageId, params, replace }`.
 - `ReloadDataTable` — refetch `reloadTableItemId` (a table, form list,
   repeater, or a page load by key).
+- `ExportTable` — download `exportTableItemId` (a data table on the page) as
+  CSV, the same file as its own Export button.
 - `ClearCurrentFormSelected`, `SignIn`, `SignOut`, and `"fn:<custom action>"`.
 
 Feedback: `snackbarSuccessEnabled` + `snackbarSuccessType` +

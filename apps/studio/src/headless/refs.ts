@@ -1,6 +1,7 @@
 import type { ChildCanvas, GridItemData } from '../components/Layout/types'
 import { ITEM_CONDITION_SOURCE } from '../components/Layout/types'
 import { authProfileLoad } from '../components/Workspace/auth'
+import { selectionLoads } from '../components/Workspace/selectionLoads'
 import { pickedAuth } from '../components/Workspace/runtimeProject'
 import type { LibraryData, ProjectDef } from '../components/Workspace/types'
 import { ToolError } from './errors'
@@ -57,6 +58,8 @@ export function refScope(
   // The sign-in's profile fetch is a read-only pseudo-load bindings may read.
   const authLoad = authProfileLoad(pickedAuth(snapshot, library) ?? undefined)
   if (authLoad) loads.push({ id: authLoad.id, names: [authLoad.key] })
+  // A data table's selection is page data under its state key (the id is the key).
+  if (page) for (const sel of selectionLoads(page.grid.items)) loads.push({ id: sel.id, names: [sel.key] })
   return {
     pages: snapshot.pages.map((p) => ({ id: p.id, names: [p.key, p.name, p.path] })),
     endpoints: library.endpoints.map((e) => ({ id: e.id, names: [e.name] })),
@@ -80,7 +83,7 @@ function resolveOne(list: Named[], value: unknown, what: string, path: string): 
 }
 
 const ENDPOINT_KEYS = new Set(['endpointId', 'deleteEndpointId', 'readEndpointId', 'createEndpointId', 'updateEndpointId'])
-const ITEM_KEYS = new Set(['modalItemId', 'observeToItemId', 'itemId'])
+const ITEM_KEYS = new Set(['modalItemId', 'observeToItemId', 'itemId', 'exportTableItemId'])
 const ACTION_LIST_KEYS = new Set(['actions', 'confirmTrue', 'confirmFalse'])
 
 /**

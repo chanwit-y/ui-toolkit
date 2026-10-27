@@ -1,0 +1,245 @@
+{
+  "schemaVersion": 1,
+  "name": "Data grid showcase",
+  "description": "The data table’s AG Grid-style features over the Book shop API: formats and style rules, a Columns menu, selection, grouping with totals, CSV export, and a virtualised scroll.",
+  "env": {
+    "API_URL": "http://localhost:9100"
+  },
+  "model": {
+    "bookListRes": {
+      "data": {
+        "type": "array",
+        "collection": {
+          "_id": "string",
+          "title": "string",
+          "isbn": "string",
+          "authorId": "string",
+          "authorName": "string",
+          "genreId": "string",
+          "genreName": "string",
+          "genreColor": "string",
+          "price": "number",
+          "priceText": "string",
+          "stock": "number",
+          "publishedAt": "string",
+          "pages": "number",
+          "cover": "string",
+          "description": "string",
+          "featured": "boolean",
+          "rating": "number",
+          "reviewCount": "number",
+          "updatedAt": "string",
+          "publishedAtText": "string"
+        }
+      },
+      "total": "number"
+    },
+    "bookPageQuery": {
+      "offset": "number",
+      "limit": "number",
+      "search": "string",
+      "sortBy": "string",
+      "sortDir": "string",
+      "genre": "string",
+      "author": "string",
+      "inStock": "string",
+      "featured": "string"
+    },
+    "customerListRes": {
+      "data": {
+        "type": "array",
+        "collection": {
+          "_id": "string",
+          "name": "string",
+          "email": "string",
+          "phone": "string",
+          "city": "string",
+          "joinedAt": "string",
+          "joinedAtText": "string",
+          "orderCount": "number",
+          "totalSpent": "number",
+          "totalSpentText": "string",
+          "avatar": "string"
+        }
+      },
+      "total": "number"
+    },
+    "customerPageQuery": {
+      "offset": "number",
+      "limit": "number",
+      "search": "string",
+      "sortBy": "string",
+      "sortDir": "string",
+      "city": "string"
+    },
+    "orderListRes": {
+      "data": {
+        "type": "array",
+        "collection": {
+          "_id": "string",
+          "number": "string",
+          "customerId": "string",
+          "customerName": "string",
+          "customerCity": "string",
+          "status": "string",
+          "statusLabel": "string",
+          "placedAt": "string",
+          "placedAtText": "string",
+          "itemCount": "number",
+          "subtotal": "number",
+          "subtotalText": "string",
+          "shipping": "number",
+          "shippingText": "string",
+          "total": "number",
+          "totalText": "string",
+          "paymentMethod": "string",
+          "handledBy": "string"
+        }
+      },
+      "total": "number"
+    },
+    "orderPageQuery": {
+      "offset": "number",
+      "limit": "number",
+      "search": "string",
+      "sortBy": "string",
+      "sortDir": "string",
+      "status": "string",
+      "from": "string",
+      "to": "string",
+      "customer": "string"
+    }
+  },
+  "api": {
+    "listBooks": {
+      "url": "/api/books",
+      "description": "A page of books (search, genre, author, stock, sort)",
+      "methods": "GET",
+      "response": "bookListRes",
+      "query": "bookPageQuery",
+      "withOptions": false
+    },
+    "listCustomers": {
+      "url": "/api/customers",
+      "description": "A page of customers",
+      "methods": "GET",
+      "response": "customerListRes",
+      "query": "customerPageQuery",
+      "withOptions": false
+    },
+    "listOrders": {
+      "url": "/api/orders",
+      "description": "A page of orders (status, dates, sort)",
+      "methods": "GET",
+      "response": "orderListRes",
+      "query": "orderPageQuery",
+      "withOptions": false
+    }
+  },
+  "pages": {
+    "formats": {
+      "path": "/",
+      "title": "Formats & styles",
+      "src": "pages/formats.json"
+    },
+    "columns": {
+      "path": "/columns",
+      "title": "Columns",
+      "src": "pages/columns.json"
+    },
+    "selection": {
+      "path": "/selection",
+      "title": "Selection",
+      "src": "pages/selection.json"
+    },
+    "grouping": {
+      "path": "/grouping",
+      "title": "Grouping",
+      "src": "pages/grouping.json"
+    },
+    "export": {
+      "path": "/export",
+      "title": "Export",
+      "src": "pages/export.json"
+    },
+    "scroll": {
+      "path": "/scroll",
+      "title": "Scroll",
+      "src": "pages/scroll.json"
+    }
+  },
+  "menu": [
+    {
+      "label": "Formats & styles",
+      "icon": "hash",
+      "navigate": {
+        "page": "formats"
+      }
+    },
+    {
+      "label": "Columns",
+      "icon": "columns",
+      "navigate": {
+        "page": "columns"
+      }
+    },
+    {
+      "label": "Selection",
+      "icon": "checkSquare",
+      "navigate": {
+        "page": "selection"
+      }
+    },
+    {
+      "label": "Grouping",
+      "icon": "layers",
+      "navigate": {
+        "page": "grouping"
+      }
+    },
+    {
+      "label": "Export",
+      "icon": "download",
+      "navigate": {
+        "page": "export"
+      }
+    },
+    {
+      "label": "Scroll",
+      "icon": "list",
+      "navigate": {
+        "page": "scroll"
+      }
+    }
+  ],
+  "shell": {
+    "navigation": "sidebar",
+    "breadcrumbs": false,
+    "appBar": {
+      "title": "Data grid",
+      "icon": "table",
+      "variant": "accent"
+    },
+    "pageTransition": {
+      "type": "fade"
+    }
+  },
+  "locale": "en-US",
+  "theme": {
+    "theme": {
+      "appearance": "light",
+      "accentColor": "teal",
+      "radius": "medium",
+      "panelBackground": "solid"
+    },
+    "components": {
+      "dataTable": {
+        "headerFontSize": "sm",
+        "headerFontWeight": "semibold"
+      }
+    }
+  },
+  "globalLoads": [],
+  "customActions": [],
+  "customComponents": []
+}

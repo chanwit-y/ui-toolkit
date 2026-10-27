@@ -75,3 +75,29 @@ describe("column layout", () => {
 		expect(reconcileColumnLayout({ v: 1, visibility: { a: false } }, defaults, ids, ["a"]).visibility.a).toBe(true)
 	})
 })
+
+describe("grouped summaries", () => {
+	test("a nested group's records only: getLeafRows() also returns the inner group rows", async () => {
+		const { createTable, getCoreRowModel, getGroupedRowModel, getExpandedRowModel } = await import("@tanstack/react-table")
+		const data = [
+			{ s: "Paid", c: "A", n: 1 },
+			{ s: "Paid", c: "A", n: 2 },
+			{ s: "Paid", c: "B", n: 4 },
+		]
+		const table = createTable({
+			data,
+			columns: [{ accessorKey: "s" }, { accessorKey: "c" }, { accessorKey: "n" }],
+			state: { grouping: ["s", "c"], expanded: true, columnPinning: {}, columnVisibility: {}, columnOrder: [] } as never,
+			onStateChange: () => {},
+			renderFallbackValue: null,
+			getCoreRowModel: getCoreRowModel(),
+			getGroupedRowModel: getGroupedRowModel(),
+			getExpandedRowModel: getExpandedRowModel(),
+		})
+		const paid = table.getGroupedRowModel().rows[0]
+		expect(paid.getLeafRows().length).toBe(5)
+		const records = paid.getLeafRows().filter((r) => !r.getIsGrouped())
+		expect(records.length).toBe(3)
+		expect(aggregateValues(records.map((r) => r.getValue("n")), "sum")).toBe(7)
+	})
+})

@@ -5,6 +5,7 @@ import { useGridStore } from './gridStore'
 import { EndpointPicker } from './SelectFieldConfigPanel'
 import { ColumnSizeFields } from './ColumnSizeFields'
 import { ColumnFormatFields } from './ColumnFormatFields'
+import { StyleRulesField } from './StyleRulesField'
 import {
   ACTION_SIZE_OPTIONS,
   createEditableTableColumn,
@@ -305,6 +306,12 @@ function ColumnsEditor({
                     />
                   </Field>
                   <ColumnFormatFields column={column} onChange={(format) => patch(index, { format })} />
+                  <StyleRulesField
+                    label="Cell styles"
+                    scope="cell"
+                    rules={column.cellStyles}
+                    onChange={(cellStyles) => patch(index, { cellStyles })}
+                  />
                   <Toggle
                     label="Row header (the row's label: <th>)"
                     checked={column.rowHeader}

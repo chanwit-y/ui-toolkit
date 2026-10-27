@@ -1,6 +1,6 @@
 {
   "state": {
-    "version": 56,
+    "version": 57,
     "appearance": "light",
     "user": "Chanwit Yimneam",
     "projects": [
@@ -24979,6 +24979,4793 @@
           "customComponents": [],
           "authId": null
         }
+      },
+      {
+        "id": "dg-project-data-grid",
+        "name": "Data grid showcase",
+        "description": "The data table’s AG Grid-style features over the Book shop API: formats and style rules, a Columns menu, selection, grouping with totals, CSV export, and a virtualised scroll.",
+        "createdAt": 1793059200000,
+        "updatedAt": 1793059200000,
+        "snapshot": {
+          "pages": [
+            {
+              "id": "dg-page-formats",
+              "key": "formats",
+              "name": "Formats & styles",
+              "path": "/",
+              "grid": {
+                "items": [
+                  {
+                    "id": "dg-item-formats-h-title",
+                    "label": "Typography",
+                    "type": "typography",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 6,
+                        "md": 8,
+                        "lg": 12
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "text": "Formats & styles",
+                      "variant": "h3",
+                      "weight": "bold",
+                      "color": "",
+                      "align": "",
+                      "truncate": false,
+                      "href": "",
+                      "binding": null
+                    }
+                  },
+                  {
+                    "id": "dg-item-formats-h-caption",
+                    "label": "Typography",
+                    "type": "typography",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 6,
+                        "md": 8,
+                        "lg": 12
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "text": "Every one of the 120 books, read whole from the API and paged in the browser. Price, stock, rating and dates are raw numbers and dates formatted by the table; the tones come from style rules — out of stock is a red fill, five or fewer amber, a rating of 4.5 or more green, and featured titles bold.",
+                      "variant": "body2",
+                      "weight": "",
+                      "color": "gray",
+                      "align": "",
+                      "truncate": false,
+                      "href": "",
+                      "binding": null
+                    }
+                  },
+                  {
+                    "id": "dg-item-formats-books",
+                    "label": "Data Table",
+                    "type": "datatable",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 6,
+                        "md": 8,
+                        "lg": 12
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "name": "books",
+                      "title": "Books",
+                      "canEdit": false,
+                      "canDelete": false,
+                      "canSearchAllColumns": true,
+                      "columns": [
+                        {
+                          "size": 64,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": false,
+                          "id": "dg-col-fmt-cover",
+                          "accessor": "cover",
+                          "header": "",
+                          "enableSorting": false,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "",
+                            "decimals": "",
+                            "grouping": true,
+                            "currency": "",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "",
+                            "trueLabel": "",
+                            "falseLabel": ""
+                          },
+                          "pin": "",
+                          "html": "<img src=\"{{cover}}\" alt=\"\" style=\"width:36px;height:54px;object-fit:cover;border-radius:4px;display:block\">",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": ""
+                        },
+                        {
+                          "size": 260,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": true,
+                          "id": "dg-col-fmt-title",
+                          "accessor": "title",
+                          "header": "Title",
+                          "enableSorting": true,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "",
+                            "decimals": "",
+                            "grouping": true,
+                            "currency": "",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "",
+                            "trueLabel": "",
+                            "falseLabel": ""
+                          },
+                          "pin": "",
+                          "html": "",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": ""
+                        },
+                        {
+                          "size": 190,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": true,
+                          "id": "dg-col-fmt-author",
+                          "accessor": "authorName",
+                          "header": "Author",
+                          "enableSorting": true,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "",
+                            "decimals": "",
+                            "grouping": true,
+                            "currency": "",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "",
+                            "trueLabel": "",
+                            "falseLabel": ""
+                          },
+                          "pin": "",
+                          "html": "",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": ""
+                        },
+                        {
+                          "size": 150,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": true,
+                          "id": "dg-col-fmt-genre",
+                          "accessor": "genreName",
+                          "header": "Genre",
+                          "enableSorting": true,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "",
+                            "decimals": "",
+                            "grouping": true,
+                            "currency": "",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "",
+                            "trueLabel": "",
+                            "falseLabel": ""
+                          },
+                          "pin": "",
+                          "html": "",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": ""
+                        },
+                        {
+                          "size": 140,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": true,
+                          "id": "dg-col-fmt-price",
+                          "accessor": "price",
+                          "header": "Price",
+                          "enableSorting": true,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "currency",
+                            "decimals": "",
+                            "grouping": true,
+                            "currency": "THB",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "",
+                            "trueLabel": "",
+                            "falseLabel": ""
+                          },
+                          "pin": "",
+                          "html": "",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": ""
+                        },
+                        {
+                          "size": 100,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": true,
+                          "id": "dg-col-fmt-stock",
+                          "accessor": "stock",
+                          "header": "Stock",
+                          "enableSorting": true,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "number",
+                            "decimals": "",
+                            "grouping": true,
+                            "currency": "",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "",
+                            "trueLabel": "",
+                            "falseLabel": ""
+                          },
+                          "pin": "",
+                          "html": "",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": "",
+                          "cellStyles": [
+                            {
+                              "id": "dg-rule-2",
+                              "field": "value",
+                              "path": "",
+                              "op": "eq",
+                              "value": "0",
+                              "tone": "red",
+                              "fill": true,
+                              "bold": true,
+                              "italic": false,
+                              "strike": false
+                            },
+                            {
+                              "id": "dg-rule-3",
+                              "field": "value",
+                              "path": "",
+                              "op": "lte",
+                              "value": "5",
+                              "tone": "amber",
+                              "fill": true,
+                              "bold": false,
+                              "italic": false,
+                              "strike": false
+                            }
+                          ]
+                        },
+                        {
+                          "size": 100,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": true,
+                          "id": "dg-col-fmt-rating",
+                          "accessor": "rating",
+                          "header": "Rating",
+                          "enableSorting": true,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "number",
+                            "decimals": 1,
+                            "grouping": true,
+                            "currency": "",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "",
+                            "trueLabel": "",
+                            "falseLabel": ""
+                          },
+                          "pin": "",
+                          "html": "",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": "",
+                          "cellStyles": [
+                            {
+                              "id": "dg-rule-4",
+                              "field": "value",
+                              "path": "",
+                              "op": "gte",
+                              "value": "4.5",
+                              "tone": "grass",
+                              "fill": false,
+                              "bold": true,
+                              "italic": false,
+                              "strike": false
+                            }
+                          ]
+                        },
+                        {
+                          "size": 140,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": true,
+                          "id": "dg-col-fmt-published",
+                          "accessor": "publishedAt",
+                          "header": "Published",
+                          "enableSorting": true,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "date",
+                            "decimals": "",
+                            "grouping": true,
+                            "currency": "",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "",
+                            "trueLabel": "",
+                            "falseLabel": ""
+                          },
+                          "pin": "",
+                          "html": "",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": ""
+                        },
+                        {
+                          "size": 130,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": true,
+                          "id": "dg-col-fmt-featured",
+                          "accessor": "featured",
+                          "header": "Featured",
+                          "enableSorting": true,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "boolean",
+                            "decimals": "",
+                            "grouping": true,
+                            "currency": "",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "",
+                            "trueLabel": "★ Featured",
+                            "falseLabel": "—"
+                          },
+                          "pin": "",
+                          "html": "",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": ""
+                        }
+                      ],
+                      "endpointId": "bs-endpoint-list-books",
+                      "apiPaths": "data",
+                      "modalMaxWidth": "",
+                      "modalMinWidth": "",
+                      "modalMaxHeight": "",
+                      "deleteEndpointId": null,
+                      "deleteParams": {},
+                      "deleteConfirmEnabled": true,
+                      "deleteConfirmTitle": "Delete record",
+                      "deleteConfirmDescription": "Are you sure you want to delete this record?",
+                      "deleteIsReload": true,
+                      "pagination": {
+                        "enabled": false,
+                        "placement": "auto",
+                        "offsetKey": "offset",
+                        "limitKey": "limit",
+                        "searchKey": "",
+                        "totalPath": "total",
+                        "defaultPageSize": 10,
+                        "pageSizeOptions": [
+                          5,
+                          10,
+                          20,
+                          30,
+                          40,
+                          50
+                        ]
+                      },
+                      "canAdd": false,
+                      "addButton": {
+                        "label": "Add",
+                        "icon": "puls",
+                        "variant": "contained"
+                      },
+                      "headerGap": "",
+                      "canResizeColumns": true,
+                      "cellLines": 1,
+                      "filtersEnabled": false,
+                      "filterButton": {
+                        "label": "Filter",
+                        "icon": "filter",
+                        "variant": "outlined"
+                      },
+                      "filterDisplay": "popover",
+                      "filterDefaults": [],
+                      "requestMapping": [],
+                      "sort": {
+                        "enabled": false,
+                        "placement": "auto",
+                        "sortKey": "",
+                        "orderKey": "",
+                        "ascValue": "asc",
+                        "descValue": "desc",
+                        "defaultField": "",
+                        "defaultOrder": "asc"
+                      },
+                      "deleteSnackbarSuccessEnabled": false,
+                      "deleteSnackbarSuccessType": "success",
+                      "deleteSnackbarSuccessMessage": "",
+                      "deleteSnackbarErrorException": false,
+                      "rowStyles": [
+                        {
+                          "id": "dg-rule-1",
+                          "field": "row",
+                          "path": "featured",
+                          "op": "eq",
+                          "value": "true",
+                          "tone": "",
+                          "fill": false,
+                          "bold": true,
+                          "italic": false,
+                          "strike": false
+                        }
+                      ]
+                    },
+                    "childCanvases": [
+                      {
+                        "items": [],
+                        "settings": {
+                          "columns": {
+                            "xs": 4,
+                            "sm": 6,
+                            "md": 8,
+                            "lg": 12
+                          },
+                          "gap": {
+                            "xs": "16px",
+                            "sm": "16px",
+                            "md": "16px",
+                            "lg": "16px"
+                          },
+                          "rowGap": {
+                            "xs": "",
+                            "sm": "",
+                            "md": "",
+                            "lg": ""
+                          },
+                          "columnGap": {
+                            "xs": "",
+                            "sm": "",
+                            "md": "",
+                            "lg": ""
+                          },
+                          "justifyItems": {
+                            "xs": "stretch",
+                            "sm": "stretch",
+                            "md": "stretch",
+                            "lg": "stretch"
+                          },
+                          "alignItems": {
+                            "xs": "stretch",
+                            "sm": "stretch",
+                            "md": "stretch",
+                            "lg": "stretch"
+                          },
+                          "justifyContent": {
+                            "xs": "start",
+                            "sm": "start",
+                            "md": "start",
+                            "lg": "start"
+                          },
+                          "alignContent": {
+                            "xs": "start",
+                            "sm": "start",
+                            "md": "start",
+                            "lg": "start"
+                          },
+                          "gridAutoRows": {
+                            "xs": "minmax(56px, auto)",
+                            "sm": "minmax(56px, auto)",
+                            "md": "minmax(56px, auto)",
+                            "lg": "minmax(56px, auto)"
+                          },
+                          "gridAutoFlow": {
+                            "xs": "row",
+                            "sm": "row",
+                            "md": "row",
+                            "lg": "row"
+                          }
+                        }
+                      },
+                      {
+                        "items": [],
+                        "settings": {
+                          "columns": {
+                            "xs": 4,
+                            "sm": 6,
+                            "md": 8,
+                            "lg": 12
+                          },
+                          "gap": {
+                            "xs": "16px",
+                            "sm": "16px",
+                            "md": "16px",
+                            "lg": "16px"
+                          },
+                          "rowGap": {
+                            "xs": "",
+                            "sm": "",
+                            "md": "",
+                            "lg": ""
+                          },
+                          "columnGap": {
+                            "xs": "",
+                            "sm": "",
+                            "md": "",
+                            "lg": ""
+                          },
+                          "justifyItems": {
+                            "xs": "stretch",
+                            "sm": "stretch",
+                            "md": "stretch",
+                            "lg": "stretch"
+                          },
+                          "alignItems": {
+                            "xs": "stretch",
+                            "sm": "stretch",
+                            "md": "stretch",
+                            "lg": "stretch"
+                          },
+                          "justifyContent": {
+                            "xs": "start",
+                            "sm": "start",
+                            "md": "start",
+                            "lg": "start"
+                          },
+                          "alignContent": {
+                            "xs": "start",
+                            "sm": "start",
+                            "md": "start",
+                            "lg": "start"
+                          },
+                          "gridAutoRows": {
+                            "xs": "minmax(56px, auto)",
+                            "sm": "minmax(56px, auto)",
+                            "md": "minmax(56px, auto)",
+                            "lg": "minmax(56px, auto)"
+                          },
+                          "gridAutoFlow": {
+                            "xs": "row",
+                            "sm": "row",
+                            "md": "row",
+                            "lg": "row"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "containerSettings": {
+                  "columns": {
+                    "xs": 4,
+                    "sm": 6,
+                    "md": 8,
+                    "lg": 12
+                  },
+                  "gap": {
+                    "xs": "16px",
+                    "sm": "16px",
+                    "md": "16px",
+                    "lg": "16px"
+                  },
+                  "rowGap": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "columnGap": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "justifyItems": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "alignItems": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "justifyContent": {
+                    "xs": "start",
+                    "sm": "start",
+                    "md": "start",
+                    "lg": "start"
+                  },
+                  "alignContent": {
+                    "xs": "start",
+                    "sm": "start",
+                    "md": "start",
+                    "lg": "start"
+                  },
+                  "gridAutoRows": {
+                    "xs": "minmax(56px, auto)",
+                    "sm": "minmax(56px, auto)",
+                    "md": "minmax(56px, auto)",
+                    "lg": "minmax(56px, auto)"
+                  },
+                  "gridAutoFlow": {
+                    "xs": "row",
+                    "sm": "row",
+                    "md": "row",
+                    "lg": "row"
+                  }
+                },
+                "fieldSeq": 0
+              }
+            },
+            {
+              "id": "dg-page-columns",
+              "key": "columns",
+              "name": "Columns",
+              "path": "/columns",
+              "grid": {
+                "items": [
+                  {
+                    "id": "dg-item-columns-h-title",
+                    "label": "Typography",
+                    "type": "typography",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 6,
+                        "md": 8,
+                        "lg": 12
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "text": "Columns",
+                      "variant": "h3",
+                      "weight": "bold",
+                      "color": "",
+                      "align": "",
+                      "truncate": false,
+                      "href": "",
+                      "binding": null
+                    }
+                  },
+                  {
+                    "id": "dg-item-columns-h-caption",
+                    "label": "Typography",
+                    "type": "typography",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 6,
+                        "md": 8,
+                        "lg": 12
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "text": "Open Columns to show or hide a column (Email and Phone start hidden, the name is locked), drag a grip to reorder, or Reset. Drag a header edge to resize, pin with the header pin. The layout — order, visibility, widths, pins — is remembered in this browser.",
+                      "variant": "body2",
+                      "weight": "",
+                      "color": "gray",
+                      "align": "",
+                      "truncate": false,
+                      "href": "",
+                      "binding": null
+                    }
+                  },
+                  {
+                    "id": "dg-item-columns-customers",
+                    "label": "Data Table",
+                    "type": "datatable",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 6,
+                        "md": 8,
+                        "lg": 12
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "name": "customers",
+                      "title": "Customers",
+                      "canEdit": false,
+                      "canDelete": false,
+                      "canSearchAllColumns": true,
+                      "columns": [
+                        {
+                          "size": 56,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": false,
+                          "id": "dg-col-cols-avatar",
+                          "accessor": "avatar",
+                          "header": "",
+                          "enableSorting": false,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "",
+                            "decimals": "",
+                            "grouping": true,
+                            "currency": "",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "",
+                            "trueLabel": "",
+                            "falseLabel": ""
+                          },
+                          "pin": "left",
+                          "html": "<img src=\"{{avatar}}\" alt=\"\" style=\"width:28px;height:28px;border-radius:9999px;display:block\">",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": ""
+                        },
+                        {
+                          "size": 220,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": true,
+                          "id": "dg-col-cols-name",
+                          "accessor": "name",
+                          "header": "Name",
+                          "enableSorting": true,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "",
+                            "decimals": "",
+                            "grouping": true,
+                            "currency": "",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "",
+                            "trueLabel": "",
+                            "falseLabel": ""
+                          },
+                          "pin": "left",
+                          "html": "",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": "",
+                          "lockVisible": true
+                        },
+                        {
+                          "size": 260,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": true,
+                          "id": "dg-col-cols-email",
+                          "accessor": "email",
+                          "header": "Email",
+                          "enableSorting": true,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "",
+                            "decimals": "",
+                            "grouping": true,
+                            "currency": "",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "",
+                            "trueLabel": "",
+                            "falseLabel": ""
+                          },
+                          "pin": "",
+                          "html": "",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": "",
+                          "hide": true
+                        },
+                        {
+                          "size": 150,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": true,
+                          "id": "dg-col-cols-phone",
+                          "accessor": "phone",
+                          "header": "Phone",
+                          "enableSorting": false,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "",
+                            "decimals": "",
+                            "grouping": true,
+                            "currency": "",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "",
+                            "trueLabel": "",
+                            "falseLabel": ""
+                          },
+                          "pin": "",
+                          "html": "",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": "",
+                          "hide": true
+                        },
+                        {
+                          "size": 150,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": true,
+                          "id": "dg-col-cols-city",
+                          "accessor": "city",
+                          "header": "City",
+                          "enableSorting": true,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "",
+                            "decimals": "",
+                            "grouping": true,
+                            "currency": "",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "",
+                            "trueLabel": "",
+                            "falseLabel": ""
+                          },
+                          "pin": "",
+                          "html": "",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": ""
+                        },
+                        {
+                          "size": 140,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": true,
+                          "id": "dg-col-cols-joined",
+                          "accessor": "joinedAt",
+                          "header": "Joined",
+                          "enableSorting": true,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "date",
+                            "decimals": "",
+                            "grouping": true,
+                            "currency": "",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "",
+                            "trueLabel": "",
+                            "falseLabel": ""
+                          },
+                          "pin": "",
+                          "html": "",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": ""
+                        },
+                        {
+                          "size": 100,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": true,
+                          "id": "dg-col-cols-orders",
+                          "accessor": "orderCount",
+                          "header": "Orders",
+                          "enableSorting": true,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "number",
+                            "decimals": "",
+                            "grouping": true,
+                            "currency": "",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "",
+                            "trueLabel": "",
+                            "falseLabel": ""
+                          },
+                          "pin": "",
+                          "html": "",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": ""
+                        },
+                        {
+                          "size": 160,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": true,
+                          "id": "dg-col-cols-spent",
+                          "accessor": "totalSpent",
+                          "header": "Spent",
+                          "enableSorting": true,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "currency",
+                            "decimals": "",
+                            "grouping": true,
+                            "currency": "THB",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "",
+                            "trueLabel": "",
+                            "falseLabel": ""
+                          },
+                          "pin": "",
+                          "html": "",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": ""
+                        }
+                      ],
+                      "endpointId": "bs-endpoint-list-customers",
+                      "apiPaths": "data",
+                      "modalMaxWidth": "",
+                      "modalMinWidth": "",
+                      "modalMaxHeight": "",
+                      "deleteEndpointId": null,
+                      "deleteParams": {},
+                      "deleteConfirmEnabled": true,
+                      "deleteConfirmTitle": "Delete record",
+                      "deleteConfirmDescription": "Are you sure you want to delete this record?",
+                      "deleteIsReload": true,
+                      "pagination": {
+                        "enabled": false,
+                        "placement": "auto",
+                        "offsetKey": "offset",
+                        "limitKey": "limit",
+                        "searchKey": "",
+                        "totalPath": "total",
+                        "defaultPageSize": 10,
+                        "pageSizeOptions": [
+                          5,
+                          10,
+                          20,
+                          30,
+                          40,
+                          50
+                        ]
+                      },
+                      "canAdd": false,
+                      "addButton": {
+                        "label": "Add",
+                        "icon": "puls",
+                        "variant": "contained"
+                      },
+                      "headerGap": "",
+                      "canResizeColumns": true,
+                      "cellLines": 1,
+                      "filtersEnabled": false,
+                      "filterButton": {
+                        "label": "Filter",
+                        "icon": "filter",
+                        "variant": "outlined"
+                      },
+                      "filterDisplay": "popover",
+                      "filterDefaults": [],
+                      "requestMapping": [],
+                      "sort": {
+                        "enabled": false,
+                        "placement": "auto",
+                        "sortKey": "",
+                        "orderKey": "",
+                        "ascValue": "asc",
+                        "descValue": "desc",
+                        "defaultField": "",
+                        "defaultOrder": "asc"
+                      },
+                      "deleteSnackbarSuccessEnabled": false,
+                      "deleteSnackbarSuccessType": "success",
+                      "deleteSnackbarSuccessMessage": "",
+                      "deleteSnackbarErrorException": false
+                    },
+                    "childCanvases": [
+                      {
+                        "items": [],
+                        "settings": {
+                          "columns": {
+                            "xs": 4,
+                            "sm": 6,
+                            "md": 8,
+                            "lg": 12
+                          },
+                          "gap": {
+                            "xs": "16px",
+                            "sm": "16px",
+                            "md": "16px",
+                            "lg": "16px"
+                          },
+                          "rowGap": {
+                            "xs": "",
+                            "sm": "",
+                            "md": "",
+                            "lg": ""
+                          },
+                          "columnGap": {
+                            "xs": "",
+                            "sm": "",
+                            "md": "",
+                            "lg": ""
+                          },
+                          "justifyItems": {
+                            "xs": "stretch",
+                            "sm": "stretch",
+                            "md": "stretch",
+                            "lg": "stretch"
+                          },
+                          "alignItems": {
+                            "xs": "stretch",
+                            "sm": "stretch",
+                            "md": "stretch",
+                            "lg": "stretch"
+                          },
+                          "justifyContent": {
+                            "xs": "start",
+                            "sm": "start",
+                            "md": "start",
+                            "lg": "start"
+                          },
+                          "alignContent": {
+                            "xs": "start",
+                            "sm": "start",
+                            "md": "start",
+                            "lg": "start"
+                          },
+                          "gridAutoRows": {
+                            "xs": "minmax(56px, auto)",
+                            "sm": "minmax(56px, auto)",
+                            "md": "minmax(56px, auto)",
+                            "lg": "minmax(56px, auto)"
+                          },
+                          "gridAutoFlow": {
+                            "xs": "row",
+                            "sm": "row",
+                            "md": "row",
+                            "lg": "row"
+                          }
+                        }
+                      },
+                      {
+                        "items": [],
+                        "settings": {
+                          "columns": {
+                            "xs": 4,
+                            "sm": 6,
+                            "md": 8,
+                            "lg": 12
+                          },
+                          "gap": {
+                            "xs": "16px",
+                            "sm": "16px",
+                            "md": "16px",
+                            "lg": "16px"
+                          },
+                          "rowGap": {
+                            "xs": "",
+                            "sm": "",
+                            "md": "",
+                            "lg": ""
+                          },
+                          "columnGap": {
+                            "xs": "",
+                            "sm": "",
+                            "md": "",
+                            "lg": ""
+                          },
+                          "justifyItems": {
+                            "xs": "stretch",
+                            "sm": "stretch",
+                            "md": "stretch",
+                            "lg": "stretch"
+                          },
+                          "alignItems": {
+                            "xs": "stretch",
+                            "sm": "stretch",
+                            "md": "stretch",
+                            "lg": "stretch"
+                          },
+                          "justifyContent": {
+                            "xs": "start",
+                            "sm": "start",
+                            "md": "start",
+                            "lg": "start"
+                          },
+                          "alignContent": {
+                            "xs": "start",
+                            "sm": "start",
+                            "md": "start",
+                            "lg": "start"
+                          },
+                          "gridAutoRows": {
+                            "xs": "minmax(56px, auto)",
+                            "sm": "minmax(56px, auto)",
+                            "md": "minmax(56px, auto)",
+                            "lg": "minmax(56px, auto)"
+                          },
+                          "gridAutoFlow": {
+                            "xs": "row",
+                            "sm": "row",
+                            "md": "row",
+                            "lg": "row"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "containerSettings": {
+                  "columns": {
+                    "xs": 4,
+                    "sm": 6,
+                    "md": 8,
+                    "lg": 12
+                  },
+                  "gap": {
+                    "xs": "16px",
+                    "sm": "16px",
+                    "md": "16px",
+                    "lg": "16px"
+                  },
+                  "rowGap": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "columnGap": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "justifyItems": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "alignItems": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "justifyContent": {
+                    "xs": "start",
+                    "sm": "start",
+                    "md": "start",
+                    "lg": "start"
+                  },
+                  "alignContent": {
+                    "xs": "start",
+                    "sm": "start",
+                    "md": "start",
+                    "lg": "start"
+                  },
+                  "gridAutoRows": {
+                    "xs": "minmax(56px, auto)",
+                    "sm": "minmax(56px, auto)",
+                    "md": "minmax(56px, auto)",
+                    "lg": "minmax(56px, auto)"
+                  },
+                  "gridAutoFlow": {
+                    "xs": "row",
+                    "sm": "row",
+                    "md": "row",
+                    "lg": "row"
+                  }
+                },
+                "fieldSeq": 0
+              }
+            },
+            {
+              "id": "dg-page-selection",
+              "key": "selection",
+              "name": "Selection",
+              "path": "/selection",
+              "grid": {
+                "items": [
+                  {
+                    "id": "dg-item-selection-h-title",
+                    "label": "Typography",
+                    "type": "typography",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 6,
+                        "md": 8,
+                        "lg": 12
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "text": "Selection",
+                      "variant": "h3",
+                      "weight": "bold",
+                      "color": "",
+                      "align": "",
+                      "truncate": false,
+                      "href": "",
+                      "binding": null
+                    }
+                  },
+                  {
+                    "id": "dg-item-selection-h-caption",
+                    "label": "Typography",
+                    "type": "typography",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 6,
+                        "md": 8,
+                        "lg": 12
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "text": "Tick orders — the header box ticks every order that matches the search. The picks are page data (ordersSelected = { ids, rows, count }): the line below reads them, and Clear selection reloads the table, which starts the picks afresh.",
+                      "variant": "body2",
+                      "weight": "",
+                      "color": "gray",
+                      "align": "",
+                      "truncate": false,
+                      "href": "",
+                      "binding": null
+                    }
+                  },
+                  {
+                    "id": "dg-item-selection-summary",
+                    "label": "HTML content",
+                    "type": "html",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 4,
+                        "md": 6,
+                        "lg": 10
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "name": "selectionSummary",
+                      "html": "<p style=\"margin:0\"><strong>{{count}}</strong> orders picked <span class=\"dt-muted\">· {{ids}}</span></p>",
+                      "binding": {
+                        "key": "ordersSelected",
+                        "path": "",
+                        "source": "state"
+                      },
+                      "prose": false
+                    }
+                  },
+                  {
+                    "id": "dg-item-selection-clear",
+                    "label": "Button",
+                    "type": "button",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 2,
+                        "md": 2,
+                        "lg": 2
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "start",
+                        "sm": "start",
+                        "md": "start",
+                        "lg": "start"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "label": "Clear selection",
+                      "icon": "refresh",
+                      "variant": "outlined",
+                      "mode": "direct",
+                      "actions": [
+                        "ReloadDataTable"
+                      ],
+                      "confirmTitle": "",
+                      "confirmDescription": "",
+                      "confirmTrue": [],
+                      "confirmFalse": [],
+                      "modalItemId": "",
+                      "reloadTableItemId": "dg-item-selection-orders",
+                      "endpointId": null,
+                      "snackbarSuccessEnabled": false,
+                      "snackbarSuccessType": "success",
+                      "snackbarSuccessMessage": "",
+                      "snackbarErrorException": false
+                    }
+                  },
+                  {
+                    "id": "dg-item-selection-orders",
+                    "label": "Data Table",
+                    "type": "datatable",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 6,
+                        "md": 8,
+                        "lg": 12
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "name": "orders",
+                      "title": "Orders",
+                      "canEdit": false,
+                      "canDelete": false,
+                      "canSearchAllColumns": true,
+                      "columns": [
+                        {
+                          "size": 120,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": true,
+                          "id": "dg-col-sel-number",
+                          "accessor": "number",
+                          "header": "Order",
+                          "enableSorting": true,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "",
+                            "decimals": "",
+                            "grouping": true,
+                            "currency": "",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "",
+                            "trueLabel": "",
+                            "falseLabel": ""
+                          },
+                          "pin": "",
+                          "html": "",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": "",
+                          "lockVisible": true
+                        },
+                        {
+                          "size": 190,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": true,
+                          "id": "dg-col-sel-placed",
+                          "accessor": "placedAt",
+                          "header": "Placed",
+                          "enableSorting": true,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "datetime",
+                            "decimals": "",
+                            "grouping": true,
+                            "currency": "",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "Asia/Bangkok",
+                            "trueLabel": "",
+                            "falseLabel": ""
+                          },
+                          "pin": "",
+                          "html": "",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": ""
+                        },
+                        {
+                          "size": 200,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": true,
+                          "id": "dg-col-sel-customer",
+                          "accessor": "customerName",
+                          "header": "Customer",
+                          "enableSorting": true,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "",
+                            "decimals": "",
+                            "grouping": true,
+                            "currency": "",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "",
+                            "trueLabel": "",
+                            "falseLabel": ""
+                          },
+                          "pin": "",
+                          "html": "",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": ""
+                        },
+                        {
+                          "size": 160,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": true,
+                          "id": "dg-col-sel-status",
+                          "accessor": "statusLabel",
+                          "header": "Status",
+                          "enableSorting": true,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "",
+                            "decimals": "",
+                            "grouping": true,
+                            "currency": "",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "",
+                            "trueLabel": "",
+                            "falseLabel": ""
+                          },
+                          "pin": "",
+                          "html": "",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": "",
+                          "cellStyles": [
+                            {
+                              "id": "dg-rule-5",
+                              "field": "row",
+                              "path": "status",
+                              "op": "eq",
+                              "value": "refund_requested",
+                              "tone": "amber",
+                              "fill": true,
+                              "bold": true,
+                              "italic": false,
+                              "strike": false
+                            },
+                            {
+                              "id": "dg-rule-6",
+                              "field": "row",
+                              "path": "status",
+                              "op": "eq",
+                              "value": "delivered",
+                              "tone": "grass",
+                              "fill": false,
+                              "bold": false,
+                              "italic": false,
+                              "strike": false
+                            },
+                            {
+                              "id": "dg-rule-7",
+                              "field": "row",
+                              "path": "status",
+                              "op": "eq",
+                              "value": "cancelled",
+                              "tone": "gray",
+                              "fill": false,
+                              "bold": false,
+                              "italic": false,
+                              "strike": true
+                            },
+                            {
+                              "id": "dg-rule-8",
+                              "field": "row",
+                              "path": "status",
+                              "op": "eq",
+                              "value": "refunded",
+                              "tone": "gray",
+                              "fill": false,
+                              "bold": false,
+                              "italic": true,
+                              "strike": false
+                            }
+                          ]
+                        },
+                        {
+                          "size": 90,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": true,
+                          "id": "dg-col-sel-items",
+                          "accessor": "itemCount",
+                          "header": "Items",
+                          "enableSorting": true,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "number",
+                            "decimals": "",
+                            "grouping": true,
+                            "currency": "",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "",
+                            "trueLabel": "",
+                            "falseLabel": ""
+                          },
+                          "pin": "",
+                          "html": "",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": ""
+                        },
+                        {
+                          "size": 150,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": true,
+                          "id": "dg-col-sel-total",
+                          "accessor": "total",
+                          "header": "Total",
+                          "enableSorting": true,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "currency",
+                            "decimals": "",
+                            "grouping": true,
+                            "currency": "THB",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "",
+                            "trueLabel": "",
+                            "falseLabel": ""
+                          },
+                          "pin": "",
+                          "html": "",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": ""
+                        }
+                      ],
+                      "endpointId": "bs-endpoint-list-orders",
+                      "apiPaths": "data",
+                      "modalMaxWidth": "",
+                      "modalMinWidth": "",
+                      "modalMaxHeight": "",
+                      "deleteEndpointId": null,
+                      "deleteParams": {},
+                      "deleteConfirmEnabled": true,
+                      "deleteConfirmTitle": "Delete record",
+                      "deleteConfirmDescription": "Are you sure you want to delete this record?",
+                      "deleteIsReload": true,
+                      "pagination": {
+                        "enabled": false,
+                        "placement": "auto",
+                        "offsetKey": "offset",
+                        "limitKey": "limit",
+                        "searchKey": "",
+                        "totalPath": "total",
+                        "defaultPageSize": 10,
+                        "pageSizeOptions": [
+                          5,
+                          10,
+                          20,
+                          30,
+                          40,
+                          50
+                        ]
+                      },
+                      "canAdd": false,
+                      "addButton": {
+                        "label": "Add",
+                        "icon": "puls",
+                        "variant": "contained"
+                      },
+                      "headerGap": "",
+                      "canResizeColumns": true,
+                      "cellLines": 1,
+                      "filtersEnabled": false,
+                      "filterButton": {
+                        "label": "Filter",
+                        "icon": "filter",
+                        "variant": "outlined"
+                      },
+                      "filterDisplay": "popover",
+                      "filterDefaults": [],
+                      "requestMapping": [],
+                      "sort": {
+                        "enabled": false,
+                        "placement": "auto",
+                        "sortKey": "",
+                        "orderKey": "",
+                        "ascValue": "asc",
+                        "descValue": "desc",
+                        "defaultField": "",
+                        "defaultOrder": "asc"
+                      },
+                      "deleteSnackbarSuccessEnabled": false,
+                      "deleteSnackbarSuccessType": "success",
+                      "deleteSnackbarSuccessMessage": "",
+                      "deleteSnackbarErrorException": false,
+                      "selection": {
+                        "enabled": true,
+                        "mode": "multi",
+                        "idKey": "",
+                        "stateKey": "",
+                        "headerCheckbox": "all",
+                        "keepAcrossPages": true
+                      }
+                    },
+                    "childCanvases": [
+                      {
+                        "items": [],
+                        "settings": {
+                          "columns": {
+                            "xs": 4,
+                            "sm": 6,
+                            "md": 8,
+                            "lg": 12
+                          },
+                          "gap": {
+                            "xs": "16px",
+                            "sm": "16px",
+                            "md": "16px",
+                            "lg": "16px"
+                          },
+                          "rowGap": {
+                            "xs": "",
+                            "sm": "",
+                            "md": "",
+                            "lg": ""
+                          },
+                          "columnGap": {
+                            "xs": "",
+                            "sm": "",
+                            "md": "",
+                            "lg": ""
+                          },
+                          "justifyItems": {
+                            "xs": "stretch",
+                            "sm": "stretch",
+                            "md": "stretch",
+                            "lg": "stretch"
+                          },
+                          "alignItems": {
+                            "xs": "stretch",
+                            "sm": "stretch",
+                            "md": "stretch",
+                            "lg": "stretch"
+                          },
+                          "justifyContent": {
+                            "xs": "start",
+                            "sm": "start",
+                            "md": "start",
+                            "lg": "start"
+                          },
+                          "alignContent": {
+                            "xs": "start",
+                            "sm": "start",
+                            "md": "start",
+                            "lg": "start"
+                          },
+                          "gridAutoRows": {
+                            "xs": "minmax(56px, auto)",
+                            "sm": "minmax(56px, auto)",
+                            "md": "minmax(56px, auto)",
+                            "lg": "minmax(56px, auto)"
+                          },
+                          "gridAutoFlow": {
+                            "xs": "row",
+                            "sm": "row",
+                            "md": "row",
+                            "lg": "row"
+                          }
+                        }
+                      },
+                      {
+                        "items": [],
+                        "settings": {
+                          "columns": {
+                            "xs": 4,
+                            "sm": 6,
+                            "md": 8,
+                            "lg": 12
+                          },
+                          "gap": {
+                            "xs": "16px",
+                            "sm": "16px",
+                            "md": "16px",
+                            "lg": "16px"
+                          },
+                          "rowGap": {
+                            "xs": "",
+                            "sm": "",
+                            "md": "",
+                            "lg": ""
+                          },
+                          "columnGap": {
+                            "xs": "",
+                            "sm": "",
+                            "md": "",
+                            "lg": ""
+                          },
+                          "justifyItems": {
+                            "xs": "stretch",
+                            "sm": "stretch",
+                            "md": "stretch",
+                            "lg": "stretch"
+                          },
+                          "alignItems": {
+                            "xs": "stretch",
+                            "sm": "stretch",
+                            "md": "stretch",
+                            "lg": "stretch"
+                          },
+                          "justifyContent": {
+                            "xs": "start",
+                            "sm": "start",
+                            "md": "start",
+                            "lg": "start"
+                          },
+                          "alignContent": {
+                            "xs": "start",
+                            "sm": "start",
+                            "md": "start",
+                            "lg": "start"
+                          },
+                          "gridAutoRows": {
+                            "xs": "minmax(56px, auto)",
+                            "sm": "minmax(56px, auto)",
+                            "md": "minmax(56px, auto)",
+                            "lg": "minmax(56px, auto)"
+                          },
+                          "gridAutoFlow": {
+                            "xs": "row",
+                            "sm": "row",
+                            "md": "row",
+                            "lg": "row"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "containerSettings": {
+                  "columns": {
+                    "xs": 4,
+                    "sm": 6,
+                    "md": 8,
+                    "lg": 12
+                  },
+                  "gap": {
+                    "xs": "16px",
+                    "sm": "16px",
+                    "md": "16px",
+                    "lg": "16px"
+                  },
+                  "rowGap": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "columnGap": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "justifyItems": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "alignItems": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "justifyContent": {
+                    "xs": "start",
+                    "sm": "start",
+                    "md": "start",
+                    "lg": "start"
+                  },
+                  "alignContent": {
+                    "xs": "start",
+                    "sm": "start",
+                    "md": "start",
+                    "lg": "start"
+                  },
+                  "gridAutoRows": {
+                    "xs": "minmax(56px, auto)",
+                    "sm": "minmax(56px, auto)",
+                    "md": "minmax(56px, auto)",
+                    "lg": "minmax(56px, auto)"
+                  },
+                  "gridAutoFlow": {
+                    "xs": "row",
+                    "sm": "row",
+                    "md": "row",
+                    "lg": "row"
+                  }
+                },
+                "fieldSeq": 0
+              }
+            },
+            {
+              "id": "dg-page-grouping",
+              "key": "grouping",
+              "name": "Grouping",
+              "path": "/grouping",
+              "grid": {
+                "items": [
+                  {
+                    "id": "dg-item-grouping-h-title",
+                    "label": "Typography",
+                    "type": "typography",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 6,
+                        "md": 8,
+                        "lg": 12
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "text": "Grouping",
+                      "variant": "h3",
+                      "weight": "bold",
+                      "color": "",
+                      "align": "",
+                      "truncate": false,
+                      "href": "",
+                      "binding": null
+                    }
+                  },
+                  {
+                    "id": "dg-item-grouping-h-caption",
+                    "label": "Typography",
+                    "type": "typography",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 6,
+                        "md": 8,
+                        "lg": 12
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "text": "The 300 orders grouped by status, then city. Group rows count the orders and sum their items and totals; the total row at the bottom sums them all. Regroup from Columns → Group by.",
+                      "variant": "body2",
+                      "weight": "",
+                      "color": "gray",
+                      "align": "",
+                      "truncate": false,
+                      "href": "",
+                      "binding": null
+                    }
+                  },
+                  {
+                    "id": "dg-item-grouping-orders",
+                    "label": "Data Table",
+                    "type": "datatable",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 6,
+                        "md": 8,
+                        "lg": 12
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "name": "ordersByStatus",
+                      "title": "Orders by status",
+                      "canEdit": false,
+                      "canDelete": false,
+                      "canSearchAllColumns": true,
+                      "columns": [
+                        {
+                          "size": 250,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": true,
+                          "id": "dg-col-grp-status",
+                          "accessor": "statusLabel",
+                          "header": "Status",
+                          "enableSorting": true,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "",
+                            "decimals": "",
+                            "grouping": true,
+                            "currency": "",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "",
+                            "trueLabel": "",
+                            "falseLabel": ""
+                          },
+                          "pin": "",
+                          "html": "",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": "",
+                          "cellStyles": []
+                        },
+                        {
+                          "size": 120,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": true,
+                          "id": "dg-col-grp-number",
+                          "accessor": "number",
+                          "header": "Order",
+                          "enableSorting": true,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "",
+                            "decimals": "",
+                            "grouping": true,
+                            "currency": "",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "",
+                            "trueLabel": "",
+                            "falseLabel": ""
+                          },
+                          "pin": "",
+                          "html": "",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": "",
+                          "lockVisible": true,
+                          "aggregate": "count"
+                        },
+                        {
+                          "size": 140,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": true,
+                          "id": "dg-col-grp-city",
+                          "accessor": "customerCity",
+                          "header": "City",
+                          "enableSorting": true,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "",
+                            "decimals": "",
+                            "grouping": true,
+                            "currency": "",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "",
+                            "trueLabel": "",
+                            "falseLabel": ""
+                          },
+                          "pin": "",
+                          "html": "",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": ""
+                        },
+                        {
+                          "size": 200,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": true,
+                          "id": "dg-col-grp-customer",
+                          "accessor": "customerName",
+                          "header": "Customer",
+                          "enableSorting": true,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "",
+                            "decimals": "",
+                            "grouping": true,
+                            "currency": "",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "",
+                            "trueLabel": "",
+                            "falseLabel": ""
+                          },
+                          "pin": "",
+                          "html": "",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": ""
+                        },
+                        {
+                          "size": 90,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": true,
+                          "id": "dg-col-grp-items",
+                          "accessor": "itemCount",
+                          "header": "Items",
+                          "enableSorting": true,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "number",
+                            "decimals": "",
+                            "grouping": true,
+                            "currency": "",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "",
+                            "trueLabel": "",
+                            "falseLabel": ""
+                          },
+                          "pin": "",
+                          "html": "",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": "",
+                          "aggregate": "sum"
+                        },
+                        {
+                          "size": 150,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": true,
+                          "id": "dg-col-grp-total",
+                          "accessor": "total",
+                          "header": "Total",
+                          "enableSorting": true,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "currency",
+                            "decimals": "",
+                            "grouping": true,
+                            "currency": "THB",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "",
+                            "trueLabel": "",
+                            "falseLabel": ""
+                          },
+                          "pin": "",
+                          "html": "",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": "",
+                          "aggregate": "sum"
+                        },
+                        {
+                          "size": 160,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": true,
+                          "id": "dg-col-grp-handled",
+                          "accessor": "handledBy",
+                          "header": "Handled by",
+                          "enableSorting": true,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "",
+                            "decimals": "",
+                            "grouping": true,
+                            "currency": "",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "",
+                            "trueLabel": "",
+                            "falseLabel": ""
+                          },
+                          "pin": "",
+                          "html": "",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": ""
+                        }
+                      ],
+                      "endpointId": "bs-endpoint-list-orders",
+                      "apiPaths": "data",
+                      "modalMaxWidth": "",
+                      "modalMinWidth": "",
+                      "modalMaxHeight": "",
+                      "deleteEndpointId": null,
+                      "deleteParams": {},
+                      "deleteConfirmEnabled": true,
+                      "deleteConfirmTitle": "Delete record",
+                      "deleteConfirmDescription": "Are you sure you want to delete this record?",
+                      "deleteIsReload": true,
+                      "pagination": {
+                        "enabled": false,
+                        "placement": "auto",
+                        "offsetKey": "offset",
+                        "limitKey": "limit",
+                        "searchKey": "",
+                        "totalPath": "total",
+                        "defaultPageSize": 10,
+                        "pageSizeOptions": [
+                          5,
+                          10,
+                          20,
+                          30,
+                          40,
+                          50
+                        ]
+                      },
+                      "canAdd": false,
+                      "addButton": {
+                        "label": "Add",
+                        "icon": "puls",
+                        "variant": "contained"
+                      },
+                      "headerGap": "",
+                      "canResizeColumns": true,
+                      "cellLines": 1,
+                      "filtersEnabled": false,
+                      "filterButton": {
+                        "label": "Filter",
+                        "icon": "filter",
+                        "variant": "outlined"
+                      },
+                      "filterDisplay": "popover",
+                      "filterDefaults": [],
+                      "requestMapping": [],
+                      "sort": {
+                        "enabled": false,
+                        "placement": "auto",
+                        "sortKey": "",
+                        "orderKey": "",
+                        "ascValue": "asc",
+                        "descValue": "desc",
+                        "defaultField": "",
+                        "defaultOrder": "asc"
+                      },
+                      "deleteSnackbarSuccessEnabled": false,
+                      "deleteSnackbarSuccessType": "success",
+                      "deleteSnackbarSuccessMessage": "",
+                      "deleteSnackbarErrorException": false,
+                      "grouping": {
+                        "enabled": true,
+                        "by": [
+                          "statusLabel",
+                          "customerCity"
+                        ],
+                        "expanded": "0",
+                        "userCanGroup": true,
+                        "showCount": true,
+                        "totalRow": "bottom"
+                      }
+                    },
+                    "childCanvases": [
+                      {
+                        "items": [],
+                        "settings": {
+                          "columns": {
+                            "xs": 4,
+                            "sm": 6,
+                            "md": 8,
+                            "lg": 12
+                          },
+                          "gap": {
+                            "xs": "16px",
+                            "sm": "16px",
+                            "md": "16px",
+                            "lg": "16px"
+                          },
+                          "rowGap": {
+                            "xs": "",
+                            "sm": "",
+                            "md": "",
+                            "lg": ""
+                          },
+                          "columnGap": {
+                            "xs": "",
+                            "sm": "",
+                            "md": "",
+                            "lg": ""
+                          },
+                          "justifyItems": {
+                            "xs": "stretch",
+                            "sm": "stretch",
+                            "md": "stretch",
+                            "lg": "stretch"
+                          },
+                          "alignItems": {
+                            "xs": "stretch",
+                            "sm": "stretch",
+                            "md": "stretch",
+                            "lg": "stretch"
+                          },
+                          "justifyContent": {
+                            "xs": "start",
+                            "sm": "start",
+                            "md": "start",
+                            "lg": "start"
+                          },
+                          "alignContent": {
+                            "xs": "start",
+                            "sm": "start",
+                            "md": "start",
+                            "lg": "start"
+                          },
+                          "gridAutoRows": {
+                            "xs": "minmax(56px, auto)",
+                            "sm": "minmax(56px, auto)",
+                            "md": "minmax(56px, auto)",
+                            "lg": "minmax(56px, auto)"
+                          },
+                          "gridAutoFlow": {
+                            "xs": "row",
+                            "sm": "row",
+                            "md": "row",
+                            "lg": "row"
+                          }
+                        }
+                      },
+                      {
+                        "items": [],
+                        "settings": {
+                          "columns": {
+                            "xs": 4,
+                            "sm": 6,
+                            "md": 8,
+                            "lg": 12
+                          },
+                          "gap": {
+                            "xs": "16px",
+                            "sm": "16px",
+                            "md": "16px",
+                            "lg": "16px"
+                          },
+                          "rowGap": {
+                            "xs": "",
+                            "sm": "",
+                            "md": "",
+                            "lg": ""
+                          },
+                          "columnGap": {
+                            "xs": "",
+                            "sm": "",
+                            "md": "",
+                            "lg": ""
+                          },
+                          "justifyItems": {
+                            "xs": "stretch",
+                            "sm": "stretch",
+                            "md": "stretch",
+                            "lg": "stretch"
+                          },
+                          "alignItems": {
+                            "xs": "stretch",
+                            "sm": "stretch",
+                            "md": "stretch",
+                            "lg": "stretch"
+                          },
+                          "justifyContent": {
+                            "xs": "start",
+                            "sm": "start",
+                            "md": "start",
+                            "lg": "start"
+                          },
+                          "alignContent": {
+                            "xs": "start",
+                            "sm": "start",
+                            "md": "start",
+                            "lg": "start"
+                          },
+                          "gridAutoRows": {
+                            "xs": "minmax(56px, auto)",
+                            "sm": "minmax(56px, auto)",
+                            "md": "minmax(56px, auto)",
+                            "lg": "minmax(56px, auto)"
+                          },
+                          "gridAutoFlow": {
+                            "xs": "row",
+                            "sm": "row",
+                            "md": "row",
+                            "lg": "row"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "containerSettings": {
+                  "columns": {
+                    "xs": 4,
+                    "sm": 6,
+                    "md": 8,
+                    "lg": 12
+                  },
+                  "gap": {
+                    "xs": "16px",
+                    "sm": "16px",
+                    "md": "16px",
+                    "lg": "16px"
+                  },
+                  "rowGap": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "columnGap": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "justifyItems": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "alignItems": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "justifyContent": {
+                    "xs": "start",
+                    "sm": "start",
+                    "md": "start",
+                    "lg": "start"
+                  },
+                  "alignContent": {
+                    "xs": "start",
+                    "sm": "start",
+                    "md": "start",
+                    "lg": "start"
+                  },
+                  "gridAutoRows": {
+                    "xs": "minmax(56px, auto)",
+                    "sm": "minmax(56px, auto)",
+                    "md": "minmax(56px, auto)",
+                    "lg": "minmax(56px, auto)"
+                  },
+                  "gridAutoFlow": {
+                    "xs": "row",
+                    "sm": "row",
+                    "md": "row",
+                    "lg": "row"
+                  }
+                },
+                "fieldSeq": 0
+              }
+            },
+            {
+              "id": "dg-page-export",
+              "key": "export",
+              "name": "Export",
+              "path": "/export",
+              "grid": {
+                "items": [
+                  {
+                    "id": "dg-item-export-h-title",
+                    "label": "Typography",
+                    "type": "typography",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 6,
+                        "md": 8,
+                        "lg": 12
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "text": "Export",
+                      "variant": "h3",
+                      "weight": "bold",
+                      "color": "",
+                      "align": "",
+                      "truncate": false,
+                      "href": "",
+                      "binding": null
+                    }
+                  },
+                  {
+                    "id": "dg-item-export-h-caption",
+                    "label": "Typography",
+                    "type": "typography",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 6,
+                        "md": 8,
+                        "lg": 12
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "text": "Export writes the table as you see it — rows after search and sort, the visible columns in their order, values as shown — to a CSV with a UTF-8 BOM, so Excel opens it right. The button beside this text does the same from outside the table (the ExportTable action).",
+                      "variant": "body2",
+                      "weight": "",
+                      "color": "gray",
+                      "align": "",
+                      "truncate": false,
+                      "href": "",
+                      "binding": null
+                    }
+                  },
+                  {
+                    "id": "dg-item-export-note",
+                    "label": "Typography",
+                    "type": "typography",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 4,
+                        "md": 6,
+                        "lg": 10
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "text": "Search the table, hide a column or sort, then export.",
+                      "variant": "body1",
+                      "weight": "medium",
+                      "color": "",
+                      "align": "",
+                      "truncate": false,
+                      "href": "",
+                      "binding": null
+                    }
+                  },
+                  {
+                    "id": "dg-item-export-button",
+                    "label": "Button",
+                    "type": "button",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 2,
+                        "md": 2,
+                        "lg": 2
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "start",
+                        "sm": "start",
+                        "md": "start",
+                        "lg": "start"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "label": "Download CSV",
+                      "icon": "download",
+                      "variant": "contained",
+                      "mode": "direct",
+                      "actions": [
+                        "ExportTable"
+                      ],
+                      "confirmTitle": "",
+                      "confirmDescription": "",
+                      "confirmTrue": [],
+                      "confirmFalse": [],
+                      "modalItemId": "",
+                      "reloadTableItemId": "",
+                      "endpointId": null,
+                      "snackbarSuccessEnabled": false,
+                      "snackbarSuccessType": "success",
+                      "snackbarSuccessMessage": "",
+                      "snackbarErrorException": false,
+                      "exportTableItemId": "dg-item-export-orders"
+                    }
+                  },
+                  {
+                    "id": "dg-item-export-orders",
+                    "label": "Data Table",
+                    "type": "datatable",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 6,
+                        "md": 8,
+                        "lg": 12
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "name": "ordersExport",
+                      "title": "Orders",
+                      "canEdit": false,
+                      "canDelete": false,
+                      "canSearchAllColumns": true,
+                      "columns": [
+                        {
+                          "size": 120,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": true,
+                          "id": "dg-col-exp-number",
+                          "accessor": "number",
+                          "header": "Order",
+                          "enableSorting": true,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "",
+                            "decimals": "",
+                            "grouping": true,
+                            "currency": "",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "",
+                            "trueLabel": "",
+                            "falseLabel": ""
+                          },
+                          "pin": "",
+                          "html": "",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": "",
+                          "lockVisible": true
+                        },
+                        {
+                          "size": 190,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": true,
+                          "id": "dg-col-exp-placed",
+                          "accessor": "placedAt",
+                          "header": "Placed",
+                          "enableSorting": true,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "datetime",
+                            "decimals": "",
+                            "grouping": true,
+                            "currency": "",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "Asia/Bangkok",
+                            "trueLabel": "",
+                            "falseLabel": ""
+                          },
+                          "pin": "",
+                          "html": "",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": ""
+                        },
+                        {
+                          "size": 200,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": true,
+                          "id": "dg-col-exp-customer",
+                          "accessor": "customerName",
+                          "header": "Customer",
+                          "enableSorting": true,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "",
+                            "decimals": "",
+                            "grouping": true,
+                            "currency": "",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "",
+                            "trueLabel": "",
+                            "falseLabel": ""
+                          },
+                          "pin": "",
+                          "html": "",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": ""
+                        },
+                        {
+                          "size": 140,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": true,
+                          "id": "dg-col-exp-city",
+                          "accessor": "customerCity",
+                          "header": "City",
+                          "enableSorting": true,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "",
+                            "decimals": "",
+                            "grouping": true,
+                            "currency": "",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "",
+                            "trueLabel": "",
+                            "falseLabel": ""
+                          },
+                          "pin": "",
+                          "html": "",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": ""
+                        },
+                        {
+                          "size": 160,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": true,
+                          "id": "dg-col-exp-status",
+                          "accessor": "statusLabel",
+                          "header": "Status",
+                          "enableSorting": true,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "",
+                            "decimals": "",
+                            "grouping": true,
+                            "currency": "",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "",
+                            "trueLabel": "",
+                            "falseLabel": ""
+                          },
+                          "pin": "",
+                          "html": "",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": "",
+                          "cellStyles": [
+                            {
+                              "id": "dg-rule-13",
+                              "field": "row",
+                              "path": "status",
+                              "op": "eq",
+                              "value": "refund_requested",
+                              "tone": "amber",
+                              "fill": true,
+                              "bold": true,
+                              "italic": false,
+                              "strike": false
+                            },
+                            {
+                              "id": "dg-rule-14",
+                              "field": "row",
+                              "path": "status",
+                              "op": "eq",
+                              "value": "delivered",
+                              "tone": "grass",
+                              "fill": false,
+                              "bold": false,
+                              "italic": false,
+                              "strike": false
+                            },
+                            {
+                              "id": "dg-rule-15",
+                              "field": "row",
+                              "path": "status",
+                              "op": "eq",
+                              "value": "cancelled",
+                              "tone": "gray",
+                              "fill": false,
+                              "bold": false,
+                              "italic": false,
+                              "strike": true
+                            },
+                            {
+                              "id": "dg-rule-16",
+                              "field": "row",
+                              "path": "status",
+                              "op": "eq",
+                              "value": "refunded",
+                              "tone": "gray",
+                              "fill": false,
+                              "bold": false,
+                              "italic": true,
+                              "strike": false
+                            }
+                          ]
+                        },
+                        {
+                          "size": 90,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": true,
+                          "id": "dg-col-exp-items",
+                          "accessor": "itemCount",
+                          "header": "Items",
+                          "enableSorting": true,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "number",
+                            "decimals": "",
+                            "grouping": true,
+                            "currency": "",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "",
+                            "trueLabel": "",
+                            "falseLabel": ""
+                          },
+                          "pin": "",
+                          "html": "",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": ""
+                        },
+                        {
+                          "size": 150,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": true,
+                          "id": "dg-col-exp-total",
+                          "accessor": "total",
+                          "header": "Total",
+                          "enableSorting": true,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "currency",
+                            "decimals": "",
+                            "grouping": true,
+                            "currency": "THB",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "",
+                            "trueLabel": "",
+                            "falseLabel": ""
+                          },
+                          "pin": "",
+                          "html": "",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": ""
+                        },
+                        {
+                          "size": 140,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": true,
+                          "id": "dg-col-exp-payment",
+                          "accessor": "paymentMethod",
+                          "header": "Payment",
+                          "enableSorting": true,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "",
+                            "decimals": "",
+                            "grouping": true,
+                            "currency": "",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "",
+                            "trueLabel": "",
+                            "falseLabel": ""
+                          },
+                          "pin": "",
+                          "html": "",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": ""
+                        }
+                      ],
+                      "endpointId": "bs-endpoint-list-orders",
+                      "apiPaths": "data",
+                      "modalMaxWidth": "",
+                      "modalMinWidth": "",
+                      "modalMaxHeight": "",
+                      "deleteEndpointId": null,
+                      "deleteParams": {},
+                      "deleteConfirmEnabled": true,
+                      "deleteConfirmTitle": "Delete record",
+                      "deleteConfirmDescription": "Are you sure you want to delete this record?",
+                      "deleteIsReload": true,
+                      "pagination": {
+                        "enabled": false,
+                        "placement": "auto",
+                        "offsetKey": "offset",
+                        "limitKey": "limit",
+                        "searchKey": "",
+                        "totalPath": "total",
+                        "defaultPageSize": 10,
+                        "pageSizeOptions": [
+                          5,
+                          10,
+                          20,
+                          30,
+                          40,
+                          50
+                        ]
+                      },
+                      "canAdd": false,
+                      "addButton": {
+                        "label": "Add",
+                        "icon": "puls",
+                        "variant": "contained"
+                      },
+                      "headerGap": "",
+                      "canResizeColumns": true,
+                      "cellLines": 1,
+                      "filtersEnabled": false,
+                      "filterButton": {
+                        "label": "Filter",
+                        "icon": "filter",
+                        "variant": "outlined"
+                      },
+                      "filterDisplay": "popover",
+                      "filterDefaults": [],
+                      "requestMapping": [],
+                      "sort": {
+                        "enabled": false,
+                        "placement": "auto",
+                        "sortKey": "",
+                        "orderKey": "",
+                        "ascValue": "asc",
+                        "descValue": "desc",
+                        "defaultField": "",
+                        "defaultOrder": "asc"
+                      },
+                      "deleteSnackbarSuccessEnabled": false,
+                      "deleteSnackbarSuccessType": "success",
+                      "deleteSnackbarSuccessMessage": "",
+                      "deleteSnackbarErrorException": false,
+                      "canExport": true,
+                      "exportOptions": {
+                        "fileName": "orders-{{date}}",
+                        "columns": "visible",
+                        "values": "formatted",
+                        "rows": "all"
+                      }
+                    },
+                    "childCanvases": [
+                      {
+                        "items": [],
+                        "settings": {
+                          "columns": {
+                            "xs": 4,
+                            "sm": 6,
+                            "md": 8,
+                            "lg": 12
+                          },
+                          "gap": {
+                            "xs": "16px",
+                            "sm": "16px",
+                            "md": "16px",
+                            "lg": "16px"
+                          },
+                          "rowGap": {
+                            "xs": "",
+                            "sm": "",
+                            "md": "",
+                            "lg": ""
+                          },
+                          "columnGap": {
+                            "xs": "",
+                            "sm": "",
+                            "md": "",
+                            "lg": ""
+                          },
+                          "justifyItems": {
+                            "xs": "stretch",
+                            "sm": "stretch",
+                            "md": "stretch",
+                            "lg": "stretch"
+                          },
+                          "alignItems": {
+                            "xs": "stretch",
+                            "sm": "stretch",
+                            "md": "stretch",
+                            "lg": "stretch"
+                          },
+                          "justifyContent": {
+                            "xs": "start",
+                            "sm": "start",
+                            "md": "start",
+                            "lg": "start"
+                          },
+                          "alignContent": {
+                            "xs": "start",
+                            "sm": "start",
+                            "md": "start",
+                            "lg": "start"
+                          },
+                          "gridAutoRows": {
+                            "xs": "minmax(56px, auto)",
+                            "sm": "minmax(56px, auto)",
+                            "md": "minmax(56px, auto)",
+                            "lg": "minmax(56px, auto)"
+                          },
+                          "gridAutoFlow": {
+                            "xs": "row",
+                            "sm": "row",
+                            "md": "row",
+                            "lg": "row"
+                          }
+                        }
+                      },
+                      {
+                        "items": [],
+                        "settings": {
+                          "columns": {
+                            "xs": 4,
+                            "sm": 6,
+                            "md": 8,
+                            "lg": 12
+                          },
+                          "gap": {
+                            "xs": "16px",
+                            "sm": "16px",
+                            "md": "16px",
+                            "lg": "16px"
+                          },
+                          "rowGap": {
+                            "xs": "",
+                            "sm": "",
+                            "md": "",
+                            "lg": ""
+                          },
+                          "columnGap": {
+                            "xs": "",
+                            "sm": "",
+                            "md": "",
+                            "lg": ""
+                          },
+                          "justifyItems": {
+                            "xs": "stretch",
+                            "sm": "stretch",
+                            "md": "stretch",
+                            "lg": "stretch"
+                          },
+                          "alignItems": {
+                            "xs": "stretch",
+                            "sm": "stretch",
+                            "md": "stretch",
+                            "lg": "stretch"
+                          },
+                          "justifyContent": {
+                            "xs": "start",
+                            "sm": "start",
+                            "md": "start",
+                            "lg": "start"
+                          },
+                          "alignContent": {
+                            "xs": "start",
+                            "sm": "start",
+                            "md": "start",
+                            "lg": "start"
+                          },
+                          "gridAutoRows": {
+                            "xs": "minmax(56px, auto)",
+                            "sm": "minmax(56px, auto)",
+                            "md": "minmax(56px, auto)",
+                            "lg": "minmax(56px, auto)"
+                          },
+                          "gridAutoFlow": {
+                            "xs": "row",
+                            "sm": "row",
+                            "md": "row",
+                            "lg": "row"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "containerSettings": {
+                  "columns": {
+                    "xs": 4,
+                    "sm": 6,
+                    "md": 8,
+                    "lg": 12
+                  },
+                  "gap": {
+                    "xs": "16px",
+                    "sm": "16px",
+                    "md": "16px",
+                    "lg": "16px"
+                  },
+                  "rowGap": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "columnGap": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "justifyItems": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "alignItems": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "justifyContent": {
+                    "xs": "start",
+                    "sm": "start",
+                    "md": "start",
+                    "lg": "start"
+                  },
+                  "alignContent": {
+                    "xs": "start",
+                    "sm": "start",
+                    "md": "start",
+                    "lg": "start"
+                  },
+                  "gridAutoRows": {
+                    "xs": "minmax(56px, auto)",
+                    "sm": "minmax(56px, auto)",
+                    "md": "minmax(56px, auto)",
+                    "lg": "minmax(56px, auto)"
+                  },
+                  "gridAutoFlow": {
+                    "xs": "row",
+                    "sm": "row",
+                    "md": "row",
+                    "lg": "row"
+                  }
+                },
+                "fieldSeq": 0
+              }
+            },
+            {
+              "id": "dg-page-scroll",
+              "key": "scroll",
+              "name": "Scroll",
+              "path": "/scroll",
+              "grid": {
+                "items": [
+                  {
+                    "id": "dg-item-scroll-h-title",
+                    "label": "Typography",
+                    "type": "typography",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 6,
+                        "md": 8,
+                        "lg": 12
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "text": "Scroll",
+                      "variant": "h3",
+                      "weight": "bold",
+                      "color": "",
+                      "align": "",
+                      "truncate": false,
+                      "href": "",
+                      "binding": null
+                    }
+                  },
+                  {
+                    "id": "dg-item-scroll-h-caption",
+                    "label": "Typography",
+                    "type": "typography",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 6,
+                        "md": 8,
+                        "lg": 12
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "text": "All 300 orders in one scroller, no pager. Past 60 rows only the rows in view are drawn, so scrolling stays smooth; the header stays put and the order number stays pinned.",
+                      "variant": "body2",
+                      "weight": "",
+                      "color": "gray",
+                      "align": "",
+                      "truncate": false,
+                      "href": "",
+                      "binding": null
+                    }
+                  },
+                  {
+                    "id": "dg-item-scroll-orders",
+                    "label": "Data Table",
+                    "type": "datatable",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 6,
+                        "md": 8,
+                        "lg": 12
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "name": "ordersScroll",
+                      "title": "All orders",
+                      "canEdit": false,
+                      "canDelete": false,
+                      "canSearchAllColumns": true,
+                      "columns": [
+                        {
+                          "size": 120,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": true,
+                          "id": "dg-col-scr-number",
+                          "accessor": "number",
+                          "header": "Order",
+                          "enableSorting": true,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "",
+                            "decimals": "",
+                            "grouping": true,
+                            "currency": "",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "",
+                            "trueLabel": "",
+                            "falseLabel": ""
+                          },
+                          "pin": "left",
+                          "html": "",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": "",
+                          "lockVisible": true
+                        },
+                        {
+                          "size": 190,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": true,
+                          "id": "dg-col-scr-placed",
+                          "accessor": "placedAt",
+                          "header": "Placed",
+                          "enableSorting": true,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "datetime",
+                            "decimals": "",
+                            "grouping": true,
+                            "currency": "",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "Asia/Bangkok",
+                            "trueLabel": "",
+                            "falseLabel": ""
+                          },
+                          "pin": "",
+                          "html": "",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": ""
+                        },
+                        {
+                          "size": 200,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": true,
+                          "id": "dg-col-scr-customer",
+                          "accessor": "customerName",
+                          "header": "Customer",
+                          "enableSorting": true,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "",
+                            "decimals": "",
+                            "grouping": true,
+                            "currency": "",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "",
+                            "trueLabel": "",
+                            "falseLabel": ""
+                          },
+                          "pin": "",
+                          "html": "",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": ""
+                        },
+                        {
+                          "size": 140,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": true,
+                          "id": "dg-col-scr-city",
+                          "accessor": "customerCity",
+                          "header": "City",
+                          "enableSorting": true,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "",
+                            "decimals": "",
+                            "grouping": true,
+                            "currency": "",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "",
+                            "trueLabel": "",
+                            "falseLabel": ""
+                          },
+                          "pin": "",
+                          "html": "",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": ""
+                        },
+                        {
+                          "size": 160,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": true,
+                          "id": "dg-col-scr-status",
+                          "accessor": "statusLabel",
+                          "header": "Status",
+                          "enableSorting": true,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "",
+                            "decimals": "",
+                            "grouping": true,
+                            "currency": "",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "",
+                            "trueLabel": "",
+                            "falseLabel": ""
+                          },
+                          "pin": "",
+                          "html": "",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": "",
+                          "cellStyles": [
+                            {
+                              "id": "dg-rule-17",
+                              "field": "row",
+                              "path": "status",
+                              "op": "eq",
+                              "value": "refund_requested",
+                              "tone": "amber",
+                              "fill": true,
+                              "bold": true,
+                              "italic": false,
+                              "strike": false
+                            },
+                            {
+                              "id": "dg-rule-18",
+                              "field": "row",
+                              "path": "status",
+                              "op": "eq",
+                              "value": "delivered",
+                              "tone": "grass",
+                              "fill": false,
+                              "bold": false,
+                              "italic": false,
+                              "strike": false
+                            },
+                            {
+                              "id": "dg-rule-19",
+                              "field": "row",
+                              "path": "status",
+                              "op": "eq",
+                              "value": "cancelled",
+                              "tone": "gray",
+                              "fill": false,
+                              "bold": false,
+                              "italic": false,
+                              "strike": true
+                            },
+                            {
+                              "id": "dg-rule-20",
+                              "field": "row",
+                              "path": "status",
+                              "op": "eq",
+                              "value": "refunded",
+                              "tone": "gray",
+                              "fill": false,
+                              "bold": false,
+                              "italic": true,
+                              "strike": false
+                            }
+                          ]
+                        },
+                        {
+                          "size": 90,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": true,
+                          "id": "dg-col-scr-items",
+                          "accessor": "itemCount",
+                          "header": "Items",
+                          "enableSorting": true,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "number",
+                            "decimals": "",
+                            "grouping": true,
+                            "currency": "",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "",
+                            "trueLabel": "",
+                            "falseLabel": ""
+                          },
+                          "pin": "",
+                          "html": "",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": ""
+                        },
+                        {
+                          "size": 150,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": true,
+                          "id": "dg-col-scr-total",
+                          "accessor": "total",
+                          "header": "Total",
+                          "enableSorting": true,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "currency",
+                            "decimals": "",
+                            "grouping": true,
+                            "currency": "THB",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "",
+                            "trueLabel": "",
+                            "falseLabel": ""
+                          },
+                          "pin": "",
+                          "html": "",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": ""
+                        },
+                        {
+                          "size": 140,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": true,
+                          "id": "dg-col-scr-payment",
+                          "accessor": "paymentMethod",
+                          "header": "Payment",
+                          "enableSorting": true,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "",
+                            "decimals": "",
+                            "grouping": true,
+                            "currency": "",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "",
+                            "trueLabel": "",
+                            "falseLabel": ""
+                          },
+                          "pin": "",
+                          "html": "",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": ""
+                        },
+                        {
+                          "size": 160,
+                          "minSize": "",
+                          "maxSize": "",
+                          "resizable": true,
+                          "id": "dg-col-scr-handled",
+                          "accessor": "handledBy",
+                          "header": "Handled by",
+                          "enableSorting": true,
+                          "enableColumnFilter": false,
+                          "align": "start",
+                          "format": {
+                            "type": "",
+                            "decimals": "",
+                            "grouping": true,
+                            "currency": "",
+                            "percentOf": "1",
+                            "pattern": "",
+                            "timeZone": "",
+                            "trueLabel": "",
+                            "falseLabel": ""
+                          },
+                          "pin": "",
+                          "html": "",
+                          "sortField": "",
+                          "lines": "",
+                          "rowHeader": false,
+                          "mergeRows": false,
+                          "mergeColumns": false,
+                          "group": ""
+                        }
+                      ],
+                      "endpointId": "bs-endpoint-list-orders",
+                      "apiPaths": "data",
+                      "modalMaxWidth": "",
+                      "modalMinWidth": "",
+                      "modalMaxHeight": "",
+                      "deleteEndpointId": null,
+                      "deleteParams": {},
+                      "deleteConfirmEnabled": true,
+                      "deleteConfirmTitle": "Delete record",
+                      "deleteConfirmDescription": "Are you sure you want to delete this record?",
+                      "deleteIsReload": true,
+                      "pagination": {
+                        "enabled": false,
+                        "placement": "auto",
+                        "offsetKey": "offset",
+                        "limitKey": "limit",
+                        "searchKey": "",
+                        "totalPath": "total",
+                        "defaultPageSize": 10,
+                        "pageSizeOptions": [
+                          5,
+                          10,
+                          20,
+                          30,
+                          40,
+                          50
+                        ]
+                      },
+                      "canAdd": false,
+                      "addButton": {
+                        "label": "Add",
+                        "icon": "puls",
+                        "variant": "contained"
+                      },
+                      "headerGap": "",
+                      "canResizeColumns": true,
+                      "cellLines": 1,
+                      "filtersEnabled": false,
+                      "filterButton": {
+                        "label": "Filter",
+                        "icon": "filter",
+                        "variant": "outlined"
+                      },
+                      "filterDisplay": "popover",
+                      "filterDefaults": [],
+                      "requestMapping": [],
+                      "sort": {
+                        "enabled": false,
+                        "placement": "auto",
+                        "sortKey": "",
+                        "orderKey": "",
+                        "ascValue": "asc",
+                        "descValue": "desc",
+                        "defaultField": "",
+                        "defaultOrder": "asc"
+                      },
+                      "deleteSnackbarSuccessEnabled": false,
+                      "deleteSnackbarSuccessType": "success",
+                      "deleteSnackbarSuccessMessage": "",
+                      "deleteSnackbarErrorException": false,
+                      "paging": "scroll",
+                      "selection": {
+                        "enabled": true,
+                        "mode": "multi",
+                        "idKey": "",
+                        "stateKey": "scrollSelected",
+                        "headerCheckbox": "all",
+                        "keepAcrossPages": true
+                      }
+                    },
+                    "childCanvases": [
+                      {
+                        "items": [],
+                        "settings": {
+                          "columns": {
+                            "xs": 4,
+                            "sm": 6,
+                            "md": 8,
+                            "lg": 12
+                          },
+                          "gap": {
+                            "xs": "16px",
+                            "sm": "16px",
+                            "md": "16px",
+                            "lg": "16px"
+                          },
+                          "rowGap": {
+                            "xs": "",
+                            "sm": "",
+                            "md": "",
+                            "lg": ""
+                          },
+                          "columnGap": {
+                            "xs": "",
+                            "sm": "",
+                            "md": "",
+                            "lg": ""
+                          },
+                          "justifyItems": {
+                            "xs": "stretch",
+                            "sm": "stretch",
+                            "md": "stretch",
+                            "lg": "stretch"
+                          },
+                          "alignItems": {
+                            "xs": "stretch",
+                            "sm": "stretch",
+                            "md": "stretch",
+                            "lg": "stretch"
+                          },
+                          "justifyContent": {
+                            "xs": "start",
+                            "sm": "start",
+                            "md": "start",
+                            "lg": "start"
+                          },
+                          "alignContent": {
+                            "xs": "start",
+                            "sm": "start",
+                            "md": "start",
+                            "lg": "start"
+                          },
+                          "gridAutoRows": {
+                            "xs": "minmax(56px, auto)",
+                            "sm": "minmax(56px, auto)",
+                            "md": "minmax(56px, auto)",
+                            "lg": "minmax(56px, auto)"
+                          },
+                          "gridAutoFlow": {
+                            "xs": "row",
+                            "sm": "row",
+                            "md": "row",
+                            "lg": "row"
+                          }
+                        }
+                      },
+                      {
+                        "items": [],
+                        "settings": {
+                          "columns": {
+                            "xs": 4,
+                            "sm": 6,
+                            "md": 8,
+                            "lg": 12
+                          },
+                          "gap": {
+                            "xs": "16px",
+                            "sm": "16px",
+                            "md": "16px",
+                            "lg": "16px"
+                          },
+                          "rowGap": {
+                            "xs": "",
+                            "sm": "",
+                            "md": "",
+                            "lg": ""
+                          },
+                          "columnGap": {
+                            "xs": "",
+                            "sm": "",
+                            "md": "",
+                            "lg": ""
+                          },
+                          "justifyItems": {
+                            "xs": "stretch",
+                            "sm": "stretch",
+                            "md": "stretch",
+                            "lg": "stretch"
+                          },
+                          "alignItems": {
+                            "xs": "stretch",
+                            "sm": "stretch",
+                            "md": "stretch",
+                            "lg": "stretch"
+                          },
+                          "justifyContent": {
+                            "xs": "start",
+                            "sm": "start",
+                            "md": "start",
+                            "lg": "start"
+                          },
+                          "alignContent": {
+                            "xs": "start",
+                            "sm": "start",
+                            "md": "start",
+                            "lg": "start"
+                          },
+                          "gridAutoRows": {
+                            "xs": "minmax(56px, auto)",
+                            "sm": "minmax(56px, auto)",
+                            "md": "minmax(56px, auto)",
+                            "lg": "minmax(56px, auto)"
+                          },
+                          "gridAutoFlow": {
+                            "xs": "row",
+                            "sm": "row",
+                            "md": "row",
+                            "lg": "row"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "containerSettings": {
+                  "columns": {
+                    "xs": 4,
+                    "sm": 6,
+                    "md": 8,
+                    "lg": 12
+                  },
+                  "gap": {
+                    "xs": "16px",
+                    "sm": "16px",
+                    "md": "16px",
+                    "lg": "16px"
+                  },
+                  "rowGap": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "columnGap": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "justifyItems": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "alignItems": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "justifyContent": {
+                    "xs": "start",
+                    "sm": "start",
+                    "md": "start",
+                    "lg": "start"
+                  },
+                  "alignContent": {
+                    "xs": "start",
+                    "sm": "start",
+                    "md": "start",
+                    "lg": "start"
+                  },
+                  "gridAutoRows": {
+                    "xs": "minmax(56px, auto)",
+                    "sm": "minmax(56px, auto)",
+                    "md": "minmax(56px, auto)",
+                    "lg": "minmax(56px, auto)"
+                  },
+                  "gridAutoFlow": {
+                    "xs": "row",
+                    "sm": "row",
+                    "md": "row",
+                    "lg": "row"
+                  }
+                },
+                "fieldSeq": 0
+              }
+            }
+          ],
+          "menu": [
+            {
+              "id": "dg-menu-formats",
+              "kind": "page",
+              "label": "Formats & styles",
+              "icon": "hash",
+              "navigate": {
+                "pageId": "dg-page-formats",
+                "params": {},
+                "replace": false
+              }
+            },
+            {
+              "id": "dg-menu-columns",
+              "kind": "page",
+              "label": "Columns",
+              "icon": "columns",
+              "navigate": {
+                "pageId": "dg-page-columns",
+                "params": {},
+                "replace": false
+              }
+            },
+            {
+              "id": "dg-menu-selection",
+              "kind": "page",
+              "label": "Selection",
+              "icon": "checkSquare",
+              "navigate": {
+                "pageId": "dg-page-selection",
+                "params": {},
+                "replace": false
+              }
+            },
+            {
+              "id": "dg-menu-grouping",
+              "kind": "page",
+              "label": "Grouping",
+              "icon": "layers",
+              "navigate": {
+                "pageId": "dg-page-grouping",
+                "params": {},
+                "replace": false
+              }
+            },
+            {
+              "id": "dg-menu-export",
+              "kind": "page",
+              "label": "Export",
+              "icon": "download",
+              "navigate": {
+                "pageId": "dg-page-export",
+                "params": {},
+                "replace": false
+              }
+            },
+            {
+              "id": "dg-menu-scroll",
+              "kind": "page",
+              "label": "Scroll",
+              "icon": "list",
+              "navigate": {
+                "pageId": "dg-page-scroll",
+                "params": {},
+                "replace": false
+              }
+            }
+          ],
+          "shell": {
+            "navigation": "sidebar",
+            "breadcrumbs": false,
+            "appBar": {
+              "title": "Data grid",
+              "icon": "table",
+              "logo": "",
+              "logoSize": "",
+              "variant": "accent",
+              "background": "",
+              "gradient": {
+                "enabled": false,
+                "from": "",
+                "to": "",
+                "angle": 90
+              },
+              "foreground": "",
+              "padding": "",
+              "sidebarToggle": {
+                "hide": "",
+                "show": ""
+              }
+            },
+            "menuIcons": true,
+            "collapsible": true,
+            "sidebar": {
+              "variant": "plain",
+              "toggle": "header",
+              "toggleLabel": "",
+              "railWidth": "",
+              "itemBackground": "",
+              "activeBackground": "",
+              "activeGradient": {
+                "enabled": false,
+                "from": "",
+                "to": "",
+                "angle": 90
+              },
+              "indicator": null,
+              "indicatorColor": ""
+            },
+            "pageTransition": {
+              "type": "fade",
+              "duration": "",
+              "easing": "ease-out"
+            },
+            "locale": "en-US"
+          },
+          "env": [
+            {
+              "id": "dg-env-api-url",
+              "name": "API_URL",
+              "value": "http://localhost:9100",
+              "locked": true
+            }
+          ],
+          "theme": {
+            "appearance": "light",
+            "accentColor": "teal",
+            "radius": "medium",
+            "panelBackground": "solid",
+            "surface": "flat",
+            "background": {
+              "kind": "default",
+              "color": "",
+              "darkColor": "",
+              "gradient": {
+                "from": "",
+                "to": "",
+                "angle": 160,
+                "darkFrom": "",
+                "darkTo": ""
+              },
+              "image": ""
+            },
+            "buttonColor": "",
+            "dataTable": {
+              "headerColor": "",
+              "headerTextColor": "",
+              "headerFontSize": "sm",
+              "headerFontWeight": "semibold",
+              "headerHoverColor": "",
+              "paginationButtonColor": "",
+              "paginationButtonHoverColor": "",
+              "rowHoverColor": "",
+              "editButtonColor": "",
+              "deleteButtonColor": ""
+            }
+          },
+          "endpointIds": [
+            "bs-endpoint-list-books",
+            "bs-endpoint-list-customers",
+            "bs-endpoint-list-orders"
+          ],
+          "globalLoads": [],
+          "customActions": [],
+          "customComponents": [],
+          "authId": null
+        }
       }
     ],
     "library": {
@@ -30820,5 +35607,5 @@
     },
     "activity": []
   },
-  "version": 56
+  "version": 57
 }
