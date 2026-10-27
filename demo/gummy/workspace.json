@@ -16498,7 +16498,7 @@
         "name": "Glass showcase",
         "description": "The Glass surface on every component: cards, tables with pinned columns, forms, a repeater, drawer / modal / popover — over the Book shop API.",
         "createdAt": 1793059200000,
-        "updatedAt": 1793059200000,
+        "updatedAt": 1793090209201,
         "snapshot": {
           "pages": [
             {
@@ -24292,7 +24292,7 @@
           ],
           "shell": {
             "navigation": "sidebar",
-            "breadcrumbs": true,
+            "breadcrumbs": false,
             "appBar": {
               "title": "Glass showcase",
               "icon": "layoutDashboard",
@@ -24309,14 +24309,14 @@
               "foreground": "",
               "padding": "",
               "sidebarToggle": {
-                "hide": "",
-                "show": ""
+                "hide": "menu",
+                "show": "menu"
               }
             },
             "menuIcons": true,
             "collapsible": true,
             "sidebar": {
-              "variant": "plain",
+              "variant": "pill",
               "toggle": "header",
               "toggleLabel": "",
               "railWidth": "",

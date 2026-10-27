@@ -293,13 +293,20 @@
   ],
   "shell": {
     "navigation": "sidebar",
-    "breadcrumbs": true,
+    "breadcrumbs": false,
     "appBar": {
       "title": "Glass showcase",
-      "icon": "layoutDashboard"
+      "icon": "layoutDashboard",
+      "sidebarToggle": {
+        "hide": "menu",
+        "show": "menu"
+      }
     },
     "pageTransition": {
       "type": "fade-up"
+    },
+    "sidebar": {
+      "variant": "pill"
     }
   },
   "theme": {
