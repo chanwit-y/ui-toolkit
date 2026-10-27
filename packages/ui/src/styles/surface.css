@@ -112,6 +112,33 @@ html[data-surface="glass"] :is(.rt-PopoverContent, .rt-SelectContent, .rt-Dropdo
   -webkit-backdrop-filter: var(--gummy-surface-input-blur);
 }
 
+/* -------------------------------------------------------------- dialogs */
+
+/* A glass dialog / drawer sits on a lighter scrim than flat's dark blurred
+   gradient (which drowned the translucent panel: a 65% sheet over a darkened
+   page read muddy and faint) — a thin tint and a 4px blur keep the page
+   legible behind it, and the panel itself is denser than a card (82%) so
+   its text holds up over the brighter backdrop. The scrim is portaled next
+   to the Theme root, not inside it, so it is reached through the <html>
+   mirror the outermost ThemeProvider writes. */
+html[data-surface="glass"] .modal-overlay {
+  background: rgb(15 23 42 / 0.14);
+  opacity: 1;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+html.dark[data-surface="glass"] .modal-overlay {
+  background: rgb(0 0 0 / 0.32);
+}
+[data-surface="glass"] :is(.modal-content, .drawer-content) .gummy-surface.gummy-surface {
+  background-color: color-mix(in srgb, var(--gummy-surface-base) 82%, transparent);
+}
+/* The content's own blur (Modal.css) is redundant on a blurred panel; let the panel do it. */
+html[data-surface="glass"] .modal-content {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
 /* ------------------------------------------------------------- backdrop */
 
 /* `<SurfaceBackdrop>`: the layer the glass blurs. Rendered by AppShell inside
