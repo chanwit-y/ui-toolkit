@@ -8,6 +8,7 @@ import {
   ITEM_CONDITION_SOURCE,
   type DataCondition,
   type GridItemData,
+  defaultColumnFormat,
 } from '../../Layout/types'
 import { createDefaultBackdrop, type StudioThemeConfig } from '../../Theme/types'
 import { defaultShell } from '../../Workspace/snapshots'
@@ -213,7 +214,7 @@ function tablesPage(): PageDef {
           column('gs-col-books-genre', 'genreName', 'Genre', { enableSorting: true, size: 160 }),
           column('gs-col-books-price', 'priceText', 'Price', { enableSorting: true, sortField: 'price', align: 'end', size: 120 }),
           column('gs-col-books-stock', 'stock', 'Stock', { enableSorting: true, align: 'end', size: 100 }),
-          column('gs-col-books-published', 'publishedAt', 'Published', { enableSorting: true, useDateFormat: 'DD/MM/YYYY', size: 140 }),
+          column('gs-col-books-published', 'publishedAt', 'Published', { enableSorting: true, format: { ...defaultColumnFormat(), type: 'date', pattern: 'DD/MM/YYYY' }, size: 140 }),
           column('gs-col-books-isbn', 'isbn', 'ISBN', { size: 180 }),
           column('gs-col-books-rating', 'rating', 'Rating', { enableSorting: true, align: 'end', size: 100, pin: 'right' }),
         ],

@@ -83,6 +83,10 @@ export type { ResolvedContainerSurface } from "./components/core/containerSurfac
 export * from "./api/APIMaster";
 export * from "./components/DataTable2";
 export { HtmlCell, renderHtmlCell, type HtmlCellProps } from "./components/HtmlCell";
+// Cell formats (`ColumnDef.format`): the pure formatter, the app locale and the cell.
+export { formatCell, columnFormat, NUMERIC_FORMATS, type CellFormat, type CellFormatType } from "./util/format";
+export { LocaleProvider, useLocale } from "./components/core/locale";
+export { FormattedCell, FormattedHtmlCell } from "./components/FormattedCell";
 export { ClampedCell, DEFAULT_CELL_LINES } from "./components/ClampedCell";
 export { DEFAULT_ACTION_SIZE } from "./components/dataTableActions";
 export { groupColumns, headerRows, computeSpans, columnMeta, type ColumnLayoutMeta } from "./components/dataTableLayout";

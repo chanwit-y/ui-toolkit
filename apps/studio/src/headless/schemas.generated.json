@@ -1336,6 +1336,77 @@
       "additionalProperties": false,
       "description": "A single option in a checkbox group. Maps onto the library `CheckboxProps` option shape (`value`/`label`/`disabled`) minus `helperText` — per-option sub-labels are out of studio's scope. Carried even in `single` mode so toggling to `group` doesn't start empty."
     },
+    "ColumnFormatConfig": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/definitions/ColumnFormatType"
+        },
+        "decimals": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": ""
+            }
+          ]
+        },
+        "grouping": {
+          "type": "boolean"
+        },
+        "currency": {
+          "type": "string"
+        },
+        "percentOf": {
+          "type": "string",
+          "enum": [
+            "1",
+            "100"
+          ]
+        },
+        "pattern": {
+          "type": "string"
+        },
+        "timeZone": {
+          "type": "string"
+        },
+        "trueLabel": {
+          "type": "string"
+        },
+        "falseLabel": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "decimals",
+        "grouping",
+        "currency",
+        "percentOf",
+        "pattern",
+        "timeZone",
+        "trueLabel",
+        "falseLabel"
+      ],
+      "additionalProperties": false,
+      "description": "How a column shows its value — the engine's `ColumnDef.format` (see the grilled design `datatable-ag-grid-features`), kept flat so every knob has a field whatever the type: `decimals` (`''` = the type's default), `grouping` (number), `currency` (an ISO code), `percentOf` (`'1'` = the value is a ratio, `'100'` = whole points), `pattern` / `timeZone` (dates: dayjs tokens, blank = the locale's medium style; an IANA zone), `trueLabel` / `falseLabel` (boolean). Workspace v56 (`migrateV55`) replaced the old `useDateFormat` string with it."
+    },
+    "ColumnFormatType": {
+      "type": "string",
+      "enum": [
+        "",
+        "number",
+        "currency",
+        "percent",
+        "date",
+        "datetime",
+        "boolean",
+        "text"
+      ],
+      "description": "`ColumnFormatConfig.type`: `''` = the raw value as is."
+    },
     "ContainerConfig": {
       "type": "object",
       "properties": {
@@ -1500,9 +1571,9 @@
             "end"
           ]
         },
-        "useDateFormat": {
-          "type": "string",
-          "description": "dayjs format tokens; `''` = no date formatting."
+        "format": {
+          "$ref": "#/definitions/ColumnFormatConfig",
+          "description": "Engine `ColumnDef.format` — how the cell shows its value (`type: ''` = as is)."
         },
         "pin": {
           "type": "string",
@@ -1591,6 +1662,7 @@
         "align",
         "enableColumnFilter",
         "enableSorting",
+        "format",
         "group",
         "header",
         "html",
@@ -1604,10 +1676,9 @@
         "resizable",
         "rowHeader",
         "size",
-        "sortField",
-        "useDateFormat"
+        "sortField"
       ],
-      "description": "One column of a data table. Maps 1:1 onto the engine's `ColumnDef` (`accessor`/`header`/`enableSorting`/`enableColumnFilter`/`align`/`useDateFormat`) so the exported JSON is lossless. `useDateFormat` holds dayjs tokens and is `''` when the raw value should render untouched (dropped on export). `id` is a studio-only stable identity for the sortable column cards (dnd-kit keys) — every export path maps fields explicitly, so it never reaches engine JSON."
+      "description": "One column of a data table. Maps 1:1 onto the engine's `ColumnDef` (`accessor`/`header`/`enableSorting`/`enableColumnFilter`/`align`/`format`) so the exported JSON is lossless. `format` is the cell's display formatting (`type: ''` = the raw value, dropped on export). `id` is a studio-only stable identity for the sortable column cards (dnd-kit keys) — every export path maps fields explicitly, so it never reaches engine JSON."
     },
     "DataTableConfig": {
       "type": "object",
@@ -1905,6 +1976,10 @@
             "end"
           ]
         },
+        "format": {
+          "$ref": "#/definitions/ColumnFormatConfig",
+          "description": "Engine `format` — display formatting of the cell in read mode (`type: ''` = as is)."
+        },
         "rowHeader": {
           "type": "boolean",
           "description": "Engine `rowHeader` — the row's label column."
@@ -1957,6 +2032,7 @@
         "editor",
         "enableColumnFilter",
         "enableSorting",
+        "format",
         "group",
         "header",
         "id",
@@ -4278,6 +4354,10 @@
         "sidebar": {
           "$ref": "#/definitions/SidebarSettings",
           "description": "Sidebar look and collapse-toggle placement (workspace v53)."
+        },
+        "locale": {
+          "type": "string",
+          "description": "BCP 47 locale for formatted table cells (`ColumnDef.format`), exported as `project.locale`; `''` / absent = the viewer's browser. Optional, no migration."
         }
       },
       "required": [

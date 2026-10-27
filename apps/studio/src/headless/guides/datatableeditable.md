@@ -6,8 +6,9 @@ A table edited in place, row by row, over four endpoints: `readEndpointId`,
 
 `columns: [{ id, accessorKey, header, editable, editor, options, isRequired,
 requiredMessage, min, max, minLength, maxLength, pattern, patternMessage,
-enableSorting, align, rowHeader, group, size… }]` — `editor` picks the cell
-input, `options` feeds a select editor. `actionSize` (`"" | "1" | "2" | "3"`,
+enableSorting, align, format, rowHeader, group, size… }]` — `editor` picks the cell
+input, `options` feeds a select editor, `format` (the datatable's) formats the
+cell in read mode while the editor keeps the raw value. `actionSize` (`"" | "1" | "2" | "3"`,
 24 / 32 / 40px) sizes the row-action buttons (Edit / Delete / Save / Cancel).
 
 Note: the studio cannot author where the rows sit in the read response, so

@@ -81,7 +81,7 @@ import { cn, IconButton } from '../common'
 import { COMPONENT_BY_TYPE } from './componentCatalog'
 import { ENTER_DURATION_MS, prefersReducedMotion, UPGRADE_FADE_MS } from './gridAnimation'
 import { useGridStore, useIsEntering } from './gridStore'
-import { buildDataTablePreviewRows, buildHtmlPreviewValue, DATATABLE_PREVIEW_ROW_COUNT } from './dataTablePreview'
+import { buildDataTablePreviewRows, buildHtmlPreviewValue, DATATABLE_PREVIEW_ROW_COUNT, previewValueFor } from './dataTablePreview'
 import { useBindingToken } from './ItemBindingField'
 import { useActiveProject } from '../Workspace/workspaceStore'
 import type {
@@ -123,7 +123,7 @@ import type {
   UploadFileConfig,
   UploadImageConfig,
 } from './types'
-import { uploadAccept } from './types'
+import { columnFormatToEngine, uploadAccept } from './types'
 import { escapeClassName } from './utils'
 
 type GridItemProps = {
@@ -897,6 +897,7 @@ function DataTableLivePreview({ config, filterCanvas }: { config: DataTableConfi
   // Layout flags DataTable2 reads off `meta`, set like the engine's builder
   // does: the column's own clamp, row header, merged cells, HTML.
   const layoutMeta = (c: DataTableColumnConfig) => ({
+    ...(columnFormatToEngine(c.format) ? { format: columnFormatToEngine(c.format) } : {}),
     ...(c.lines !== '' ? { lines: c.lines } : {}),
     ...(c.rowHeader ? { rowHeader: true } : {}),
     ...(c.mergeRows ? { mergeRows: true } : {}),
@@ -978,7 +979,7 @@ function DataTableLivePreview({ config, filterCanvas }: { config: DataTableConfi
 /** The part of a datatable config that changes the *fetched* rows (not just the
  * column chrome) — used as the preview's remount key so edits refetch. */
 function dataTableRowsKey(config: DataTableConfig): string {
-  return JSON.stringify(config.columns.map((c) => [c.accessor, c.header, c.useDateFormat, c.html]))
+  return JSON.stringify(config.columns.map((c) => [c.accessor, c.header, c.format, c.html]))
 }
 
 /**
@@ -996,7 +997,10 @@ function buildEditableTablePreviewRows(
     for (const column of columns) {
       const key = column.accessorKey
       if (!key) continue
-      if (/^id$|Id$|_id$/.test(key)) {
+      const formatted = previewValueFor(column.format, i)
+      if (formatted !== undefined) {
+        row[key] = formatted
+      } else if (/^id$|Id$|_id$/.test(key)) {
         row[key] = i + 1
       } else if (column.editor === 'number') {
         row[key] = (i + 1) * 10
@@ -1040,6 +1044,7 @@ function EditableTableLivePreview({ config }: { config: DataTableEditableConfig 
     header: c.header,
     editable: c.editable,
     editor: c.editor,
+    ...(columnFormatToEngine(c.format) ? { format: columnFormatToEngine(c.format) } : {}),
     ...(c.editor === 'select' ? { options: c.options } : {}),
     isRequired: c.isRequired,
     enableSorting: c.enableSorting,

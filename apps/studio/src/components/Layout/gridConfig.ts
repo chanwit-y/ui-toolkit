@@ -72,6 +72,7 @@ import type {
   UploadImageConfig,
 } from './types'
 import type { ContainerConfig } from './types'
+import { columnFormatExport } from './types'
 import { isBlockedInRepeater } from './repeaterRules'
 import type { DataCondition } from './types'
 import {
@@ -666,7 +667,7 @@ const DELETE_CONFIRM_TRUE = ['StartLoading', 'SubmitFormToDeleteAPI', 'StopLoadi
 
 /**
  * `datatable` → engine `DataTableElement`. Columns map 1:1 (`align` always emitted
- * so the JSON is self-documenting; empty `useDateFormat` drops). The `api` block
+ * so the JSON is self-documenting; an unset `format` drops). The `api` block
  * emits when an endpoint is picked (resolved id → name, plus the optional
  * response `paths`); unwired tables omit it for the consumer, as before. The
  * `apiDeleteInfo` block emits only when the Delete action is on AND a delete
@@ -756,7 +757,7 @@ function dataTableElement(
       enableSorting: col.enableSorting,
       enableColumnFilter: col.enableColumnFilter,
       align: col.align,
-      ...(col.useDateFormat ? { useDateFormat: col.useDateFormat } : {}),
+      ...columnFormatExport(col.format),
       ...(col.pin ? { pin: col.pin } : {}),
       ...(col.html.trim() ? { html: col.html } : {}),
       ...(col.sortField ? { sortField: col.sortField } : {}),
@@ -891,6 +892,7 @@ function editableTableColumn(col: DataTableEditableColumnConfig): Record<string,
     enableSorting: col.enableSorting,
     enableColumnFilter: col.enableColumnFilter,
     align: col.align,
+    ...columnFormatExport(col.format),
     ...(col.rowHeader ? { rowHeader: true } : {}),
     ...(col.group.trim() ? { group: col.group.trim() } : {}),
     ...columnSizing(col),

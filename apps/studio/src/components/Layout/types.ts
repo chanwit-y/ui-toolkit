@@ -1,4 +1,4 @@
-import type { DataType } from '@gummy-ui/ui'
+import type { CellFormat, DataType } from '@gummy-ui/ui'
 import type { Breakpoint } from './breakpoints'
 import type { ComponentType } from './componentCatalog'
 
@@ -641,6 +641,75 @@ export type ColumnSizingConfig = {
 
 export const DEFAULT_COLUMN_SIZING: ColumnSizingConfig = { size: '', minSize: '', maxSize: '', resizable: true }
 
+/** `ColumnFormatConfig.type`: `''` = the raw value as is. */
+export type ColumnFormatType = '' | 'number' | 'currency' | 'percent' | 'date' | 'datetime' | 'boolean' | 'text'
+
+/**
+ * How a column shows its value — the engine's `ColumnDef.format` (see the
+ * grilled design `datatable-ag-grid-features`), kept flat so every knob has a
+ * field whatever the type: `decimals` (`''` = the type's default), `grouping`
+ * (number), `currency` (an ISO code), `percentOf` (`'1'` = the value is a
+ * ratio, `'100'` = whole points), `pattern` / `timeZone` (dates: dayjs tokens,
+ * blank = the locale's medium style; an IANA zone), `trueLabel` /
+ * `falseLabel` (boolean). Workspace v56 (`migrateV55`) replaced the old
+ * `useDateFormat` string with it.
+ */
+export type ColumnFormatConfig = {
+  type: ColumnFormatType
+  decimals: number | ''
+  grouping: boolean
+  currency: string
+  percentOf: '1' | '100'
+  pattern: string
+  timeZone: string
+  trueLabel: string
+  falseLabel: string
+}
+
+export function defaultColumnFormat(): ColumnFormatConfig {
+  return { type: '', decimals: '', grouping: true, currency: '', percentOf: '1', pattern: '', timeZone: '', trueLabel: '', falseLabel: '' }
+}
+
+/** The pre-v56 `useDateFormat` string as a format config (blank = as is). */
+export function formatFromUseDateFormat(pattern: string | undefined): ColumnFormatConfig {
+  return pattern ? { ...defaultColumnFormat(), type: 'date', pattern } : defaultColumnFormat()
+}
+
+/** The engine `ColumnDef.format` for a config — only the keys that are set; `undefined` for "as is". */
+export function columnFormatToEngine(f: ColumnFormatConfig | undefined): CellFormat | undefined {
+  if (!f || !f.type) return undefined
+  const decimals = f.decimals === '' ? {} : { decimals: f.decimals }
+  switch (f.type) {
+    case 'number':
+      return { type: 'number', ...decimals, ...(f.grouping ? {} : { grouping: false }) }
+    case 'currency':
+      return { type: 'currency', currency: f.currency.trim() || 'USD', ...decimals }
+    case 'percent':
+      return { type: 'percent', ...decimals, ...(f.percentOf === '100' ? { of: 100 } : {}) }
+    case 'date':
+    case 'datetime':
+      return {
+        type: f.type,
+        ...(f.pattern.trim() ? { pattern: f.pattern.trim() } : {}),
+        ...(f.timeZone.trim() ? { timeZone: f.timeZone.trim() } : {}),
+      }
+    case 'boolean':
+      return {
+        type: 'boolean',
+        ...(f.trueLabel.trim() ? { trueLabel: f.trueLabel.trim() } : {}),
+        ...(f.falseLabel.trim() ? { falseLabel: f.falseLabel.trim() } : {}),
+      }
+    case 'text':
+      return { type: 'text' }
+  }
+}
+
+/** `{ format }` for the export when the column has one, else nothing. */
+export function columnFormatExport(f: ColumnFormatConfig | undefined): { format: CellFormat } | Record<never, never> {
+  const format = columnFormatToEngine(f)
+  return format ? { format } : {}
+}
+
 /** Line-clamp choices for a data table cell / column: `0` = wrap freely. */
 export type CellLines = 0 | 1 | 2 | 3 | 4 | 5 | 6
 /** The engine's default `cellLines`. */
@@ -648,9 +717,9 @@ export const DEFAULT_CELL_LINES: CellLines = 2
 
 /**
  * One column of a data table. Maps 1:1 onto the engine's `ColumnDef`
- * (`accessor`/`header`/`enableSorting`/`enableColumnFilter`/`align`/`useDateFormat`)
- * so the exported JSON is lossless. `useDateFormat` holds dayjs tokens and is `''`
- * when the raw value should render untouched (dropped on export). `id` is a
+ * (`accessor`/`header`/`enableSorting`/`enableColumnFilter`/`align`/`format`)
+ * so the exported JSON is lossless. `format` is the cell's display formatting
+ * (`type: ''` = the raw value, dropped on export). `id` is a
  * studio-only stable identity for the sortable column cards (dnd-kit keys) —
  * every export path maps fields explicitly, so it never reaches engine JSON.
  */
@@ -662,8 +731,8 @@ export type DataTableColumnConfig = ColumnSizingConfig & {
   enableSorting: boolean
   enableColumnFilter: boolean
   align: 'start' | 'center' | 'end'
-  /** dayjs format tokens; `''` = no date formatting. */
-  useDateFormat: string
+  /** Engine `ColumnDef.format` — how the cell shows its value (`type: ''` = as is). */
+  format: ColumnFormatConfig
   /** Engine `ColumnDef.pin` — sticky while the table scrolls sideways; `''` = not pinned. */
   pin: '' | 'left' | 'right'
   /** Engine `ColumnDef.html` — the cell's HTML template (`{{field}}` placeholders); `''` = plain value. */
@@ -919,7 +988,7 @@ export function createDefaultDataTableConfig(name: string): DataTableConfig {
     enableSorting: true,
     enableColumnFilter: false,
     align: 'center',
-    useDateFormat: '',
+    format: defaultColumnFormat(),
     pin: '',
     html: '',
     sortField: '',
@@ -1169,6 +1238,8 @@ export type DataTableEditableColumnConfig = ColumnSizingConfig & {
   enableSorting: boolean
   enableColumnFilter: boolean
   align: 'start' | 'center' | 'end'
+  /** Engine `format` — display formatting of the cell in read mode (`type: ''` = as is). */
+  format: ColumnFormatConfig
   /** Engine `rowHeader` — the row's label column. */
   rowHeader: boolean
   /** Engine `group` — group header label; `''` = none. */
@@ -1245,6 +1316,7 @@ export function createEditableTableColumn(
     enableSorting: true,
     enableColumnFilter: false,
     align: 'center',
+    format: defaultColumnFormat(),
     rowHeader: false,
     group: '',
     ...overrides,

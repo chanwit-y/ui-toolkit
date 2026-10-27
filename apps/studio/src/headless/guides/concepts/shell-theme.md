@@ -15,6 +15,8 @@
   `activeBackground` or `activeGradient`), `indicator` (+ `indicatorColor`).
 - `pageTransition`: `{ type: none | fade | fade-up | slide | scale,
   duration (ms or ""), easing }`.
+- `locale`: a BCP 47 tag (`"th-TH"`) for formatted table cells (a column's
+  `format`); `""` = the viewer's browser.
 
 **`update_theme`** (a patch of `StudioThemeConfig`): `appearance`
 (`light | dark`), `accentColor` (a Radix colour: iris, indigo, blue, teal,

@@ -126,6 +126,11 @@ export type ShellSettings = {
   collapsible: boolean
   /** Sidebar look and collapse-toggle placement (workspace v53). */
   sidebar: SidebarSettings
+  /**
+   * BCP 47 locale for formatted table cells (`ColumnDef.format`), exported as
+   * `project.locale`; `''` / absent = the viewer's browser. Optional, no migration.
+   */
+  locale?: string
 }
 
 /**
@@ -238,7 +243,7 @@ export type ActivityEntry = {
 
 /** The persisted shape (one localStorage key, versioned). */
 export type WorkspaceData = {
-  version: 55
+  version: 56
   /** The portal's own appearance; inside a project the project theme wins. */
   appearance: ThemeAppearance
   /** The mock identity stamped on activity and templates (see `MOCK_USERS`). */

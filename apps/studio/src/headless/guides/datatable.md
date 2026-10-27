@@ -7,7 +7,13 @@ and the edit modal's form sees the selected row under it.
 
 **Columns** — `columns: DataTableColumnConfig[]`, each with a unique `id`, an
 `accessor` (row field) and a `header`; then `enableSorting`, `align`,
-`useDateFormat` (a dayjs format), `pin` (`"" | left | right`), `html` (a
+`format` (how the cell shows its value: `{ type: "" | number | currency |
+percent | date | datetime | boolean | text, decimals, grouping, currency (an
+ISO code), percentOf: "1" | "100", pattern (dayjs tokens) / timeZone (dates),
+trueLabel / falseLabel }` — rendered with `Intl` in the project's locale
+(`update_shell` `locale`); numeric formats align to the end unless `align`
+says otherwise, sorting keeps the raw value, the search box matches the
+formatted text too), `pin` (`"" | left | right`), `html` (a
 `{{field}}` template, escaped and sanitised), `lines` (clamp), `size` /
 `minSize` / `maxSize`, `rowHeader`, `mergeRows`, `mergeColumns`, `group`.
 `update_item` replaces the whole `columns` array — send every column.

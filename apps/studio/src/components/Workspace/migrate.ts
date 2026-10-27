@@ -9,6 +9,7 @@ import type { ModelDef } from '../Model/types'
 import type { LoadingMode, PageLoadDef } from './pageLoads'
 import { AUTH_PROFILE_LOAD_ID, authEnvRows, normalizeAuthDef } from './auth'
 import { normalizeThemeConfig } from '../Theme/types'
+import { formatFromUseDateFormat } from '../Layout/types'
 import { seedActivity } from '../seed/activity'
 import {
   countryCreateButtonSeedItem,
@@ -53,6 +54,10 @@ import {
   LOAD_ME_ID,
   tableLayoutSeedEndpoints,
   REGION_RES_MODEL_ID,
+  COUNTRY_RES_MODEL_ID,
+  COUNTRY_PAGED_RES_MODEL_ID,
+  COUNTRY_DETAIL_RES_MODEL_ID,
+  FORMAT_DEMO_FIELDS,
   DATA_TABLE_PAGE_ID,
   HTML_COLUMNS_PAGE_ID,
   COUNTRY_PAGE_BODY_MODEL_ID,
@@ -101,6 +106,7 @@ import {
   filterApiDemoPage,
   cellTooltipDemoPage,
   tableLayoutDemoPage,
+  formatsDemoPage,
   cardDemoPage,
   htmlContentDemoPage,
   drawerDemoPage,
@@ -955,17 +961,56 @@ function migrateV53(data: { projects: ProjectDef[]; library: LibraryData }): {
  * v54 → v55: dark stops on the glass backdrop — `background.darkColor` and
  * `background.gradient.darkFrom` / `darkTo`, blank on every project (the
  * light value in both appearances), lowered to CSS `light-dark()` when set.
+ * Chains into v56 (cell formats).
  */
 function migrateV54(data: { projects: ProjectDef[]; library: LibraryData }): {
   projects: ProjectDef[]
   library: LibraryData
 } {
-  return {
+  return migrateV55({
     ...data,
     projects: data.projects.map((p) => ({
       ...p,
       snapshot: { ...p.snapshot, theme: normalizeThemeConfig(p.snapshot.theme) },
     })),
+  })
+}
+
+/**
+ * v55 → v56: cell formats (see the grilled design `datatable-ag-grid-features`).
+ * Every data table / editable table column (pages and templates) trades its
+ * `useDateFormat` string for a `format` config (a pattern becomes
+ * `{ type: 'date', pattern }`); the seeded country models gain the figure
+ * fields the Formats page shows (by name, so edited models keep their own);
+ * and the seeded project gains the **Cell formats** page.
+ */
+function migrateV55(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  const convert = (col: Record<string, unknown>) => {
+    if (!col.format) col.format = formatFromUseDateFormat(typeof col.useDateFormat === 'string' ? col.useDateFormat : '')
+    delete col.useDateFormat
+  }
+  const fill = (items: GridItemData[]) =>
+    walkItems(items, (item) => {
+      if (!item.config) return
+      if (item.type === 'datatable') for (const col of (item.config as DataTableConfig).columns) convert(col as unknown as Record<string, unknown>)
+      if (item.type === 'datatableeditable') for (const col of (item.config as DataTableEditableConfig).columns) convert(col as unknown as Record<string, unknown>)
+    })
+  for (const p of data.projects) for (const pg of p.snapshot.pages) fill(pg.grid.items)
+  for (const t of data.library.templates) fill(t.grid.items)
+  for (const id of [COUNTRY_RES_MODEL_ID, COUNTRY_PAGED_RES_MODEL_ID, COUNTRY_DETAIL_RES_MODEL_ID]) {
+    const rows = data.library.models.find((m) => m.id === id)?.fields.find((f) => f.name === 'data')
+    if (!rows) continue
+    for (const [name, kind] of FORMAT_DEMO_FIELDS) {
+      if (rows.children.some((f) => f.name === name)) continue
+      rows.children.push({ id: `seed-field-country-${name}`, name, kind, children: [], arrayOf: 'string' })
+    }
+  }
+  return {
+    projects: data.projects.map((p) => (p.id === 'seed-project-country' ? appendDemoPages(p, [formatsDemoPage()]) : p)),
+    library: data.library,
   }
 }
 
@@ -1692,7 +1737,7 @@ export function withSeedLibrary(library: LibraryData): LibraryData {
 }
 
 /** The workspace version this build writes (and the newest it reads). */
-export const WORKSPACE_VERSION = 55
+export const WORKSPACE_VERSION = 56
 
 /** What a persisted payload migrates to: the stored fields at the current shape. */
 export type MigratedWorkspace = Pick<WorkspaceData, 'appearance' | 'user' | 'activity' | 'projects' | 'library'>
@@ -1893,7 +1938,11 @@ export function migrateWorkspace(persisted: unknown): MigratedWorkspace | null {
     const normalized = { ...library, auth: (library.auth ?? []).map((a) => normalizeAuthDef(a)) }
     return { appearance, user, activity, ...migrateV54({ projects: data.projects, library: normalized }) }
   }
-  if (data.version !== 55) return null
+  if (data.version === 55) {
+    const normalized = { ...library, auth: (library.auth ?? []).map((a) => normalizeAuthDef(a)) }
+    return { appearance, user, activity, ...migrateV55({ projects: data.projects, library: normalized }) }
+  }
+  if (data.version !== 56) return null
   // Same version, possibly older entry shapes (fields added without a bump): fill the defaults.
   return { appearance, user, activity, projects: data.projects, library: { ...library, auth: (library.auth ?? []).map((a) => normalizeAuthDef(a)) } }
 }

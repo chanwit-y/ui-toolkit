@@ -5,6 +5,7 @@ import type {
   ElementType,
   JSX,
 } from "react";
+import type { CellFormat } from "../../util/format";
 import {
   TextField as RadixTextField,
   Button as RadixButton,
@@ -578,6 +579,8 @@ export type DataTableEditableColumn = {
   /** `false` locks this column's width (no resize handle). Default true. */
   enableResizing?: boolean;
   align?: "start" | "center" | "end";
+  /** Display formatting of the cell while the row is not being edited. See {@link ColumnDef.format}. */
+  format?: CellFormat;
   /** The row's label column (`<th scope="row">`, header colours, pinned left). See {@link ColumnDef.rowHeader}. */
   rowHeader?: boolean;
   /** Group header label — adjacent columns with the same label share a band. See {@link ColumnDef.group}. */
@@ -1169,7 +1172,17 @@ export type ColumnDef = {
   enableColumnFilter: boolean;
   isEditable?: boolean;
   align?: "start" | "center" | "end";
+  /** `{ type: "date", pattern }` the old way — `format` wins when both are set. */
   useDateFormat?: string;
+  /**
+   * How the cell shows its value: number / currency / percent / date /
+   * datetime / boolean / text, resolved by `formatCell` with the app's locale
+   * (`<LocaleProvider>`, default the browser's). Numeric formats align the
+   * column to the end unless `align` says otherwise. Sorting, filtering and
+   * the column filter keep the raw value; the search box matches raw and
+   * formatted text; `{{value}}` in an `html` template is the formatted text.
+   */
+  format?: CellFormat;
   /**
    * Starting width in px. Declaring one on any column puts the table in
    * exact-pixel mode from the first paint (spare width goes to a filler cell);

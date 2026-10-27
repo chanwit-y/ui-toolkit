@@ -10,6 +10,7 @@ import type {
   IElement,
 } from "../@types";
 import { DataTableEditable as DataTableEditableComponent } from "../DataTableEditable";
+import { NUMERIC_FORMATS } from "../../util/format";
 
 import type { TApiMaster } from "../../api/APIMaster";
 import type { TModelMaster } from "../../model/master";
@@ -40,7 +41,9 @@ export class DataTableEditable<
 
   private align(columns: DataTableEditableColumn[]) {
     return columns.reduce<Record<string, "start" | "center" | "end">>((acc, current) => {
-      return current.align ? { ...acc, [current.accessorKey]: current.align } : acc;
+      // A numeric format aligns to the end unless the column says otherwise.
+      const align = current.align ?? (current.format && NUMERIC_FORMATS.has(current.format.type) ? "end" : undefined);
+      return align ? { ...acc, [current.accessorKey]: align } : acc;
     }, {});
   }
 

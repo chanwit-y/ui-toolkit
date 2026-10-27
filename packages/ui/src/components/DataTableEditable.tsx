@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { dtHeaderBgClass, dtHeaderTextClass, dtHeaderFontSizeClass, dtHeaderFontWeightClass, dtHeaderHoverClass, dtPaginationBgClass, dtPaginationHoverClass, dtRingClass, dtRowHoverClass } from "../util/constant"
 import type { CrudMutationApi, DataTableEditableColumn, DataTableEditableProps, SnackbarElement } from "./@types"
 import { actionSizeSpec } from "./dataTableActions"
+import { FormattedCell } from "./FormattedCell"
 import { ConfirmBox } from "./ConfirmBox"
 import Icon from "./Icon"
 import { useSnackbar, type SnackbarVariant } from "./Snackbar"
@@ -384,7 +385,7 @@ export const DataTableEditable = <T extends Record<string, any>>({
 			...(col.minSize !== undefined ? { minSize: col.minSize } : {}),
 			...(col.maxSize !== undefined ? { maxSize: col.maxSize } : {}),
 			...(col.enableResizing === false ? { enableResizing: false } : {}),
-			...(col.rowHeader ? { meta: { rowHeader: true } } : {}),
+			...(col.rowHeader || col.format ? { meta: { ...(col.rowHeader ? { rowHeader: true } : {}), ...(col.format ? { format: col.format } : {}) } } : {}),
 		}))
 		// Adjacent columns sharing a `group` label sit under one group header.
 		const dataColumns = groupColumns(columns, leafColumns)
@@ -728,7 +729,7 @@ export const DataTableEditable = <T extends Record<string, any>>({
 									return (
 										<Cell key={cell.id} scope={isRowHeader ? 'row' : undefined} className={`datatable-body-cell px-4 py-1 ${isRowHeader ? 'datatable-row-header' : ''}`} style={{ ...sizeStyle(cell.column), textAlign: cellAlign(cell.column.id) }}>
 											<div className="min-h-10 flex flex-col justify-center">
-												{isEditingCell ? renderEditor(col) : flexRender(cell.column.columnDef.cell, cell.getContext())}
+												{isEditingCell ? renderEditor(col) : col?.format ? <FormattedCell value={cell.getValue()} format={col.format} /> : flexRender(cell.column.columnDef.cell, cell.getContext())}
 											</div>
 										</Cell>
 									)

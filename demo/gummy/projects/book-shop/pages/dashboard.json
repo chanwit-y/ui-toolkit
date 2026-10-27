@@ -406,7 +406,10 @@
                 "enableSorting": false,
                 "enableColumnFilter": false,
                 "align": "start",
-                "useDateFormat": "DD/MM/YYYY HH:mm"
+                "format": {
+                  "type": "date",
+                  "pattern": "DD/MM/YYYY HH:mm"
+                }
               },
               {
                 "accessor": "statusLabel",

@@ -1,5 +1,6 @@
 import type { Column, ColumnDef, Header, HeaderGroup, Row, Table } from "@tanstack/react-table"
 import { useLayoutEffect, useRef, type CSSProperties } from "react"
+import type { CellFormat } from "../util/format"
 import { pinStyle } from "./dataTableResize"
 
 /**
@@ -13,6 +14,8 @@ import { pinStyle } from "./dataTableResize"
 export type ColumnLayoutMeta = {
 	html?: boolean
 	lines?: number
+	/** How the cell shows its value (`ColumnDef.format`); the tables format and search through it. */
+	format?: CellFormat
 	/** The row's label: `<th scope="row">`, header colours, pinned left. */
 	rowHeader?: boolean
 	/** Consecutive rows with the same value share one cell (`rowSpan`). */

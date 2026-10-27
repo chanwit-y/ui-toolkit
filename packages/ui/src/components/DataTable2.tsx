@@ -2,7 +2,7 @@ import * as Popover from "@radix-ui/react-popover"
 import * as Tooltip from "@radix-ui/react-tooltip"
 import { IconButton, Text, type ThemeProps } from "@radix-ui/themes"
 import { keepPreviousData, useQuery } from "@tanstack/react-query"
-import { flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable, type Column, type ColumnDef, type ColumnFiltersState, type ColumnPinningState, type PaginationState, type SortingState } from "@tanstack/react-table"
+import { flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable, type Column, type ColumnDef, type ColumnFiltersState, type ColumnPinningState, type PaginationState, type Row, type SortingState, type Table } from "@tanstack/react-table"
 import { ColumnResizeHandle, pinStyle, sizeStyle, sizeVars, useColumnResize, withFiller } from "./dataTableResize"
 import { ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, ListFilter, Pin, PinOff } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
@@ -10,6 +10,8 @@ import { dtHeaderBgClass, dtHeaderTextClass, dtHeaderFontSizeClass, dtHeaderFont
 import type { ButtonAction, DataTableProps } from "./@types"
 import { actionSizeSpec } from "./dataTableActions"
 import { ButtonBase } from "./Button"
+import { useLocale } from "./core/locale"
+import { formatCell } from "../util/format"
 import { ConfirmBox } from "./ConfirmBox"
 import Icon from "./Icon"
 import { Modal } from "./Modal"
@@ -83,13 +85,17 @@ const pinClass = (column: Column<any, unknown>): string => {
 }
 
 // Enhanced cell renderer with highlighting support
-const renderCellWithHighlight = (cell: any, globalFilter: string) => {
+const renderCellWithHighlight = (cell: any, globalFilter: string, locale?: string) => {
 	const cellValue = cell.getValue()
 	const cellContent = flexRender(cell.column.columnDef.cell, cell.getContext())
 
 	// HTML columns (`ColumnDef.html`) always render their markup — the search
 	// still matches them by accessor value, they just aren't highlighted.
 	if (cell.column.columnDef.meta?.html) return cellContent
+
+	// A formatted column shows `formatCell`'s text (number / currency / date …).
+	const format = cell.column.columnDef.meta?.format
+	if (format) return highlightText(formatCell(cellValue, format, locale), globalFilter)
 
 	// If there's a global filter and the cell value is a string, highlight it
 	if (globalFilter && typeof cellValue === 'string') {
@@ -171,6 +177,19 @@ export const DataTable2 = <T extends Record<string, any>>({
 	const [data, setData] = useState<T[]>([])
 	const [total, setTotal] = useState(0)
 	const [globalFilter, setGlobalFilter] = useState('')
+	const locale = useLocale()
+	// The search box matches the raw value *and* its formatted text (`meta.format`), so
+	// typing "1,250" or "Jan 2025" finds the row the way it reads on screen.
+	const tableRef = useRef<Table<any> | null>(null)
+	const globalFilterFn = useCallback((row: Row<any>, columnId: string, filterValue: unknown) => {
+		const q = String(filterValue ?? '').toLowerCase()
+		if (!q) return true
+		const raw = row.getValue(columnId)
+		if (String(raw ?? '').toLowerCase().includes(q)) return true
+		const column = tableRef.current?.getColumn(columnId)
+		const format = column ? columnMeta(column).format : undefined
+		return !!format && formatCell(raw, format, locale).toLowerCase().includes(q)
+	}, [locale])
 	// Debounced search term sent to the API in server mode (searchKey present).
 	const [serverSearch, setServerSearch] = useState('')
 	// Server-side sort (`api.sort`): the header icons drive the request instead
@@ -388,6 +407,17 @@ export const DataTable2 = <T extends Record<string, any>>({
 			columnPinning,
 		},
 		onGlobalFilterChange: setGlobalFilter,
+		globalFilterFn,
+		// TanStack only searches columns whose first value is a string or number;
+		// a formatted column (a boolean shown as a label, a date) is searched by
+		// its text regardless.
+		getColumnCanGlobalFilter: (column) => {
+			if (columnMeta(column).format) return true
+			const value = column.columnDef.enableGlobalFilter === false
+				? undefined
+				: tableRef.current?.getCoreRowModel().flatRows[0]?.getValue(column.id)
+			return typeof value === 'string' || typeof value === 'number'
+		},
 		onSortingChange: (updater) => {
 			setSorting(updater)
 			// A new server sort starts again from the first page.
@@ -407,6 +437,7 @@ export const DataTable2 = <T extends Record<string, any>>({
 		manualFiltering: isServer,
 		...(isServer ? { rowCount: total } : {}),
 	})
+	tableRef.current = table
 
 	// The header rows (one, or two with a group band); the lower row's cells
 	// stick below the upper one (see `headerTopStyle`).
@@ -589,7 +620,7 @@ export const DataTable2 = <T extends Record<string, any>>({
 								>
 									<div className="min-h-10 flex flex-col justify-center">
 										<ClampedCell lines={cellLinesFor(cell.column)}>
-											{renderCellWithHighlight(cell, globalFilter)}
+											{renderCellWithHighlight(cell, globalFilter, locale)}
 										</ClampedCell>
 									</div>
 								</Cell>

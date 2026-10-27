@@ -13,6 +13,7 @@ import { bindingRowModel, LoadFieldPicker, useLoadShapes, usePageLoads } from '.
 import { NavigateEditor, SNACKBAR_VARIANT_OPTIONS, WiringHint } from './ButtonConfigPanel'
 import { ColumnHtmlField } from './ColumnHtmlField'
 import { ColumnSizeFields } from './ColumnSizeFields'
+import { ColumnFormatFields } from './ColumnFormatFields'
 import { RequestMappingSection, seedRequestParams, ServerFiltersSection, ServerSortSection } from './DataTableRequestPanel'
 import { buildDataTablePreviewRows } from './dataTablePreview'
 import { paginationPlacement, rowModelFields, segmentFields, type RowModel } from './rowFields'
@@ -21,6 +22,7 @@ import {
   BUTTON_VARIANT_OPTIONS,
   createDefaultNavigate,
   DEFAULT_COLUMN_SIZING,
+  defaultColumnFormat,
   type ActionSize,
   type ButtonConfig,
   type ButtonSnackbarVariant,
@@ -254,7 +256,7 @@ function newColumn(index: number): DataTableColumnConfig {
     enableSorting: true,
     enableColumnFilter: false,
     align: 'center',
-    useDateFormat: '',
+    format: defaultColumnFormat(),
     pin: '', html: '', sortField: '', lines: '',
     rowHeader: false, mergeRows: false, mergeColumns: false, group: '',
     ...DEFAULT_COLUMN_SIZING,
@@ -366,14 +368,7 @@ function ColumnsEditor({
                       }
                     />
                   </Field>
-                  <Field label="Date format (dayjs)">
-                    <Input
-                      value={column.useDateFormat}
-                      onChange={(e) => patch(index, { useDateFormat: e.target.value })}
-                      placeholder="DD/MM/YYYY"
-                      className="font-mono"
-                    />
-                  </Field>
+                  <ColumnFormatFields column={column} onChange={(format) => patch(index, { format })} />
                   <Field label="Pin (sticky while scrolling sideways)">
                     <Select
                       options={PIN_OPTIONS}
