@@ -30,7 +30,7 @@ const serverFilename = (file: UploadedFile): string =>
 const ITEM_ACTION_CLASS =
 	"shrink-0 rounded p-1 text-[var(--gray-10)] transition hover:bg-[var(--gray-a4)]"
 const GRID_ACTION_CLASS =
-	"rounded-full border border-[var(--gray-6)] bg-[var(--color-panel-solid)] p-1 text-[var(--gray-11)] shadow-sm transition"
+	"rounded-full border border-[var(--gray-6)] gummy-surface-strong p-1 text-[var(--gray-11)] shadow-sm transition"
 
 const UploadFileBase = forwardRef<
 	ElementRef<"div">,
@@ -299,7 +299,7 @@ const UploadFileBase = forwardRef<
 					className={cn(
 						"flex flex-col items-center justify-center gap-1.5 rounded-md border-2 border-dashed px-4 py-6 transition duration-200 ease-in-out",
 						disabled
-							? "cursor-not-allowed bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500"
+							? "cursor-not-allowed bg-[var(--gray-a3)] border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500"
 							: "cursor-pointer text-gray-500 dark:text-gray-400 hover:border-[var(--accent-8,#60a5fa)] hover:bg-[var(--accent-a3,#eff6ff80)]",
 						isDragging ? "border-[var(--accent-8,#3b82f6)] bg-[var(--accent-3,#eff6ff)]" : "border-gray-300 dark:border-gray-600",
 						hasError && "border-red-300 hover:border-red-400"

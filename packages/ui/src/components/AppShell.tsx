@@ -8,6 +8,7 @@ import { PageTransitionContext } from "./core/pageTransition";
 import { appBarStyle, appBarTone, type AppBarTone } from "./core/appBarStyle";
 import { useTheme } from "./context";
 import { Icon } from "./Icon";
+import { SurfaceBackdrop } from "./SurfaceBackdrop";
 import { breadcrumbTrail, buildNavigateUrl, matchPage, PagesProvider, pathParamNames, usePageTitle } from "./core/pages";
 
 export type AppShellProps = {
@@ -80,7 +81,7 @@ const TOP_BUTTON =
 // on it switches to contrast text with accent-10/11 hover and active states.
 const TOP_BUTTON_ACCENT =
   "inline-flex h-8 w-8 items-center justify-center rounded-md text-[var(--accent-contrast)] hover:bg-[var(--accent-10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-contrast)]";
-const BAR_PANEL = "border-[var(--gray-6)] bg-[var(--color-panel-solid)]";
+const BAR_PANEL = "border-[var(--gray-6)] gummy-surface";
 const BAR_ACCENT = "border-[var(--accent-10)] bg-[var(--accent-9)] text-[var(--accent-contrast)]";
 const BAR_DIVIDER = "border-[var(--gray-6)]";
 const BAR_DIVIDER_ACCENT = "border-[var(--accent-contrast)] opacity-40";
@@ -275,7 +276,7 @@ function Breadcrumbs({ pages }: { pages: TPageEntries }) {
   return (
     <nav
       aria-label="Breadcrumb"
-      className="flex h-9 shrink-0 items-center border-b border-[var(--gray-6)] bg-[var(--color-panel-solid)] px-4 text-sm"
+      className="flex h-9 shrink-0 items-center border-b border-[var(--gray-6)] gummy-surface px-4 text-sm"
     >
       <ol className="flex min-w-0 items-center gap-1.5">
         {trail.map((k, i) => (
@@ -410,9 +411,11 @@ export function AppShell({
     <PagesProvider pages={pages}>
       <MenuIconsContext.Provider value={menuIcons}>
       <div
-        className={`flex w-full flex-col bg-[var(--color-background)] text-[var(--gray-12)] ${className ?? ""}`}
+        className={`relative isolate flex w-full flex-col bg-[var(--color-background)] text-[var(--gray-12)] ${className ?? ""}`}
         style={{ height, ...(menuActiveColor ? ({ "--gummy-menu-active-fg": menuActiveColor } as CSSProperties) : {}) }}
       >
+        {/* The glass backdrop (nothing in flat); see styles/surface.css. */}
+        <SurfaceBackdrop />
         {accentBar && bar.color ? (
           <Theme accentColor={bar.color} hasBackground={false} asChild>
             {topBar}
@@ -446,7 +449,7 @@ export function AppShell({
           <div className="fixed inset-0 z-40 md:hidden" role="dialog" aria-modal="true" aria-label="Navigation">
             <div className="absolute inset-0 bg-black/40" onClick={closeDrawer} />
             <aside
-              className="absolute inset-y-0 left-0 flex flex-col border-r border-[var(--gray-6)] bg-[var(--color-panel-solid)] shadow-xl"
+              className="absolute inset-y-0 left-0 flex flex-col border-r border-[var(--gray-6)] gummy-surface-strong shadow-xl"
               style={{ width: sidebarWidth }}
             >
               <div className="flex h-12 items-center gap-2 border-b border-[var(--gray-6)] px-3">

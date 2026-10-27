@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { ThemeProvider, useTheme } from './context';
+import { fixedOrigin, portalTargetFor } from '../util/portal';
 
 /**
  * Click targets matching these selectors are treated as "inside" the popover,
@@ -13,45 +14,6 @@ const POPOVER_IGNORE_SELECTORS =
 
 /** Enter/exit transition duration (ms). Must match the `duration-150` class. */
 const TRANSITION_MS = 150;
-
-/**
- * Where the content is portaled. Normally `document.body`; but inside an open
- * Radix dialog (the library `Modal`, or a consumer's) the dialog's focus trap
- * pulls focus back from anything outside its content — a text field in a
- * body-portaled popover could be clicked but never typed into — so there the
- * content goes inside the dialog content, where the trap allows it.
- */
-function portalTargetFor(trigger: HTMLElement | null): HTMLElement {
-  return trigger?.closest<HTMLElement>('[role="dialog"],[role="alertdialog"]') ?? document.body;
-}
-
-/** True when `el` is the containing block of its `position: fixed` descendants. */
-function isFixedContainingBlock(el: HTMLElement): boolean {
-  const cs = getComputedStyle(el);
-  return (
-    cs.transform !== 'none' ||
-    cs.perspective !== 'none' ||
-    cs.filter !== 'none' ||
-    ((cs as CSSStyleDeclaration & { backdropFilter?: string }).backdropFilter ?? 'none') !== 'none' ||
-    /transform|perspective|filter/.test(cs.willChange) ||
-    /paint|layout|strict|content/.test(cs.contain)
-  );
-}
-
-/**
- * The viewport offset of the box that `position: fixed` resolves against for
- * a child of `target`: (0, 0) for the viewport itself, else the padding box of
- * the nearest transformed ancestor (a centred modal's `translate(-50%, -50%)`).
- */
-function fixedOrigin(target: HTMLElement): { x: number; y: number } {
-  for (let el: HTMLElement | null = target; el && el !== document.body; el = el.parentElement) {
-    if (isFixedContainingBlock(el)) {
-      const rect = el.getBoundingClientRect();
-      return { x: rect.left + el.clientLeft, y: rect.top + el.clientTop };
-    }
-  }
-  return { x: 0, y: 0 };
-}
 
 export interface PopoverProps {
   children: ReactNode;
@@ -306,7 +268,7 @@ export const Popover: React.FC<PopoverProps> = ({
                 off on <body>, where this is portaled. */}
             <div
               ref={contentRef}
-              className={`pointer-events-auto fixed z-[100000] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg transition duration-150 ease-out ${settled ? 'opacity-100' : entered ? 'opacity-100 translate-x-0 translate-y-0' : `opacity-0 ${enterOffsetClass}`} ${contentClassName}`}
+              className={`pointer-events-auto fixed z-[100000] gummy-surface border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg transition duration-150 ease-out ${settled ? 'opacity-100' : entered ? 'opacity-100 translate-x-0 translate-y-0' : `opacity-0 ${enterOffsetClass}`} ${contentClassName}`}
               style={{
                 top: `${position.top}px`,
                 left: `${position.left}px`,

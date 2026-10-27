@@ -36,6 +36,23 @@ describe("assertGummyProject", () => {
   });
 });
 
+describe("assertGummyProject: theme", () => {
+  test("accepts surface and background on the theme", () => {
+    const p = { ...valid(), theme: { theme: { accentColor: "iris", surface: "glass", background: "linear-gradient(#000, #fff)" } } };
+    expect(assertGummyProject(p).theme?.theme?.surface).toBe("glass");
+  });
+
+  test("rejects a surface that is neither flat nor glass", () => {
+    const p = { ...valid(), theme: { theme: { surface: "frosted" } } };
+    expect(() => assertGummyProject(p)).toThrow(/theme\.theme\.surface .*"frosted"/);
+  });
+
+  test("rejects a non-string background", () => {
+    const p = { ...valid(), theme: { theme: { surface: "glass", background: { from: "#000" } } } };
+    expect(() => assertGummyProject(p)).toThrow(/theme\.theme\.background/);
+  });
+});
+
 describe("projectApiToEngine", () => {
   test("fills the engine-required description and withOptions", () => {
     const api = projectApiToEngine({ one: { url: "/one", methods: "GET", response: "res" } });

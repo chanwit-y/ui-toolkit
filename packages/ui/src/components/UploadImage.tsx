@@ -220,7 +220,7 @@ const UploadImageBase = forwardRef<
 								type="button"
 								title="Replace image"
 								onClick={openFileDialog}
-								className="rounded-full bg-white/90 dark:bg-gray-900/90 p-2 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-900 transition"
+								className="rounded-full gummy-surface-strong p-2 text-gray-700 dark:text-gray-300 transition hover:opacity-90"
 							>
 								<RefreshCw className="h-4 w-4" />
 							</button>
@@ -228,7 +228,7 @@ const UploadImageBase = forwardRef<
 								type="button"
 								title="Remove image"
 								onClick={handleRemove}
-								className="rounded-full bg-white/90 dark:bg-gray-900/90 p-2 text-red-600 hover:bg-white dark:hover:bg-gray-900 transition"
+								className="rounded-full gummy-surface-strong p-2 text-red-600 transition hover:opacity-90"
 							>
 								<Trash2 className="h-4 w-4" />
 							</button>
@@ -252,7 +252,7 @@ const UploadImageBase = forwardRef<
 					className={cn(
 						"flex flex-col items-center justify-center gap-2 rounded-md border-2 border-dashed transition duration-200 ease-in-out",
 						disabled
-							? "cursor-not-allowed bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500"
+							? "cursor-not-allowed bg-[var(--gray-a3)] border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500"
 							: "cursor-pointer text-gray-500 dark:text-gray-400 hover:border-[var(--accent-8,#60a5fa)] hover:bg-[var(--accent-a3,#eff6ff80)]",
 						isDragging ? "border-[var(--accent-8,#3b82f6)] bg-[var(--accent-3,#eff6ff)]" : "border-gray-300 dark:border-gray-600",
 						hasError && "border-red-300 hover:border-red-400"

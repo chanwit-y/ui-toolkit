@@ -1,0 +1,686 @@
+{
+  "containers": [
+    {
+      "id": "page-overlays",
+      "name": "page-overlays",
+      "isArray": false,
+      "bins": [
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "Overlays",
+            "variant": "h3",
+            "weight": "bold"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "Everything that portals out of the page — a drawer, a modal, a popover — carries the glass with it: the nested theme root inside each portal has the same surface, and its fields are on the Input tier.",
+            "variant": "body2",
+            "color": "gray"
+          }
+        },
+        {
+          "sm": "6",
+          "md": "6",
+          "lg": "3",
+          "xl": "3",
+          "type": "drawer",
+          "justifySelf": "start",
+          "alignSelf": "stretch",
+          "element": {
+            "id": "newCustomer",
+            "container": {
+              "id": "drawer-gs-item-",
+              "name": "drawer-gs-item-",
+              "isArray": false,
+              "bins": [
+                {
+                  "sm": "12",
+                  "md": "12",
+                  "lg": "12",
+                  "xl": "12",
+                  "type": "textfield",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "name",
+                    "dataType": "string",
+                    "label": "Name",
+                    "isRequired": true,
+                    "errorMessage": "",
+                    "variant": "surface",
+                    "size": "3",
+                    "radius": "medium",
+                    "isFullWidth": true,
+                    "isFixedHeight": true
+                  }
+                },
+                {
+                  "sm": "12",
+                  "md": "12",
+                  "lg": "12",
+                  "xl": "12",
+                  "type": "textfield",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "email",
+                    "dataType": "email",
+                    "label": "Email",
+                    "isRequired": true,
+                    "errorMessage": "",
+                    "variant": "surface",
+                    "size": "3",
+                    "radius": "medium",
+                    "isFullWidth": true,
+                    "isFixedHeight": true
+                  }
+                },
+                {
+                  "sm": "12",
+                  "md": "12",
+                  "lg": "12",
+                  "xl": "12",
+                  "type": "textfield",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "phone",
+                    "dataType": "tel",
+                    "label": "Phone",
+                    "isRequired": false,
+                    "errorMessage": "",
+                    "variant": "surface",
+                    "size": "3",
+                    "radius": "medium",
+                    "isFullWidth": true,
+                    "isFixedHeight": true
+                  }
+                },
+                {
+                  "sm": "12",
+                  "md": "12",
+                  "lg": "12",
+                  "xl": "12",
+                  "type": "autocomplete",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "city",
+                    "dataType": "string",
+                    "label": "City",
+                    "isRequired": false,
+                    "errorMessage": "",
+                    "canObserve": false,
+                    "observeTo": "",
+                    "isSingleLoad": false,
+                    "keys": {
+                      "id": "value",
+                      "search": "label",
+                      "display": "label"
+                    },
+                    "defaultData": {},
+                    "options": [
+                      {
+                        "value": "Bangkok",
+                        "label": "Bangkok"
+                      },
+                      {
+                        "value": "Chiang Mai",
+                        "label": "Chiang Mai"
+                      },
+                      {
+                        "value": "Phuket",
+                        "label": "Phuket"
+                      },
+                      {
+                        "value": "Khon Kaen",
+                        "label": "Khon Kaen"
+                      }
+                    ],
+                    "placeholder": "Any city"
+                  }
+                },
+                {
+                  "sm": "6",
+                  "md": "6",
+                  "lg": "6",
+                  "xl": "6",
+                  "type": "button",
+                  "justifySelf": "start",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "label": "Cancel",
+                    "variant": "outlined",
+                    "color": "gray",
+                    "actions": [
+                      "CloseModal"
+                    ],
+                    "modalId": "newCustomer"
+                  }
+                },
+                {
+                  "sm": "6",
+                  "md": "6",
+                  "lg": "6",
+                  "xl": "6",
+                  "type": "button",
+                  "justifySelf": "start",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "label": "Save",
+                    "icon": "save",
+                    "actions": [
+                      "StartLoading",
+                      "SubmitFormToPostAPI",
+                      "StopLoading",
+                      "CloseModal"
+                    ],
+                    "api": {
+                      "name": "createCustomer"
+                    },
+                    "modalId": "newCustomer",
+                    "snackbarSuccess": {
+                      "type": "success",
+                      "message": "Customer added"
+                    },
+                    "snackbarError": "$exception"
+                  }
+                }
+              ],
+              "gap": "16px",
+              "justifyItems": "stretch",
+              "alignItems": "stretch",
+              "justifyContent": "start",
+              "alignContent": "start",
+              "gridAutoFlow": "row"
+            },
+            "trigger": {
+              "type": "button",
+              "element": {
+                "label": "Open drawer",
+                "icon": "panelRight",
+                "actions": []
+              }
+            },
+            "title": "New customer",
+            "description": "A form in a glass drawer; Save posts to the API.",
+            "size": "420px"
+          }
+        },
+        {
+          "sm": "6",
+          "md": "6",
+          "lg": "3",
+          "xl": "3",
+          "type": "modal",
+          "justifySelf": "start",
+          "alignSelf": "stretch",
+          "element": {
+            "id": "quickNote",
+            "title": "Quick note",
+            "container": {
+              "id": "modal-gs-item-",
+              "name": "modal-gs-item-",
+              "isArray": false,
+              "bins": [
+                {
+                  "sm": "12",
+                  "md": "12",
+                  "lg": "12",
+                  "xl": "12",
+                  "type": "textfield",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "title",
+                    "dataType": "string",
+                    "label": "Title",
+                    "isRequired": true,
+                    "errorMessage": "",
+                    "variant": "surface",
+                    "size": "3",
+                    "radius": "medium",
+                    "isFullWidth": true,
+                    "isFixedHeight": true
+                  }
+                },
+                {
+                  "sm": "12",
+                  "md": "12",
+                  "lg": "12",
+                  "xl": "12",
+                  "type": "autocomplete",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "genreId",
+                    "dataType": "string",
+                    "label": "Genre",
+                    "isRequired": false,
+                    "errorMessage": "",
+                    "canObserve": false,
+                    "observeTo": "",
+                    "isSingleLoad": false,
+                    "keys": {
+                      "id": "_id",
+                      "search": "name",
+                      "display": "name"
+                    },
+                    "defaultData": {},
+                    "options": [],
+                    "placeholder": "Choose genre",
+                    "api": {
+                      "name": "listGenres",
+                      "paths": [
+                        "data"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "sm": "12",
+                  "md": "12",
+                  "lg": "12",
+                  "xl": "12",
+                  "type": "textarea",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "body",
+                    "dataType": "string",
+                    "label": "Note",
+                    "isRequired": false,
+                    "errorMessage": "",
+                    "rows": 4,
+                    "resize": "vertical",
+                    "autoResize": false,
+                    "showCharCount": false
+                  }
+                },
+                {
+                  "sm": "6",
+                  "md": "6",
+                  "lg": "6",
+                  "xl": "6",
+                  "type": "button",
+                  "justifySelf": "start",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "label": "Close",
+                    "variant": "text",
+                    "color": "gray",
+                    "actions": [
+                      "CloseModal"
+                    ],
+                    "modalId": "quickNote"
+                  }
+                }
+              ],
+              "gap": "16px",
+              "justifyItems": "stretch",
+              "alignItems": "stretch",
+              "justifyContent": "start",
+              "alignContent": "start",
+              "gridAutoFlow": "row"
+            },
+            "trigger": {
+              "label": "Open modal",
+              "icon": "puls",
+              "variant": "outlined",
+              "actions": []
+            },
+            "description": "A glass dialog over the blurred page.",
+            "maxWidth": "560px"
+          }
+        },
+        {
+          "sm": "6",
+          "md": "6",
+          "lg": "3",
+          "xl": "3",
+          "type": "popover",
+          "justifySelf": "start",
+          "alignSelf": "stretch",
+          "element": {
+            "container": {
+              "id": "popover-gs-item-",
+              "name": "popover-gs-item-",
+              "isArray": false,
+              "bins": [
+                {
+                  "sm": "12",
+                  "md": "12",
+                  "lg": "12",
+                  "xl": "12",
+                  "type": "typography",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "text": "A popover is a glass panel too",
+                    "variant": "subtitle2",
+                    "weight": "medium"
+                  }
+                },
+                {
+                  "sm": "12",
+                  "md": "12",
+                  "lg": "12",
+                  "xl": "12",
+                  "type": "autocomplete",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "genreId",
+                    "dataType": "string",
+                    "label": "Genre",
+                    "isRequired": false,
+                    "errorMessage": "",
+                    "canObserve": false,
+                    "observeTo": "",
+                    "isSingleLoad": false,
+                    "keys": {
+                      "id": "_id",
+                      "search": "name",
+                      "display": "name"
+                    },
+                    "defaultData": {},
+                    "options": [],
+                    "placeholder": "Choose genre",
+                    "api": {
+                      "name": "listGenres",
+                      "paths": [
+                        "data"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "sm": "6",
+                  "md": "6",
+                  "lg": "6",
+                  "xl": "6",
+                  "type": "switch",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "inStock",
+                    "dataType": "boolean",
+                    "label": "In stock only",
+                    "isRequired": false,
+                    "errorMessage": ""
+                  }
+                }
+              ],
+              "gap": "16px",
+              "justifyItems": "stretch",
+              "alignItems": "stretch",
+              "justifyContent": "start",
+              "alignContent": "start",
+              "gridAutoFlow": "row"
+            },
+            "trigger": {
+              "type": "button",
+              "element": {
+                "label": "Open popover",
+                "icon": "filter",
+                "variant": "text",
+                "actions": []
+              }
+            },
+            "placement": "bottom-start",
+            "triggerMode": "click"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "tab",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "tabs": [
+              {
+                "label": "Panel",
+                "value": "panel",
+                "container": {
+                  "id": "tab-gs-item--0",
+                  "name": "tab-gs-item--0",
+                  "isArray": false,
+                  "bins": [
+                    {
+                      "sm": "12",
+                      "md": "12",
+                      "lg": "12",
+                      "xl": "12",
+                      "type": "container",
+                      "justifySelf": "stretch",
+                      "alignSelf": "stretch",
+                      "container": {
+                        "id": "container-gs-item-",
+                        "name": "container-gs-item-",
+                        "isArray": false,
+                        "bins": [
+                          {
+                            "sm": "12",
+                            "md": "12",
+                            "lg": "12",
+                            "xl": "12",
+                            "type": "typography",
+                            "justifySelf": "stretch",
+                            "alignSelf": "stretch",
+                            "element": {
+                              "text": "A container with a surface, inside a tab",
+                              "variant": "subtitle1",
+                              "weight": "medium"
+                            }
+                          },
+                          {
+                            "sm": "12",
+                            "md": "12",
+                            "lg": "12",
+                            "xl": "12",
+                            "type": "typography",
+                            "justifySelf": "stretch",
+                            "alignSelf": "stretch",
+                            "element": {
+                              "text": "Containers that turn their surface on are Panel-tier glass, like cards. Nest one in another and the blur layers up — keep it to one level.",
+                              "variant": "body2",
+                              "color": "gray"
+                            }
+                          }
+                        ],
+                        "gap": "16px",
+                        "justifyItems": "stretch",
+                        "alignItems": "stretch",
+                        "justifyContent": "start",
+                        "alignContent": "start",
+                        "gridAutoFlow": "row",
+                        "surface": {
+                          "background": true,
+                          "border": true
+                        }
+                      }
+                    }
+                  ],
+                  "gap": "16px",
+                  "justifyItems": "stretch",
+                  "alignItems": "stretch",
+                  "justifyContent": "start",
+                  "alignContent": "start",
+                  "gridAutoFlow": "row"
+                }
+              },
+              {
+                "label": "Inputs",
+                "value": "inputs",
+                "container": {
+                  "id": "tab-gs-item--1",
+                  "name": "tab-gs-item--1",
+                  "isArray": false,
+                  "bins": [
+                    {
+                      "sm": "12",
+                      "md": "12",
+                      "lg": "12",
+                      "xl": "12",
+                      "type": "container",
+                      "justifySelf": "stretch",
+                      "alignSelf": "stretch",
+                      "container": {
+                        "id": "container-gs-item-",
+                        "name": "container-gs-item-",
+                        "isArray": false,
+                        "bins": [
+                          {
+                            "sm": "6",
+                            "md": "6",
+                            "lg": "6",
+                            "xl": "6",
+                            "type": "textfield",
+                            "justifySelf": "stretch",
+                            "alignSelf": "stretch",
+                            "element": {
+                              "name": "search",
+                              "dataType": "string",
+                              "label": "Search",
+                              "isRequired": false,
+                              "errorMessage": "",
+                              "variant": "surface",
+                              "size": "3",
+                              "radius": "medium",
+                              "isFullWidth": true,
+                              "isFixedHeight": true,
+                              "placeholder": "Type to search"
+                            }
+                          },
+                          {
+                            "sm": "6",
+                            "md": "6",
+                            "lg": "6",
+                            "xl": "6",
+                            "type": "autocomplete",
+                            "justifySelf": "stretch",
+                            "alignSelf": "stretch",
+                            "element": {
+                              "name": "authorId",
+                              "dataType": "string",
+                              "label": "Author",
+                              "isRequired": false,
+                              "errorMessage": "",
+                              "canObserve": false,
+                              "observeTo": "",
+                              "isSingleLoad": false,
+                              "keys": {
+                                "id": "_id",
+                                "search": "name",
+                                "display": "name"
+                              },
+                              "defaultData": {},
+                              "options": [],
+                              "placeholder": "Choose author",
+                              "itemAvatar": "avatar",
+                              "api": {
+                                "name": "listAuthors",
+                                "paths": [
+                                  "data"
+                                ]
+                              }
+                            }
+                          },
+                          {
+                            "sm": "6",
+                            "md": "6",
+                            "lg": "6",
+                            "xl": "6",
+                            "type": "datepicker",
+                            "justifySelf": "stretch",
+                            "alignSelf": "stretch",
+                            "element": {
+                              "name": "from",
+                              "dataType": "string",
+                              "label": "From",
+                              "isRequired": false,
+                              "errorMessage": "",
+                              "variant": "surface",
+                              "size": "2",
+                              "radius": "medium",
+                              "clearable": true,
+                              "displayFormat": "DD/MM/YYYY",
+                              "weekStartsOn": 0
+                            }
+                          },
+                          {
+                            "sm": "6",
+                            "md": "6",
+                            "lg": "6",
+                            "xl": "6",
+                            "type": "datepicker",
+                            "justifySelf": "stretch",
+                            "alignSelf": "stretch",
+                            "element": {
+                              "name": "to",
+                              "dataType": "string",
+                              "label": "To",
+                              "isRequired": false,
+                              "errorMessage": "",
+                              "variant": "surface",
+                              "size": "2",
+                              "radius": "medium",
+                              "clearable": true,
+                              "displayFormat": "DD/MM/YYYY",
+                              "weekStartsOn": 0
+                            }
+                          }
+                        ],
+                        "gap": "16px",
+                        "justifyItems": "stretch",
+                        "alignItems": "stretch",
+                        "justifyContent": "start",
+                        "alignContent": "start",
+                        "gridAutoFlow": "row",
+                        "surface": {
+                          "background": true,
+                          "border": true
+                        }
+                      }
+                    }
+                  ],
+                  "gap": "16px",
+                  "justifyItems": "stretch",
+                  "alignItems": "stretch",
+                  "justifyContent": "start",
+                  "alignContent": "start",
+                  "gridAutoFlow": "row"
+                }
+              }
+            ],
+            "defaultValue": "panel"
+          }
+        }
+      ],
+      "gap": "16px",
+      "justifyItems": "stretch",
+      "alignItems": "stretch",
+      "justifyContent": "start",
+      "alignContent": "start",
+      "gridAutoFlow": "row"
+    }
+  ]
+}

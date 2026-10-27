@@ -481,7 +481,7 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 			<div
 				ref={dropdownContainerRef}
 				style={dropdownStyles}
-				className="dropdown flex flex-col bg-[var(--color-panel-solid)] border border-[var(--gray-a6)] rounded-md shadow-lg overflow-hidden ease-in duration-100 opacity-100 z-[100000]"
+				className="dropdown flex flex-col gummy-surface border border-[var(--gray-a6)] rounded-md shadow-lg overflow-hidden ease-in duration-100 opacity-100 z-[100000]"
 			>
 				<OptionSearch
 					ref={searchInputRef}
@@ -561,7 +561,7 @@ const createAutocomplete = <T extends Record<string, any>>() => {
 					onClick={openDropdown}
 					disabled={!isObserveEnabled}
 					className={cn("w-full h-[40px] px-4 text-sm flex items-center justify-between",
-						"bg-white dark:bg-gray-900 border rounded-md shadow-sm transition-all duration-200",
+						"gummy-surface-input border rounded-md shadow-sm transition-all duration-200",
 						"text-left focus:ring-2 focus:ring-[var(--accent-8,#3b82f6)] focus:border-transparent",
 						hasError
 							? "border-red-300 hover:border-red-400"

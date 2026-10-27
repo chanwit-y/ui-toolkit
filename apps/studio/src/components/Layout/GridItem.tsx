@@ -954,6 +954,7 @@ function DataTableLivePreview({ config, filterCanvas }: { config: DataTableConfi
         canDelete={config.canDelete}
         canAdd={config.canAdd}
         headerGap={config.headerGap || undefined}
+        actionSize={config.actionSize || undefined}
         canResizeColumns={config.canResizeColumns}
         cellLines={config.cellLines}
         filterContainer={showFilters ? CANVAS_FILTER_CONTAINER : undefined}
@@ -1061,6 +1062,7 @@ function EditableTableLivePreview({ config }: { config: DataTableEditableConfig 
         columns={columns}
         apiCrud={apiCrud}
         canResizeColumns={config.canResizeColumns}
+        actionSize={config.actionSize || undefined}
       />
     </div>
   )

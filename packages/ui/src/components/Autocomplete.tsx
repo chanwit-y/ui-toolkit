@@ -251,7 +251,7 @@ const AutocompleteBase = forwardRef<
           onKeyDown={handleKeyDown}
           className={cn(
             "w-full flex items-center justify-between px-4 text-sm h-[40px]",
-            "bg-white dark:bg-gray-900 border rounded-lg shadow-sm transition-all duration-200",
+            "gummy-surface-input border rounded-lg shadow-sm transition-all duration-200",
             // "text-left group focus:ring-2 focus:ring-blue-500 focus:border-transparent",
             "text-left focus:ring-2 focus:ring-[var(--accent-8,#3b82f6)] focus:border-transparent",
             hasError
@@ -311,7 +311,7 @@ const AutocompleteBase = forwardRef<
       {isOpen && (
         <div 
           style={dropdownStyles}
-          className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden animate-in duration-200"
+          className="gummy-surface border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden animate-in duration-200"
         >
           <div className="flex items-center border-b border-gray-100 dark:border-gray-800 px-3">
             <Search className="h-4 w-4 text-gray-400 dark:text-gray-500 mr-2" />

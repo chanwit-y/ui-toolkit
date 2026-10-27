@@ -1,0 +1,324 @@
+{
+  "schemaVersion": 1,
+  "name": "Glass showcase",
+  "description": "The Glass surface on every component: cards, tables with pinned columns, forms, a repeater, drawer / modal / popover — over the Book shop API.",
+  "env": {
+    "API_URL": "http://localhost:9100"
+  },
+  "model": {
+    "genreListRes": {
+      "data": {
+        "type": "array",
+        "collection": {
+          "_id": "string",
+          "name": "string",
+          "color": "string"
+        }
+      },
+      "total": "number"
+    },
+    "authorListRes": {
+      "data": {
+        "type": "array",
+        "collection": {
+          "_id": "string",
+          "name": "string",
+          "country": "string",
+          "born": "number",
+          "bio": "string",
+          "avatar": "string",
+          "bookCount": "number"
+        }
+      },
+      "total": "number"
+    },
+    "authorQuery": {
+      "genre": "string",
+      "search": "string"
+    },
+    "bookListRes": {
+      "data": {
+        "type": "array",
+        "collection": {
+          "_id": "string",
+          "title": "string",
+          "isbn": "string",
+          "authorId": "string",
+          "authorName": "string",
+          "genreId": "string",
+          "genreName": "string",
+          "genreColor": "string",
+          "price": "number",
+          "priceText": "string",
+          "stock": "number",
+          "publishedAt": "string",
+          "pages": "number",
+          "cover": "string",
+          "description": "string",
+          "featured": "boolean",
+          "rating": "number",
+          "reviewCount": "number",
+          "updatedAt": "string",
+          "publishedAtText": "string"
+        }
+      },
+      "total": "number"
+    },
+    "bookRes": {
+      "data": {
+        "type": "object",
+        "collection": {
+          "_id": "string",
+          "title": "string",
+          "isbn": "string",
+          "authorId": "string",
+          "authorName": "string",
+          "genreId": "string",
+          "genreName": "string",
+          "genreColor": "string",
+          "price": "number",
+          "priceText": "string",
+          "stock": "number",
+          "publishedAt": "string",
+          "pages": "number",
+          "cover": "string",
+          "description": "string",
+          "featured": "boolean",
+          "rating": "number",
+          "reviewCount": "number",
+          "updatedAt": "string",
+          "publishedAtText": "string"
+        }
+      }
+    },
+    "bookPageQuery": {
+      "offset": "number",
+      "limit": "number",
+      "search": "string",
+      "sortBy": "string",
+      "sortDir": "string",
+      "genre": "string",
+      "author": "string",
+      "inStock": "string",
+      "featured": "string"
+    },
+    "bookBody": {
+      "title": "string",
+      "isbn": "string",
+      "authorId": "string",
+      "genreId": "string",
+      "price": "number",
+      "stock": "number",
+      "publishedAt": "string",
+      "pages": "number",
+      "cover": "string",
+      "description": "string",
+      "featured": "boolean"
+    },
+    "customerListRes": {
+      "data": {
+        "type": "array",
+        "collection": {
+          "_id": "string",
+          "name": "string",
+          "email": "string",
+          "phone": "string",
+          "city": "string",
+          "joinedAt": "string",
+          "joinedAtText": "string",
+          "orderCount": "number",
+          "totalSpent": "number",
+          "totalSpentText": "string",
+          "avatar": "string"
+        }
+      },
+      "total": "number"
+    },
+    "customerRes": {
+      "data": {
+        "type": "object",
+        "collection": {
+          "_id": "string",
+          "name": "string",
+          "email": "string",
+          "phone": "string",
+          "city": "string",
+          "joinedAt": "string",
+          "joinedAtText": "string",
+          "orderCount": "number",
+          "totalSpent": "number",
+          "totalSpentText": "string",
+          "avatar": "string"
+        }
+      }
+    },
+    "customerPageQuery": {
+      "offset": "number",
+      "limit": "number",
+      "search": "string",
+      "sortBy": "string",
+      "sortDir": "string",
+      "city": "string"
+    },
+    "customerBody": {
+      "name": "string",
+      "email": "string",
+      "phone": "string",
+      "city": "string"
+    },
+    "idParam": {
+      "id": "string"
+    },
+    "genreParam": {
+      "genre": "string"
+    }
+  },
+  "api": {
+    "listBooks": {
+      "url": "/api/books",
+      "description": "A page of books (search, genre, author, stock, sort)",
+      "methods": "GET",
+      "response": "bookListRes",
+      "query": "bookPageQuery",
+      "withOptions": false
+    },
+    "createBook": {
+      "url": "/api/books",
+      "description": "Add a book",
+      "methods": "POST",
+      "response": "bookRes",
+      "body": "bookBody",
+      "withOptions": false
+    },
+    "updateBook": {
+      "url": "/api/books/:id",
+      "description": "Change a book",
+      "methods": "PATCH",
+      "response": "bookRes",
+      "parameter": "idParam",
+      "body": "bookBody",
+      "withOptions": false
+    },
+    "listGenres": {
+      "url": "/api/genres",
+      "description": "Every genre, by name",
+      "methods": "GET",
+      "response": "genreListRes",
+      "withOptions": false
+    },
+    "listAuthors": {
+      "url": "/api/authors",
+      "description": "Authors (optionally of one genre, or matching a name)",
+      "methods": "GET",
+      "response": "authorListRes",
+      "query": "authorQuery",
+      "withOptions": false
+    },
+    "genreAuthors": {
+      "url": "/api/genres/:genre/authors",
+      "description": "Authors with a book in one genre (the dependent filter)",
+      "methods": "GET",
+      "response": "authorListRes",
+      "parameter": "genreParam",
+      "withOptions": false
+    },
+    "listCustomers": {
+      "url": "/api/customers",
+      "description": "A page of customers",
+      "methods": "GET",
+      "response": "customerListRes",
+      "query": "customerPageQuery",
+      "withOptions": false
+    },
+    "createCustomer": {
+      "url": "/api/customers",
+      "description": "Add a customer",
+      "methods": "POST",
+      "response": "customerRes",
+      "body": "customerBody",
+      "withOptions": false
+    }
+  },
+  "pages": {
+    "overview": {
+      "path": "/",
+      "title": "Overview",
+      "src": "pages/overview.json"
+    },
+    "tables": {
+      "path": "/tables",
+      "title": "Tables",
+      "src": "pages/tables.json"
+    },
+    "cards": {
+      "path": "/cards",
+      "title": "Cards",
+      "src": "pages/cards.json"
+    },
+    "overlays": {
+      "path": "/overlays",
+      "title": "Overlays",
+      "src": "pages/overlays.json"
+    }
+  },
+  "menu": [
+    {
+      "label": "Overview",
+      "icon": "home",
+      "navigate": {
+        "page": "overview"
+      }
+    },
+    {
+      "label": "Tables",
+      "icon": "table",
+      "navigate": {
+        "page": "tables"
+      }
+    },
+    {
+      "label": "Cards",
+      "icon": "creditCard",
+      "navigate": {
+        "page": "cards"
+      }
+    },
+    {
+      "label": "Overlays",
+      "icon": "panelRight",
+      "navigate": {
+        "page": "overlays"
+      }
+    }
+  ],
+  "shell": {
+    "navigation": "sidebar",
+    "breadcrumbs": true,
+    "appBar": {
+      "title": "Glass showcase",
+      "icon": "layoutDashboard"
+    },
+    "pageTransition": {
+      "type": "fade-up"
+    }
+  },
+  "theme": {
+    "theme": {
+      "appearance": "light",
+      "accentColor": "violet",
+      "radius": "large",
+      "panelBackground": "solid",
+      "surface": "glass",
+      "background": "linear-gradient(160deg, #c7d2fe, #fbcfe8)"
+    },
+    "components": {
+      "dataTable": {
+        "headerFontSize": "sm",
+        "headerFontWeight": "semibold"
+      }
+    }
+  },
+  "globalLoads": [],
+  "customActions": [],
+  "customComponents": []
+}

@@ -4,6 +4,7 @@ import { HttpClientFactory } from "../api";
 import type { PageTransition, TActionMaster, TComponentMaster } from "./@types";
 import { AuthUserMenu, AzureAuth, getAccessToken, type AuthMock, type AuthScreens } from "../auth/azure";
 import { AppShell, type AppShellProps } from "./AppShell";
+import { SurfaceBackdrop } from "./SurfaceBackdrop";
 import { DataProvider, ThemeProvider } from "./context";
 import { ActionsProvider } from "./core/actions";
 import { ComponentsProvider } from "./core/components";
@@ -197,7 +198,11 @@ export function GummyApp({
       {content}
     </AppShell>
   ) : (
-    content
+    // No shell: the glass backdrop covers the viewport (nothing in flat).
+    <>
+      <SurfaceBackdrop fixed />
+      {content}
+    </>
   );
 
   return (

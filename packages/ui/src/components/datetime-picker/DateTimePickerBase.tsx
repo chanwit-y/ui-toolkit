@@ -275,14 +275,14 @@ const DateTimePickerBase = forwardRef<
 					aria-haspopup="dialog"
 					aria-expanded={isOpen}
 					className={cn(
-						"w-full flex items-center justify-between bg-white dark:bg-gray-900 border shadow-sm",
+						"w-full flex items-center justify-between gummy-surface-input border shadow-sm",
 						"transition-all duration-200 text-left",
 						sizeClass,
 						radiusClass,
 						hasError
 							? "border-red-300 hover:border-red-400"
 							: "border-gray-300 dark:border-gray-600 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--accent-8,#3b82f6)] focus:border-transparent",
-						disabled && "opacity-60 cursor-not-allowed bg-gray-50 dark:bg-gray-800",
+						disabled && "opacity-60 cursor-not-allowed bg-[var(--gray-a3)]",
 						className
 					)}
 					data-error={hasError ? "true" : undefined}

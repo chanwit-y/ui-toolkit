@@ -45,7 +45,7 @@ import type { ModelDef, ModelField } from '../Model/types'
 import type { CustomActionDef } from '../Workspace/customActions'
 import type { CustomComponentDef } from '../Workspace/customComponents'
 import type { EnvVarDef } from '../Env/types'
-import type { StudioThemeConfig } from '../Theme/types'
+import { createDefaultBackdrop, type StudioThemeConfig } from '../Theme/types'
 import type { PageLoadDef } from '../Workspace/pageLoads'
 import { AUTH_PROFILE_LOAD_ID, createAuthDef, type AuthDef } from '../Workspace/auth'
 
@@ -1736,6 +1736,8 @@ export function countrySeedTheme(): StudioThemeConfig {
     accentColor: 'teal',
     radius: 'small',
     panelBackground: 'translucent',
+    surface: 'flat',
+    background: createDefaultBackdrop(),
     buttonColor: 'teal',
     dataTable: {
       headerColor: '',

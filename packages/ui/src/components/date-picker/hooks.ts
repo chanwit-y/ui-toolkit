@@ -16,6 +16,7 @@ import {
 	ESTIMATED_DROPDOWN_HEIGHT,
 } from "./constants"
 import type { DatePickerBaseProps } from "./types"
+import { fixedOrigin } from "../../util/portal"
 
 export const useValidationMessage = ({
 	isRequired,
@@ -123,7 +124,8 @@ export const useOutsideClick = (
 export const useDropdownPlacement = (
 	isOpen: boolean,
 	triggerRef: RefObject<HTMLButtonElement>,
-	dropdownRef: RefObject<HTMLDivElement>
+	dropdownRef: RefObject<HTMLDivElement>,
+	portalTarget: HTMLElement | null
 ) => {
 	const [dropdownStyles, setDropdownStyles] = useState<CSSProperties>({})
 
@@ -140,9 +142,11 @@ export const useDropdownPlacement = (
 		const dropdownWidth =
 			dropdownRef.current?.offsetWidth ?? DEFAULT_DROPDOWN_WIDTH
 
-		// The dropdown is portaled to document.body, so `position: fixed`
-		// resolves against the viewport and the trigger's viewport-relative
-		// rect can be used directly — no containing-block correction needed.
+		// Inside a dialog the dropdown is portaled into the dialog content, whose
+		// transform (a centred modal) is the containing block of `position:
+		// fixed` — convert viewport coordinates into that box. On <body> the
+		// origin is (0, 0).
+		const origin = portalTarget ? fixedOrigin(portalTarget) : { x: 0, y: 0 }
 		const margin = DROPDOWN_VIEWPORT_MARGIN
 		const triggerGap = DROPDOWN_TRIGGER_GAP
 		const spaceBelow = window.innerHeight - rect.bottom - triggerGap - margin
@@ -157,20 +161,20 @@ export const useDropdownPlacement = (
 
 		const styles: CSSProperties = {
 			position: "fixed",
-			left,
+			left: left - origin.x,
 			width: rect.width,
 			minWidth: DEFAULT_DROPDOWN_WIDTH,
 			zIndex: 100000,
 		}
 
 		if (showAbove) {
-			styles.bottom = window.innerHeight - rect.top + triggerGap
+			styles.top = rect.top - triggerGap - dropdownHeight - origin.y
 		} else {
-			styles.top = rect.bottom + triggerGap
+			styles.top = rect.bottom + triggerGap - origin.y
 		}
 
 		setDropdownStyles(styles)
-	}, [triggerRef, dropdownRef])
+	}, [triggerRef, dropdownRef, portalTarget])
 
 	useLayoutEffect(() => {
 		if (!isOpen) return undefined

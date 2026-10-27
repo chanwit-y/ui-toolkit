@@ -471,7 +471,7 @@ export function AppSidebar({
 
   return (
     <Tag
-      className={`gummy-sidebar shrink-0 flex-col overflow-hidden bg-[var(--color-panel-solid)] ${className}`}
+      className={`gummy-sidebar shrink-0 flex-col overflow-hidden gummy-surface ${className}`}
       style={{
         width: rail ? railWidth : width,
         ["--gummy-side-rail" as string]: railWidth,

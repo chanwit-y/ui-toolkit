@@ -45,8 +45,31 @@ import { TApiMaster } from "../../api/APIMaster";
 
 export type Appearance = "light" | "dark";
 
+/**
+ * How surfaces are painted (see the grilled design `glass-surface`):
+ * `flat` is the solid panel; `glass` makes every surfaced component a
+ * translucent, blurred panel over an accent-tinted backdrop. Orthogonal to
+ * `appearance` — light-glass and dark-glass both exist.
+ */
+export type Surface = "flat" | "glass";
+
+/**
+ * The `ThemeProvider` `theme` prop: Radix's global tokens plus Gummy's own
+ * `surface` / `background`, which the provider strips before Radix sees them.
+ */
+export type GummyThemeProps = ThemeProps & {
+  /** Surface style; default `flat`. */
+  surface?: Surface;
+  /**
+   * The backdrop glass is drawn over: any CSS `background` value (a colour, a
+   * gradient, `url(...)`). Only read while `surface` is `glass`; default an
+   * accent-tinted gradient.
+   */
+  background?: string;
+};
+
 export type ThemeContextType = {
-  theme?: ThemeProps;
+  theme?: GummyThemeProps;
   components: ThemeComponents;
   /** Current resolved appearance (light/dark). */
   appearance?: Appearance;
@@ -54,11 +77,15 @@ export type ThemeContextType = {
   setAppearance?: (appearance: Appearance) => void;
   /** Flip between light and dark. */
   toggleAppearance?: () => void;
+  /** Current resolved surface (flat/glass). */
+  surface?: Surface;
+  /** Runtime override of the surface — not persisted, the config stays the source of truth. */
+  setSurface?: (surface: Surface) => void;
 };
 
 export type ThemeProviderProps = {
   children: React.ReactNode;
-  theme?: ThemeProps;
+  theme?: GummyThemeProps;
   className?: string;
 } & ThemeContextType;
 
@@ -478,6 +505,8 @@ export type DataTableProps = {
    * action column never clamp.
    */
   cellLines?: number;
+  /** Row-action button size (see {@link DataTableElement.actionSize}). Default "2". */
+  actionSize?: DataTableActionSize;
   /**
    * The filter form (see {@link DataTableElement.filterContainer}). The table
    * owns the form instance; `renderFilterBins` draws the container's bins
@@ -599,6 +628,8 @@ export type DataTableEditableProps = {
   align?: Record<string, "start" | "center" | "end">;
   /** Column resizing by dragging the header edges. Default true. */
   canResizeColumns?: boolean;
+  /** Row-action button size (see {@link DataTableElement.actionSize}). Default "2". */
+  actionSize?: DataTableActionSize;
 };
 
 // Config-driven (container builder) variants: APIs are referenced by the name
@@ -643,6 +674,13 @@ export type DataTableEditableElement = {
    * for the session. Default true; lock single columns with `enableResizing`.
    */
   canResizeColumns?: boolean;
+  /**
+   * Size of the row-action buttons (Edit / Delete, and the editable table's
+   * Save / Cancel): Radix IconButton steps `"1"` (24px, 12px glyph), `"2"`
+   * (32px, 14px — the default) or `"3"` (40px, 18px). The ACTION column
+   * widens to fit.
+   */
+  actionSize?: DataTableActionSize;
 };
 
 
@@ -1215,6 +1253,9 @@ export type DataTableFilterDisplay = "popover" | "inline";
 /** Header spacing steps (Tailwind `gap-*`), see {@link DataTableElement.headerGap}. */
 export type DataTableHeaderGap = "0" | "1" | "2" | "3" | "4" | "6" | "8";
 
+/** Row-action button steps (Radix IconButton sizes), see {@link DataTableElement.actionSize}. */
+export type DataTableActionSize = "1" | "2" | "3";
+
 export type DataTableElement = {
   name: string;
   title: string;
@@ -1288,6 +1329,13 @@ export type DataTableElement = {
    * shows its full text in a tooltip.
    */
   cellLines?: number;
+  /**
+   * Size of the row-action buttons (Edit / Delete, and the editable table's
+   * Save / Cancel): Radix IconButton steps `"1"` (24px, 12px glyph), `"2"`
+   * (32px, 14px — the default) or `"3"` (40px, 18px). The ACTION column
+   * widens to fit.
+   */
+  actionSize?: DataTableActionSize;
   // Editing: {}
 };
 

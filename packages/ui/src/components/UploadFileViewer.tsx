@@ -73,7 +73,7 @@ const useFileText = (url: string | undefined, enabled: boolean): string | undefi
 
 const ACTION_CLASS = "modal__action text-[var(--gray-11)] hover:text-[var(--gray-12)]"
 const NAV_CLASS =
-	"absolute top-1/2 -translate-y-1/2 inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--gray-6)] bg-[var(--color-panel-solid)] text-[var(--gray-11)] shadow-sm transition hover:text-[var(--gray-12)] hover:border-[var(--accent-8)]"
+	"absolute top-1/2 -translate-y-1/2 inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--gray-6)] gummy-surface-strong text-[var(--gray-11)] shadow-sm transition hover:text-[var(--gray-12)] hover:border-[var(--accent-8)]"
 
 export type UploadFileViewerProps = {
 	files: UploadedFile[]

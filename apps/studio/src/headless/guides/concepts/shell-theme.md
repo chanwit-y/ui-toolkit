@@ -23,3 +23,14 @@ grass, amber, crimson…), `radius`, `panelBackground`, `scaling`
 (`editButtonColor`, `deleteButtonColor`, header / pagination / row hover).
 Components follow the accent unless a colour is set on them (a button's
 `color`).
+
+**Glass** (`surface: "glass"`, default `"flat"`): every surfaced component —
+cards, tables, dropdowns, dialogs, the app bar and sidebar, text fields — turns
+into a translucent blurred panel over a backdrop; it works on light and dark
+alike. The backdrop is `background: { kind, ... }`: `default` is an
+accent-tinted gradient (nothing to set), `color` one CSS colour, `gradient`
+`{ from, to, angle }` (both stops needed), `image` a URL or `data:` URL drawn
+`cover`. Sticky / pinned table cells stay near-opaque so scrolled content never
+shows through, and the OS "reduce transparency" setting, browsers without
+`backdrop-filter` and print all fall back to that look. Buttons keep their
+solid accent. The Book shop stays flat; the Gummy Portal project shows glass.

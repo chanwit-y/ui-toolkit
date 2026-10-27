@@ -13,7 +13,8 @@ demo/
 │     ├─ book-shop/             the project the app renders (written by the studio on every save)
 │     │  ├─ project.json        routes (each page's `src`), menu, app bar, theme, models, endpoints, sign-in
 │     │  └─ pages/*.json        one file per page, its own chunk, fetched on the page's first visit
-│     └─ gummy-portal/          a second project: the pill sidebar (see "Gummy Portal" below)
+│     ├─ gummy-portal/          a second project: the pill sidebar (see "Gummy Portal" below)
+│     └─ glass-showcase/        a third: the Glass surface on every component (see below)
 ├─ api/                         the Book shop mock API (Hono on Bun, port 9100) — README.md is its contract
 ├─ src/
 │  ├─ main.tsx                  BrowserRouter + the library stylesheet
@@ -53,6 +54,24 @@ studio's Menu tab → Sidebar.
 
 ```bash
 bun run --cwd demo app:portal    # http://localhost:3402 (VITE_GUMMY_PROJECT=gummy-portal)
+```
+
+## Glass showcase — every surface as glass
+
+The third project, **Glass showcase**, is the Glass surface on every
+component: `theme.surface: "glass"` with a configured gradient backdrop turns
+cards, the table frame, dropdowns, dialogs, the app bar and sidebar into
+translucent blurred panels (pinned and sticky table cells stay near-opaque,
+fields are a lighter glass). Four pages — Overview (cards and a form), Tables
+(pinned columns, a filter popover, an edit modal), Cards (repeaters of books and
+authors) and Overlays (drawer, modal, popover, tabs) — over the Book shop API,
+so it needs `bun run --cwd demo api` running. Flip the theme in the top bar for
+dark glass. The surface and its backdrop are the studio's Theme page → Surface
+/ Backdrop; the Gummy Portal is glass too, on the engine's default accent
+backdrop, and the Book shop stays flat.
+
+```bash
+bun run --cwd demo app:glass     # http://localhost:3403 (VITE_GUMMY_PROJECT=glass-showcase)
 ```
 
 ## Who you are

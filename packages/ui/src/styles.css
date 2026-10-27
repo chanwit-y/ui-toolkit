@@ -20,6 +20,7 @@
 @import "./styles/profile.css";
 @import "./styles/auth.css";
 @import "./styles/sidebar.css";
+@import "./styles/surface.css";
 
 @tailwind base;
 @tailwind components;

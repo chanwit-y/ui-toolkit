@@ -84,6 +84,7 @@ export * from "./api/APIMaster";
 export * from "./components/DataTable2";
 export { HtmlCell, renderHtmlCell, type HtmlCellProps } from "./components/HtmlCell";
 export { ClampedCell, DEFAULT_CELL_LINES } from "./components/ClampedCell";
+export { DEFAULT_ACTION_SIZE } from "./components/dataTableActions";
 export { groupColumns, headerRows, computeSpans, columnMeta, type ColumnLayoutMeta } from "./components/dataTableLayout";
 export { renderTemplate, templateFields, escapeHtml } from "./util/template";
 export { sanitizeHtml, type SanitizedHtml } from "./util/sanitizeHtml";
@@ -127,6 +128,7 @@ export type {
   DataTablePinnedColumns,
   DataTableAddButton,
   DataTableHeaderGap,
+  DataTableActionSize,
   // The engine's column config (not TanStack's `ColumnDef`, hence the prefix).
   ColumnDef as DataTableColumnDef,
 } from "./components/@types";
@@ -137,6 +139,7 @@ export * from "./components/Icon";
 export * from "./components/Modal";
 export * from "./components/Tab";
 export * from "./components/Paper";
+export * from "./components/SurfaceBackdrop";
 export type { PaperProps } from "./components/Paper";
 export * from "./components/Card";
 export * from "./components/HtmlContent";
@@ -203,6 +206,7 @@ export { uploadFileToApi, deleteFileFromApi } from "./util/uploadApi";
 
 export * from "./components/RadioButton2"
 export * from "./components/ThemeToggle"
+export * from "./components/SurfaceToggle"
 export type { ThemeToggleProps } from "./components/ThemeToggle"
 export type { Bin, Container, ContainerSurface, ContainerLoad, PageLoad, DataValue, DataTableElement, DrawerAnchor, DrawerElement, RadioElement, NavigateTarget, PageElement, TPageMaster, PageEntry, TPageEntries, GummyPageBody, PageTransition, PageTransitionType } from "./components/@types"
 export { getStateStore, stateStoreKeys, readSlice, loadingModeOf, skeletonPending, skeletonBindingKeys } from "./components/core/stateStore"
@@ -219,7 +223,7 @@ export type { EngineDebugState } from "./components/core/engineDebug"
 // use by inspectors; components register via the engine, not consumers.
 export { useStord } from "./components/core/stord"
 export { resolveDataValue, resolveDataValues, drillPaths } from "./components/core/dataValue"
-export type { Appearance, ThemeComponents, ThemeProviderProps } from "./components/@types"
+export type { Appearance, Surface, GummyThemeProps, ThemeComponents, ThemeProviderProps } from "./components/@types"
 export type { ThemeProps } from "@radix-ui/themes"
 export type * from "./model/master"
 export * from "./model/master"

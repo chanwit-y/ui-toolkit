@@ -33,6 +33,16 @@
       ],
       "description": "The Radix palette — every name `ThemeProps['accentColor']` accepts, spelled out (rather than derived from Radix's type) so the MCP's generated JSON Schema lists them; `ACCENT_COLORS` below must stay assignable to Radix's."
     },
+    "ActionSize": {
+      "type": "string",
+      "enum": [
+        "",
+        "1",
+        "2",
+        "3"
+      ],
+      "description": "Row-action button steps of both tables (engine `DataTableActionSize`); `''` = the engine default."
+    },
     "AppBarSettings": {
       "type": "object",
       "properties": {
@@ -711,6 +721,61 @@
       ],
       "additionalProperties": false,
       "description": "Editable config for an avatar. Maps onto the library's `Avatar` / engine `AvatarElement` (`name` is the element's optional binding key). `src` empty shows the `fallback` text (or the first letter of `alt`); `size` sticks to the named steps — the numeric form stays hand-editable in the exported JSON."
+    },
+    "BackdropConfig": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "$ref": "#/definitions/BackdropKind"
+        },
+        "color": {
+          "type": "string",
+          "description": "`kind: color` — any CSS colour."
+        },
+        "gradient": {
+          "type": "object",
+          "properties": {
+            "from": {
+              "type": "string"
+            },
+            "to": {
+              "type": "string"
+            },
+            "angle": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "from",
+            "to",
+            "angle"
+          ],
+          "additionalProperties": false,
+          "description": "`kind: gradient` — both stops needed, at `angle` degrees."
+        },
+        "image": {
+          "type": "string",
+          "description": "`kind: image` — a URL or a `data:` URL (uploaded, ≤ 300 KB), drawn `cover`."
+        }
+      },
+      "required": [
+        "kind",
+        "color",
+        "gradient",
+        "image"
+      ],
+      "additionalProperties": false,
+      "description": "The glass backdrop, structured (the app bar's paint is the precedent). Lowered to the engine's single CSS `background` string on export — only while the surface is glass and `kind` is not `default`."
+    },
+    "BackdropKind": {
+      "type": "string",
+      "enum": [
+        "default",
+        "color",
+        "gradient",
+        "image"
+      ],
+      "description": "What the glass backdrop is: the engine's accent gradient, one colour, a gradient, or an image."
     },
     "BuiltinButtonActionKey": {
       "type": "string",
@@ -1654,6 +1719,10 @@
           "type": "boolean",
           "description": "Engine `canResizeColumns` — drag a header edge to resize; exported only when off."
         },
+        "actionSize": {
+          "$ref": "#/definitions/ActionSize",
+          "description": "Engine `actionSize` — row-action button size (Edit / Delete …); `''` / absent = default (2). Optional, no migration."
+        },
         "cellLines": {
           "$ref": "#/definitions/CellLines",
           "description": "Engine `cellLines` — lines a plain cell shows before it is cut (a cut cell gets a tooltip); `0` = no clamp. Engine default 2."
@@ -1911,6 +1980,10 @@
           "type": "boolean",
           "description": "Engine `canResizeColumns` — drag a header edge to resize; exported only when off."
         },
+        "actionSize": {
+          "$ref": "#/definitions/ActionSize",
+          "description": "Engine `actionSize` — row-action button size (Edit / Delete …); `''` / absent = default (2). Optional, no migration."
+        },
         "canCreate": {
           "type": "boolean"
         },
@@ -1966,8 +2039,7 @@
         "updateEndpointId",
         "deleteEndpointId"
       ],
-      "additionalProperties": false,
-      "description": "Editable config for an editable table. Maps onto the engine's `DataTableEditableElement`. The three action toggles model `apiCrud` presence — in this component the Add/Edit/Delete actions exist only when their CRUD API is set — and export as skeleton refs with empty `name`s the consumer fills in (the engine throws loudly until the read API resolves, so a skeleton can't silently look wired). `idKey` is the row field used as the record id for update/delete calls."
+      "additionalProperties": false
     },
     "DataTablePaginationConfig": {
       "type": "object",
@@ -4383,6 +4455,14 @@
           "$ref": "#/definitions/ThemeScaling",
           "description": "Radix `scaling`; absent = 100%. Exported in theme.ts."
         },
+        "surface": {
+          "$ref": "#/definitions/ThemeSurface",
+          "description": "Flat panels or glass (workspace v54; `migrateV53` fills `flat`)."
+        },
+        "background": {
+          "$ref": "#/definitions/BackdropConfig",
+          "description": "The glass backdrop (read only while `surface` is glass)."
+        },
         "buttonColor": {
           "type": "string",
           "description": "`ThemeComponents.button.color`; `''` = no button override."
@@ -4400,6 +4480,8 @@
         "accentColor",
         "radius",
         "panelBackground",
+        "surface",
+        "background",
         "buttonColor",
         "dataTable"
       ],
@@ -4881,6 +4963,14 @@
         "110%"
       ],
       "description": "Radix `scaling` — the mockup's density: Compact / Cozy / Comfortable."
+    },
+    "ThemeSurface": {
+      "type": "string",
+      "enum": [
+        "flat",
+        "glass"
+      ],
+      "description": "Surface style (the engine's `Surface`, see the grilled design `glass-surface`): solid panels, or translucent blurred glass over a backdrop."
     },
     "TypographyConfig": {
       "type": "object",

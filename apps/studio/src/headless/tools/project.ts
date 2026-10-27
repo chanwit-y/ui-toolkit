@@ -140,7 +140,7 @@ export const projectTools: Tool[] = [
   {
     name: 'update_theme',
     description:
-      'The project theme: appearance (light | dark), accentColor (a Radix colour), radius, panelBackground, scaling, buttonColor and the dataTable colour roles. A deep-merge patch checked against StudioThemeConfig.',
+      'The project theme: appearance (light | dark), accentColor (a Radix colour), radius, panelBackground, scaling, surface (flat | glass) + background (the glass backdrop: { kind: default | color | gradient | image, color, gradient: { from, to, angle }, image }), buttonColor and the dataTable colour roles. A deep-merge patch checked against StudioThemeConfig.',
     inputSchema: writeInput({ project: PROJECT, theme: obj('e.g. { "accentColor": "iris", "radius": "large" }') }, ['project', 'theme']),
     write: true,
     run: (s, i) => {

@@ -42,7 +42,7 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 const HEX = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i
 
 /** A CSS colour: a native picker swatch (hex only) beside the free text (`rgb(…)`, `var(--teal-9)` …). */
-function ColorInput({
+export function ColorInput({
   value,
   onChange,
   placeholder,

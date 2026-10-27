@@ -1,7 +1,6 @@
-import type { ThemeProps } from "@radix-ui/themes";
 import type { TApiMaster } from "../../api/APIMaster";
 import type { TModelMaster } from "../../model/master";
-import type { AppBarConfig, GummyPageBody, SidebarConfig, PageLoad, PageTransition, ThemeComponents, TMenu, TPageEntries } from "../@types";
+import type { AppBarConfig, GummyPageBody, GummyThemeProps, SidebarConfig, PageLoad, PageTransition, ThemeComponents, TMenu, TPageEntries } from "../@types";
 import type { AzureAuthConfig } from "../../auth/azure/config";
 
 /**
@@ -36,9 +35,9 @@ export type GummyProjectShell = {
   sidebar?: SidebarConfig;
 };
 
-/** The `ThemeProvider` config: Radix global tokens + per-component colours. */
+/** The `ThemeProvider` config: Radix global tokens (+ Gummy's `surface` / `background`) + per-component colours. */
 export type GummyProjectTheme = {
-  theme?: ThemeProps;
+  theme?: GummyThemeProps;
   components?: ThemeComponents;
 };
 
@@ -134,6 +133,17 @@ export function assertGummyProject(value: unknown): GummyProject {
       throw new GummyProjectError(`pages.${key}.parent refers to page ${JSON.stringify(page.parent)}, which does not exist.`);
   }
   if (value.menu !== undefined && !Array.isArray(value.menu)) throw new GummyProjectError("`menu` must be an array.");
+  if (value.theme !== undefined) {
+    if (!isRecord(value.theme)) throw new GummyProjectError("`theme` must be an object.");
+    const t = value.theme.theme;
+    if (t !== undefined) {
+      if (!isRecord(t)) throw new GummyProjectError("`theme.theme` must be an object.");
+      if (t.surface !== undefined && t.surface !== "flat" && t.surface !== "glass")
+        throw new GummyProjectError(`theme.theme.surface must be "flat" or "glass", got ${JSON.stringify(t.surface)}.`);
+      if (t.background !== undefined && typeof t.background !== "string")
+        throw new GummyProjectError("`theme.theme.background` must be a CSS background string.");
+    }
+  }
   if (value.globalLoads !== undefined && !Array.isArray(value.globalLoads))
     throw new GummyProjectError("`globalLoads` must be an array.");
   if (value.auth !== undefined) {

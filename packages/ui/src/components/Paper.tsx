@@ -42,7 +42,7 @@ export function Paper({
   // `dark` class lives on <html>), so Paper flips with light/dark mode. Only the
   // dynamic elevation shadow stays inline.
   const classes = [
-    "bg-white dark:bg-gray-900",
+    "gummy-surface",
     "text-slate-800 dark:text-gray-100",
     square ? "" : "rounded-lg",
     isOutlined ? "border border-slate-200 dark:border-gray-700" : "",

@@ -782,6 +782,7 @@ function dataTableElement(
       : {}),
     ...(c.canSearchAllColumns ? {} : { canSearch: false }),
     ...(c.headerGap ? { headerGap: c.headerGap } : {}),
+    ...(c.actionSize ? { actionSize: c.actionSize } : {}),
     ...(c.canResizeColumns ? {} : { canResizeColumns: false }),
     // Engine default 2; only a change is written.
     ...(c.cellLines !== DEFAULT_CELL_LINES ? { cellLines: c.cellLines } : {}),
@@ -916,6 +917,7 @@ function dataTableEditableElement(
     title: c.title,
     idKey: c.idKey,
     ...(c.canResizeColumns ? {} : { canResizeColumns: false }),
+    ...(c.actionSize ? { actionSize: c.actionSize } : {}),
     columns: c.columns.map(editableTableColumn),
     apiCrud: {
       read: ref(c.readEndpointId),

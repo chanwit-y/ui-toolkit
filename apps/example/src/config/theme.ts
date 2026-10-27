@@ -1,17 +1,21 @@
-import type { ThemeComponents, ThemeProps } from "@gummy-ui/ui";
+import type { GummyThemeProps, ThemeComponents } from "@gummy-ui/ui";
 
 /**
  * App-wide theme config.
  *
- * `theme`      — Radix global tokens (appearance, accentColor, radius, panelBackground).
- *                Omitted keys fall back to ThemeProvider defaults.
+ * `theme`      — Radix global tokens (appearance, accentColor, radius, panelBackground)
+ *                plus Gummy's `surface` ("flat" | "glass") and glass `background`.
+ *                Omitted keys fall back to ThemeProvider defaults. The example keeps
+ *                flat and flips at runtime through the header's SurfaceToggle.
  * `components` — per-component color overrides (Radix accent tokens).
  *
  * Passed to <ThemeProvider> in App.tsx. Mirrors the engine's config-driven
  * style: a plain object describing the screen, kept out of JSX.
  */
-export const theme: ThemeProps = {
+export const theme: GummyThemeProps = {
   accentColor: "teal",
+  // surface: "glass",
+  // background: "linear-gradient(160deg, #ccfbf1, #e0e7ff)",
 };
 
 export const components: ThemeComponents = {

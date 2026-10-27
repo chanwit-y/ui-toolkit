@@ -759,6 +759,8 @@ export type DataTableConfig = {
   headerGap: '' | '0' | '1' | '2' | '3' | '4' | '6' | '8'
   /** Engine `canResizeColumns` — drag a header edge to resize; exported only when off. */
   canResizeColumns: boolean
+  /** Engine `actionSize` — row-action button size (Edit / Delete …); `''` / absent = default (2). Optional, no migration. */
+  actionSize?: ActionSize
   /** Engine `cellLines` — lines a plain cell shows before it is cut (a cut cell gets a tooltip); `0` = no clamp. Engine default 2. */
   cellLines: CellLines
   /**
@@ -1182,12 +1184,24 @@ export type DataTableEditableColumnConfig = ColumnSizingConfig & {
  * a skeleton can't silently look wired). `idKey` is the row field used as the
  * record id for update/delete calls.
  */
+/** Row-action button steps of both tables (engine `DataTableActionSize`); `''` = the engine default. */
+export type ActionSize = '' | '1' | '2' | '3'
+
+export const ACTION_SIZE_OPTIONS: { value: ActionSize; label: string }[] = [
+  { value: '', label: '— default (medium) —' },
+  { value: '1', label: 'Small (24px)' },
+  { value: '2', label: 'Medium (32px)' },
+  { value: '3', label: 'Large (40px)' },
+]
+
 export type DataTableEditableConfig = {
   name: string
   title: string
   idKey: string
   /** Engine `canResizeColumns` — drag a header edge to resize; exported only when off. */
   canResizeColumns: boolean
+  /** Engine `actionSize` — row-action button size (Edit / Delete …); `''` / absent = default (2). Optional, no migration. */
+  actionSize?: ActionSize
   canCreate: boolean
   canUpdate: boolean
   canDelete: boolean

@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+import { WORKSPACE_VERSION } from '../components/Workspace/migrate'
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -162,7 +163,7 @@ describe('refusals and guards', () => {
 
   test('a newer workspace is refused, an older one migrated', async () => {
     const text = writeWorkspace(t.ws)
-    expect(() => readWorkspace(text.replace('"version": 53', '"version": 99'))).toThrow(/newer studio/)
+    expect(() => readWorkspace(text.replace(`"version": ${WORKSPACE_VERSION}`, '"version": 99'))).toThrow(/newer studio/)
     const demo = readFileSync(join(studioRoot, '../../demo/gummy/workspace.json'), 'utf8')
     expect(readWorkspace(demo).projects.length).toBeGreaterThan(0)
   })

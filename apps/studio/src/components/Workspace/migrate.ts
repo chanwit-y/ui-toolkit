@@ -1,5 +1,5 @@
 /*
- * Workspace migrations (versions 1 → 53), pure: no store, no browser. Every
+ * Workspace migrations (versions 1 → 54), pure: no store, no browser. Every
  * persisted payload goes through `migrateWorkspace` — the studio's persist
  * `merge` and the headless `gummy mcp` alike (see the grilled design
  * `mcp-server`). A version bump adds its step here and the case to the chain.
@@ -8,6 +8,7 @@ import type { EndpointDef } from '../Api/types'
 import type { ModelDef } from '../Model/types'
 import type { LoadingMode, PageLoadDef } from './pageLoads'
 import { AUTH_PROFILE_LOAD_ID, authEnvRows, normalizeAuthDef } from './auth'
+import { normalizeThemeConfig } from '../Theme/types'
 import { seedActivity } from '../seed/activity'
 import {
   countryCreateButtonSeedItem,
@@ -921,11 +922,37 @@ function migrateV52(data: { projects: ProjectDef[]; library: LibraryData }): {
   projects: ProjectDef[]
   library: LibraryData
 } {
+  return migrateV53(migrateV52Only(data))
+}
+
+function migrateV52Only(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
   return {
     ...data,
     projects: data.projects.map((p) => ({
       ...p,
       snapshot: { ...p.snapshot, shell: { ...p.snapshot.shell, sidebar: normalizeSidebar(p.snapshot.shell?.sidebar) } },
+    })),
+  }
+}
+
+/**
+ * v53 → v54: the Glass surface (see the grilled design `glass-surface`).
+ * Every project theme gets `surface: 'flat'` and a default `background`
+ * (the engine's accent backdrop) — nothing looks different until a project
+ * picks glass.
+ */
+function migrateV53(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  return {
+    ...data,
+    projects: data.projects.map((p) => ({
+      ...p,
+      snapshot: { ...p.snapshot, theme: normalizeThemeConfig(p.snapshot.theme) },
     })),
   }
 }
@@ -1653,7 +1680,7 @@ export function withSeedLibrary(library: LibraryData): LibraryData {
 }
 
 /** The workspace version this build writes (and the newest it reads). */
-export const WORKSPACE_VERSION = 53
+export const WORKSPACE_VERSION = 54
 
 /** What a persisted payload migrates to: the stored fields at the current shape. */
 export type MigratedWorkspace = Pick<WorkspaceData, 'appearance' | 'user' | 'activity' | 'projects' | 'library'>
@@ -1846,7 +1873,11 @@ export function migrateWorkspace(persisted: unknown): MigratedWorkspace | null {
     const normalized = { ...library, auth: (library.auth ?? []).map((a) => normalizeAuthDef(a)) }
     return { appearance, user, activity, ...migrateV52({ projects: data.projects, library: normalized }) }
   }
-  if (data.version !== 53) return null
+  if (data.version === 53) {
+    const normalized = { ...library, auth: (library.auth ?? []).map((a) => normalizeAuthDef(a)) }
+    return { appearance, user, activity, ...migrateV53({ projects: data.projects, library: normalized }) }
+  }
+  if (data.version !== 54) return null
   // Same version, possibly older entry shapes (fields added without a bump): fill the defaults.
   return { appearance, user, activity, projects: data.projects, library: { ...library, auth: (library.auth ?? []).map((a) => normalizeAuthDef(a)) } }
 }

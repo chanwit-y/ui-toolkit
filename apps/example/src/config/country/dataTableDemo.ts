@@ -50,6 +50,8 @@ const pinnedTable: Bin = {
     columns,
     canEdit: true,
     canDelete: true,
+    // Large (40px) row-action buttons; the ACTION column widens to fit.
+    actionSize: "3",
     api: pinnedTableApi,
   } as Bin["element"],
 };

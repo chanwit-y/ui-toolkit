@@ -167,7 +167,7 @@
   padding: 0 0.625rem;
   border: 1px solid var(--gray-7);
   border-radius: var(--radius-3, 6px);
-  background: var(--color-panel-solid);
+  background: var(--gummy-surface-input-bg);
   color: var(--gray-11);
 }
 

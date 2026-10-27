@@ -138,7 +138,7 @@ export const CalendarDropdown = ({
 	<div
 		ref={dropdownRef}
 		style={dropdownStyles}
-		className="date-picker-dropdown bg-white dark:bg-gray-900 border ring-2 ring-[var(--accent-8,#60a5fa)] border-transparent rounded-md shadow-lg p-3"
+		className="date-picker-dropdown pointer-events-auto gummy-surface border ring-2 ring-[var(--accent-8,#60a5fa)] border-transparent rounded-md shadow-lg p-3"
 	>
 		<CalendarHeader
 			cursor={cursor}

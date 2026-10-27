@@ -148,8 +148,8 @@ const Modal = forwardRef<HTMLDivElement, ModalProps>(
 							}}
 							className={
 								fullscreen
-									? "flex flex-col flex-1 min-h-0 rounded-none overflow-hidden bg-[var(--color-panel-solid)]"
-									: "flex flex-col flex-1 min-h-0 rounded-lg overflow-hidden bg-[var(--color-panel-solid)]"
+									? "flex flex-col flex-1 min-h-0 rounded-none overflow-hidden gummy-surface"
+									: "flex flex-col flex-1 min-h-0 rounded-lg overflow-hidden gummy-surface"
 							}>
 							<div className={`flex items-start justify-between gap-4 flex-shrink-0 py-4 px-6 ${isHideTitleLine ? "" : "border-b border-[var(--gray-6)]"}`}>
 								<div className="flex-1">

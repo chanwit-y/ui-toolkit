@@ -1,0 +1,481 @@
+{
+  "containers": [
+    {
+      "id": "page-overview",
+      "name": "page-overview",
+      "isArray": false,
+      "bins": [
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "Glass surface",
+            "variant": "h3",
+            "weight": "bold"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "One theme token — surface: \"glass\" — and every panel in the app becomes a translucent, blurred surface over the backdrop. Light and dark alike; flip the theme in the top bar.",
+            "variant": "body2",
+            "color": "gray"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "6",
+          "lg": "4",
+          "xl": "4",
+          "type": "card",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "tierPanel",
+            "header": {
+              "title": "Panel tier",
+              "subheader": "cards, dialogs, dropdowns, the shell"
+            },
+            "content": {
+              "id": "card-gs-item-",
+              "name": "card-gs-item-",
+              "isArray": false,
+              "bins": [
+                {
+                  "sm": "12",
+                  "md": "12",
+                  "lg": "12",
+                  "xl": "12",
+                  "type": "typography",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "text": "The panel colour at 65% with a 16px blur and a hairline border. This card, the sidebar and the app bar are drawn with it.",
+                    "variant": "body2",
+                    "color": "gray"
+                  }
+                }
+              ],
+              "gap": "16px",
+              "justifyItems": "stretch",
+              "alignItems": "stretch",
+              "justifyContent": "start",
+              "alignContent": "start",
+              "gridAutoFlow": "row"
+            },
+            "actionsAlign": "end",
+            "variant": "outlined"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "6",
+          "lg": "4",
+          "xl": "4",
+          "type": "card",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "tierStrong",
+            "header": {
+              "title": "Strong tier",
+              "subheader": "sticky and pinned table cells"
+            },
+            "content": {
+              "id": "card-gs-item-",
+              "name": "card-gs-item-",
+              "isArray": false,
+              "bins": [
+                {
+                  "sm": "12",
+                  "md": "12",
+                  "lg": "12",
+                  "xl": "12",
+                  "type": "typography",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "text": "Near-opaque and never blurred: a pinned cell hides what scrolls under it, and blur on many sticky cells is slow. See the Tables page.",
+                    "variant": "body2",
+                    "color": "gray"
+                  }
+                }
+              ],
+              "gap": "16px",
+              "justifyItems": "stretch",
+              "alignItems": "stretch",
+              "justifyContent": "start",
+              "alignContent": "start",
+              "gridAutoFlow": "row"
+            },
+            "actionsAlign": "end",
+            "variant": "outlined"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "6",
+          "lg": "4",
+          "xl": "4",
+          "type": "card",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "tierInput",
+            "header": {
+              "title": "Input tier",
+              "subheader": "text fields, selects, pickers"
+            },
+            "content": {
+              "id": "card-gs-item-",
+              "name": "card-gs-item-",
+              "isArray": false,
+              "bins": [
+                {
+                  "sm": "12",
+                  "md": "12",
+                  "lg": "12",
+                  "xl": "12",
+                  "type": "typography",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "text": "Lighter than the panel it sits on — 40% with an 8px blur — so a field keeps its edge inside a glass card. The form below is on it.",
+                    "variant": "body2",
+                    "color": "gray"
+                  }
+                }
+              ],
+              "gap": "16px",
+              "justifyItems": "stretch",
+              "alignItems": "stretch",
+              "justifyContent": "start",
+              "alignContent": "start",
+              "gridAutoFlow": "row"
+            },
+            "actionsAlign": "end",
+            "variant": "outlined"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "container",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "container": {
+            "id": "container-gs-item-",
+            "name": "container-gs-item-",
+            "isArray": false,
+            "bins": [
+              {
+                "sm": "12",
+                "md": "12",
+                "lg": "12",
+                "xl": "12",
+                "type": "typography",
+                "justifySelf": "stretch",
+                "alignSelf": "stretch",
+                "element": {
+                  "text": "A form on a glass container",
+                  "variant": "subtitle1",
+                  "weight": "medium"
+                }
+              },
+              {
+                "sm": "6",
+                "md": "6",
+                "lg": "6",
+                "xl": "6",
+                "type": "textfield",
+                "justifySelf": "stretch",
+                "alignSelf": "stretch",
+                "element": {
+                  "name": "name",
+                  "dataType": "string",
+                  "label": "Name",
+                  "isRequired": true,
+                  "errorMessage": "",
+                  "variant": "surface",
+                  "size": "3",
+                  "radius": "medium",
+                  "isFullWidth": true,
+                  "isFixedHeight": true,
+                  "placeholder": "Your name"
+                }
+              },
+              {
+                "sm": "6",
+                "md": "6",
+                "lg": "6",
+                "xl": "6",
+                "type": "autocomplete",
+                "justifySelf": "stretch",
+                "alignSelf": "stretch",
+                "element": {
+                  "name": "authorId",
+                  "dataType": "string",
+                  "label": "Favourite author",
+                  "isRequired": false,
+                  "errorMessage": "",
+                  "canObserve": false,
+                  "observeTo": "",
+                  "isSingleLoad": false,
+                  "keys": {
+                    "id": "_id",
+                    "search": "name",
+                    "display": "name"
+                  },
+                  "defaultData": {},
+                  "options": [],
+                  "placeholder": "Choose favourite author",
+                  "itemSubtitle": "country",
+                  "itemAvatar": "avatar",
+                  "api": {
+                    "name": "listAuthors",
+                    "paths": [
+                      "data"
+                    ]
+                  }
+                }
+              },
+              {
+                "sm": "6",
+                "md": "6",
+                "lg": "6",
+                "xl": "6",
+                "type": "autocomplete",
+                "justifySelf": "stretch",
+                "alignSelf": "stretch",
+                "element": {
+                  "name": "genreId",
+                  "dataType": "string",
+                  "label": "Genre",
+                  "isRequired": false,
+                  "errorMessage": "",
+                  "canObserve": false,
+                  "observeTo": "",
+                  "isSingleLoad": false,
+                  "keys": {
+                    "id": "_id",
+                    "search": "name",
+                    "display": "name"
+                  },
+                  "defaultData": {},
+                  "options": [],
+                  "placeholder": "Choose genre",
+                  "api": {
+                    "name": "listGenres",
+                    "paths": [
+                      "data"
+                    ]
+                  }
+                }
+              },
+              {
+                "sm": "6",
+                "md": "6",
+                "lg": "6",
+                "xl": "6",
+                "type": "datepicker",
+                "justifySelf": "stretch",
+                "alignSelf": "stretch",
+                "element": {
+                  "name": "since",
+                  "dataType": "string",
+                  "label": "Reading since",
+                  "isRequired": false,
+                  "errorMessage": "",
+                  "variant": "surface",
+                  "size": "2",
+                  "radius": "medium",
+                  "clearable": true,
+                  "displayFormat": "DD/MM/YYYY",
+                  "weekStartsOn": 0
+                }
+              },
+              {
+                "sm": "6",
+                "md": "6",
+                "lg": "3",
+                "xl": "3",
+                "type": "autocomplete",
+                "justifySelf": "stretch",
+                "alignSelf": "stretch",
+                "element": {
+                  "name": "format",
+                  "dataType": "string",
+                  "label": "Format",
+                  "isRequired": false,
+                  "errorMessage": "",
+                  "canObserve": false,
+                  "observeTo": "",
+                  "isSingleLoad": false,
+                  "keys": {
+                    "id": "value",
+                    "search": "label",
+                    "display": "label"
+                  },
+                  "defaultData": {},
+                  "options": [
+                    {
+                      "value": "paper",
+                      "label": "Paperback"
+                    },
+                    {
+                      "value": "hard",
+                      "label": "Hardcover"
+                    },
+                    {
+                      "value": "ebook",
+                      "label": "E-book"
+                    }
+                  ],
+                  "placeholder": "Any format"
+                }
+              },
+              {
+                "sm": "6",
+                "md": "6",
+                "lg": "6",
+                "xl": "6",
+                "type": "switch",
+                "justifySelf": "stretch",
+                "alignSelf": "stretch",
+                "element": {
+                  "name": "newsletter",
+                  "dataType": "boolean",
+                  "label": "Send me the newsletter",
+                  "isRequired": false,
+                  "errorMessage": ""
+                }
+              },
+              {
+                "sm": "12",
+                "md": "12",
+                "lg": "12",
+                "xl": "12",
+                "type": "textarea",
+                "justifySelf": "stretch",
+                "alignSelf": "stretch",
+                "element": {
+                  "name": "notes",
+                  "dataType": "string",
+                  "label": "Notes",
+                  "isRequired": false,
+                  "errorMessage": "",
+                  "rows": 3,
+                  "resize": "vertical",
+                  "autoResize": false,
+                  "showCharCount": false
+                }
+              }
+            ],
+            "gap": "16px",
+            "justifyItems": "stretch",
+            "alignItems": "stretch",
+            "justifyContent": "start",
+            "alignContent": "start",
+            "gridAutoFlow": "row",
+            "surface": {
+              "background": true,
+              "border": true
+            }
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "html",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "overviewNote",
+            "html": "<p>Where the blur cannot run — the OS asks for <em>reduced transparency</em>, the browser has no <code>backdrop-filter</code>, or the page is printed — every tier falls back to the Strong look and the backdrop stays. Buttons keep their solid accent throughout.</p>"
+          }
+        },
+        {
+          "sm": "4",
+          "md": "3",
+          "lg": "2",
+          "xl": "2",
+          "type": "button",
+          "justifySelf": "start",
+          "alignSelf": "stretch",
+          "element": {
+            "label": "Tables",
+            "icon": "table",
+            "variant": "outlined",
+            "actions": [
+              "Navigate"
+            ],
+            "navigate": {
+              "page": "tables"
+            }
+          }
+        },
+        {
+          "sm": "4",
+          "md": "3",
+          "lg": "2",
+          "xl": "2",
+          "type": "button",
+          "justifySelf": "start",
+          "alignSelf": "stretch",
+          "element": {
+            "label": "Cards",
+            "icon": "creditCard",
+            "variant": "outlined",
+            "actions": [
+              "Navigate"
+            ],
+            "navigate": {
+              "page": "cards"
+            }
+          }
+        },
+        {
+          "sm": "4",
+          "md": "3",
+          "lg": "2",
+          "xl": "2",
+          "type": "button",
+          "justifySelf": "start",
+          "alignSelf": "stretch",
+          "element": {
+            "label": "Overlays",
+            "icon": "panelRight",
+            "variant": "outlined",
+            "actions": [
+              "Navigate"
+            ],
+            "navigate": {
+              "page": "overlays"
+            }
+          }
+        }
+      ],
+      "gap": "16px",
+      "justifyItems": "stretch",
+      "alignItems": "stretch",
+      "justifyContent": "start",
+      "alignContent": "start",
+      "gridAutoFlow": "row"
+    }
+  ]
+}

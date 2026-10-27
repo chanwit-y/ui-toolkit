@@ -1,12 +1,16 @@
-import { X } from 'lucide-react'
-import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react'
+import { SurfaceBackdrop } from '@gummy-ui/ui'
+import { Upload, X } from 'lucide-react'
+import { useCallback, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Button, CodeViewer, IconButton, Input, Popover, Select, SegmentedControl, cn } from '../common'
+import { ColorInput } from '../Menu/MenuEditor'
 import { useWorkspaceStore } from '../Workspace/workspaceStore'
 import { accentInk, resolvedSurfaces } from './designTheme'
 import { useThemeStore } from './themeStore'
 import { toThemeObjects } from './serialize'
 import {
   ACCENT_COLORS,
+  backdropToCss,
+  createDefaultBackdrop,
   createDefaultDesignTheme,
   DENSITY_OPTIONS,
   FONT_OPTIONS,
@@ -15,7 +19,10 @@ import {
   PALETTES,
   RADIUS_VALUES,
   SURFACE_DEFAULTS,
+  SURFACE_OPTIONS,
   type AccentColor,
+  type BackdropConfig,
+  type BackdropKind,
   type DataTableThemeConfig,
   type DesignSurfaces,
   type StudioThemeConfig,
@@ -24,6 +31,7 @@ import {
   type ThemePanelBackground,
   type ThemeRadius,
   type ThemeScaling,
+  type ThemeSurface,
 } from './types'
 
 function luminance(hex: string): number {
@@ -306,10 +314,103 @@ function SurfaceRow({
   )
 }
 
+const BACKDROP_KIND_OPTIONS: { value: BackdropKind; label: string }[] = [
+  { value: 'default', label: 'Accent gradient (default)' },
+  { value: 'color', label: 'Colour' },
+  { value: 'gradient', label: 'Gradient' },
+  { value: 'image', label: 'Image' },
+]
+
+/** Backdrop images bigger than this are refused: the data URL lives in the project JSON (the app-bar logo's rule). */
+const MAX_BACKDROP_BYTES = 300 * 1024
+
+/** The backdrop image: a URL, or a file read into a `data:` URL so the exported project is self-contained. */
+function BackdropImageField({ value, onChange }: { value: string; onChange: (next: string) => void }) {
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [error, setError] = useState<string | null>(null)
+  const pick = (file: File | undefined) => {
+    setError(null)
+    if (!file) return
+    if (!file.type.startsWith('image/')) return setError('Pick an image file (PNG, JPEG, WebP, SVG …).')
+    if (file.size > MAX_BACKDROP_BYTES)
+      return setError(`That image is ${Math.round(file.size / 1024)} KB — keep the backdrop under ${MAX_BACKDROP_BYTES / 1024} KB, or link it by URL.`)
+    const reader = new FileReader()
+    reader.onload = () => onChange(typeof reader.result === 'string' ? reader.result : '')
+    reader.onerror = () => setError('Could not read that file.')
+    reader.readAsDataURL(file)
+  }
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center gap-2">
+        <Input
+          value={value.startsWith('data:') ? '' : value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={value.startsWith('data:') ? 'Uploaded image' : 'https://… or /backdrop.jpg'}
+          className="font-mono"
+        />
+        <Button size="sm" onClick={() => fileRef.current?.click()}>
+          <Upload size={13} aria-hidden="true" />
+          Upload
+        </Button>
+        {value && (
+          <IconButton label="Clear backdrop image" className="btn-icon-sm" onClick={() => onChange('')}>
+            <X size={13} aria-hidden="true" />
+          </IconButton>
+        )}
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            pick(e.target.files?.[0])
+            e.target.value = ''
+          }}
+        />
+      </div>
+      {error && <p className="text-ui-sm text-danger">{error}</p>}
+    </div>
+  )
+}
+
+/**
+ * The glass look, for real: a `data-surface="glass"` box painting the
+ * configured backdrop with the library's own classes — what the canvas frame
+ * and the Live Preview will show.
+ */
+function GlassPreview({ background, accent }: { background: BackdropConfig; accent: AccentColor }) {
+  const css = backdropToCss(background)
+  const style = { ...(css ? { '--gummy-backdrop': css } : {}) } as CSSProperties
+  return (
+    <div
+      data-surface="glass"
+      className="relative isolate overflow-hidden rounded-[10px] border border-line p-4"
+      style={style}
+      aria-label="Glass preview"
+    >
+      <SurfaceBackdrop />
+      <div className="gummy-surface rounded-lg border border-line p-3 text-ui text-[var(--gray-12)]">
+        <div className="flex items-center justify-between gap-2">
+          <b className="font-semibold">A glass card</b>
+          <span
+            className="inline-flex h-6 items-center rounded-md px-2 text-ui-xs font-semibold"
+            style={{ background: `var(--${accent}-9)`, color: 'var(--accent-contrast)' }}
+          >
+            Action
+          </span>
+        </div>
+        <p className="mb-2 mt-1 text-[var(--gray-11)]">Panels blur the backdrop behind them; buttons stay solid.</p>
+        <div className="gummy-surface-input rounded-md border border-line px-2 py-1.5 text-[var(--gray-10)]">Search…</div>
+      </div>
+    </div>
+  )
+}
+
 export function ThemeEditor() {
   const config = useThemeStore((s) => s.config)
   const update = useThemeStore((s) => s.update)
   const updateDataTable = useThemeStore((s) => s.updateDataTable)
+  const updateBackground = useThemeStore((s) => s.updateBackground)
   const updateSurfaces = useThemeStore((s) => s.updateSurfaces)
   const setFont = useThemeStore((s) => s.setFont)
   const applyPalette = useThemeStore((s) => s.applyPalette)
@@ -322,6 +423,8 @@ export function ThemeEditor() {
   const themeJson = useMemo(() => JSON.stringify(toThemeObjects(config), null, 2), [config])
   const mode = config.appearance
   const design = config.design ?? createDefaultDesignTheme()
+  const backdrop = config.background ?? createDefaultBackdrop()
+  const glass = config.surface === 'glass'
   const surfaces = resolvedSurfaces(config, mode)
   const sampleAccentName = preview
     ? nearestAccent(preview.palette.colors[preview.palette.accent])
@@ -556,6 +659,14 @@ export function ThemeEditor() {
                 onChange={(v) => set('panelBackground', v as ThemePanelBackground)}
               />
             </Field>
+            <Field label="Surface">
+              <SegmentedControl
+                aria-label="Surface"
+                options={SURFACE_OPTIONS}
+                value={config.surface ?? 'flat'}
+                onChange={(v) => set('surface', v as ThemeSurface)}
+              />
+            </Field>
             <Field label="Density (Radix scaling)">
               <SegmentedControl
                 aria-label="Density"
@@ -590,6 +701,75 @@ export function ThemeEditor() {
             </p>
           </Field>
         </Section>
+
+        {glass && (
+          <Section label="Backdrop — glass only">
+            <p className="text-ui-sm text-ink-3">
+              Glass turns every panel — cards, tables, dropdowns, dialogs, the app bar and sidebar, the fields —
+              into a translucent blurred surface over this backdrop, in light and dark alike. Sticky and pinned
+              table cells stay near-opaque, and the OS “reduce transparency” setting falls back to that look.
+            </p>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+              <Field label="Backdrop">
+                <Select
+                  options={BACKDROP_KIND_OPTIONS}
+                  value={backdrop.kind}
+                  onChange={(v) => updateBackground({ kind: v as BackdropKind })}
+                />
+              </Field>
+              {backdrop.kind === 'color' && (
+                <Field label="Colour">
+                  <ColorInput
+                    value={backdrop.color}
+                    onChange={(color) => updateBackground({ color })}
+                    placeholder="#e0e7ff · rgb(…) · var(--indigo-3)"
+                  />
+                </Field>
+              )}
+            </div>
+            {backdrop.kind === 'gradient' && (
+              <div className="grid gap-3 sm:grid-cols-3">
+                <Field label="From">
+                  <ColorInput
+                    value={backdrop.gradient.from}
+                    onChange={(from) => updateBackground({ gradient: { ...backdrop.gradient, from } })}
+                    placeholder="#c7d2fe"
+                  />
+                </Field>
+                <Field label="To">
+                  <ColorInput
+                    value={backdrop.gradient.to}
+                    onChange={(to) => updateBackground({ gradient: { ...backdrop.gradient, to } })}
+                    placeholder="#fbcfe8"
+                  />
+                </Field>
+                <Field label="Angle (deg)">
+                  <Input
+                    type="number"
+                    min={0}
+                    max={360}
+                    step={1}
+                    value={backdrop.gradient.angle}
+                    onChange={(e) => updateBackground({ gradient: { ...backdrop.gradient, angle: Number(e.target.value) || 0 } })}
+                  />
+                </Field>
+              </div>
+            )}
+            {backdrop.kind === 'image' && (
+              <Field label="Image">
+                <BackdropImageField value={backdrop.image} onChange={(image) => updateBackground({ image })} />
+              </Field>
+            )}
+            <GlassPreview background={backdrop} accent={config.accentColor} />
+            <p className="text-ui-sm text-ink-3">
+              {backdropToCss(backdrop)
+                ? 'Exported as theme.background, a CSS background value.'
+                : backdrop.kind === 'default'
+                  ? 'The engine draws an accent-tinted gradient — nothing is exported.'
+                  : 'Incomplete — the engine falls back to its accent gradient until it is filled in.'}
+            </p>
+          </Section>
+        )}
 
         <Section label="Data table">
           <div className="grid grid-cols-2 gap-x-4 gap-y-3">
