@@ -166,3 +166,7 @@ the MCP guide paragraph.
   example header.
 - The studio's `ColorInput` is exported from `MenuEditor` and reused by the
   Backdrop editor; the Theme page draws a `GlassPreview` with the real classes.
+- Dialogs and drawers in glass sit on a lighter scrim (a thin tint, 4px blur) and
+  their panel is 82% rather than the card's 65%: the flat scrim's dark blurred
+  gradient drowned a translucent panel. The scrim rule goes through the `<html>`
+  mirror (the overlay is portaled beside the Theme root).
