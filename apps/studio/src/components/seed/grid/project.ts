@@ -161,12 +161,12 @@ function selectionPage(): PageDef {
     ...heading(
       'dg-item-selection-h',
       'Selection',
-      'Tick orders — the header box ticks every order that matches the search. The picks are page data (ordersSelected = { ids, rows, count }): the line below reads them, and Clear selection reloads the table, which starts the picks afresh.',
+      'Tick orders — the header box ticks every order that matches the search. The picks are page data (ordersSelected = { ids, rows, count }): the line below reads its count, and Clear selection reloads the table, which starts the picks afresh.',
     ),
     html(
       'dg-item-selection-summary',
       'selectionSummary',
-      '<p style="margin:0"><strong>{{count}}</strong> orders picked <span class="dt-muted">· {{ids}}</span></p>',
+      '<p style="margin:0">Orders picked: <strong>{{count}}</strong> <span class="dt-muted">· page data <code>ordersSelected</code></span></p>',
       state('ordersSelected'),
       { xs: 4, sm: 4, md: 6, lg: 10 },
       false,

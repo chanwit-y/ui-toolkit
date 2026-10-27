@@ -181,3 +181,37 @@ city) and the Glass showcase Tables page.
 - Intl output differs by ICU version (`"Jan 15, 2025, 5:30 PM"` vs `"… at
   5:30 PM"`, narrow spaces in currency) — tests compare on plain spaces and
   accept either separator.
+
+## As built — PRs 2–7 (2026-10-27)
+
+Built together on `feature/datatable-cell-formats` (one engine commit, one
+studio + demo commit) rather than six PRs, because the user asked for a demo
+and a preview video of all of them at once.
+
+- **Columns menu** is a library `Popover` with dnd-kit rows (drag, or Space /
+  arrows / Space). Header drag-to-reorder was **not** built — the menu covers
+  it. The storage key is `gummy.table.<page key>.<name>` (no project key: the
+  storage is per origin, which is per app). Only a layout that differs from
+  the config is stored; `persist: "none"` follows config changes live.
+- **Selection** clears its slice on unmount; `ReloadDataTable` on the table
+  clears the picks. Group rows can't be selected.
+- **Style rules** paint through `data-accent-color` on the cell (Radix
+  re-scopes `--accent-*`), so a tone is two CSS rules, not a class per colour.
+  A condition ref without a `path` now reads the value itself (it was always
+  `undefined`), which `{ key: "value" }` needed.
+- **Grouping** draws its own group rows. TanStack's `getLeafRows()` includes
+  the nested group rows, so every summary filters to records — found when a
+  status group said 25 orders and its count said 19.
+- **Export** registers `export:<name>` in `fnCtxs`; the `ExportTable` action
+  reads it. Excel stays out.
+- **Virtualisation** uses `scrollMargin` = the header height and spacer rows;
+  it is off whenever a visible column merges cells.
+- **Editable table**: `format` and `cellStyles` only. The Columns menu and
+  virtualisation were not added there (its page sizes stop at 50, so the
+  virtualiser would never engage).
+- **Studio**: every new key is optional (absent = the engine default), so
+  only a seed migration was needed (v57). A table's selection is listed as
+  page data through a pseudo-load whose id is the slice key.
+- **Not done** from §9's last step: the Book shop itself still uses its
+  `priceText` columns; the new **Data grid showcase** project shows the
+  features over the same API instead.

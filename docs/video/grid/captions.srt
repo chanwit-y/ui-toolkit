@@ -1,0 +1,63 @@
+1
+00:00:00,700 --> 00:00:06,568
+Gummy's data table now does what teams reach for AG Grid to do, and all of it is configuration.
+
+2
+00:00:07,518 --> 00:00:13,648
+Prices, stock and dates arrive as raw numbers. Each column's format shows them in the app's locale.
+
+3
+00:00:13,548 --> 00:00:20,181
+Style rules tint cells by a condition: out of stock in red, low stock in amber, top ratings in green.
+
+4
+00:00:20,631 --> 00:00:25,336
+The Columns menu shows or hides a column, and you drag one into a new place.
+
+5
+00:00:25,892 --> 00:00:31,247
+The layout is remembered, so a reload keeps it, and Reset puts the configured one back.
+
+6
+00:00:32,902 --> 00:00:35,690
+Tick rows, or every matching row at once.
+
+7
+00:00:37,383 --> 00:00:42,668
+The picks become page data, so any component can read them, like this summary line.
+
+8
+00:00:43,382 --> 00:00:49,092
+Group three hundred orders by status, then city, with counts, sums and a total row.
+
+9
+00:00:48,992 --> 00:00:52,739
+And regroup them from the same menu, without touching the config.
+
+10
+00:00:54,859 --> 00:00:59,362
+Export writes the table as you see it: searched, sorted and formatted.
+
+11
+00:00:59,955 --> 00:01:03,158
+Into a CSV file that opens straight in Excel.
+
+12
+00:01:04,264 --> 00:01:10,085
+Scroll mode puts every row in one scroller. Past sixty rows, only the rows in view are drawn.
+
+13
+00:01:11,998 --> 00:01:15,021
+So three hundred orders scroll as smoothly as ten.
+
+14
+00:01:22,316 --> 00:01:26,099
+Every one of these is a setting on the table, in Gummy Studio.
+
+15
+00:01:25,999 --> 00:01:32,317
+Columns, selection, style rules, grouping, export and paging, with nothing to code.
+
+16
+00:01:34,305 --> 00:01:38,595
+Gummy UI. Configure the grid, and keep your code for the business.
