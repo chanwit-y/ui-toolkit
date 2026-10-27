@@ -1,6 +1,7 @@
 import type { Column, ColumnDef, Header, HeaderGroup, Row, Table } from "@tanstack/react-table"
 import { useLayoutEffect, useRef, type CSSProperties } from "react"
 import type { CellFormat } from "../util/format"
+import type { DataTableAggregate, DataTableStyleRule } from "./@types"
 import { pinStyle } from "./dataTableResize"
 
 /**
@@ -16,6 +17,12 @@ export type ColumnLayoutMeta = {
 	lines?: number
 	/** How the cell shows its value (`ColumnDef.format`); the tables format and search through it. */
 	format?: CellFormat
+	/** The `html` template itself (the CSV export renders it to text). */
+	template?: string
+	/** Conditional cell look (`ColumnDef.cellStyles`). */
+	styles?: DataTableStyleRule[]
+	/** Group-row / total-row summary (`ColumnDef.aggregate`). */
+	aggregate?: DataTableAggregate
 	/** The row's label: `<th scope="row">`, header colours, pinned left. */
 	rowHeader?: boolean
 	/** Consecutive rows with the same value share one cell (`rowSpan`). */

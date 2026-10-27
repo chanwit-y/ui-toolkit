@@ -29,6 +29,7 @@ export class Button<M extends TModelMaster, A extends TApiMaster<M>>
       snackbarError: props.snackbarError,
       confirmBox: props.confirmBox,
       reloadDataTable: props.reloadDataTable,
+      exportTable: props.exportTable,
       apiInfo: apiInfo,
       modalId: props.modalId,
       navigate: props.navigate,

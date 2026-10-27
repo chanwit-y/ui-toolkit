@@ -25,6 +25,27 @@ countryRoutes.get('/collection/search', async (c) => {
   }
 });
 
+// A large deterministic list for the Data grid page's scroll mode (virtualised
+// rows): GET /collection/countries-large?count=2000 — the 40 countries
+// repeated with a batch number, every figure varied per row.
+countryRoutes.get('/collection/countries-large', (c) => {
+  const count = Math.min(Math.max(Number(c.req.query('count') ?? 2000) || 2000, 1), 20000);
+  const base = countryService.getAll();
+  const data = Array.from({ length: count }, (_, i) => {
+    const src = base[i % base.length];
+    const batch = Math.floor(i / base.length) + 1;
+    return {
+      ...src,
+      _id: `L${i + 1}`,
+      name: `${src.name} #${batch}`,
+      population: (src.population ?? 0) + i * 7,
+      gdp_usd: (src.gdp_usd ?? 0) + i * 1_000_000,
+      growth: Math.round((((src.growth ?? 0) * 1000 + (i % 11) - 5) / 1000) * 1000) / 1000,
+    };
+  });
+  return c.json({ data, total: data.length, status: 200, success: true, message: 'ok' });
+});
+
 // GET all countries - matches existing API contract: POST /collection/get-all
 countryRoutes.post('/collection/get-all', async (c) => {
   try {

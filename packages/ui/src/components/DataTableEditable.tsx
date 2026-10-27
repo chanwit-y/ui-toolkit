@@ -8,6 +8,7 @@ import { dtHeaderBgClass, dtHeaderTextClass, dtHeaderFontSizeClass, dtHeaderFont
 import type { CrudMutationApi, DataTableEditableColumn, DataTableEditableProps, SnackbarElement } from "./@types"
 import { actionSizeSpec } from "./dataTableActions"
 import { FormattedCell } from "./FormattedCell"
+import { cellLook, resolveStyles } from "./dataTableStyles"
 import { ConfirmBox } from "./ConfirmBox"
 import Icon from "./Icon"
 import { useSnackbar, type SnackbarVariant } from "./Snackbar"
@@ -726,8 +727,12 @@ export const DataTableEditable = <T extends Record<string, any>>({
 
 									const isRowHeader = !!columnMeta(cell.column).rowHeader
 									const Cell = isRowHeader ? 'th' : 'td'
+									// Conditional look in read mode (`cellStyles`); the editing row keeps its highlight.
+									const look = col?.cellStyles?.length && editingRowId !== row.id
+										? cellLook(resolveStyles(col.cellStyles, { value: cell.getValue(), row: row.original, index: row.index }), { fill: false, classes: [] }, !isRowHeader)
+										: { className: '', tone: undefined }
 									return (
-										<Cell key={cell.id} scope={isRowHeader ? 'row' : undefined} className={`datatable-body-cell px-4 py-1 ${isRowHeader ? 'datatable-row-header' : ''}`} style={{ ...sizeStyle(cell.column), textAlign: cellAlign(cell.column.id) }}>
+										<Cell key={cell.id} scope={isRowHeader ? 'row' : undefined} data-accent-color={look.tone} className={`datatable-body-cell px-4 py-1 ${isRowHeader ? 'datatable-row-header' : ''} ${look.className}`} style={{ ...sizeStyle(cell.column), textAlign: cellAlign(cell.column.id) }}>
 											<div className="min-h-10 flex flex-col justify-center">
 												{isEditingCell ? renderEditor(col) : col?.format ? <FormattedCell value={cell.getValue()} format={col.format} /> : flexRender(cell.column.columnDef.cell, cell.getContext())}
 											</div>

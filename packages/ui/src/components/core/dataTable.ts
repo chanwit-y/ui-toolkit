@@ -145,6 +145,19 @@ export class DataTable<
       canResizeColumns: props.canResizeColumns,
       cellLines: props.cellLines,
       actionSize: props.actionSize,
+      // AG Grid-style features (see the grilled design `datatable-ag-grid-features`).
+      canChooseColumns: props.canChooseColumns,
+      columnsButton: props.columnsButton,
+      columnState: props.columnState,
+      hiddenColumns: (props.columns ?? []).filter((c) => c.hide).map((c) => c.accessor.replace(/\./g, "_")),
+      lockedColumns: (props.columns ?? []).filter((c) => c.lockVisible || c.rowHeader).map((c) => c.accessor.replace(/\./g, "_")),
+      selection: props.selection,
+      rowStyles: props.rowStyles,
+      grouping: props.grouping,
+      canExport: props.canExport,
+      exportButton: props.exportButton,
+      exportOptions: props.exportOptions,
+      paging: props.paging,
       // context: DataContext,
     });
   }
@@ -154,8 +167,10 @@ export class DataTable<
 export function columnLayoutMeta(column: ColumnDef): ColumnLayoutMeta | undefined {
   const format = columnFormat(column);
   const meta: ColumnLayoutMeta = {
-    ...(column.html ? { html: true } : {}),
+    ...(column.html ? { html: true, template: column.html } : {}),
     ...(format ? { format } : {}),
+    ...(column.cellStyles?.length ? { styles: column.cellStyles } : {}),
+    ...(column.aggregate ? { aggregate: column.aggregate } : {}),
     ...(column.lines !== undefined ? { lines: column.lines } : {}),
     ...(column.rowHeader ? { rowHeader: true } : {}),
     ...(column.mergeRows ? { mergeRows: true } : {}),

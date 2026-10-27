@@ -116,6 +116,8 @@ export type ButtonProps = Omit<ComponentPropsWithoutRef<typeof RadixButton>, "va
     snackbarError?: SnackbarElement | "$exception";
     confirmBox?: ConfirmBoxElement;
     reloadDataTable?: string;
+    /** Target of the `"ExportTable"` action: a data table's `name`. */
+    exportTable?: string;
     apiInfo?: TApiMaster<any>;
     /** Target of the `"Navigate"` action. */
     navigate?: NavigateTarget;
@@ -524,6 +526,20 @@ export type DataTableProps = {
   sortFields?: Record<string, string>;
   align?: Record<string, "start" | "center" | "end">;
   context?: Context<DataContextType>;
+  /** Columns menu (see {@link DataTableElement.canChooseColumns}). Default true. */
+  canChooseColumns?: boolean;
+  columnsButton?: DataTableToolbarButton;
+  columnState?: DataTableColumnState;
+  /** Column ids that start hidden / can't be hidden (from `ColumnDef.hide` / `lockVisible`). */
+  hiddenColumns?: string[];
+  lockedColumns?: string[];
+  selection?: DataTableSelection;
+  rowStyles?: DataTableStyleRule[];
+  grouping?: DataTableGrouping;
+  canExport?: boolean;
+  exportButton?: DataTableToolbarButton;
+  exportOptions?: DataTableExportOptions;
+  paging?: "pages" | "scroll";
   // isReload?: boolean;
   // apiEdit?: APIFunction;
 };
@@ -581,6 +597,8 @@ export type DataTableEditableColumn = {
   align?: "start" | "center" | "end";
   /** Display formatting of the cell while the row is not being edited. See {@link ColumnDef.format}. */
   format?: CellFormat;
+  /** Conditional look of the cell in read mode. See {@link ColumnDef.cellStyles}. */
+  cellStyles?: DataTableStyleRule[];
   /** The row's label column (`<th scope="row">`, header colours, pinned left). See {@link ColumnDef.rowHeader}. */
   rowHeader?: boolean;
   /** Group header label — adjacent columns with the same label share a band. See {@link ColumnDef.group}. */
@@ -1233,6 +1251,98 @@ export type ColumnDef = {
    * cell spanning them, in a header row above the column headers.
    */
   group?: string;
+  /** Starts hidden; the Columns menu can show it (see {@link DataTableElement.canChooseColumns}). */
+  hide?: boolean;
+  /** Always shown: the Columns menu can't hide it. */
+  lockVisible?: boolean;
+  /**
+   * Conditional look of this column's cells: the **first** rule whose `when`
+   * holds gives the tone, every matching rule adds its weight / italic /
+   * strike / class. `when` sees `{ value, row, index }` — `{ key: "value" }`,
+   * `{ key: "row", path: "stock" }`. Layers over the table's `rowStyles`.
+   */
+  cellStyles?: DataTableStyleRule[];
+  /**
+   * How a group row and the total row summarise this column (see
+   * {@link DataTableElement.grouping}); formatted with the column's `format`.
+   */
+  aggregate?: DataTableAggregate;
+};
+
+/**
+ * A conditional style (`ColumnDef.cellStyles`, `DataTableElement.rowStyles`).
+ * `tone` is a Radix colour name: text in its step 11, and with `fill` a
+ * step-3 background — so a rule reads right in light, dark and glass.
+ * Pinned, row-header and merged cells keep their surface and take the text
+ * tone only.
+ */
+export type DataTableStyleRule = {
+  when: CondExpression;
+  tone?: ThemeProps["accentColor"];
+  fill?: boolean;
+  weight?: "bold";
+  italic?: boolean;
+  strike?: boolean;
+  /** Consumer CSS classes, added when the rule matches. */
+  class?: string;
+};
+
+/** Group-row / total-row summaries of a column. */
+export type DataTableAggregate = "sum" | "avg" | "min" | "max" | "count";
+
+/**
+ * Row selection (`DataTableElement.selection`): a checkbox column published
+ * as the global-state slice `stateKey` = `{ ids, rows, count }`, so a bulk
+ * button binds `{ type: "state", key, path: "ids" }`.
+ */
+export type DataTableSelection = {
+  mode: "single" | "multi";
+  /** The row's id field. Default `_id`, else `id`. */
+  idKey?: string;
+  /** The slice the selection is published as. Default `<name>Selected`. */
+  stateKey?: string;
+  /** Multi only: the header checkbox selects the page, every filtered row, or isn't there. Default `page`. */
+  headerCheckbox?: "page" | "all" | "none";
+  /** Keep picks when the page changes (server paging). Default true. */
+  keepAcrossPages?: boolean;
+};
+
+/**
+ * Client-side row grouping (`DataTableElement.grouping`): groups by `by`
+ * (outer → inner), group rows summarise columns that set `aggregate`. Ignored
+ * with a warning under `api.pagination` / `api.sort`.
+ */
+export type DataTableGrouping = {
+  /** Accessors to group by, outer first. Empty = no groups (a total row alone). */
+  by: string[];
+  /** Depth expanded at first paint: `0` = all collapsed, `"all"`. Default 0. */
+  expanded?: number | "all";
+  /** A "Group by" list in the Columns menu. Default true. */
+  userCanGroup?: boolean;
+  /** "(12)" after the group label. Default true. */
+  showCount?: boolean;
+  /** A row summarising every filtered row. Default `none`. */
+  totalRow?: "none" | "top" | "bottom";
+};
+
+/** What the Export button writes (see {@link DataTableElement.canExport}). */
+export type DataTableExportOptions = {
+  /** Default `<name>.csv`; `{{date}}` becomes today's date (YYYY-MM-DD). */
+  fileName?: string;
+  /** The visible columns in their current order (default), or every column. */
+  columns?: "visible" | "all";
+  /** The text on screen (default) or the raw values. */
+  values?: "formatted" | "raw";
+  /** Every row after search / filters / sort (default), or the page shown. Server mode is always the page. */
+  rows?: "all" | "page";
+};
+
+/** Where a table's column layout (order, visibility, widths, pins, grouping) is remembered. */
+export type DataTableColumnState = {
+  /** `local` (default) survives a reload, `session` the tab, `none` forgets on unmount. */
+  persist?: "local" | "session" | "none";
+  /** Storage key. Default `gummy.table.<page key>.<name>`. */
+  key?: string;
 };
 
 /** Column ids (accessors) pinned to each side, in order (see {@link ColumnDef.pin}). */
@@ -1349,7 +1459,41 @@ export type DataTableElement = {
    * widens to fit.
    */
   actionSize?: DataTableActionSize;
+  /**
+   * A **Columns** button in the header: show / hide columns (`hide`,
+   * `lockVisible`), drag them into another order, group by them
+   * (`grouping.userCanGroup`), Reset to the config. Default true.
+   */
+  canChooseColumns?: boolean;
+  /** The Columns button. Defaults: "Columns", the `columns` icon, `outlined`. */
+  columnsButton?: DataTableToolbarButton;
+  /** Where the column layout is remembered (default: localStorage). */
+  columnState?: DataTableColumnState;
+  /** Row selection, published as a state slice. */
+  selection?: DataTableSelection;
+  /** Conditional look of whole rows (`when` sees `{ row, index }`); `ColumnDef.cellStyles` layer on top. */
+  rowStyles?: DataTableStyleRule[];
+  /** Client-side row grouping + aggregation. */
+  grouping?: DataTableGrouping;
+  /** An **Export** button writing the table as CSV. Default false. */
+  canExport?: boolean;
+  /** The Export button. Defaults: "Export", the `download` icon, `outlined`. */
+  exportButton?: DataTableToolbarButton;
+  exportOptions?: DataTableExportOptions;
+  /**
+   * `pages` (default) — a pager; `scroll` — every row in the scroller, no
+   * pager (client-side only; ignored with a warning under `api.pagination`).
+   * Either way, more than ~60 rendered rows are virtualised (unless cells merge).
+   */
+  paging?: "pages" | "scroll";
   // Editing: {}
+};
+
+/** A header toolbar button (Columns, Export). An empty `label` renders icon-only. */
+export type DataTableToolbarButton = {
+  label?: string;
+  icon?: keyof typeof IconData;
+  variant?: ButtonVariant;
 };
 
 // export type TextFieldElement = {};
@@ -2033,6 +2177,8 @@ export type ButtonAction =
    * load's (by its `key`).
    */
   | "ReloadDataTable"
+  /** Download the data table named by `exportTable` as CSV (its Export button, from anywhere on the page). */
+  | "ExportTable"
   | "ConfirmBox"
   | "CloseModal"
   /** Go to the page named by the element's `navigate` target (see {@link NavigateTarget}). */
@@ -2308,6 +2454,8 @@ export type ButtonElement = {
   color?: ThemeProps["accentColor"];
   confirmBox?: ConfirmBoxElement;
   reloadDataTable?: string;
+  /** Target of the `"ExportTable"` action: a data table's `name`. */
+  exportTable?: string;
   actions: ButtonAction[];
   api?: API & {};
   modalId?: string;
