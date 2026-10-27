@@ -11,6 +11,34 @@ import type { ThemeProps } from '@gummy-ui/ui'
 export type ThemeAppearance = 'light' | 'dark'
 export type ThemeRadius = 'none' | 'small' | 'medium' | 'large' | 'full'
 export type ThemePanelBackground = 'solid' | 'translucent'
+/** Surface style (the engine's `Surface`, see the grilled design `glass-surface`): solid panels, or translucent blurred glass over a backdrop. */
+export type ThemeSurface = 'flat' | 'glass'
+export const SURFACE_OPTIONS: { value: ThemeSurface; label: string }[] = [
+  { value: 'flat', label: 'Flat' },
+  { value: 'glass', label: 'Glass' },
+]
+
+/** What the glass backdrop is: the engine's accent gradient, one colour, a gradient, or an image. */
+export type BackdropKind = 'default' | 'color' | 'gradient' | 'image'
+
+/**
+ * The glass backdrop, structured (the app bar's paint is the precedent).
+ * Lowered to the engine's single CSS `background` string on export — only
+ * while the surface is glass and `kind` is not `default`.
+ */
+export type BackdropConfig = {
+  kind: BackdropKind
+  /** `kind: color` — any CSS colour. */
+  color: string
+  /** `kind: gradient` — both stops needed, at `angle` degrees. */
+  gradient: { from: string; to: string; angle: number }
+  /** `kind: image` — a URL or a `data:` URL (uploaded, ≤ 300 KB), drawn `cover`. */
+  image: string
+}
+
+export function createDefaultBackdrop(): BackdropConfig {
+  return { kind: 'default', color: '', gradient: { from: '', to: '', angle: 160 }, image: '' }
+}
 /**
  * The Radix palette — every name `ThemeProps['accentColor']` accepts, spelled
  * out (rather than derived from Radix's type) so the MCP's generated JSON
@@ -146,6 +174,10 @@ export type StudioThemeConfig = {
   panelBackground: ThemePanelBackground
   /** Radix `scaling`; absent = 100%. Exported in theme.ts. */
   scaling?: ThemeScaling
+  /** Flat panels or glass (workspace v54; `migrateV53` fills `flat`). */
+  surface: ThemeSurface
+  /** The glass backdrop (read only while `surface` is glass). */
+  background: BackdropConfig
   /** `ThemeComponents.button.color`; `''` = no button override. */
   buttonColor: string
   dataTable: DataTableThemeConfig
@@ -247,7 +279,45 @@ export const THEME_DEFAULTS = {
   accentColor: 'blue',
   radius: 'small',
   panelBackground: 'translucent',
+  surface: 'flat',
 } as const
+
+/** A theme saved before `surface` / `background` existed, with the defaults filled (the v54 migration, also run on load). */
+export function normalizeThemeConfig(theme: Partial<StudioThemeConfig> & Pick<StudioThemeConfig, 'appearance' | 'accentColor' | 'radius' | 'panelBackground' | 'buttonColor' | 'dataTable'>): StudioThemeConfig {
+  const def = createDefaultBackdrop()
+  const bg = theme.background
+  return {
+    ...theme,
+    surface: theme.surface === 'glass' ? 'glass' : 'flat',
+    background: bg
+      ? { ...def, ...bg, gradient: { ...def.gradient, ...(bg.gradient ?? {}) } }
+      : def,
+  }
+}
+
+/**
+ * The engine's `theme.background` for a backdrop config — the CSS string, or
+ * `undefined` for the default / an unfinished one (a gradient missing a stop,
+ * a blank colour or image), so the engine's accent gradient stays.
+ */
+export function backdropToCss(b: BackdropConfig): string | undefined {
+  switch (b.kind) {
+    case 'color':
+      return b.color.trim() || undefined
+    case 'gradient': {
+      const from = b.gradient.from.trim()
+      const to = b.gradient.to.trim()
+      if (!from || !to) return undefined
+      return `linear-gradient(${Number.isFinite(b.gradient.angle) ? b.gradient.angle : 160}deg, ${from}, ${to})`
+    }
+    case 'image': {
+      const url = b.image.trim()
+      return url ? `url(${JSON.stringify(url)}) center / cover no-repeat` : undefined
+    }
+    default:
+      return undefined
+  }
+}
 
 /**
  * DataTable roles where a pinned named color routes into the legacy

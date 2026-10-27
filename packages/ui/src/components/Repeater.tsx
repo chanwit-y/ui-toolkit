@@ -10,8 +10,8 @@ import { useReadApi } from "./core/useReadApi";
 // accent; every class is a literal so Tailwind emits it.
 const SURFACE_CLASS = {
 	none: "",
-	outlined: "rounded-lg border border-[var(--gray-a6)] bg-[var(--color-panel-solid)]",
-	elevation: "rounded-lg bg-[var(--color-panel-solid)] shadow-md",
+	outlined: "rounded-lg border border-[var(--gray-a6)] gummy-surface",
+	elevation: "rounded-lg gummy-surface shadow-md",
 } as const;
 
 const SURFACE_HOVER_CLASS = {

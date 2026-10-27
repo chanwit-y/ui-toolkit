@@ -7,6 +7,7 @@
     "dev": "bun scripts/dev.mjs",
     "app": "vite --port 3400",
     "app:portal": "VITE_GUMMY_PROJECT=gummy-portal vite --port 3402 --strictPort",
+    "app:glass": "VITE_GUMMY_PROJECT=glass-showcase vite --port 3403 --strictPort",
     "api": "bun --watch api/src/index.ts",
     "build": "vite build",
     "preview": "vite preview --port 3400",

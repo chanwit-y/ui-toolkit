@@ -197,7 +197,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
       const templateOf = (id: string) => get().library.templates.find((t) => t.id === id)
 
       return {
-      version: 53,
+      version: 54,
       appearance: 'light',
       user: MOCK_USERS[0].name,
       projects: seedProjects(initialLibrary),
@@ -482,7 +482,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
       name: WORKSPACE_STORAGE_KEY,
       // localStorage, or the `gummy studio` CLI's file API — decided before this module loads.
       storage: createJSONStorage(() => studioStorage),
-      version: 53,
+      version: 54,
       partialize: (s) => ({
         version: s.version,
         appearance: s.appearance,

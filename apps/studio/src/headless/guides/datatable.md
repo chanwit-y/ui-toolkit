@@ -32,3 +32,6 @@ child canvas **1** the table's own filter form (Apply / Clear), and
 (a row's `source` may also be any `NavParamSource`, e.g. a URL `:param`).
 `canSearchAllColumns` toggles the search box (server paging also needs
 `pagination.searchKey`).
+`actionSize` (`"" | "1" | "2" | "3"` — 24 / 32 / 40px, `""` = default 32px)
+sizes the row's Edit / Delete buttons and their glyphs; the ACTION column
+widens to fit.

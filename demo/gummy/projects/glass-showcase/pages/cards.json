@@ -1,0 +1,316 @@
+{
+  "containers": [
+    {
+      "id": "page-cards",
+      "name": "page-cards",
+      "isArray": false,
+      "bins": [
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "Cards",
+            "variant": "h3",
+            "weight": "bold"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "A card per book from a repeater — each one its own glass panel over the backdrop, with the cover as its media band. Every card is on the Panel tier, so a grid of them reads as one sheet of frosted glass.",
+            "variant": "body2",
+            "color": "gray"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "repeater",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "bookCards",
+            "emptyText": "No books to show.",
+            "itemPadding": "0",
+            "idKey": "_id",
+            "api": {
+              "name": "listBooks",
+              "paths": [
+                "data"
+              ],
+              "query": {
+                "limit": {
+                  "type": "value",
+                  "key": "none",
+                  "value": "12"
+                },
+                "sortBy": {
+                  "type": "value",
+                  "key": "none",
+                  "value": "rating"
+                },
+                "sortDir": {
+                  "type": "value",
+                  "key": "none",
+                  "value": "desc"
+                }
+              }
+            },
+            "itemContainer": {
+              "id": "repeater-gs-item--item",
+              "name": "repeater-gs-item--item",
+              "isArray": false,
+              "bins": [
+                {
+                  "sm": "12",
+                  "md": "12",
+                  "lg": "12",
+                  "xl": "12",
+                  "type": "card",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "bookCard",
+                    "header": {
+                      "titleValue": {
+                        "type": "row",
+                        "key": "title"
+                      },
+                      "subheaderValue": {
+                        "type": "row",
+                        "key": "authorName"
+                      }
+                    },
+                    "media": {
+                      "alt": "Cover",
+                      "srcValue": {
+                        "type": "row",
+                        "key": "cover"
+                      },
+                      "height": 240
+                    },
+                    "content": {
+                      "id": "card-gs-item-",
+                      "name": "card-gs-item-",
+                      "isArray": false,
+                      "bins": [
+                        {
+                          "sm": "12",
+                          "md": "12",
+                          "lg": "12",
+                          "xl": "12",
+                          "type": "typography",
+                          "justifySelf": "stretch",
+                          "alignSelf": "stretch",
+                          "condition": {
+                            "left": {
+                              "key": "row",
+                              "path": "featured"
+                            },
+                            "operator": "eq",
+                            "right": {
+                              "val": true
+                            }
+                          },
+                          "element": {
+                            "text": "Featured",
+                            "variant": "caption",
+                            "weight": "bold",
+                            "color": "amber"
+                          }
+                        },
+                        {
+                          "sm": "12",
+                          "md": "12",
+                          "lg": "12",
+                          "xl": "12",
+                          "type": "html",
+                          "justifySelf": "stretch",
+                          "alignSelf": "stretch",
+                          "element": {
+                            "name": "cardPrice",
+                            "html": "<strong>{{priceText}}</strong> · ★ {{rating}} <span class=\"dt-muted\">({{reviewCount}})</span>",
+                            "value": {
+                              "type": "row",
+                              "key": "none"
+                            },
+                            "prose": false
+                          }
+                        }
+                      ],
+                      "gap": "16px",
+                      "justifyItems": "stretch",
+                      "alignItems": "stretch",
+                      "justifyContent": "start",
+                      "alignContent": "start",
+                      "gridAutoFlow": "row"
+                    },
+                    "actionsAlign": "end",
+                    "variant": "outlined"
+                  }
+                }
+              ],
+              "gap": "16px",
+              "justifyItems": "stretch",
+              "alignItems": "stretch",
+              "justifyContent": "start",
+              "alignContent": "start",
+              "gridAutoFlow": "row"
+            },
+            "itemSpan": {
+              "sm": "6",
+              "md": "4",
+              "lg": "3",
+              "xl": "3"
+            },
+            "gap": "4",
+            "itemSurface": "none"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "Authors — avatars in the card header",
+            "variant": "subtitle1",
+            "weight": "medium"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "repeater",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "authorCards",
+            "emptyText": "No authors to show.",
+            "itemPadding": "0",
+            "idKey": "_id",
+            "api": {
+              "name": "listAuthors",
+              "paths": [
+                "data"
+              ]
+            },
+            "itemContainer": {
+              "id": "repeater-gs-item--item",
+              "name": "repeater-gs-item--item",
+              "isArray": false,
+              "bins": [
+                {
+                  "sm": "12",
+                  "md": "12",
+                  "lg": "12",
+                  "xl": "12",
+                  "type": "card",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "authorCard",
+                    "header": {
+                      "titleValue": {
+                        "type": "row",
+                        "key": "name"
+                      },
+                      "subheaderValue": {
+                        "type": "row",
+                        "key": "country"
+                      },
+                      "avatar": {
+                        "name": "",
+                        "size": "md",
+                        "fallback": "?",
+                        "srcValue": {
+                          "type": "row",
+                          "key": "avatar"
+                        },
+                        "fallbackValue": {
+                          "type": "row",
+                          "key": "name"
+                        }
+                      }
+                    },
+                    "content": {
+                      "id": "card-gs-item-",
+                      "name": "card-gs-item-",
+                      "isArray": false,
+                      "bins": [
+                        {
+                          "sm": "12",
+                          "md": "12",
+                          "lg": "12",
+                          "xl": "12",
+                          "type": "html",
+                          "justifySelf": "stretch",
+                          "alignSelf": "stretch",
+                          "element": {
+                            "name": "authorBooks",
+                            "html": "<span class=\"dt-muted\">{{bookCount}} books in the catalogue</span>",
+                            "value": {
+                              "type": "row",
+                              "key": "none"
+                            },
+                            "prose": false
+                          }
+                        }
+                      ],
+                      "gap": "16px",
+                      "justifyItems": "stretch",
+                      "alignItems": "stretch",
+                      "justifyContent": "start",
+                      "alignContent": "start",
+                      "gridAutoFlow": "row"
+                    },
+                    "actionsAlign": "end",
+                    "variant": "outlined"
+                  }
+                }
+              ],
+              "gap": "16px",
+              "justifyItems": "stretch",
+              "alignItems": "stretch",
+              "justifyContent": "start",
+              "alignContent": "start",
+              "gridAutoFlow": "row"
+            },
+            "itemSpan": {
+              "sm": "6",
+              "md": "4",
+              "lg": "4",
+              "xl": "4"
+            },
+            "gap": "4",
+            "itemSurface": "none"
+          }
+        }
+      ],
+      "gap": "16px",
+      "justifyItems": "stretch",
+      "alignItems": "stretch",
+      "justifyContent": "start",
+      "alignContent": "start",
+      "gridAutoFlow": "row"
+    }
+  ]
+}

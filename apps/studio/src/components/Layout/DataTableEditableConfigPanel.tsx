@@ -5,7 +5,9 @@ import { useGridStore } from './gridStore'
 import { EndpointPicker } from './SelectFieldConfigPanel'
 import { ColumnSizeFields } from './ColumnSizeFields'
 import {
+  ACTION_SIZE_OPTIONS,
   createEditableTableColumn,
+  type ActionSize,
   type DataTableEditableColumnConfig,
   type DataTableEditableConfig,
   type EditableTableOption,
@@ -416,6 +418,13 @@ export function DataTableEditableConfigPanel({
         checked={config.canResizeColumns}
         onChange={(v) => set('canResizeColumns', v)}
       />
+      <Field label="Row action size (Edit / Delete / Save / Cancel)">
+        <Select
+          options={ACTION_SIZE_OPTIONS}
+          value={config.actionSize ?? ''}
+          onChange={(v) => set('actionSize', v as ActionSize)}
+        />
+      </Field>
       <Toggle
         label="Add row action"
         checked={config.canCreate}

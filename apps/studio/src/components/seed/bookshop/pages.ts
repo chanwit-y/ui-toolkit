@@ -107,7 +107,7 @@ function load(id: string, key: string, endpointId: string, params: PageLoadDef['
   return { id, key, read: { endpointId, params, extra: {} }, paths: 'data', loading, errorMessage }
 }
 
-const paged = (pageSize = 10): DataTablePaginationConfig => ({
+export const paged = (pageSize = 10): DataTablePaginationConfig => ({
   ...createDefaultPaginationConfig(),
   enabled: true,
   searchKey: 'search',
@@ -115,7 +115,7 @@ const paged = (pageSize = 10): DataTablePaginationConfig => ({
   pageSizeOptions: [10, 20, 50],
 })
 
-const sortBy = (defaultField: string, defaultOrder: 'asc' | 'desc' = 'asc') => ({
+export const sortBy = (defaultField: string, defaultOrder: 'asc' | 'desc' = 'asc') => ({
   ...createDefaultSortConfig(),
   enabled: true,
   sortKey: 'sortBy',
@@ -124,11 +124,11 @@ const sortBy = (defaultField: string, defaultOrder: 'asc' | 'desc' = 'asc') => (
   defaultOrder,
 })
 
-const filterMap = (id: string, key: string) => ({ id, slot: 'query' as const, key, source: { type: 'filter' as const, key, fallback: '' } })
+export const filterMap = (id: string, key: string) => ({ id, slot: 'query' as const, key, source: { type: 'filter' as const, key, fallback: '' } })
 
-const staticOptions = (pairs: [string, string][]): SelectOption[] => pairs.map(([value, label]) => ({ value, label }))
+export const staticOptions = (pairs: [string, string][]): SelectOption[] => pairs.map(([value, label]) => ({ value, label }))
 
-function staticSelect(id: string, name: string, label: string, options: SelectOption[], colSpan = HALF, extra: Partial<GridItemData> = {}): GridItemData {
+export function staticSelect(id: string, name: string, label: string, options: SelectOption[], colSpan = HALF, extra: Partial<GridItemData> = {}): GridItemData {
   return {
     id,
     label: 'Select',
@@ -139,7 +139,7 @@ function staticSelect(id: string, name: string, label: string, options: SelectOp
   }
 }
 
-function sourceSelect(
+export function sourceSelect(
   id: string,
   type: 'select' | 'autocomplete',
   name: string,
@@ -169,23 +169,23 @@ function sourceSelect(
   }
 }
 
-function textField(id: string, name: string, label: string, colSpan = HALF, extra: Record<string, unknown> = {}, item: Partial<GridItemData> = {}): GridItemData {
+export function textField(id: string, name: string, label: string, colSpan = HALF, extra: Record<string, unknown> = {}, item: Partial<GridItemData> = {}): GridItemData {
   return { id, label: 'Text Field', type: 'textfield', settings: settings(colSpan), config: { ...createDefaultTextFieldConfig(name), label, ...extra }, ...item }
 }
 
-function textarea(id: string, name: string, label: string, rows = 4, item: Partial<GridItemData> = {}): GridItemData {
+export function textarea(id: string, name: string, label: string, rows = 4, item: Partial<GridItemData> = {}): GridItemData {
   return { id, label: 'Textarea', type: 'textarea', settings: settings(FULL), config: { ...createDefaultTextareaConfig(name), label, rows }, ...item }
 }
 
-function dateField(id: string, name: string, label: string, colSpan = HALF): GridItemData {
+export function dateField(id: string, name: string, label: string, colSpan = HALF): GridItemData {
   return { id, label: 'Date', type: 'datepicker', settings: settings(colSpan), config: { ...createDefaultDateConfig('date', name), label } }
 }
 
-function switchField(id: string, name: string, label: string, extra: Record<string, unknown> = {}, item: Partial<GridItemData> = {}): GridItemData {
+export function switchField(id: string, name: string, label: string, extra: Record<string, unknown> = {}, item: Partial<GridItemData> = {}): GridItemData {
   return { id, label: 'Switch', type: 'switch', settings: settings(HALF), config: { ...createDefaultSwitchConfig(name), label, ...extra }, ...item }
 }
 
-function container(id: string, items: GridItemData[], extra: Partial<GridItemData> = {}, border = false): GridItemData {
+export function container(id: string, items: GridItemData[], extra: Partial<GridItemData> = {}, border = false): GridItemData {
   return {
     id,
     label: 'Container',
@@ -197,7 +197,7 @@ function container(id: string, items: GridItemData[], extra: Partial<GridItemDat
   }
 }
 
-type CardParts = {
+export type CardParts = {
   title?: string
   titleBinding?: ItemBinding
   subheader?: string
@@ -209,7 +209,7 @@ type CardParts = {
   actions?: CardConfig['actions']
 }
 
-function card(id: string, name: string, parts: CardParts, colSpan: Responsive<number> = FULL): GridItemData {
+export function card(id: string, name: string, parts: CardParts, colSpan: Responsive<number> = FULL): GridItemData {
   const base = createDefaultCardConfig(name)
   return {
     id,
@@ -242,7 +242,7 @@ function card(id: string, name: string, parts: CardParts, colSpan: Responsive<nu
   }
 }
 
-function repeater(id: string, config: Partial<RepeaterConfig> & { name: string }, template: GridItemData[], colSpan = FULL): GridItemData {
+export function repeater(id: string, config: Partial<RepeaterConfig> & { name: string }, template: GridItemData[], colSpan = FULL): GridItemData {
   return {
     id,
     label: 'Repeater',
@@ -253,7 +253,7 @@ function repeater(id: string, config: Partial<RepeaterConfig> & { name: string }
   }
 }
 
-function page(id: string, key: string, name: string, path: string, items: GridItemData[], extra: Partial<PageDef> = {}): PageDef {
+export function page(id: string, key: string, name: string, path: string, items: GridItemData[], extra: Partial<PageDef> = {}): PageDef {
   return { id, key, name, path, grid: { items, containerSettings: defaultContainerSettings, fieldSeq: 0 }, ...extra }
 }
 

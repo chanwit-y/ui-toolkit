@@ -1,4 +1,4 @@
-import type { StudioThemeConfig } from '../../Theme/types'
+import { createDefaultBackdrop, type StudioThemeConfig } from '../../Theme/types'
 import { defaultContainerSettings, type GridItemData } from '../../Layout/types'
 import { defaultShell } from '../../Workspace/snapshots'
 import { projectKey } from '../../Workspace/runtimeProject'
@@ -253,6 +253,9 @@ function portalTheme(): StudioThemeConfig {
     accentColor: 'indigo',
     radius: 'large',
     panelBackground: 'solid',
+    // The glass showcase (the Book shop stays flat): the engine's accent backdrop.
+    surface: 'glass',
+    background: createDefaultBackdrop(),
     buttonColor: '',
     dataTable: {
       headerColor: '',

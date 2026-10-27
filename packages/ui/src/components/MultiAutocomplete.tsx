@@ -455,7 +455,7 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 					onClick={openDropdown}
 					disabled={!isObserveEnabled}
 					className={cn("w-full min-h-[40px] px-4 py-2 text-sm flex items-center justify-between",
-						"bg-white dark:bg-gray-900 border rounded-md shadow-sm transition-all duration-200",
+						"gummy-surface-input border rounded-md shadow-sm transition-all duration-200",
 						"text-left focus:ring-2 focus:ring-[var(--accent-8,#3b82f6)] focus:border-transparent",
 						hasError
 							? "border-red-300 hover:border-red-400"
@@ -502,7 +502,7 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 				<div
 					ref={dropdownContainerRef}
 					style={dropdownStyles}
-					className="flex flex-col bg-[var(--color-panel-solid)] border border-[var(--gray-a6)] rounded-md shadow-lg overflow-hidden ease-in duration-100 opacity-100 z-[100000]"
+					className="flex flex-col gummy-surface border border-[var(--gray-a6)] rounded-md shadow-lg overflow-hidden ease-in duration-100 opacity-100 z-[100000]"
 				>
 					<OptionSearch
 						ref={searchInputRef}
@@ -537,7 +537,7 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 									data-focused={isSelected}
 									className={cn("w-full flex items-center justify-between px-3 py-2 text-sm text-left transition-colors cursor-pointer",
 										isDisabled
-											? "text-gray-400 dark:text-gray-500 cursor-not-allowed bg-gray-50 dark:bg-gray-800"
+											? "text-gray-400 dark:text-gray-500 cursor-not-allowed bg-[var(--gray-a3)]"
 											: isSelected
 												? "bg-[var(--accent-3,#eff6ff)] text-[var(--accent-11,#1d4ed8)] font-semibold"
 												: "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800",

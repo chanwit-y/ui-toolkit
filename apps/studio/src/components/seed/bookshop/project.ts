@@ -1,5 +1,5 @@
 import type { EnvVarDef } from '../../Env/types'
-import type { StudioThemeConfig } from '../../Theme/types'
+import { createDefaultBackdrop, type StudioThemeConfig } from '../../Theme/types'
 import { createAuthDef, type AuthDef } from '../../Workspace/auth'
 import type { CustomActionDef } from '../../Workspace/customActions'
 import type { CustomComponentDef } from '../../Workspace/customComponents'
@@ -11,6 +11,7 @@ import { bookshopEndpoints, bookshopModels, E } from './library'
 import { bookshopPages, P, PRINT_ORDER_ACTION_ID, SALES_CHART_COMPONENT_ID } from './pages'
 import { navigate } from './ui'
 import { portalProject } from '../portal/project'
+import { glassProject } from '../glass/project'
 
 /**
  * The Book shop demo as a studio workspace (see the grilled design
@@ -67,6 +68,8 @@ function bookshopTheme(): StudioThemeConfig {
     accentColor: 'iris',
     radius: 'medium',
     panelBackground: 'solid',
+    surface: 'flat',
+    background: createDefaultBackdrop(),
     buttonColor: '',
     dataTable: {
       headerColor: '',
@@ -182,10 +185,10 @@ export function bookshopProject(library: LibraryData = bookshopLibrary()): Proje
 export function bookshopWorkspace(): WorkspaceData {
   const library = bookshopLibrary()
   return {
-    version: 53,
+    version: 54,
     appearance: 'light',
     user: 'Chanwit Yimneam',
-    projects: [bookshopProject(library), portalProject()],
+    projects: [bookshopProject(library), portalProject(), glassProject()],
     library,
     activity: [],
   }
@@ -196,7 +199,7 @@ export function bookshopWorkspaceFile(workspace: WorkspaceData = bookshopWorkspa
   return { state: workspace, version: workspace.version }
 }
 
-/** The exported project folders by file key — `book-shop`, `gummy-portal`. */
+/** The exported project folders by file key — `book-shop`, `gummy-portal`, `glass-showcase`. */
 export function bookshopFolders(workspace: WorkspaceData = bookshopWorkspace()): Record<string, ProjectFolder> {
   return projectFolders(workspace.projects, workspace.library)
 }

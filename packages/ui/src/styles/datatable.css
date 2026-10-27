@@ -13,7 +13,8 @@
 }
 
 .datatable-header {
-  @apply flex flex-row justify-between items-start  bg-white dark:bg-gray-900 z-10;
+  @apply flex flex-row justify-between items-start z-10;
+  background-color: var(--gummy-surface-bg);
 }
 
 .datatable-title {
@@ -28,7 +29,7 @@
   @apply flex flex-row gap-0.5 items-center justify-center space-x-2;
 } */
 
-/* The row-action buttons themselves are Radix IconButtons (soft, size 2), so
+/* The row-action buttons themselves are Radix IconButtons (soft, `actionSize`), so
    radius / hover / dark mode follow the theme; only the cell is styled here. */
 .datatable-action-cell {
   @apply flex items-center justify-center gap-1.5;
@@ -52,7 +53,8 @@
 
 .datatable-table {
   /* Separate borders: collapsed ones don't travel with sticky cells. */
-  @apply w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 table-fixed border-separate border-spacing-0;
+  @apply w-full border border-gray-200 dark:border-gray-700 table-fixed border-separate border-spacing-0;
+  background-color: var(--gummy-surface-bg);
 }
 
 .datatable-thead {
@@ -90,7 +92,8 @@
 }
 
 .datatable-body-cell.datatable-cell-pinned {
-  @apply bg-white dark:bg-gray-900;
+  /* Strong tier: a pinned cell hides what scrolls under it, so it stays near-opaque (and unblurred) in glass. */
+  background-color: var(--gummy-surface-strong-bg);
 }
 
 .datatable-body-row:hover > .datatable-body-cell.datatable-cell-pinned {
@@ -231,7 +234,7 @@
 .datatable-popover-content {
   width: 260px;
   border-radius: 0.25rem;
-  background-color: white;
+  background-color: var(--gummy-surface-bg);
   padding: 1rem;
   box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
   border: 1px solid rgb(229 231 235);
@@ -240,7 +243,6 @@
 }
 
 .dark .datatable-popover-content {
-  background-color: rgb(17 24 39); /* gray-900 */
   border-color: rgb(55 65 81); /* gray-700 */
   color: rgb(229 231 235); /* gray-200 */
 }
@@ -331,12 +333,11 @@
 
 .datatable-popover-content .rt-CheckboxRoot[data-state="unchecked"] {
   border-color: rgb(209 213 219); /* gray-300 */
-  background-color: white;
+  background-color: var(--gummy-surface-input-bg);
 }
 
 .dark .datatable-popover-content .rt-CheckboxRoot[data-state="unchecked"] {
   border-color: rgb(75 85 99); /* gray-600 */
-  background-color: rgb(17 24 39); /* gray-900 */
 }
 
 .datatable-popover-content .rt-CheckboxRoot[data-state="checked"]:hover {
@@ -369,11 +370,7 @@
 }
 
 .datatable-popover-content .rt-Flex:hover {
-  background-color: rgb(249 250 251); /* gray-50 */
-}
-
-.dark .datatable-popover-content .rt-Flex:hover {
-  background-color: rgb(31 41 55); /* gray-800 */
+  background-color: var(--gray-a3);
 }
 
 /* Checkbox indicator styling */
@@ -384,11 +381,12 @@
 }
 
 .datatable-tbody {
-  @apply bg-white dark:bg-gray-900;
+  background-color: var(--gummy-surface-bg);
 }
 
 .datatable-footer {
-  @apply flex items-center justify-between px-2 py-4 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700;
+  @apply flex items-center justify-between px-2 py-4 border-t border-gray-200 dark:border-gray-700;
+  background-color: var(--gummy-surface-bg);
 }
 
 .datatable-body-row {
@@ -412,12 +410,11 @@
   cursor: pointer;
   position: relative;
   transition: all 0.2s ease-in-out;
-  background-color: white;
+  background-color: var(--gummy-surface-input-bg);
 }
 
 .dark .datatable-popover-content input[type="checkbox"] {
   border-color: rgb(75 85 99); /* gray-600 */
-  background-color: rgb(17 24 39); /* gray-900 */
 }
 
 .datatable-popover-content input[type="checkbox"]:hover {
@@ -667,4 +664,22 @@
 
 .datatable-header-cell.datatable-group-header .datatable-header-content {
   justify-content: center;
+}
+
+/* Glass (see styles/surface.css): one blurred panel per table — the wrapper
+   carries the glass and the pieces inside go transparent, so the alpha isn't
+   stacked three deep; the pinned cells keep the Strong tier above. */
+[data-surface="glass"] .datatable-table-wrapper {
+  background-color: var(--gummy-surface-bg);
+  backdrop-filter: var(--gummy-surface-blur);
+  -webkit-backdrop-filter: var(--gummy-surface-blur);
+  box-shadow: var(--gummy-surface-shadow);
+}
+[data-surface="glass"] :is(.datatable-header, .datatable-table, .datatable-tbody, .datatable-footer) {
+  background-color: transparent;
+}
+[data-surface="glass"] .datatable-popover-content,
+[data-surface="glass"] .datatable-filter-inline {
+  backdrop-filter: var(--gummy-surface-blur);
+  -webkit-backdrop-filter: var(--gummy-surface-blur);
 }

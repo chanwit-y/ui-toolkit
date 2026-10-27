@@ -1,4 +1,4 @@
-import { CoreProvider, ThemeProvider } from '@gummy-ui/ui'
+import { CoreProvider, splitGummyTheme, ThemeProvider } from '@gummy-ui/ui'
 import { useMemo } from 'react'
 import { CliBanner } from './cli/CliBanner'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
@@ -30,7 +30,12 @@ function App() {
   // tabs into its <Outlet>. Appearance is synced per
   // route (project theme inside a project, workspace preference on the portal).
   const config = useThemeStore((s) => s.config)
-  const { theme, components } = useMemo(() => toThemeObjects(config), [config])
+  // The studio chrome never goes glass: the project's `surface` / `background`
+  // reach the canvas frame (Layout) and the Live Preview (GummyApp) instead.
+  const { theme, components } = useMemo(() => {
+    const t = toThemeObjects(config)
+    return { theme: splitGummyTheme(t.theme).radix, components: t.components }
+  }, [config])
 
   return (
     <ThemeProvider

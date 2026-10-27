@@ -719,7 +719,7 @@ export const DataTable = () => {
 				</div>
 				
 				<div className="overflow-x-auto shadow-lg rounded-lg">
-					<table className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
+					<table className="w-full gummy-surface border border-gray-200 dark:border-gray-700">
 					<thead className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-800 border-b-2 border-gray-200 dark:border-gray-700">
 						{table.getHeaderGroups().map(headerGroup => (
 							<tr key={headerGroup.id}>
@@ -843,7 +843,7 @@ export const DataTable = () => {
 						items={table.getPaginationRowModel().rows.map(row => row.original.id)}
 						strategy={verticalListSortingStrategy}
 					>
-						<tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+						<tbody className="gummy-surface divide-y divide-gray-200 dark:divide-gray-700">
 							{table.getPaginationRowModel().rows.map(row => (
 								<DraggableRow key={row.original.id} row={row}>
 									{row.getVisibleCells().map(cell => (
@@ -861,7 +861,7 @@ export const DataTable = () => {
 				</div>
 				
 				{/* Pagination Controls */}
-				<div className="flex items-center justify-between px-2 py-4 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
+				<div className="flex items-center justify-between px-2 py-4 gummy-surface border-t border-gray-200 dark:border-gray-700">
 					<div className="flex items-center space-x-6 text-sm text-gray-700 dark:text-gray-300">
 						<div className="flex items-center space-x-2">
 							<span>Rows per page:</span>

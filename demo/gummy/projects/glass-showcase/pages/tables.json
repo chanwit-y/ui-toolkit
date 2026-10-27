@@ -1,0 +1,725 @@
+{
+  "containers": [
+    {
+      "id": "page-tables",
+      "name": "page-tables",
+      "isArray": false,
+      "bins": [
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "Tables",
+            "variant": "h3",
+            "weight": "bold"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "The frame is one glass panel; the pinned Title column and the sticky header are the Strong tier, so nothing shows through them when you scroll sideways. Filter opens a glass popover with dropdowns; Add book / Edit open a glass modal full of fields.",
+            "variant": "body2",
+            "color": "gray"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "datatable",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "books",
+            "title": "Books",
+            "columns": [
+              {
+                "accessor": "cover",
+                "header": "",
+                "enableSorting": false,
+                "enableColumnFilter": false,
+                "align": "start",
+                "pin": "left",
+                "html": "<img src=\"{{cover}}\" alt=\"\" style=\"width:36px;height:54px;object-fit:cover;border-radius:4px;display:block\">",
+                "size": 64,
+                "enableResizing": false
+              },
+              {
+                "accessor": "title",
+                "header": "Title",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "pin": "left",
+                "size": 240
+              },
+              {
+                "accessor": "authorName",
+                "header": "Author",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "size": 200
+              },
+              {
+                "accessor": "genreName",
+                "header": "Genre",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "size": 160
+              },
+              {
+                "accessor": "priceText",
+                "header": "Price",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "end",
+                "sortField": "price",
+                "size": 120
+              },
+              {
+                "accessor": "stock",
+                "header": "Stock",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "end",
+                "size": 100
+              },
+              {
+                "accessor": "publishedAt",
+                "header": "Published",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "useDateFormat": "DD/MM/YYYY",
+                "size": 140
+              },
+              {
+                "accessor": "isbn",
+                "header": "ISBN",
+                "enableSorting": false,
+                "enableColumnFilter": false,
+                "align": "start",
+                "size": 180
+              },
+              {
+                "accessor": "rating",
+                "header": "Rating",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "end",
+                "pin": "right",
+                "size": 100
+              }
+            ],
+            "api": {
+              "name": "listBooks",
+              "paths": [
+                "data"
+              ],
+              "query": {
+                "genre": {
+                  "type": "filter",
+                  "key": "genre"
+                },
+                "author": {
+                  "type": "filter",
+                  "key": "author"
+                },
+                "inStock": {
+                  "type": "filter",
+                  "key": "inStock"
+                }
+              },
+              "pagination": {
+                "offsetKey": "offset",
+                "limitKey": "limit",
+                "searchKey": "search",
+                "totalPath": [
+                  "total"
+                ],
+                "pageSizeOptions": [
+                  10,
+                  20,
+                  50
+                ]
+              },
+              "sort": {
+                "sortKey": "sortBy",
+                "orderKey": "sortDir",
+                "default": {
+                  "field": "title",
+                  "order": "asc"
+                }
+              }
+            },
+            "canAdd": true,
+            "addButton": {
+              "label": "Add book"
+            },
+            "filterContainer": {
+              "id": "datatable-gs-item--filter",
+              "name": "datatable-gs-item--filter",
+              "isArray": false,
+              "bins": [
+                {
+                  "sm": "12",
+                  "md": "12",
+                  "lg": "12",
+                  "xl": "12",
+                  "type": "autocomplete",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "genre",
+                    "dataType": "string",
+                    "label": "Genre",
+                    "isRequired": false,
+                    "errorMessage": "",
+                    "canObserve": true,
+                    "observeTo": "",
+                    "isSingleLoad": false,
+                    "keys": {
+                      "id": "_id",
+                      "search": "name",
+                      "display": "name"
+                    },
+                    "defaultData": {},
+                    "options": [],
+                    "placeholder": "Choose genre",
+                    "api": {
+                      "name": "listGenres",
+                      "paths": [
+                        "data"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "sm": "12",
+                  "md": "12",
+                  "lg": "12",
+                  "xl": "12",
+                  "type": "autocomplete",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "author",
+                    "dataType": "string",
+                    "label": "Author",
+                    "isRequired": false,
+                    "errorMessage": "",
+                    "canObserve": false,
+                    "observeTo": "genre",
+                    "isSingleLoad": false,
+                    "keys": {
+                      "id": "_id",
+                      "search": "name",
+                      "display": "name"
+                    },
+                    "defaultData": {},
+                    "options": [],
+                    "placeholder": "Pick a genre first",
+                    "itemAvatar": "avatar",
+                    "api": {
+                      "name": "genreAuthors",
+                      "paths": [
+                        "data"
+                      ],
+                      "params": {
+                        "genre": {
+                          "type": "observe",
+                          "key": "genre"
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "sm": "12",
+                  "md": "12",
+                  "lg": "12",
+                  "xl": "12",
+                  "type": "autocomplete",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "inStock",
+                    "dataType": "string",
+                    "label": "Stock",
+                    "isRequired": false,
+                    "errorMessage": "",
+                    "canObserve": false,
+                    "observeTo": "",
+                    "isSingleLoad": false,
+                    "keys": {
+                      "id": "value",
+                      "search": "label",
+                      "display": "label"
+                    },
+                    "defaultData": {},
+                    "options": [
+                      {
+                        "value": "true",
+                        "label": "In stock"
+                      },
+                      {
+                        "value": "false",
+                        "label": "Out of stock"
+                      }
+                    ],
+                    "placeholder": "Any stock"
+                  }
+                }
+              ],
+              "gap": "16px",
+              "justifyItems": "stretch",
+              "alignItems": "stretch",
+              "justifyContent": "start",
+              "alignContent": "start",
+              "gridAutoFlow": "row"
+            },
+            "modalContainer": {
+              "id": "datatable-gs-item-",
+              "name": "datatable-gs-item-",
+              "isArray": false,
+              "bins": [
+                {
+                  "sm": "12",
+                  "md": "12",
+                  "lg": "12",
+                  "xl": "12",
+                  "type": "hidden",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "_id",
+                    "dataType": "string"
+                  }
+                },
+                {
+                  "sm": "12",
+                  "md": "12",
+                  "lg": "12",
+                  "xl": "12",
+                  "type": "textfield",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "title",
+                    "dataType": "string",
+                    "label": "Title",
+                    "isRequired": true,
+                    "errorMessage": "",
+                    "variant": "surface",
+                    "size": "3",
+                    "radius": "medium",
+                    "isFullWidth": true,
+                    "isFixedHeight": true,
+                    "placeholder": "The book title"
+                  }
+                },
+                {
+                  "sm": "6",
+                  "md": "6",
+                  "lg": "6",
+                  "xl": "6",
+                  "type": "autocomplete",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "authorId",
+                    "dataType": "string",
+                    "label": "Author",
+                    "isRequired": true,
+                    "errorMessage": "",
+                    "canObserve": false,
+                    "observeTo": "",
+                    "isSingleLoad": false,
+                    "keys": {
+                      "id": "_id",
+                      "search": "name",
+                      "display": "name"
+                    },
+                    "defaultData": {},
+                    "options": [],
+                    "placeholder": "Choose author",
+                    "itemSubtitle": "country",
+                    "itemAvatar": "avatar",
+                    "api": {
+                      "name": "listAuthors",
+                      "paths": [
+                        "data"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "sm": "6",
+                  "md": "6",
+                  "lg": "6",
+                  "xl": "6",
+                  "type": "autocomplete",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "genreId",
+                    "dataType": "string",
+                    "label": "Genre",
+                    "isRequired": true,
+                    "errorMessage": "",
+                    "canObserve": false,
+                    "observeTo": "",
+                    "isSingleLoad": false,
+                    "keys": {
+                      "id": "_id",
+                      "search": "name",
+                      "display": "name"
+                    },
+                    "defaultData": {},
+                    "options": [],
+                    "placeholder": "Choose genre",
+                    "api": {
+                      "name": "listGenres",
+                      "paths": [
+                        "data"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "sm": "6",
+                  "md": "6",
+                  "lg": "3",
+                  "xl": "3",
+                  "type": "textfield",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "price",
+                    "dataType": "number",
+                    "label": "Price (THB)",
+                    "isRequired": true,
+                    "errorMessage": "",
+                    "variant": "surface",
+                    "size": "3",
+                    "radius": "medium",
+                    "isFullWidth": true,
+                    "isFixedHeight": true
+                  }
+                },
+                {
+                  "sm": "6",
+                  "md": "6",
+                  "lg": "3",
+                  "xl": "3",
+                  "type": "textfield",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "stock",
+                    "dataType": "number",
+                    "label": "In stock",
+                    "isRequired": false,
+                    "errorMessage": "",
+                    "variant": "surface",
+                    "size": "3",
+                    "radius": "medium",
+                    "isFullWidth": true,
+                    "isFixedHeight": true
+                  }
+                },
+                {
+                  "sm": "6",
+                  "md": "6",
+                  "lg": "3",
+                  "xl": "3",
+                  "type": "datepicker",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "publishedAt",
+                    "dataType": "string",
+                    "label": "Published",
+                    "isRequired": false,
+                    "errorMessage": "",
+                    "variant": "surface",
+                    "size": "2",
+                    "radius": "medium",
+                    "clearable": true,
+                    "displayFormat": "DD/MM/YYYY",
+                    "weekStartsOn": 0
+                  }
+                },
+                {
+                  "sm": "6",
+                  "md": "6",
+                  "lg": "6",
+                  "xl": "6",
+                  "type": "switch",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "featured",
+                    "dataType": "boolean",
+                    "label": "Featured",
+                    "isRequired": false,
+                    "errorMessage": ""
+                  }
+                },
+                {
+                  "sm": "12",
+                  "md": "6",
+                  "lg": "4",
+                  "xl": "4",
+                  "type": "uploadimage",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "cover",
+                    "dataType": "string",
+                    "label": "Cover",
+                    "isRequired": false,
+                    "errorMessage": "",
+                    "accept": "image/*",
+                    "shape": "square",
+                    "previewHeight": 160,
+                    "valueFormat": "api",
+                    "helperText": "The dropzone is on the Input tier too.",
+                    "maxSizeMB": 5,
+                    "uploadApi": {
+                      "uploadUrl": "http://localhost:9100/api/upload",
+                      "fieldName": "file",
+                      "responsePath": "data.url"
+                    }
+                  }
+                },
+                {
+                  "sm": "12",
+                  "md": "12",
+                  "lg": "8",
+                  "xl": "8",
+                  "type": "textarea",
+                  "justifySelf": "stretch",
+                  "alignSelf": "stretch",
+                  "element": {
+                    "name": "description",
+                    "dataType": "string",
+                    "label": "Description",
+                    "isRequired": false,
+                    "errorMessage": "",
+                    "rows": 6,
+                    "resize": "vertical",
+                    "autoResize": false,
+                    "showCharCount": false
+                  }
+                },
+                {
+                  "sm": "4",
+                  "md": "3",
+                  "lg": "2",
+                  "xl": "2",
+                  "type": "button",
+                  "justifySelf": "start",
+                  "alignSelf": "stretch",
+                  "condition": {
+                    "right": {
+                      "key": "books",
+                      "path": "_id"
+                    },
+                    "operator": "eq",
+                    "left": {}
+                  },
+                  "element": {
+                    "label": "Create",
+                    "icon": "save",
+                    "actions": [
+                      "StartLoading",
+                      "SubmitFormToPostAPI",
+                      "StopLoading",
+                      "CloseModal"
+                    ],
+                    "api": {
+                      "name": "createBook"
+                    },
+                    "reloadDataTable": "books",
+                    "snackbarSuccess": {
+                      "type": "success",
+                      "message": "Book added"
+                    },
+                    "snackbarError": "$exception"
+                  }
+                },
+                {
+                  "sm": "4",
+                  "md": "3",
+                  "lg": "2",
+                  "xl": "2",
+                  "type": "button",
+                  "justifySelf": "start",
+                  "alignSelf": "stretch",
+                  "condition": {
+                    "right": {
+                      "key": "books",
+                      "path": "_id"
+                    },
+                    "operator": "neq",
+                    "left": {}
+                  },
+                  "element": {
+                    "label": "Save",
+                    "icon": "save",
+                    "actions": [
+                      "StartLoading",
+                      "SubmitFormToPatchAPI",
+                      "StopLoading",
+                      "CloseModal"
+                    ],
+                    "api": {
+                      "name": "updateBook"
+                    },
+                    "reloadDataTable": "books",
+                    "snackbarSuccess": {
+                      "type": "success",
+                      "message": "Book saved"
+                    },
+                    "snackbarError": "$exception"
+                  }
+                }
+              ],
+              "gap": "16px",
+              "justifyItems": "stretch",
+              "alignItems": "stretch",
+              "justifyContent": "start",
+              "alignContent": "start",
+              "gridAutoFlow": "row",
+              "contextData": "books"
+            },
+            "modalMaxWidth": "880px",
+            "modalMinWidth": "720px",
+            "canEdit": true,
+            "canDelete": false
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "Customers — a plain paged table, searched by the API",
+            "variant": "subtitle1",
+            "weight": "medium"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "datatable",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "customers",
+            "title": "Customers",
+            "columns": [
+              {
+                "accessor": "avatar",
+                "header": "",
+                "enableSorting": false,
+                "enableColumnFilter": false,
+                "align": "start",
+                "html": "<img src=\"{{avatar}}\" alt=\"\" style=\"width:28px;height:28px;border-radius:9999px;display:block\">",
+                "size": 56,
+                "enableResizing": false
+              },
+              {
+                "accessor": "name",
+                "header": "Name",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start"
+              },
+              {
+                "accessor": "email",
+                "header": "Email",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start"
+              },
+              {
+                "accessor": "city",
+                "header": "City",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start"
+              },
+              {
+                "accessor": "totalSpentText",
+                "header": "Spent",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "end",
+                "sortField": "totalSpent"
+              }
+            ],
+            "api": {
+              "name": "listCustomers",
+              "paths": [
+                "data"
+              ],
+              "pagination": {
+                "offsetKey": "offset",
+                "limitKey": "limit",
+                "searchKey": "search",
+                "totalPath": [
+                  "total"
+                ],
+                "defaultPageSize": 5,
+                "pageSizeOptions": [
+                  10,
+                  20,
+                  50
+                ]
+              },
+              "sort": {
+                "sortKey": "sortBy",
+                "orderKey": "sortDir",
+                "default": {
+                  "field": "name",
+                  "order": "asc"
+                }
+              }
+            },
+            "cellLines": 1,
+            "canEdit": false,
+            "canDelete": false
+          }
+        }
+      ],
+      "gap": "16px",
+      "justifyItems": "stretch",
+      "alignItems": "stretch",
+      "justifyContent": "start",
+      "alignContent": "start",
+      "gridAutoFlow": "row"
+    }
+  ]
+}

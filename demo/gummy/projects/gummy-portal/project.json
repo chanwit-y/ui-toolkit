@@ -95,6 +95,9 @@
       "title": "Gummy Portal",
       "icon": "layoutDashboard"
     },
+    "pageTransition": {
+      "type": "fade"
+    },
     "sidebar": {
       "variant": "pill",
       "toggle": "footer",
@@ -110,7 +113,8 @@
       "appearance": "light",
       "accentColor": "indigo",
       "radius": "large",
-      "panelBackground": "solid"
+      "panelBackground": "solid",
+      "surface": "glass"
     },
     "components": {
       "dataTable": {

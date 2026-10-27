@@ -113,7 +113,7 @@ const Drawer = forwardRef<HTMLDivElement, DrawerProps>(
 						<ThemeProvider
 							theme={currentTheme.theme}
 							components={{ ...currentTheme.components, textField: { size: "2" } }}
-							className="flex flex-col flex-1 min-h-0 overflow-hidden bg-[var(--color-panel-solid)]"
+							className="flex flex-col flex-1 min-h-0 overflow-hidden gummy-surface"
 						>
 							{hideHeader ? (
 								// Radix wants a title for the dialog's accessible name even when none is drawn.

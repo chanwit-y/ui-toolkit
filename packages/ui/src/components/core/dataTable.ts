@@ -147,6 +147,7 @@ export class DataTable<
       rowNavigate: props.rowNavigate,
       canResizeColumns: props.canResizeColumns,
       cellLines: props.cellLines,
+      actionSize: props.actionSize,
       // context: DataContext,
     });
   }

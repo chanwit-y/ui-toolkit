@@ -482,14 +482,14 @@ export const DateRangePickerBase = forwardRef<HTMLButtonElement, DateRangePicker
 						onClick={toggleDropdown}
 						onKeyDown={handleKeyDown}
 						className={cn(
-							"w-full flex items-center justify-between bg-white dark:bg-gray-900 border shadow-sm",
+							"w-full flex items-center justify-between gummy-surface-input border shadow-sm",
 							"transition-all duration-200 text-left",
 							sizeClass,
 							radiusClass,
 							hasError
 								? "border-red-300 hover:border-red-400"
 								: "border-gray-300 dark:border-gray-600 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--accent-8,#3b82f6)] focus:border-transparent",
-							disabled && "opacity-60 cursor-not-allowed bg-gray-50 dark:bg-gray-800",
+							disabled && "opacity-60 cursor-not-allowed bg-[var(--gray-a3)]",
 							className,
 						)}
 						data-error={hasError ? "true" : undefined}
@@ -534,7 +534,7 @@ export const DateRangePickerBase = forwardRef<HTMLButtonElement, DateRangePicker
 							role="dialog"
 							aria-label="Choose date range"
 							style={dropdownStyles}
-							className="date-range-picker-dropdown bg-white dark:bg-gray-900 border ring-2 ring-[var(--accent-8,#60a5fa)] border-transparent rounded-md shadow-lg z-[100000] w-max max-w-[92vw] p-1"
+							className="date-range-picker-dropdown gummy-surface border ring-2 ring-[var(--accent-8,#60a5fa)] border-transparent rounded-md shadow-lg z-[100000] w-max max-w-[92vw] p-1"
 						>
 							<div className="flex">
 								<div className="flex flex-col gap-1 p-3 border-r border-gray-100 dark:border-gray-800 min-w-[140px]">

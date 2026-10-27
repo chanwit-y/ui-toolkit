@@ -15,6 +15,7 @@ import {
   PageRouter,
   ThemeProvider,
   ThemeToggle,
+  SurfaceToggle,
 } from "@gummy-ui/ui";
 import { model } from "./config/country/model";
 import { api } from "./config/country/api";
@@ -134,6 +135,8 @@ function AppContent() {
       header={
         <>
           <NavPlacementToggle value={navigation} onChange={setNavigation} />
+          {/* Flat / glass surfaces, a runtime switch (not persisted) to check every demo page in glass. */}
+          <SurfaceToggle />
           <ThemeToggle />
           {/* The signed-in user + Sign out (GummyApp adds this itself). */}
           <AuthUserMenu />

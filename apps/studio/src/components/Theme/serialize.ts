@@ -1,5 +1,5 @@
-import type { ThemeComponents, ThemeProps } from '@gummy-ui/ui'
-import type { StudioThemeConfig } from './types'
+import type { GummyThemeProps, ThemeComponents } from '@gummy-ui/ui'
+import { backdropToCss, type StudioThemeConfig } from './types'
 
 /**
  * Lowers the Theme page's config onto the `{ theme, components }` objects
@@ -16,10 +16,13 @@ function dataTableOverrides(c: StudioThemeConfig): Record<string, string> {
 
 /** The live objects for `<ThemeProvider theme components>`. */
 export function toThemeObjects(c: StudioThemeConfig): {
-  theme: ThemeProps
+  theme: GummyThemeProps
   components: ThemeComponents
 } {
   const dataTable = dataTableOverrides(c)
+  // Glass only when set; its backdrop only when it is not the engine default.
+  const glass = c.surface === 'glass'
+  const background = glass && c.background ? backdropToCss(c.background) : undefined
   return {
     theme: {
       appearance: c.appearance,
@@ -27,6 +30,8 @@ export function toThemeObjects(c: StudioThemeConfig): {
       radius: c.radius,
       panelBackground: c.panelBackground,
       ...(c.scaling && c.scaling !== '100%' ? { scaling: c.scaling } : {}),
+      ...(glass ? { surface: 'glass' as const } : {}),
+      ...(background ? { background } : {}),
     },
     components: {
       ...(c.buttonColor

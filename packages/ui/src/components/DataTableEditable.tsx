@@ -6,6 +6,7 @@ import { AlertCircle, ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, List
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { dtHeaderBgClass, dtHeaderTextClass, dtHeaderFontSizeClass, dtHeaderFontWeightClass, dtHeaderHoverClass, dtPaginationBgClass, dtPaginationHoverClass, dtRingClass, dtRowHoverClass } from "../util/constant"
 import type { CrudMutationApi, DataTableEditableColumn, DataTableEditableProps, SnackbarElement } from "./@types"
+import { actionSizeSpec } from "./dataTableActions"
 import { ConfirmBox } from "./ConfirmBox"
 import Icon from "./Icon"
 import { useSnackbar, type SnackbarVariant } from "./Snackbar"
@@ -34,6 +35,7 @@ export const DataTableEditable = <T extends Record<string, any>>({
 	apiCrud,
 	align = {},
 	canResizeColumns = true,
+	actionSize,
 }: DataTableEditableProps) => {
 
 	const [openConfirmBox, setOpenConfirmBox] = useState(false)
@@ -94,6 +96,8 @@ export const DataTableEditable = <T extends Record<string, any>>({
 	// else the accent); delete is red unless pinned; save / cancel are semantic.
 	const editButtonColor = (theme.components.dataTable?.editButtonColor || theme.components.button?.color) as ThemeProps['accentColor'] | undefined
 	const deleteButtonColor = (theme.components.dataTable?.deleteButtonColor || 'red') as ThemeProps['accentColor']
+	// Row-action size: button step, glyph and the ACTION column's width.
+	const actionSpec = actionSizeSpec(actionSize)
 	const saveButtonColor: ThemeProps['accentColor'] = 'green'
 	const cancelButtonColor: ThemeProps['accentColor'] = 'gray'
 
@@ -345,26 +349,26 @@ export const DataTableEditable = <T extends Record<string, any>>({
 			<IconButton
 				type="button"
 				variant="soft"
-				size="2"
+				size={actionSpec.button}
 				color={saveButtonColor}
 				className="cursor-pointer"
 				aria-label="Save row"
 				title="Save"
 				onClick={handleSave}
 			>
-				<Icon icon="check" size={14} />
+				<Icon icon="check" size={actionSpec.icon} />
 			</IconButton>
 			<IconButton
 				type="button"
 				variant="soft"
-				size="2"
+				size={actionSpec.button}
 				color={cancelButtonColor}
 				className="cursor-pointer"
 				aria-label="Cancel editing"
 				title="Cancel"
 				onClick={cancelEdit}
 			>
-				<Icon icon="x" size={14} />
+				<Icon icon="x" size={actionSpec.icon} />
 			</IconButton>
 		</div>
 	)
@@ -403,7 +407,7 @@ export const DataTableEditable = <T extends Record<string, any>>({
 							<IconButton
 								type="button"
 								variant="soft"
-								size="2"
+								size={actionSpec.button}
 								color={editButtonColor}
 								className="cursor-pointer"
 								aria-label="Edit row"
@@ -411,14 +415,14 @@ export const DataTableEditable = <T extends Record<string, any>>({
 								disabled={editingRowId !== null}
 								onClick={() => startEdit(row)}
 							>
-								<Icon icon="edit" size={14} />
+								<Icon icon="edit" size={actionSpec.icon} />
 							</IconButton>
 						)}
 						{canDelete && (
 							<IconButton
 								type="button"
 								variant="soft"
-								size="2"
+								size={actionSpec.button}
 								color={deleteButtonColor}
 								className="cursor-pointer"
 								aria-label="Delete row"
@@ -429,7 +433,7 @@ export const DataTableEditable = <T extends Record<string, any>>({
 									setOpenConfirmBox(true)
 								}}
 							>
-								<Icon icon="trash" size={14} />
+								<Icon icon="trash" size={actionSpec.icon} />
 							</IconButton>
 						)}
 					</div>
@@ -437,14 +441,14 @@ export const DataTableEditable = <T extends Record<string, any>>({
 			},
 			enableSorting: false,
 			enableColumnFilter: false,
-			size: 40,
-			minSize: 80,
-			maxSize: 80,
+			size: actionSpec.columnWidth,
+			minSize: actionSpec.columnWidth,
+			maxSize: actionSpec.columnWidth,
 			enableResizing: false,
 		}
 
 		return [actionColumn, ...dataColumns]
-	}, [columns, canCreate, canEdit, canDelete, editingRowId, draft, editButtonColor, deleteButtonColor, handleSave, cancelEdit, startEdit])
+	}, [columns, canCreate, canEdit, canDelete, editingRowId, draft, editButtonColor, deleteButtonColor, actionSpec, handleSave, cancelEdit, startEdit])
 
 	// Column resizing (see ./dataTableResize): a column that declares a `size`
 	// puts the table in exact-pixel mode from the first paint.
@@ -589,7 +593,7 @@ export const DataTableEditable = <T extends Record<string, any>>({
 														align="center"
 														sideOffset={5}
 													>
-														<div className="p-1 bg-white dark:bg-gray-900 ">
+														<div className="p-1">
 															<div className="flex items-center justify-between mb-3">
 																<div className="text-xs font-medium text-gray-700 dark:text-gray-300">
 																	Filter {typeof header.column.columnDef.header === 'function' ? header.column.columnDef.header(header.getContext()) : header.column.columnDef.header}

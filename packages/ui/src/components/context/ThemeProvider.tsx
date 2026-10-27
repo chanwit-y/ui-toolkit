@@ -1,7 +1,8 @@
 
 import { Theme } from '@radix-ui/themes'
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import type { Appearance, ThemeComponents, ThemeContextType, ThemeProviderProps } from '../@types'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type CSSProperties } from 'react'
+import type { ThemeProps } from '@radix-ui/themes'
+import type { Appearance, GummyThemeProps, Surface, ThemeComponents, ThemeContextType, ThemeProviderProps } from '../@types'
 
 const APPEARANCE_STORAGE_KEY = 'gummy-ui-appearance'
 
@@ -18,12 +19,40 @@ const syncDocumentAppearance = (appearance: Appearance) => {
   document.documentElement.classList.toggle('dark', appearance === 'dark')
 }
 
+/**
+ * Mirror the app's surface on <html>: Radix Themes re-applies its own
+ * `.radix-themes` tokens on portaled content (selects, dropdowns), which our
+ * `data-surface` root does not reach — `html[data-surface="glass"]` in
+ * surface.css does. Only the outermost provider writes it.
+ */
+const syncDocumentSurface = (surface: Surface) => {
+  if (typeof document === 'undefined') return
+  if (surface === 'glass') document.documentElement.dataset.surface = 'glass'
+  else delete document.documentElement.dataset.surface
+}
+
 const defaultTheme = {
   appearance: 'light',
   accentColor: 'blue',
   radius: 'small',
   panelBackground: 'translucent',
 } as const
+
+/** The CSS var `.gummy-backdrop` paints (see `styles/surface.css`). */
+export const BACKDROP_VAR = '--gummy-backdrop'
+
+/**
+ * Splits the Gummy-only keys off a theme: `surface` / `background` are read
+ * by the provider (the `data-surface` attribute, the backdrop var) and must
+ * not reach Radix's `<Theme>`, which spreads unknown props onto its div.
+ */
+export const splitGummyTheme = (
+  theme: GummyThemeProps | undefined,
+): { radix: ThemeProps | undefined; surface?: Surface; background?: string } => {
+  if (!theme) return { radix: undefined }
+  const { surface, background, ...radix } = theme
+  return { radix, surface, background }
+}
 
 const defaultComponents: ThemeComponents = {
   // No button colour by default: buttons follow the theme accent. (It used to
@@ -93,14 +122,44 @@ export function ThemeProvider({
     syncDocumentAppearance(appearance)
   }, [isNested, appearance])
 
-  const resolvedTheme = useMemo(() => {
+  // Surface (flat / glass, see the grilled design `glass-surface`): the
+  // configured value, unless `setSurface` overrode it at runtime. The override
+  // is deliberately NOT persisted — the project config is the source of truth,
+  // and a remembered override would make a flat project open as glass. A
+  // provider with its own `theme.surface` (GummyApp inside the studio) owns
+  // the value; one without (a portal's inner provider) inherits the parent's.
+  const configuredSurface: Surface = theme?.surface === 'glass' ? 'glass' : 'flat'
+  const ownsSurface = !isNested || theme?.surface !== undefined
+  const [surfaceOverride, setSurfaceOverride] = useState<Surface | null>(null)
+  const surface: Surface = ownsSurface
+    ? surfaceOverride ?? configuredSurface
+    : parentThemeContext.surface ?? 'flat'
+  const setSurface = ownsSurface ? setSurfaceOverride : parentThemeContext.setSurface!
+  const background = theme?.background ?? (ownsSurface ? undefined : parentThemeContext.theme?.background)
+
+  const resolvedTheme = useMemo<GummyThemeProps>(() => {
     return {
       ...defaultTheme,
       ...parentThemeContext.theme,
       ...theme,
       appearance,
+      surface,
+      ...(background ? { background } : {}),
     }
-  }, [parentThemeContext.theme, theme, appearance])
+  }, [parentThemeContext.theme, theme, appearance, surface, background])
+
+  // The backdrop paint reaches `.gummy-backdrop` as a CSS var on the Theme root
+  // (so a nested provider in a portal inherits it); unset = the default
+  // accent gradient in surface.css.
+  useEffect(() => {
+    if (isNested) return
+    syncDocumentSurface(surface)
+  }, [isNested, surface])
+
+  const rootStyle = useMemo<CSSProperties | undefined>(
+    () => (surface === 'glass' && background ? ({ [BACKDROP_VAR]: background } as CSSProperties) : undefined),
+    [surface, background],
+  )
 
   const resolvedComponents = useMemo<ThemeComponents>(() => {
     const parentComponents = parentThemeContext.components 
@@ -136,13 +195,17 @@ export function ThemeProvider({
   }, [parentThemeContext.components, components])
 
   return (
-    <ThemeContext.Provider value={{ theme: resolvedTheme, components: resolvedComponents, appearance, setAppearance, toggleAppearance }}>
+    <ThemeContext.Provider
+      value={{ theme: resolvedTheme, components: resolvedComponents, appearance, setAppearance, toggleAppearance, surface, setSurface }}
+    >
       <Theme
         appearance={resolvedTheme.appearance}
         accentColor={resolvedTheme.accentColor}
         radius={resolvedTheme.radius}
         panelBackground={resolvedTheme.panelBackground}
         className={className}
+        data-surface={surface}
+        style={rootStyle}
       >
         {children}
       </Theme>

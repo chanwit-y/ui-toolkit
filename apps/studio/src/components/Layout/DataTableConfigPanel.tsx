@@ -17,9 +17,11 @@ import { RequestMappingSection, seedRequestParams, ServerFiltersSection, ServerS
 import { buildDataTablePreviewRows } from './dataTablePreview'
 import { paginationPlacement, rowModelFields, segmentFields, type RowModel } from './rowFields'
 import {
+  ACTION_SIZE_OPTIONS,
   BUTTON_VARIANT_OPTIONS,
   createDefaultNavigate,
   DEFAULT_COLUMN_SIZING,
+  type ActionSize,
   type ButtonConfig,
   type ButtonSnackbarVariant,
   type CellLines,
@@ -800,6 +802,13 @@ export function DataTableConfigPanel({ itemId, config }: DataTableConfigPanelPro
           options={HEADER_GAP_OPTIONS}
           value={config.headerGap}
           onChange={(v) => set('headerGap', v as DataTableConfig['headerGap'])}
+        />
+      </Field>
+      <Field label="Row action size (Edit / Delete buttons)">
+        <Select
+          options={ACTION_SIZE_OPTIONS}
+          value={config.actionSize ?? ''}
+          onChange={(v) => set('actionSize', v as ActionSize)}
         />
       </Field>
       <Field label="Cell lines (a cut cell shows its whole text in a tooltip)">

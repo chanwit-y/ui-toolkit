@@ -41,6 +41,7 @@ import { Sidebar } from './Sidebar'
 import { Toolbox, ToolboxDragOverlay, type ToolboxDragData } from './Toolbox'
 import type { GridItemData } from './types'
 import { designThemeStyle } from '../Theme/designTheme'
+import { SurfaceBackdrop } from '@gummy-ui/ui'
 import { useThemeStore } from '../Theme/themeStore'
 import { useActivePage, useActivePages, useActiveProject } from '../Workspace/workspaceStore'
 import { usePageLoads } from './pageData'
@@ -334,9 +335,12 @@ function EditorBodyInner({
         <div className="flex min-h-0 flex-1 justify-center overflow-auto px-5 pb-16 pt-[22px]">
           <div
             ref={frameRef}
-            className="flex w-full max-w-full flex-col self-start overflow-hidden rounded-[10px] border border-line bg-surface shadow-frame"
+            className="relative isolate flex w-full max-w-full flex-col self-start overflow-hidden rounded-[10px] border border-line bg-surface shadow-frame"
             style={{ ...frameTheme, width: 'var(--preview-frame-w, 100%)' }}
+            data-surface={themeConfig.surface}
           >
+            {/* Glass: the frame paints the backdrop the cells' real components blur (nothing in flat). */}
+            <SurfaceBackdrop />
             <FrameChrome />
             <div className="relative p-4">
               <CanvasGuides />

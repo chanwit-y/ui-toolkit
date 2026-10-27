@@ -1,9 +1,11 @@
 import { create } from 'zustand'
 import { countrySeedTheme } from '../seed/country'
 import {
+  createDefaultBackdrop,
   createDefaultDesignTheme,
   nearestAccent,
   paletteSurfaces,
+  type BackdropConfig,
   type DataTableThemeConfig,
   type DesignSurfaces,
   type StudioThemeConfig,
@@ -20,6 +22,8 @@ type ThemeStore = {
   update: (patch: Partial<Omit<StudioThemeConfig, 'dataTable'>>) => void
   /** Patch the dataTable role overrides. */
   updateDataTable: (patch: Partial<DataTableThemeConfig>) => void
+  /** Patch the glass backdrop. */
+  updateBackground: (patch: Partial<BackdropConfig>) => void
   /** Patch one mode's design-only surfaces. */
   updateSurfaces: (mode: ThemeAppearance, patch: Partial<DesignSurfaces>) => void
   /** Set the design-only font. */
@@ -45,6 +49,11 @@ export const useThemeStore = create<ThemeStore>((set) => ({
   updateDataTable: (patch) =>
     set((s) => ({
       config: { ...s.config, dataTable: { ...s.config.dataTable, ...patch } },
+    })),
+
+  updateBackground: (patch) =>
+    set((s) => ({
+      config: { ...s.config, background: { ...(s.config.background ?? createDefaultBackdrop()), ...patch } },
     })),
 
   updateSurfaces: (mode, patch) =>

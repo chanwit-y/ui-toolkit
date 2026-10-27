@@ -81,7 +81,7 @@ import {
   azureSeedAuth,
 } from '../seed/country'
 import { builtinTemplates } from '../seed/templates'
-import type { StudioThemeConfig } from '../Theme/types'
+import { createDefaultBackdrop, type StudioThemeConfig } from '../Theme/types'
 import type { LibraryData, MenuItemDef, PageDef, PageGrid, ProjectSnapshot, AppBarSettings, ShellSettings, SidebarSettings } from './types'
 import { defaultMenu } from './menu'
 import { authEnvRows } from './auth'
@@ -896,6 +896,8 @@ function defaultThemeConfig(): StudioThemeConfig {
     accentColor: 'blue',
     radius: 'small',
     panelBackground: 'translucent',
+    surface: 'flat',
+    background: createDefaultBackdrop(),
     buttonColor: '',
     dataTable: {
       headerColor: '',

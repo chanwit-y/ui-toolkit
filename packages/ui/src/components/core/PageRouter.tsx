@@ -80,7 +80,7 @@ function PageLoadError({ pageKey, error, onRetry }: { pageKey: string; error: un
   return (
     <div
       role="alert"
-      className="mx-auto my-10 flex max-w-md flex-col items-center gap-3 rounded-lg border border-[var(--gray-6)] bg-[var(--color-panel-solid)] p-6 text-center text-[var(--gray-12)]"
+      className="mx-auto my-10 flex max-w-md flex-col items-center gap-3 rounded-lg border border-[var(--gray-6)] gummy-surface p-6 text-center text-[var(--gray-12)]"
     >
       <Icon icon="alertTriangle" size={28} className="text-[var(--amber-11)]" />
       <p className="text-base font-semibold">Couldn’t load this page</p>

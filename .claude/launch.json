@@ -114,6 +114,17 @@
       ],
       "port": 3402,
       "autoPort": false
+    },
+    {
+      "name": "demo-glass",
+      "comment": "The demo app rendering the Glass showcase project (surface: glass on every component, over the Book shop API \u2014 needs demo-api), port 3403.",
+      "runtimeExecutable": "/bin/bash",
+      "runtimeArgs": [
+        "-c",
+        "cd demo && PATH=/opt/homebrew/bin:$PATH exec bun run app:glass"
+      ],
+      "port": 3403,
+      "autoPort": false
     }
   ]
 }

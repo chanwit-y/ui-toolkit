@@ -44,7 +44,7 @@ const SHADOW_CLASS: Record<NonNullable<ContainerSurface["shadow"]>, string> = {
   lg: "shadow-lg",
 };
 
-const BACKGROUND_CLASS = "bg-white dark:bg-gray-900";
+const BACKGROUND_CLASS = "gummy-surface";
 const BORDER_NEUTRAL_CLASS = "border border-gray-200 dark:border-gray-700";
 const BORDER_ACCENT_CLASS = "border border-[var(--accent-6,#bfdbfe)]";
 

@@ -1,0 +1,172 @@
+/* Surface tokens (see the grilled design `glass-surface`).
+ *
+ * Every surfaced component paints through one of three classes —
+ * `.gummy-surface` (panels: cards, dropdowns, dialogs, the app bar and
+ * sidebar), `.gummy-surface-strong` (sticky / pinned table cells, the mobile
+ * drawer: near-opaque, never blurred) and `.gummy-surface-input` (text
+ * fields, pickers, select triggers) — reading the `--gummy-surface-*` vars.
+ * In `flat` (the default) the vars resolve to today's solid panel colour, so
+ * nothing changes; `[data-surface="glass"]` (set by ThemeProvider on the Radix
+ * Theme root, by the studio on its canvas frame) swaps them for translucent,
+ * blurred values and re-points Radix's own panel / surface vars so Radix-drawn
+ * chrome follows.
+ *
+ * Portable partial: Radix vars only, no Tailwind directives, `@import`ed by
+ * the library `styles.css` and the studio `index.css`. */
+
+.radix-themes {
+  --gummy-surface-bg: var(--color-panel-solid);
+  --gummy-surface-border: var(--gray-6);
+  --gummy-surface-blur: none;
+  --gummy-surface-shadow: none;
+  --gummy-surface-strong-bg: var(--color-panel-solid);
+  --gummy-surface-input-bg: var(--color-surface);
+  --gummy-surface-input-border: var(--gray-7);
+  --gummy-surface-input-blur: none;
+}
+
+/* ---------------------------------------------------------------- glass */
+
+/* The glass values. `--gummy-surface-base` is the panel colour the alpha is
+   mixed from — white in light, Radix's dark panel grey in dark — never
+   `--color-panel-solid` itself, which glass re-points below (a cycle). */
+[data-surface="glass"],
+html[data-surface="glass"] .radix-themes {
+  --gummy-surface-base: white;
+  --gummy-surface-bg: color-mix(in srgb, var(--gummy-surface-base) 65%, transparent);
+  --gummy-surface-border: rgb(255 255 255 / 0.55);
+  --gummy-surface-blur: blur(16px) saturate(140%);
+  --gummy-surface-shadow: 0 8px 32px rgb(0 0 0 / 0.08), 0 1px 2px rgb(0 0 0 / 0.04);
+  --gummy-surface-strong-bg: color-mix(in srgb, var(--gummy-surface-base) 92%, transparent);
+  --gummy-surface-input-bg: color-mix(in srgb, var(--gummy-surface-base) 40%, transparent);
+  --gummy-surface-input-border: rgb(255 255 255 / 0.5);
+  --gummy-surface-input-blur: blur(8px);
+
+  /* Radix-drawn chrome (its popovers, selects, dialogs, text fields) reads
+     these; the Theme root inherits them to everything inside. */
+  --color-panel-solid: var(--gummy-surface-bg);
+  --color-panel-translucent: var(--gummy-surface-bg);
+  --color-surface: var(--gummy-surface-input-bg);
+
+  /* The default backdrop: soft accent blobs over an accent-tinted field. A
+     configured `theme.background` lands on this var inline (ThemeProvider). */
+  --gummy-backdrop:
+    radial-gradient(70% 60% at 12% 8%, var(--accent-4) 0%, transparent 65%),
+    radial-gradient(55% 50% at 88% 18%, var(--accent-3) 0%, transparent 65%),
+    radial-gradient(60% 55% at 50% 100%, var(--accent-5) 0%, transparent 65%),
+    linear-gradient(180deg, var(--accent-2), var(--color-background));
+}
+
+.dark [data-surface="glass"],
+[data-surface="glass"].dark,
+html.dark[data-surface="glass"] .radix-themes {
+  --gummy-surface-base: var(--gray-2);
+  --gummy-surface-border: rgb(255 255 255 / 0.12);
+  --gummy-surface-shadow: 0 8px 32px rgb(0 0 0 / 0.35), 0 1px 2px rgb(0 0 0 / 0.3);
+  --gummy-surface-input-border: rgb(255 255 255 / 0.1);
+  --gummy-backdrop:
+    radial-gradient(70% 60% at 12% 8%, var(--accent-3) 0%, transparent 65%),
+    radial-gradient(55% 50% at 88% 18%, var(--accent-2) 0%, transparent 65%),
+    radial-gradient(60% 55% at 50% 100%, var(--accent-4) 0%, transparent 65%),
+    linear-gradient(180deg, var(--accent-1), var(--color-background));
+}
+
+/* ---------------------------------------------------------------- tiers */
+
+.gummy-surface {
+  background-color: var(--gummy-surface-bg);
+}
+.gummy-surface-strong {
+  background-color: var(--gummy-surface-strong-bg);
+}
+.gummy-surface-input {
+  background-color: var(--gummy-surface-input-bg);
+}
+
+/* The glass look on top. The class is doubled on purpose: a component's own
+   `dark:border-*` utility compiles to the same specificity as a plain
+   `[data-surface] .class` and is emitted later, so it would win. */
+[data-surface="glass"] .gummy-surface.gummy-surface {
+  backdrop-filter: var(--gummy-surface-blur);
+  -webkit-backdrop-filter: var(--gummy-surface-blur);
+  border-color: var(--gummy-surface-border);
+  box-shadow: var(--gummy-surface-shadow);
+}
+[data-surface="glass"] .gummy-surface-strong.gummy-surface-strong {
+  border-color: var(--gummy-surface-border);
+}
+[data-surface="glass"] .gummy-surface-input.gummy-surface-input {
+  backdrop-filter: var(--gummy-surface-input-blur);
+  -webkit-backdrop-filter: var(--gummy-surface-input-blur);
+  border-color: var(--gummy-surface-input-border);
+}
+
+/* Radix-drawn surfaces: the panel vars above give them the colour, this the blur. */
+[data-surface="glass"] :is(.rt-PopoverContent, .rt-SelectContent, .rt-DropdownMenuContent, .rt-ContextMenuContent, .rt-HoverCardContent, .rt-DialogContent, .rt-AlertDialogContent, .rt-Card),
+html[data-surface="glass"] :is(.rt-PopoverContent, .rt-SelectContent, .rt-DropdownMenuContent, .rt-ContextMenuContent, .rt-HoverCardContent, .rt-DialogContent, .rt-AlertDialogContent) {
+  backdrop-filter: var(--gummy-surface-blur);
+  -webkit-backdrop-filter: var(--gummy-surface-blur);
+}
+[data-surface="glass"] :is(.rt-TextFieldRoot, .rt-TextAreaRoot, .rt-SelectTrigger, .rt-SwitchButton) {
+  backdrop-filter: var(--gummy-surface-input-blur);
+  -webkit-backdrop-filter: var(--gummy-surface-input-blur);
+}
+
+/* ------------------------------------------------------------- backdrop */
+
+/* `<SurfaceBackdrop>`: the layer the glass blurs. Rendered by AppShell inside
+   its root (made `relative isolate`, so `z-index: -1` paints above the root's
+   own background and under its content and does not scroll with the page's
+   `<main>`), by GummyApp as `[data-fixed]` when there is no shell, and by the
+   studio inside its canvas frame. Nothing in flat. */
+.gummy-backdrop {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: var(--gummy-backdrop);
+  background-size: cover;
+  background-position: center;
+}
+.gummy-backdrop[data-fixed] {
+  position: fixed;
+}
+[data-surface="glass"] .gummy-backdrop {
+  display: block;
+}
+
+/* ------------------------------------------------------------ fallbacks */
+
+/* Where the blur cannot or should not run — the OS asks for less
+   transparency, the browser has no backdrop-filter, or the page is printed —
+   every tier takes the Strong values (near-opaque, no blur) and the backdrop
+   stays (white in print), so the page is still themed and the text readable. */
+@media (prefers-reduced-transparency: reduce) {
+  [data-surface="glass"],
+  html[data-surface="glass"] .radix-themes {
+    --gummy-surface-bg: var(--gummy-surface-strong-bg);
+    --gummy-surface-input-bg: var(--gummy-surface-strong-bg);
+    --gummy-surface-blur: none;
+    --gummy-surface-input-blur: none;
+  }
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  [data-surface="glass"],
+  html[data-surface="glass"] .radix-themes {
+    --gummy-surface-bg: var(--gummy-surface-strong-bg);
+    --gummy-surface-input-bg: var(--gummy-surface-strong-bg);
+    --gummy-surface-blur: none;
+    --gummy-surface-input-blur: none;
+  }
+}
+@media print {
+  [data-surface="glass"],
+  html[data-surface="glass"] .radix-themes {
+    --gummy-surface-bg: var(--gummy-surface-strong-bg);
+    --gummy-surface-input-bg: var(--gummy-surface-strong-bg);
+    --gummy-surface-blur: none;
+    --gummy-surface-input-blur: none;
+    --gummy-backdrop: white;
+  }
+}

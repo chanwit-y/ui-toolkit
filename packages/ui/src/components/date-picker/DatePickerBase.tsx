@@ -15,6 +15,7 @@ import { ThemeProvider, useTheme } from "../context"
 import { Calendar as CalendarIcon, X } from "lucide-react"
 import dayjs, { type Dayjs } from "dayjs"
 import { cn } from "../../util/utils"
+import { portalTargetFor } from "../../util/portal"
 import {
 	DEFAULT_DISPLAY_FORMAT,
 	ISO_FORMAT,
@@ -81,6 +82,11 @@ const DatePickerBase = forwardRef<
 	const maxDateValue = useMemo(() => parseDate(maxDate, "end"), [maxDate])
 
 	const [isOpen, setIsOpen] = useState(false)
+	// Body, or the enclosing Radix dialog's content: a dialog makes <body>
+	// `pointer-events: none` and its dismiss layer / focus trap treat anything
+	// outside its content as outside, so a body-portaled calendar inside a
+	// modal could be seen but a day click never selected anything.
+	const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null)
 	const [cursor, setCursor] = useState<Dayjs>(() => selectedDate ?? dayjs())
 
 	const dropdownRef = useRef<HTMLDivElement | null>(null)
@@ -88,7 +94,8 @@ const DatePickerBase = forwardRef<
 	const { dropdownStyles, resetDropdownStyles } = useDropdownPlacement(
 		isOpen,
 		triggerRef,
-		dropdownRef
+		dropdownRef,
+		portalTarget
 	)
 
 	useEffect(() => {
@@ -120,9 +127,10 @@ const DatePickerBase = forwardRef<
 	const openDropdown = useCallback(() => {
 		if (disabled) return
 		setCursor(selectedDate ?? dayjs())
+		setPortalTarget(portalTargetFor(triggerRef.current))
 		resetDropdownStyles()
 		setIsOpen(true)
-	}, [disabled, selectedDate, resetDropdownStyles])
+	}, [disabled, selectedDate, resetDropdownStyles, triggerRef])
 
 	const toggleDropdown = useCallback(() => {
 		if (disabled) return
@@ -229,14 +237,14 @@ const DatePickerBase = forwardRef<
 					aria-haspopup="dialog"
 					aria-expanded={isOpen}
 					className={cn(
-						"w-full flex items-center justify-between bg-white dark:bg-gray-900 border shadow-sm",
+						"w-full flex items-center justify-between gummy-surface-input border shadow-sm",
 						"transition-all duration-200 text-left",
 						sizeClass,
 						radiusClass,
 						hasError
 							? "border-red-300 hover:border-red-400"
 							: "border-gray-300 dark:border-gray-600 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--accent-8,#3b82f6)] focus:border-transparent",
-						disabled && "opacity-60 cursor-not-allowed bg-gray-50 dark:bg-gray-800",
+						disabled && "opacity-60 cursor-not-allowed bg-[var(--gray-a3)]",
 						className
 					)}
 					data-error={hasError ? "true" : undefined}
@@ -267,6 +275,7 @@ const DatePickerBase = forwardRef<
 				</button>
 
 				{isOpen &&
+					portalTarget &&
 					createPortal(
 						<ThemeProvider theme={currentTheme} components={currentComponents}>
 							<CalendarDropdown
@@ -286,7 +295,7 @@ const DatePickerBase = forwardRef<
 								onNextMonth={handleNextMonth}
 							/>
 						</ThemeProvider>,
-						document.body,
+						portalTarget,
 					)}
 			</div>
 
