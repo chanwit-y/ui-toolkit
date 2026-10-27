@@ -424,17 +424,24 @@ function glassMenu(): MenuItemDef[] {
   ]
 }
 
-/** The plain sidebar and a neutral (panel) app bar, so both are glass; the Portal shows the pill one. */
+/** The pill sidebar (its idle pills are `--accent-2`, which flips with the appearance) under a neutral (panel) app bar, so both are glass; no breadcrumb strip, a hamburger as the collapse toggle. */
 function glassShell(): ShellSettings {
   const base = defaultShell('Glass showcase')
   return {
     ...base,
-    appBar: { ...base.appBar, icon: 'layoutDashboard' },
+    breadcrumbs: false,
+    appBar: { ...base.appBar, icon: 'layoutDashboard', sidebarToggle: { hide: 'menu', show: 'menu' } },
+    sidebar: { ...base.sidebar, variant: 'pill' },
     pageTransition: { type: 'fade-up', duration: '', easing: 'ease-out' },
   }
 }
 
-/** Glass over a configured gradient (the Portal keeps the engine's default accent backdrop). */
+/**
+ * Glass over a configured gradient (the Portal keeps the engine's default
+ * accent backdrop): lavender → pink in light, and its own deep indigo → plum
+ * stops in dark — a pale gradient under the dark panels would wash them out
+ * and leave the page text (`--gray-12`, near white) unreadable over it.
+ */
 function glassTheme(): StudioThemeConfig {
   return {
     appearance: 'light',
@@ -442,7 +449,11 @@ function glassTheme(): StudioThemeConfig {
     radius: 'large',
     panelBackground: 'solid',
     surface: 'glass',
-    background: { ...createDefaultBackdrop(), kind: 'gradient', gradient: { from: '#c7d2fe', to: '#fbcfe8', angle: 160 } },
+    background: {
+      ...createDefaultBackdrop(),
+      kind: 'gradient',
+      gradient: { from: '#c7d2fe', to: '#fbcfe8', angle: 160, darkFrom: '#312e81', darkTo: '#831843' },
+    },
     buttonColor: '',
     dataTable: {
       headerColor: '',

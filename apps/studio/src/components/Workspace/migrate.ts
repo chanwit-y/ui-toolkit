@@ -939,12 +939,24 @@ function migrateV52Only(data: { projects: ProjectDef[]; library: LibraryData }):
 }
 
 /**
- * v53 → v54: the Glass surface (see the grilled design `glass-surface`).
+ * v53 → v54 → v55: the Glass surface (see the grilled design `glass-surface`).
  * Every project theme gets `surface: 'flat'` and a default `background`
  * (the engine's accent backdrop) — nothing looks different until a project
- * picks glass.
+ * picks glass. The v55 fill is the same normalisation, so one pass.
  */
 function migrateV53(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  return migrateV54(data)
+}
+
+/**
+ * v54 → v55: dark stops on the glass backdrop — `background.darkColor` and
+ * `background.gradient.darkFrom` / `darkTo`, blank on every project (the
+ * light value in both appearances), lowered to CSS `light-dark()` when set.
+ */
+function migrateV54(data: { projects: ProjectDef[]; library: LibraryData }): {
   projects: ProjectDef[]
   library: LibraryData
 } {
@@ -1680,7 +1692,7 @@ export function withSeedLibrary(library: LibraryData): LibraryData {
 }
 
 /** The workspace version this build writes (and the newest it reads). */
-export const WORKSPACE_VERSION = 54
+export const WORKSPACE_VERSION = 55
 
 /** What a persisted payload migrates to: the stored fields at the current shape. */
 export type MigratedWorkspace = Pick<WorkspaceData, 'appearance' | 'user' | 'activity' | 'projects' | 'library'>
@@ -1877,7 +1889,11 @@ export function migrateWorkspace(persisted: unknown): MigratedWorkspace | null {
     const normalized = { ...library, auth: (library.auth ?? []).map((a) => normalizeAuthDef(a)) }
     return { appearance, user, activity, ...migrateV53({ projects: data.projects, library: normalized }) }
   }
-  if (data.version !== 54) return null
+  if (data.version === 54) {
+    const normalized = { ...library, auth: (library.auth ?? []).map((a) => normalizeAuthDef(a)) }
+    return { appearance, user, activity, ...migrateV54({ projects: data.projects, library: normalized }) }
+  }
+  if (data.version !== 55) return null
   // Same version, possibly older entry shapes (fields added without a bump): fill the defaults.
   return { appearance, user, activity, projects: data.projects, library: { ...library, auth: (library.auth ?? []).map((a) => normalizeAuthDef(a)) } }
 }

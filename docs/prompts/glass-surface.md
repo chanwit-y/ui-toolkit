@@ -170,3 +170,12 @@ the MCP guide paragraph.
   their panel is 82% rather than the card's 65%: the flat scrim's dark blurred
   gradient drowned a translucent panel. The scrim rule goes through the `<html>`
   mirror (the overlay is portaled beside the Theme root).
+- A configured backdrop is one string, but a pale light-mode gradient under the
+  dark panels washed them out and left the page text (`--gray-12`) unreadable.
+  Rather than a second string per appearance, the studio's colour and gradient
+  backdrops gained optional dark counterparts (`darkColor`, `gradient.darkFrom`
+  / `darkTo`; workspace v55) lowered to CSS `light-dark()` — the Radix theme
+  root sets `color-scheme`, so the one `theme.background` flips by itself. The
+  Glass showcase uses it (lavender → pink / deep indigo → plum); the engine's
+  default backdrop already flipped through the accent scale. Images stay
+  single-valued.

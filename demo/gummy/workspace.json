@@ -1,6 +1,6 @@
 {
   "state": {
-    "version": 54,
+    "version": 55,
     "appearance": "light",
     "user": "Chanwit Yimneam",
     "projects": [
@@ -14557,10 +14557,13 @@
             "background": {
               "kind": "default",
               "color": "",
+              "darkColor": "",
               "gradient": {
                 "from": "",
                 "to": "",
-                "angle": 160
+                "angle": 160,
+                "darkFrom": "",
+                "darkTo": ""
               },
               "image": ""
             },
@@ -14667,7 +14670,7 @@
         "name": "Gummy Portal",
         "description": "A staff portal showing the pill sidebar — gradient active item, edge indicator, footer \"Hide Menu\" toggle.",
         "createdAt": 1792886400000,
-        "updatedAt": 1792981201587,
+        "updatedAt": 1792886400000,
         "snapshot": {
           "pages": [
             {
@@ -16465,10 +16468,13 @@
             "background": {
               "kind": "default",
               "color": "",
+              "darkColor": "",
               "gradient": {
                 "from": "",
                 "to": "",
-                "angle": 160
+                "angle": 160,
+                "darkFrom": "",
+                "darkTo": ""
               },
               "image": ""
             },
@@ -16498,7 +16504,7 @@
         "name": "Glass showcase",
         "description": "The Glass surface on every component: cards, tables with pinned columns, forms, a repeater, drawer / modal / popover — over the Book shop API.",
         "createdAt": 1793059200000,
-        "updatedAt": 1793090209201,
+        "updatedAt": 1793059200000,
         "snapshot": {
           "pages": [
             {
@@ -24354,10 +24360,13 @@
             "background": {
               "kind": "gradient",
               "color": "",
+              "darkColor": "",
               "gradient": {
                 "from": "#c7d2fe",
                 "to": "#fbcfe8",
-                "angle": 160
+                "angle": 160,
+                "darkFrom": "#312e81",
+                "darkTo": "#831843"
               },
               "image": ""
             },
@@ -30151,5 +30160,5 @@
     },
     "activity": []
   },
-  "version": 54
+  "version": 55
 }

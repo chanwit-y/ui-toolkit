@@ -732,6 +732,10 @@
           "type": "string",
           "description": "`kind: color` — any CSS colour."
         },
+        "darkColor": {
+          "type": "string",
+          "description": "`kind: color` in the dark appearance (blank = `color` in both)."
+        },
         "gradient": {
           "type": "object",
           "properties": {
@@ -743,15 +747,23 @@
             },
             "angle": {
               "type": "number"
+            },
+            "darkFrom": {
+              "type": "string"
+            },
+            "darkTo": {
+              "type": "string"
             }
           },
           "required": [
             "from",
             "to",
-            "angle"
+            "angle",
+            "darkFrom",
+            "darkTo"
           ],
           "additionalProperties": false,
-          "description": "`kind: gradient` — both stops needed, at `angle` degrees."
+          "description": "`kind: gradient` — both stops needed, at `angle` degrees. `darkFrom` / `darkTo` replace their stop in the dark appearance (blank = the light stop in both), lowered to CSS `light-dark()` — the Radix theme root sets `color-scheme`, so the one exported string flips with the appearance."
         },
         "image": {
           "type": "string",
@@ -761,6 +773,7 @@
       "required": [
         "kind",
         "color",
+        "darkColor",
         "gradient",
         "image"
       ],

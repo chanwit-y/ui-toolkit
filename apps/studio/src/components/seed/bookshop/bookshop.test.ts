@@ -83,7 +83,7 @@ describe('Book shop workspace', () => {
     const { project, pages } = bookshopFolders()[GLASS_KEY]
     const refs = checkProject(project, pages, 'Glass showcase')
     expect(Object.keys(project.pages)).toHaveLength(4)
-    expect(project.theme?.theme).toMatchObject({ surface: 'glass', background: 'linear-gradient(160deg, #c7d2fe, #fbcfe8)', accentColor: 'violet' })
+    expect(project.theme?.theme).toMatchObject({ surface: 'glass', background: 'linear-gradient(160deg, light-dark(#c7d2fe, #312e81), light-dark(#fbcfe8, #831843))', accentColor: 'violet' })
     expect(project.auth).toBeUndefined()
     expect([...refs.apis].sort()).toEqual(['createBook', 'createCustomer', 'genreAuthors', 'listAuthors', 'listBooks', 'listCustomers', 'listGenres', 'updateBook'])
     // The other two projects are unchanged by it: the Portal glass on the default backdrop, the Book shop flat.
