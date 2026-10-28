@@ -819,6 +819,80 @@
   justify-content: center;
 }
 
+/* The selection box: Radix's surface checkbox at 16px with a visible
+   border, an accent hover, a focus ring and a small pop on check. */
+.datatable-select-cell .rt-CheckboxRoot {
+  --checkbox-size: 16px;
+  --checkbox-indicator-size: 11px;
+  --checkbox-border-radius: 4px;
+  height: var(--checkbox-size);
+}
+
+.datatable-select-cell .rt-CheckboxRoot::before {
+  background-color: var(--color-surface);
+  box-shadow: inset 0 0 0 1.5px var(--gray-a8);
+  transition: background-color 120ms ease, box-shadow 120ms ease;
+}
+
+.datatable-select-cell .rt-CheckboxRoot:hover::before {
+  background-color: var(--accent-a3);
+  box-shadow: inset 0 0 0 1.5px var(--accent-9);
+}
+
+.datatable-select-cell .rt-CheckboxRoot[data-state="checked"]::before,
+.datatable-select-cell .rt-CheckboxRoot[data-state="indeterminate"]::before {
+  background-color: var(--accent-9);
+  box-shadow: inset 0 0 0 1.5px var(--accent-9);
+}
+
+.datatable-select-cell .rt-CheckboxRoot[data-state="checked"]:hover::before,
+.datatable-select-cell .rt-CheckboxRoot[data-state="indeterminate"]:hover::before {
+  background-color: var(--accent-10);
+  box-shadow: inset 0 0 0 1.5px var(--accent-10);
+}
+
+.datatable-select-cell .rt-CheckboxRoot:focus-visible::before {
+  outline: 2px solid var(--accent-8);
+  outline-offset: 2px;
+}
+
+.datatable-select-cell .rt-CheckboxIndicator {
+  color: var(--accent-contrast);
+  animation: datatable-check-pop 140ms ease-out;
+}
+
+@keyframes datatable-check-pop {
+  from { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+  to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .datatable-select-cell .rt-CheckboxRoot::before { transition: none; }
+  .datatable-select-cell .rt-CheckboxIndicator { animation: none; }
+}
+
+/* In the header the cell may be painted in the accent itself, so the box is
+   inverted: a panel-coloured box with an accent tick, readable on any header. */
+.datatable-header-cell .datatable-select-cell .rt-CheckboxRoot::before {
+  background-color: var(--color-panel-solid);
+  box-shadow: inset 0 0 0 1.5px var(--gray-a6), 0 1px 2px var(--black-a3);
+}
+
+.datatable-header-cell .datatable-select-cell .rt-CheckboxRoot:hover::before {
+  background-color: var(--color-panel-solid);
+  box-shadow: inset 0 0 0 1.5px var(--accent-8), 0 0 0 3px var(--white-a5);
+}
+
+.datatable-header-cell .datatable-select-cell .rt-CheckboxRoot[data-state="checked"]::before,
+.datatable-header-cell .datatable-select-cell .rt-CheckboxRoot[data-state="indeterminate"]::before {
+  background-color: var(--color-panel-solid);
+  box-shadow: inset 0 0 0 1.5px var(--color-panel-solid), 0 1px 2px var(--black-a3);
+}
+
+.datatable-header-cell .datatable-select-cell .rt-CheckboxIndicator {
+  color: var(--accent-11);
+}
+
 .datatable-body-row.is-selected > .datatable-body-cell {
   background-color: var(--accent-a3);
 }
