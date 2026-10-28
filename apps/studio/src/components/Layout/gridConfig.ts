@@ -16,6 +16,10 @@ import {
   DEFAULT_REPLACE_TRIGGER,
   DEFAULT_WORKFLOW_LABELS,
   uploadAccept,
+  type FileCollectionConfig,
+  type FileCollectionDeleteSlot,
+  FILE_COLLECTION_MUTATION_SLOTS,
+  defaultFileCollectionNewItems,
 } from './types'
 import type {
   AvatarConfig,
@@ -1058,6 +1062,83 @@ function formListElement(
 }
 
 /**
+ * `filecollection` → engine `FileCollectionElement` (see
+ * `spec/gummy-file-collection-spec.md` §4 + §10). `api.list` always emits
+ * (resolved name, `paths`, URL-param DataValues, `query` extras); a mutation
+ * slot emits only while wired — its row-field `params` and `extraParams`
+ * (the bodies are fixed, so no `extraBody`); the two deletes add the confirm
+ * box and snackbars; `newItems` only off the default two entries (ids never
+ * exported); `kindIcons` only when non-empty; `selection` only when the key
+ * differs from `<name>Selected`; `selectNavigate` resolved to the page key.
+ */
+function fileCollectionElement(
+  c: FileCollectionConfig,
+  endpoints: EndpointRef[],
+  resolveEndpoint: ResolveEndpoint,
+  refs: ButtonRefMaps,
+): Record<string, unknown> {
+  const nonEmpty = (o: Record<string, unknown>) => Object.keys(o).length > 0
+  const paths = c.endpoints.list.apiPaths
+    .split('.')
+    .map((s) => s.trim())
+    .filter(Boolean)
+  const list = formListCrudCall(c.endpoints.list, endpoints, refs.loadKey)
+  const mutation = (ref: FormListCrudRef) => {
+    const call = formListCrudCall(ref, endpoints, refs.loadKey)
+    return {
+      name: resolveEndpoint(ref.endpointId) ?? '',
+      ...(nonEmpty(call.params) ? { params: call.params } : {}),
+      ...(nonEmpty(call.values) ? { extraParams: call.values } : {}),
+    }
+  }
+  const del = (ref: FileCollectionDeleteSlot) => ({
+    ...mutation(ref),
+    ...(ref.confirmEnabled ? { confirmBox: { title: ref.confirmTitle, description: ref.confirmDescription } } : {}),
+    ...(ref.snackbarSuccessEnabled && ref.snackbarSuccessMessage
+      ? { snackbarSuccess: { type: ref.snackbarSuccessType, message: ref.snackbarSuccessMessage } }
+      : {}),
+    ...(ref.snackbarErrorException ? { snackbarError: '$exception' } : {}),
+  })
+  const api: Record<string, unknown> = {
+    list: {
+      name: resolveEndpoint(c.endpoints.list.endpointId) ?? '',
+      ...(paths.length ? { paths } : {}),
+      ...(nonEmpty(list.values) ? { params: list.values } : {}),
+      ...(nonEmpty(list.extra) ? { query: list.extra } : {}),
+    },
+  }
+  for (const slot of FILE_COLLECTION_MUTATION_SLOTS) {
+    const ref = c.endpoints[slot]
+    if (ref.endpointId == null) continue
+    api[slot] = slot === 'deleteCollection' || slot === 'deleteItem' ? del(ref as FileCollectionDeleteSlot) : mutation(ref)
+  }
+  const defaults = defaultFileCollectionNewItems()
+  const sameNewItems =
+    c.newItems.length === defaults.length &&
+    c.newItems.every((e, i) => e.label === defaults[i].label && e.icon === defaults[i].icon && e.type === defaults[i].type && e.kind === defaults[i].kind)
+  const newItems = c.newItems.map((e) => ({
+    label: e.label,
+    ...(e.icon ? { icon: e.icon } : {}),
+    type: e.type,
+    ...(e.kind ? { kind: e.kind } : {}),
+  }))
+  const kindIcons = Object.fromEntries(Object.entries(c.kindIcons).filter(([k, v]) => k.trim() !== '' && v.trim() !== ''))
+  const stateKey = c.selection.stateKey.trim()
+  const selectNavigate = c.selectNavigate ? navigateTarget(c.selectNavigate, refs) : undefined
+  return {
+    name: c.name,
+    ...omitEmpty({ title: c.title, height: c.height }),
+    ...(c.collapsible ? { collapsible: true } : {}),
+    ...(c.readOnly ? { readOnly: true } : {}),
+    api,
+    ...(sameNewItems ? {} : { newItems }),
+    ...(nonEmpty(kindIcons) ? { kindIcons } : {}),
+    ...(stateKey && stateKey !== `${c.name}Selected` ? { selection: { stateKey } } : {}),
+    ...(selectNavigate ? { selectNavigate } : {}),
+  }
+}
+
+/**
  * A bound value → the engine DataValue: `{ type:'row', key, path? }` for an
  * item field (resolved against the enclosing repeater's item), `{ type:
  * 'state', key, path? }` for a page load (its id resolved to the slice key),
@@ -1967,6 +2048,8 @@ function buildElement(
       return item.config
         ? repeaterElement(item.config as RepeaterConfig, item, endpoints, resolveEndpoint, refs)
         : undefined
+    case 'filecollection':
+      return item.config ? fileCollectionElement(item.config as FileCollectionConfig, endpoints, resolveEndpoint, refs) : undefined
     case 'text':
       // Config-less fallback keeps the pre-config behavior (label as content).
       return item.config

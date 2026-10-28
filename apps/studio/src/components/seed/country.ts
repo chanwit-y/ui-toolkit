@@ -22,6 +22,7 @@ import {
   type DataTablePaginationConfig,
   createDefaultItemSettings,
   createDefaultRepeaterConfig,
+  createDefaultFileCollectionConfig,
   createDefaultTypographyConfig,
   createDefaultApprovalLineConfig,
   type ApprovalLineConfig,
@@ -215,6 +216,7 @@ export function countrySeedModels(): ModelDef[] {
     ...pageDataSeedModels(),
     ...approvalSeedModels(),
     ...workflowSeedModels(),
+    ...fileCollectionSeedModels(),
     ...profileSeedModels(),
     ...profileByEmailSeedModels(),
   ]
@@ -1885,6 +1887,7 @@ export function countrySeedEndpoints(): EndpointDef[] {
     ...serverFilterSeedEndpoints(),
     ...tableLayoutSeedEndpoints(),
     ...dataGridSeedEndpoints(),
+    ...fileCollectionSeedEndpoints(),
     ...pageDataSeedEndpoints(),
     ...approvalSeedEndpoints(),
     ...workflowSeedEndpoints(),
@@ -5175,6 +5178,176 @@ export function profileDemoSeedItems(): GridItemData[] {
         ...createDefaultHtmlContentConfig('activeProfile'),
         binding: { key: 'profile', path: '', source: 'state' },
         html: '<p><strong>{{firstNameEn}} {{lastNameEN}}</strong> \u00b7 <span class="dt-muted">{{email}}</span></p><p>{{jobTitle}}</p><p class="dt-muted">{{companyModel.name}} \u00b7 {{businessUnitModel.name}} \u00b7 user id <code>{{userId}}</code></p>',
+      },
+    },
+  ]
+}
+
+/* ---------------------------------------------------------------------------
+ * File collection demo (see `spec/gummy-file-collection-spec.md` §10.6)
+ * ------------------------------------------------------------------------- */
+
+export const FILE_COLLECTION_PAGE_ID = 'seed-page-file-collection'
+export const FILE_COLLECTION_RES_MODEL_ID = 'seed-model-file-collection-res'
+export const FILE_NODE_RES_MODEL_ID = 'seed-model-file-node-res'
+export const NAME_BODY_MODEL_ID = 'seed-model-name-body'
+export const FILE_ITEM_CREATE_BODY_MODEL_ID = 'seed-model-file-item-create-body'
+export const FILE_ITEM_MOVE_BODY_MODEL_ID = 'seed-model-file-item-move-body'
+export const FILE_COLLECTIONS_ENDPOINT_ID = 'seed-endpoint-file-collections'
+export const CREATE_FILE_COLLECTION_ENDPOINT_ID = 'seed-endpoint-create-file-collection'
+export const RENAME_FILE_COLLECTION_ENDPOINT_ID = 'seed-endpoint-rename-file-collection'
+export const DELETE_FILE_COLLECTION_ENDPOINT_ID = 'seed-endpoint-delete-file-collection'
+export const CREATE_FILE_ITEM_ENDPOINT_ID = 'seed-endpoint-create-file-item'
+export const RENAME_FILE_ITEM_ENDPOINT_ID = 'seed-endpoint-rename-file-item'
+export const MOVE_FILE_ITEM_ENDPOINT_ID = 'seed-endpoint-move-file-item'
+export const DUPLICATE_FILE_ITEM_ENDPOINT_ID = 'seed-endpoint-duplicate-file-item'
+export const DELETE_FILE_ITEM_ENDPOINT_ID = 'seed-endpoint-delete-file-item'
+export const FILE_COLLECTION_DOCS_ITEM_ID = 'seed-item-file-collection-docs'
+
+/** The File collection demo's models: the nested tree, one node, and the three fixed bodies. */
+export function fileCollectionSeedModels(): ModelDef[] {
+  const envelope = () => [field('status', 'number'), field('success', 'boolean'), field('message')]
+  return [
+    {
+      id: FILE_COLLECTION_RES_MODEL_ID,
+      name: 'fileCollectionRes',
+      fields: [field('data', 'array', [field('id'), field('name'), field('directories', 'any')], 'object'), ...envelope()],
+    },
+    {
+      id: FILE_NODE_RES_MODEL_ID,
+      name: 'fileNodeRes',
+      fields: [
+        field('data', 'object', [
+          field('id'),
+          field('collectionId'),
+          field('parentId'),
+          field('name'),
+          field('type'),
+          field('kind'),
+          field('createdAt', 'number'),
+          field('updatedAt', 'number'),
+        ]),
+        ...envelope(),
+      ],
+    },
+    { id: NAME_BODY_MODEL_ID, name: 'nameBody', fields: [field('name')] },
+    {
+      id: FILE_ITEM_CREATE_BODY_MODEL_ID,
+      name: 'fileItemCreateBody',
+      fields: [field('collectionId'), field('parentId'), field('name'), field('type'), field('kind')],
+    },
+    { id: FILE_ITEM_MOVE_BODY_MODEL_ID, name: 'fileItemMoveBody', fields: [field('collectionId'), field('parentId')] },
+  ]
+}
+
+/** The nine slots over the mock API's `/collection/file-collections` + `/collection/file-items`. */
+export function fileCollectionSeedEndpoints(): EndpointDef[] {
+  const base = { withOptions: false, query: null, parameter: null, body: null, response: FILE_NODE_RES_MODEL_ID }
+  return [
+    { ...base, id: FILE_COLLECTIONS_ENDPOINT_ID, name: 'fileCollections', description: 'List the file collections, nested', url: '/collection/file-collections', method: 'GET', response: FILE_COLLECTION_RES_MODEL_ID },
+    { ...base, id: CREATE_FILE_COLLECTION_ENDPOINT_ID, name: 'createFileCollection', description: 'Create a collection', url: '/collection/file-collections', method: 'POST', body: NAME_BODY_MODEL_ID },
+    { ...base, id: RENAME_FILE_COLLECTION_ENDPOINT_ID, name: 'renameFileCollection', description: 'Rename a collection', url: '/collection/file-collections/:id', method: 'PATCH', parameter: ID_PARAM_MODEL_ID, body: NAME_BODY_MODEL_ID },
+    { ...base, id: DELETE_FILE_COLLECTION_ENDPOINT_ID, name: 'deleteFileCollection', description: 'Delete a collection and everything in it', url: '/collection/file-collections/:id', method: 'DELETE', parameter: ID_PARAM_MODEL_ID },
+    { ...base, id: CREATE_FILE_ITEM_ENDPOINT_ID, name: 'createFileItem', description: 'Create a folder or file', url: '/collection/file-items', method: 'POST', body: FILE_ITEM_CREATE_BODY_MODEL_ID },
+    { ...base, id: RENAME_FILE_ITEM_ENDPOINT_ID, name: 'renameFileItem', description: 'Rename a folder or file', url: '/collection/file-items/:id', method: 'PATCH', parameter: ID_PARAM_MODEL_ID, body: NAME_BODY_MODEL_ID },
+    { ...base, id: MOVE_FILE_ITEM_ENDPOINT_ID, name: 'moveFileItem', description: 'Move a folder or file to another folder / collection', url: '/collection/file-items/:id/move', method: 'PATCH', parameter: ID_PARAM_MODEL_ID, body: FILE_ITEM_MOVE_BODY_MODEL_ID },
+    { ...base, id: DUPLICATE_FILE_ITEM_ENDPOINT_ID, name: 'duplicateFileItem', description: 'Duplicate a file', url: '/collection/file-items/:id/duplicate', method: 'POST', parameter: ID_PARAM_MODEL_ID },
+    { ...base, id: DELETE_FILE_ITEM_ENDPOINT_ID, name: 'deleteFileItem', description: 'Delete a file or an empty folder', url: '/collection/file-items/:id', method: 'DELETE', parameter: ID_PARAM_MODEL_ID },
+  ]
+}
+
+/**
+ * The "File collection" example page (the example app's `/file-collection`):
+ * a fully wired tree beside a line bound to its selection, and a second tree
+ * with the move / duplicate / delete slots unwired (collapsible, a fixed
+ * height).
+ */
+export function fileCollectionDemoSeedItems(): GridItemData[] {
+  const full = () => createDefaultItemSettings({ colSpan: { xs: 4, sm: 6, md: 8, lg: 12 } })
+  const idRef = (endpointId: string) => ({ endpointId, params: { id: { type: 'row', key: 'id' } as const }, extra: {} })
+  const plain = (endpointId: string) => ({ endpointId, params: {}, extra: {} })
+  const kindIcons = { markdown: 'fileText', sheet: 'table', image: 'image' }
+  const docs = createDefaultFileCollectionConfig('docs')
+  return [
+    {
+      id: 'seed-item-file-collection-caption',
+      label: 'Typography',
+      type: 'typography',
+      settings: full(),
+      config: {
+        ...createDefaultTypographyConfig(),
+        text: 'Every slot wired: click a file to select it, double-click or F2 renames, drag into a folder, the … menu has Move to, Duplicate and Delete. The line beside it is bound to the selection.',
+        color: 'gray',
+      },
+    },
+    {
+      id: FILE_COLLECTION_DOCS_ITEM_ID,
+      label: 'File Collection',
+      type: 'filecollection',
+      settings: createDefaultItemSettings({ colSpan: { xs: 4, sm: 6, md: 3, lg: 4 } }),
+      config: {
+        ...docs,
+        title: 'Documents',
+        endpoints: {
+          list: { ...plain(FILE_COLLECTIONS_ENDPOINT_ID), apiPaths: 'data' },
+          createCollection: plain(CREATE_FILE_COLLECTION_ENDPOINT_ID),
+          renameCollection: idRef(RENAME_FILE_COLLECTION_ENDPOINT_ID),
+          deleteCollection: { ...docs.endpoints.deleteCollection, ...idRef(DELETE_FILE_COLLECTION_ENDPOINT_ID), snackbarSuccessEnabled: true, snackbarSuccessMessage: 'Collection deleted' },
+          createItem: plain(CREATE_FILE_ITEM_ENDPOINT_ID),
+          renameItem: idRef(RENAME_FILE_ITEM_ENDPOINT_ID),
+          deleteItem: { ...docs.endpoints.deleteItem, ...idRef(DELETE_FILE_ITEM_ENDPOINT_ID), snackbarSuccessEnabled: true, snackbarSuccessMessage: 'Deleted' },
+          moveItem: idRef(MOVE_FILE_ITEM_ENDPOINT_ID),
+          duplicateItem: idRef(DUPLICATE_FILE_ITEM_ENDPOINT_ID),
+        },
+        newItems: [
+          { id: 'ni-folder', label: 'New folder', icon: 'folder', type: 'folder', kind: '' },
+          { id: 'ni-note', label: 'New note', icon: 'fileText', type: 'file', kind: 'markdown' },
+          { id: 'ni-sheet', label: 'New sheet', icon: 'table', type: 'file', kind: 'sheet' },
+        ],
+        kindIcons,
+      },
+    },
+    {
+      id: 'seed-item-file-collection-selected',
+      label: 'Typography',
+      type: 'typography',
+      settings: createDefaultItemSettings({ colSpan: { xs: 4, sm: 6, md: 5, lg: 8 } }),
+      config: {
+        ...createDefaultTypographyConfig(),
+        text: 'Nothing selected — click a folder or a file.',
+        binding: { key: 'docsSelected', path: 'path', source: 'state' },
+      },
+    },
+    {
+      id: 'seed-item-file-collection-browse-caption',
+      label: 'Typography',
+      type: 'typography',
+      settings: full(),
+      config: {
+        ...createDefaultTypographyConfig(),
+        text: 'Move, duplicate and the deletes unwired: no drag-and-drop, Move to, Duplicate or Delete entries; New and Rename remain. Collapsible, with a fixed height.',
+        color: 'gray',
+      },
+    },
+    {
+      id: 'seed-item-file-collection-browse',
+      label: 'File Collection',
+      type: 'filecollection',
+      settings: createDefaultItemSettings({ colSpan: { xs: 4, sm: 6, md: 4, lg: 4 } }),
+      config: {
+        ...createDefaultFileCollectionConfig('browse'),
+        title: 'Browse',
+        collapsible: true,
+        height: '320px',
+        endpoints: {
+          ...createDefaultFileCollectionConfig('browse').endpoints,
+          list: { ...plain(FILE_COLLECTIONS_ENDPOINT_ID), apiPaths: 'data' },
+          createCollection: plain(CREATE_FILE_COLLECTION_ENDPOINT_ID),
+          renameCollection: idRef(RENAME_FILE_COLLECTION_ENDPOINT_ID),
+          createItem: plain(CREATE_FILE_ITEM_ENDPOINT_ID),
+          renameItem: idRef(RENAME_FILE_ITEM_ENDPOINT_ID),
+        },
+        kindIcons,
       },
     },
   ]

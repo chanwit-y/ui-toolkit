@@ -15,6 +15,7 @@ export type ComponentType =
   | 'datatableeditable'
   | 'formlist'
   | 'repeater'
+  | 'filecollection'
   | 'autocomplete'
   | 'textfield'
   | 'select'
@@ -83,6 +84,7 @@ export const COMPONENT_META_GROUPS: { category: string; items: ComponentMeta[] }
       { type: 'datatableeditable', label: 'Editable Table' },
       { type: 'formlist', label: 'Form List' },
       { type: 'repeater', label: 'Repeater' },
+      { type: 'filecollection', label: 'File Collection' },
     ],
   },
   {

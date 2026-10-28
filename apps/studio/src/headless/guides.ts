@@ -12,6 +12,7 @@ import custom from './guides/custom.md' with { type: 'text' }
 import datatable from './guides/datatable.md' with { type: 'text' }
 import datatableeditable from './guides/datatableeditable.md' with { type: 'text' }
 import date from './guides/date.md' with { type: 'text' }
+import filecollection from './guides/filecollection.md' with { type: 'text' }
 import display from './guides/display.md' with { type: 'text' }
 import formlist from './guides/formlist.md' with { type: 'text' }
 import html from './guides/html.md' with { type: 'text' }
@@ -53,6 +54,7 @@ export const GUIDES: Record<string, string> = {
   datatableeditable,
   date,
   display,
+  filecollection,
   formlist,
   html,
   modal,

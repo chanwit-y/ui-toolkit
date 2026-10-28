@@ -2,6 +2,8 @@ import type { ThemeProps } from '@radix-ui/themes'
 import type { DataTableAddButton, DataType } from '@gummy-ui/ui'
 import {
   ApprovalLineView,
+  FileCollectionView,
+  parseCollections,
   SwitchProfileView,
   ReplaceProfileView,
   WorkflowEditorBase,
@@ -31,7 +33,8 @@ import {
   UploadImageBase,
 } from '@gummy-ui/ui'
 import { IconData, groupColumns } from '@gummy-ui/ui'
-import type { ApprovalStep, NormalizedProfile, TypographyProps, UploadedFile } from '@gummy-ui/ui'
+import type { ApprovalStep, FileCollectionGroup, NormalizedProfile, TypographyProps, UploadedFile } from '@gummy-ui/ui'
+import { DndContext } from '@dnd-kit/core'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import {
@@ -122,6 +125,7 @@ import type {
   TypographyConfig,
   UploadFileConfig,
   UploadImageConfig,
+  FileCollectionConfig,
 } from './types'
 import { columnFormatToEngine, styleRulesToEngine, uploadAccept } from './types'
 import { dataTableGridFeatures } from './gridConfig'
@@ -194,6 +198,8 @@ function thresholdsForType(type: GridItemData['type']): LiveThresholds {
     type === 'custom' ||
     // An approval line is avatars on a line — it scrolls when narrow.
     type === 'approvalline' ||
+    // A file collection is a sidebar-shaped tree — it truncates names when narrow.
+    type === 'filecollection' ||
     // The profile elements are a short list / a button and a banner.
     type === 'switchprofile' ||
     type === 'replaceprofile' ||
@@ -1519,6 +1525,98 @@ function ApprovalLineLivePreview({ config }: { config: ApprovalLineConfig }) {
   )
 }
 
+/** A small tree for the file collection's canvas preview (the real rows are fetched at runtime). */
+const FILE_COLLECTION_PREVIEW: FileCollectionGroup[] = parseCollections([
+  {
+    id: 'c1',
+    name: 'Catalog',
+    directories: [
+      {
+        id: 'f1',
+        name: '2026',
+        type: 'folder',
+        children: [
+          { id: 'i1', name: 'Q1 price list', type: 'file', kind: 'sheet' },
+          { id: 'i2', name: 'Cover', type: 'file', kind: 'image' },
+        ],
+      },
+      { id: 'f2', name: '2025', type: 'folder', children: [{ id: 'i5', name: 'Archive', type: 'file' }] },
+      { id: 'i3', name: 'README', type: 'file', kind: 'markdown' },
+    ],
+  },
+  {
+    id: 'c2',
+    name: 'Marketing',
+    directories: [
+      { id: 'f3', name: 'Campaigns', type: 'folder', children: [] },
+      { id: 'i4', name: 'Brand guide', type: 'file', kind: 'markdown' },
+    ],
+  },
+])
+const FILE_COLLECTION_PREVIEW_EXPANDED = new Set(['f1'])
+const NONE = new Set<string>()
+const noop = () => {}
+
+/**
+ * The real `FileCollectionView` over a mock tree: the chrome the wired slots
+ * would show (header +, New, …) with inert handlers, the config's icons and
+ * New menu, a dashed note instead of the tree while `list` is unwired. In its
+ * own `DndContext` so the rows' (disabled) drop targets never register with
+ * the canvas's drag. Always live.
+ */
+function FileCollectionLivePreview({ config }: { config: FileCollectionConfig }) {
+  const e = config.endpoints
+  const wired = (slot: { endpointId: string | null }) => slot.endpointId != null
+  const listWired = wired(e.list)
+  const newItems = config.newItems.map((n) => ({
+    label: n.label,
+    ...(n.icon ? { icon: n.icon as keyof typeof IconData } : {}),
+    type: n.type,
+    ...(n.kind ? { kind: n.kind } : {}),
+  }))
+  const actions = {
+    readOnly: config.readOnly,
+    newItems,
+    kindIcons: config.kindIcons,
+    canDrag: false,
+    onSelect: noop,
+    onToggleFolder: noop,
+    onToggleCollection: noop,
+    ...(wired(e.createItem) ? { onNewItem: noop } : {}),
+    ...(wired(e.renameCollection) ? { onRenameCollection: noop } : {}),
+    ...(wired(e.deleteCollection) ? { onDeleteCollection: noop } : {}),
+    ...(wired(e.renameItem) ? { onRenameItem: noop } : {}),
+    ...(wired(e.deleteItem) ? { onDeleteItem: noop } : {}),
+    ...(wired(e.moveItem) ? { onMoveItem: noop } : {}),
+    ...(wired(e.duplicateItem) ? { onDuplicateItem: noop } : {}),
+  }
+  return (
+    <div data-grid-item-content className="pointer-events-none h-full min-h-[200px] w-full">
+      <DndContext>
+        <FileCollectionView
+          name={config.name}
+          title={config.title || undefined}
+          collapsible={config.collapsible}
+          height={config.height || undefined}
+          collections={listWired ? FILE_COLLECTION_PREVIEW : []}
+          selectedId={listWired ? 'i1' : null}
+          expanded={FILE_COLLECTION_PREVIEW_EXPANDED}
+          collapsedCollections={NONE}
+          renamingId={null}
+          setRenamingId={noop}
+          actions={actions}
+          onAddCollection={wired(e.createCollection) ? noop : undefined}
+          note={
+            listWired ? undefined : (
+              <span className="rounded-md border border-dashed border-line-strong px-2 py-1 text-ui-xs text-ink-3">No list endpoint</span>
+            )
+          }
+        />
+      </DndContext>
+    </div>
+  )
+}
+
 /** Two positions of one person, for the profile elements' canvas previews. */
 const PROFILE_PREVIEW: NormalizedProfile[] = [
   {
@@ -1882,6 +1980,9 @@ function renderLive(item: GridItemData, isLive: boolean) {
   }
   if (item.type === 'approvalline' && item.config) {
     return <ApprovalLineLivePreview config={item.config as ApprovalLineConfig} />
+  }
+  if (item.type === 'filecollection' && item.config) {
+    return <FileCollectionLivePreview config={item.config as FileCollectionConfig} />
   }
   if (item.type === 'switchprofile' && item.config) {
     return <SwitchProfileLivePreview config={item.config as SwitchProfileConfig} />

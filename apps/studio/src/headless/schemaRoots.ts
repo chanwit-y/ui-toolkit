@@ -23,6 +23,7 @@ export const SCHEMA_ROOTS: { file: string; types: string[] }[] = [
       'DataTableEditableConfig',
       'FormListConfig',
       'RepeaterConfig',
+      'FileCollectionConfig',
       'TextConfig',
       'TypographyConfig',
       'AvatarConfig',
