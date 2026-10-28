@@ -418,7 +418,7 @@ export function ThemeEditor() {
 
   // Palette preview (the mockup's "try it, then Apply"): nothing changes in
   // the project until Apply — the sample block below paints the candidate.
-  const [preview, setPreview] = useState<{ palette: ThemePalette; surfaces: boolean } | null>(null)
+  const [preview, setPreview] = useState<{ palette: ThemePalette } | null>(null)
 
   const themeJson = useMemo(() => JSON.stringify(toThemeObjects(config), null, 2), [config])
   const mode = config.appearance
@@ -429,7 +429,7 @@ export function ThemeEditor() {
   const sampleAccentName = preview
     ? nearestAccent(preview.palette.colors[preview.palette.accent])
     : config.accentColor
-  const sampleSurfaces: DesignSurfaces = preview?.surfaces
+  const sampleSurfaces: DesignSurfaces = preview
     ? (() => {
         const byLight = preview.palette.colors.slice().sort((a, b) => luminance(b) - luminance(a))
         const last = byLight.length - 1
@@ -475,15 +475,9 @@ export function ThemeEditor() {
         {preview && (
           <div className="mb-4 flex flex-wrap items-center gap-3 rounded-[10px] border border-line-strong bg-panel px-3.5 py-2.5 text-ui text-ink">
             <b className="font-semibold">Previewing “{preview.palette.name}”</b>
-            <label className="flex cursor-pointer items-center gap-2 text-ink-2">
-              <input
-                type="checkbox"
-                checked={preview.surfaces}
-                onChange={(e) => setPreview({ ...preview, surfaces: e.target.checked })}
-                className="h-3.5 w-3.5 accent-accent"
-              />
-              Take the surfaces too, not just the accent
-            </label>
+            <span className="text-ink-2">
+              Apply sets every colour: accent, button, the table roles, both modes’ surfaces and the glass backdrop.
+            </span>
             <span className="flex-1" />
             <Button size="sm" onClick={() => setPreview(null)}>
               Discard
@@ -492,13 +486,8 @@ export function ThemeEditor() {
               size="sm"
               variant="primary"
               onClick={() => {
-                applyPalette(preview.palette, preview.surfaces)
-                logActivity(
-                  'applied',
-                  'theme',
-                  preview.palette.name,
-                  preview.surfaces ? 'accent and surfaces' : 'accent only',
-                )
+                applyPalette(preview.palette)
+                logActivity('applied', 'theme', preview.palette.name, 'every colour setting')
                 setPreview(null)
               }}
             >
@@ -516,7 +505,7 @@ export function ThemeEditor() {
                   key={pl.name}
                   type="button"
                   aria-pressed={on}
-                  onClick={() => setPreview({ palette: pl, surfaces: preview?.surfaces ?? false })}
+                  onClick={() => setPreview({ palette: pl })}
                   className={cn(
                     'overflow-hidden rounded-md border text-left transition-colors hover:border-line-strong',
                     on ? 'border-focus ring-1 ring-focus' : 'border-line',
@@ -540,8 +529,8 @@ export function ThemeEditor() {
             })}
           </div>
           <p className="text-ui-sm text-ink-3">
-            Click one to try it. The accent snaps to the nearest Radix colour; nothing changes in
-            the project until you press Apply.
+            Click one to try it. Apply sets every colour setting on this page from it — the accent
+            snaps to the nearest Radix colour; nothing changes in the project until you press Apply.
           </p>
         </Section>
 
