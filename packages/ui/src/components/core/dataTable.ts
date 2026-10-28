@@ -6,7 +6,8 @@ import type {
 } from "../@types";
 import { createElement, type JSX } from "react";
 import { DataTable2 } from "../DataTable2";
-import { HtmlCell } from "../HtmlCell";
+import { FormattedHtmlCell } from "../FormattedCell";
+import { NUMERIC_FORMATS, columnFormat } from "../../util/format";
 import { groupColumns, type ColumnLayoutMeta } from "../dataTableLayout";
 
 import type { ApiMaster, TApiMaster } from "../../api/APIMaster";
@@ -16,7 +17,6 @@ import { ContainerBuilder } from "./containerBuilder";
 import { resolveApiRef, urlParamNames } from "./readApi";
 import { ContainerGrid } from "./containerBuilder";
 import type { Container } from "../@types";
-import dayjs from "dayjs";
 // import  DataContext  from "./dataContext";
 
 export class DataTable<
@@ -28,17 +28,12 @@ export class DataTable<
 
   constructor(private _context: ElementContext<M, A>) { }
 
-  private align(columns: any[]) {
-    return columns.reduce((acc, current) => {
-      return { ...acc, [current.accessor]: current.align ?? 'center' }
+  // A numeric format aligns to the end unless the column says otherwise.
+  private align(columns: ColumnDef[]) {
+    return columns.reduce<Record<string, "start" | "center" | "end">>((acc, current) => {
+      const format = columnFormat(current)
+      return { ...acc, [current.accessor]: current.align ?? (format && NUMERIC_FORMATS.has(format.type) ? 'end' : 'center') }
     }, {})
-  }
-
-  private transformValue(value: any, useDateFormat?: string) {
-    if (useDateFormat) {
-      return dayjs(value).format(useDateFormat)
-    }
-    return value
   }
 
   public toColoumDefinition(columns: ColumnDef[]) {
@@ -60,10 +55,12 @@ export class DataTable<
         // `html` skips the search highlight and the line clamp, `lines` is the
         // column's own clamp, the rest drive the row header / merged cells.
         meta: columnLayoutMeta(column),
+        // The raw value: DataTable2 formats it through `meta.format` (and
+        // highlights the search); an HTML template gets the formatted text as `{{value}}`.
         cell: (props) => {
-          const value = this.transformValue(props.row.original[column.accessor as keyof T], column.useDateFormat)
+          const value = props.row.original[column.accessor as keyof T]
           return column.html
-            ? createElement(HtmlCell, { template: column.html, row: props.row.original, value })
+            ? createElement(FormattedHtmlCell, { template: column.html, row: props.row.original, value, format: columnFormat(column) })
             : createElement("div", {}, value)
         },
         filterFn: (row, columnId, value) => {
@@ -148,6 +145,19 @@ export class DataTable<
       canResizeColumns: props.canResizeColumns,
       cellLines: props.cellLines,
       actionSize: props.actionSize,
+      // AG Grid-style features (see the grilled design `datatable-ag-grid-features`).
+      canChooseColumns: props.canChooseColumns,
+      columnsButton: props.columnsButton,
+      columnState: props.columnState,
+      hiddenColumns: (props.columns ?? []).filter((c) => c.hide).map((c) => c.accessor.replace(/\./g, "_")),
+      lockedColumns: (props.columns ?? []).filter((c) => c.lockVisible || c.rowHeader).map((c) => c.accessor.replace(/\./g, "_")),
+      selection: props.selection,
+      rowStyles: props.rowStyles,
+      grouping: props.grouping,
+      canExport: props.canExport,
+      exportButton: props.exportButton,
+      exportOptions: props.exportOptions,
+      paging: props.paging,
       // context: DataContext,
     });
   }
@@ -155,8 +165,12 @@ export class DataTable<
 
 /** The TanStack column `meta` for a config column (only the keys that are set). */
 export function columnLayoutMeta(column: ColumnDef): ColumnLayoutMeta | undefined {
+  const format = columnFormat(column);
   const meta: ColumnLayoutMeta = {
-    ...(column.html ? { html: true } : {}),
+    ...(column.html ? { html: true, template: column.html } : {}),
+    ...(format ? { format } : {}),
+    ...(column.cellStyles?.length ? { styles: column.cellStyles } : {}),
+    ...(column.aggregate ? { aggregate: column.aggregate } : {}),
     ...(column.lines !== undefined ? { lines: column.lines } : {}),
     ...(column.rowHeader ? { rowHeader: true } : {}),
     ...(column.mergeRows ? { mergeRows: true } : {}),

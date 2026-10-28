@@ -8,7 +8,7 @@
  */
 import { join } from 'node:path'
 import type { Browser, BrowserContext, Page } from 'playwright-core'
-import { SCENES, type Line } from './narration'
+import { SCENES, type Line, type Scene } from './narration'
 import { Actor, preparePage, Recording, VIEWPORT } from './recorder'
 
 export const URLS = {
@@ -24,16 +24,16 @@ export type Captured = { file: string; marks: Record<string, number>; duration: 
 /** A split scene: two clips on one clock (left, right). */
 export type CapturedSplit = { left: Captured; right: Captured }
 
-type Ctx = { browser: Browser; work: string; durations: Record<string, number> }
+export type Ctx = { browser: Browser; work: string; durations: Record<string, number> }
 
-async function newPage(browser: Browser): Promise<{ context: BrowserContext; page: Page }> {
+export async function newPage(browser: Browser): Promise<{ context: BrowserContext; page: Page }> {
   const context = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: 1, colorScheme: 'light' })
   const page = await preparePage(context)
   return { context, page }
 }
 
 /** The director of one recording: marks, and holding until a line has been said. */
-class Take {
+export class Take {
   constructor(
     readonly rec: Recording,
     private lines: Line[],
@@ -60,8 +60,8 @@ class Take {
   }
 }
 
-async function record(ctx: Ctx, sceneId: string, page: Page, script: (take: Take, actor: Actor) => Promise<void>): Promise<Captured> {
-  const scene = SCENES.find((s) => s.id === sceneId)!
+export async function record(ctx: Ctx, sceneId: string, page: Page, script: (take: Take, actor: Actor) => Promise<void>, scenes: Scene[] = SCENES): Promise<Captured> {
+  const scene = scenes.find((s) => s.id === sceneId)!
   const rec = new Recording(page)
   await rec.begin()
   const take = new Take(rec, scene.lines, ctx.durations)
@@ -79,7 +79,7 @@ function option(page: Page, text?: string) {
 }
 
 /** Wait for the app's data to settle (no spinners, a short quiet network). */
-async function settle(page: Page, ms = 600) {
+export async function settle(page: Page, ms = 600) {
   await page.waitForLoadState('networkidle').catch(() => {})
   await page.waitForTimeout(ms)
 }

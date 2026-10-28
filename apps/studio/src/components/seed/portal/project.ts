@@ -244,6 +244,7 @@ function portalShell(): ShellSettings {
       activeGradient: { enabled: true, from: '#e0f2fe', to: '#c4b5fd', angle: 90 },
       indicatorColor: '#3730a3',
     },
+    pageTransition: { type: 'fade', duration: '', easing: 'ease-out' },
   }
 }
 

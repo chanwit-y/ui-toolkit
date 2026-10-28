@@ -1,0 +1,238 @@
+{
+  "containers": [
+    {
+      "id": "page-export",
+      "name": "page-export",
+      "isArray": false,
+      "bins": [
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "Export",
+            "variant": "h3",
+            "weight": "bold"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "Export writes the table as you see it — rows after search and sort, the visible columns in their order, values as shown — to a CSV with a UTF-8 BOM, so Excel opens it right. The button beside this text does the same from outside the table (the ExportTable action).",
+            "variant": "body2",
+            "color": "gray"
+          }
+        },
+        {
+          "sm": "8",
+          "md": "9",
+          "lg": "10",
+          "xl": "10",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "Search the table, hide a column or sort, then export.",
+            "variant": "body1",
+            "weight": "medium"
+          }
+        },
+        {
+          "sm": "4",
+          "md": "3",
+          "lg": "2",
+          "xl": "2",
+          "type": "button",
+          "justifySelf": "start",
+          "alignSelf": "stretch",
+          "element": {
+            "label": "Download CSV",
+            "icon": "download",
+            "actions": [
+              "ExportTable"
+            ],
+            "exportTable": "ordersExport"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "datatable",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "ordersExport",
+            "title": "Orders",
+            "columns": [
+              {
+                "accessor": "number",
+                "header": "Order",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "lockVisible": true,
+                "size": 120
+              },
+              {
+                "accessor": "placedAt",
+                "header": "Placed",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "format": {
+                  "type": "datetime",
+                  "timeZone": "Asia/Bangkok"
+                },
+                "size": 190
+              },
+              {
+                "accessor": "customerName",
+                "header": "Customer",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "size": 200
+              },
+              {
+                "accessor": "customerCity",
+                "header": "City",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "size": 140
+              },
+              {
+                "accessor": "statusLabel",
+                "header": "Status",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "cellStyles": [
+                  {
+                    "when": {
+                      "left": {
+                        "key": "row",
+                        "path": "status"
+                      },
+                      "operator": "eq",
+                      "right": {
+                        "val": "refund_requested"
+                      }
+                    },
+                    "tone": "amber",
+                    "fill": true,
+                    "weight": "bold"
+                  },
+                  {
+                    "when": {
+                      "left": {
+                        "key": "row",
+                        "path": "status"
+                      },
+                      "operator": "eq",
+                      "right": {
+                        "val": "delivered"
+                      }
+                    },
+                    "tone": "grass"
+                  },
+                  {
+                    "when": {
+                      "left": {
+                        "key": "row",
+                        "path": "status"
+                      },
+                      "operator": "eq",
+                      "right": {
+                        "val": "cancelled"
+                      }
+                    },
+                    "tone": "gray",
+                    "strike": true
+                  },
+                  {
+                    "when": {
+                      "left": {
+                        "key": "row",
+                        "path": "status"
+                      },
+                      "operator": "eq",
+                      "right": {
+                        "val": "refunded"
+                      }
+                    },
+                    "tone": "gray",
+                    "italic": true
+                  }
+                ],
+                "size": 160
+              },
+              {
+                "accessor": "itemCount",
+                "header": "Items",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "format": {
+                  "type": "number"
+                },
+                "size": 90
+              },
+              {
+                "accessor": "total",
+                "header": "Total",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "format": {
+                  "type": "currency",
+                  "currency": "THB"
+                },
+                "size": 150
+              },
+              {
+                "accessor": "paymentMethod",
+                "header": "Payment",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "size": 140
+              }
+            ],
+            "canExport": true,
+            "exportOptions": {
+              "fileName": "orders-{{date}}"
+            },
+            "api": {
+              "name": "listOrders",
+              "paths": [
+                "data"
+              ]
+            },
+            "cellLines": 1,
+            "canEdit": false,
+            "canDelete": false
+          }
+        }
+      ],
+      "gap": "16px",
+      "justifyItems": "stretch",
+      "alignItems": "stretch",
+      "justifyContent": "start",
+      "alignContent": "start",
+      "gridAutoFlow": "row"
+    }
+  ]
+}

@@ -76,6 +76,7 @@ const Button = forwardRef<ElementRef<typeof RadixButton>, ButtonProps>(({
 	snackbarError,
 	confirmBox,
 	reloadDataTable,
+	exportTable,
 	color,
 	modalId,
 	navigate,
@@ -163,6 +164,11 @@ const Button = forwardRef<ElementRef<typeof RadixButton>, ButtonProps>(({
 					case 'ReloadDataTable':
 						if (reloadDataTable && fnCtxs[reloadDataTable]) await fnCtxs[reloadDataTable]()
 						else console.warn(`[Button] ReloadDataTable: nothing registered under "${reloadDataTable}"`)
+						break;
+					case 'ExportTable':
+						// A data table registers its CSV export as `export:<name>`.
+						if (exportTable && fnCtxs[`export:${exportTable}`]) await fnCtxs[`export:${exportTable}`]()
+						else console.warn(`[Button] ExportTable: no data table named "${exportTable}" on this page`)
 						break;
 					case 'ClearCurrentFormSelected':
 						clearCurrentFormSelected();
@@ -256,7 +262,7 @@ const Button = forwardRef<ElementRef<typeof RadixButton>, ButtonProps>(({
 				})
 			}
 		}
-	}, [api, clearCurrentFormSelected, handleSubmit, fnCtxs, onClick, showSnackbar, snackbarSuccess, startLoading, stopLoading, modalId, reloadDataTable, formState, trigger, snackbarError, navigateTo, navigate, customActions, auth, label, actions, confirmBox, contextData, getValues, setValue, rowScope])
+	}, [api, clearCurrentFormSelected, handleSubmit, fnCtxs, onClick, showSnackbar, snackbarSuccess, startLoading, stopLoading, modalId, reloadDataTable, formState, trigger, snackbarError, navigateTo, navigate, exportTable, customActions, auth, label, actions, confirmBox, contextData, getValues, setValue, rowScope])
 
 	const handleConfirm = useCallback((isConfirm: boolean) => {
 		if (isConfirm) {

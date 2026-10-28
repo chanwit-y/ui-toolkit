@@ -13,6 +13,8 @@ import { containerServerFilterDemo } from "./serverFilterDemo";
 import { containerFilterApiDemo } from "./filterApiDemo";
 import { containerCellTooltipDemo } from "./cellTooltipDemo";
 import { containerTableLayoutDemo } from "./tableLayoutDemo";
+import { containerFormatsDemo } from "./formatsDemo";
+import { containerDataGridDemo } from "./dataGridDemo";
 import { containerCardDemo } from "./cardDemo";
 import { containerHtmlContentDemo } from "./htmlContentDemo";
 import { containerDrawerDemo } from "./drawerDemo";
@@ -134,6 +136,22 @@ export const pages = {
     parent: "countryList",
     title: "Table layout",
     containers: containerTableLayoutDemo,
+  },
+  dataGridDemo: {
+    // Columns menu, selection, style rules, grouping, CSV export, scroll mode
+    // (see ./dataGridDemo.ts).
+    path: "/data-grid",
+    parent: "countryList",
+    title: "Data grid",
+    containers: containerDataGridDemo,
+  },
+  formatsDemo: {
+    // `ColumnDef.format`: number / currency / percent / date / datetime /
+    // boolean cells formatted by the engine (see ./formatsDemo.ts).
+    path: "/formats",
+    parent: "countryList",
+    title: "Cell formats",
+    containers: containerFormatsDemo,
   },
   cardDemo: {
     // The `card` element after MUI's Card: slots, media, expand, action area

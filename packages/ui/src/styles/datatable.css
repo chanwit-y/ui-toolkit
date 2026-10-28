@@ -683,3 +683,265 @@
   backdrop-filter: var(--gummy-surface-blur);
   -webkit-backdrop-filter: var(--gummy-surface-blur);
 }
+
+/* ------------------------------------------------------------------ Columns menu
+ * (`canChooseColumns`): show / hide, drag to reorder, group by, reset. */
+.datatable-columns-menu {
+  width: min(280px, calc(100vw - 32px));
+  max-height: min(70vh, 520px);
+  overflow-y: auto;
+  padding: 10px 8px;
+}
+
+.datatable-columns-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 6px 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gray-11);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.datatable-columns-heading + .datatable-columns-list {
+  margin-bottom: 6px;
+}
+
+.datatable-columns-list + .datatable-columns-heading {
+  border-top: 1px solid var(--gray-a5);
+  margin-top: 4px;
+  padding-top: 10px;
+}
+
+.datatable-columns-reset {
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--accent-11);
+  cursor: pointer;
+}
+
+.datatable-columns-reset:hover {
+  text-decoration: underline;
+}
+
+.datatable-columns-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.datatable-columns-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  padding: 0 6px 0 2px;
+  border-radius: var(--radius-2);
+  color: var(--gray-12);
+  font-size: 14px;
+  background-color: transparent;
+}
+
+.datatable-columns-row:hover {
+  background-color: var(--gray-a3);
+}
+
+.datatable-columns-row.is-dragging {
+  position: relative;
+  z-index: 1;
+  background-color: var(--color-panel-solid);
+  box-shadow: var(--shadow-3);
+}
+
+.datatable-columns-grip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 26px;
+  color: var(--gray-9);
+  cursor: grab;
+  border-radius: var(--radius-1);
+  touch-action: none;
+}
+
+.datatable-columns-grip:focus-visible {
+  outline: 2px solid var(--accent-8);
+}
+
+.datatable-columns-label {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.datatable-columns-label > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.datatable-columns-lock {
+  color: var(--gray-9);
+}
+
+.datatable-columns-level {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+  text-align: center;
+  color: var(--accent-contrast);
+  background-color: var(--accent-9);
+}
+
+/* Toolbar buttons (Columns, Export) share the filter trigger's chrome. */
+.datatable-toolbar-buttons {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* ------------------------------------------------------------------ Row selection */
+.datatable-select-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.datatable-body-row.is-selected > .datatable-body-cell {
+  background-color: var(--accent-a3);
+}
+
+.datatable-body-row.is-selected > .datatable-body-cell.datatable-cell-pinned {
+  background-image: linear-gradient(var(--accent-a3), var(--accent-a3));
+}
+
+.datatable-selection-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--accent-11);
+}
+
+.datatable-selection-bar button {
+  font-weight: 500;
+  color: var(--accent-11);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* ------------------------------------------------------------------ Style rules
+ * (`cellStyles` / `rowStyles`): the cell carries `data-accent-color="<tone>"`,
+ * so `--accent-*` are that tone's scale. */
+.datatable-body-cell.datatable-tone {
+  color: var(--accent-11);
+}
+
+.datatable-body-cell.datatable-tone-fill {
+  background-color: var(--accent-3);
+}
+
+.datatable-body-row:hover > .datatable-body-cell.datatable-tone-fill {
+  background-color: var(--accent-4);
+}
+
+.datatable-tone-bold {
+  font-weight: 600;
+}
+
+.datatable-tone-italic {
+  font-style: italic;
+}
+
+.datatable-tone-strike {
+  text-decoration: line-through;
+}
+
+/* ------------------------------------------------------------------ Grouping */
+.datatable-body-row.datatable-group-row > .datatable-body-cell {
+  font-weight: 600;
+  color: var(--accent-12);
+  background-color: var(--accent-2);
+}
+
+.datatable-body-row.datatable-group-row:hover > .datatable-body-cell {
+  background-color: var(--accent-3);
+}
+
+.datatable-group-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  font-weight: 600;
+  color: inherit;
+  cursor: pointer;
+  text-align: start;
+}
+
+.datatable-group-toggle {
+  white-space: nowrap;
+}
+
+.datatable-group-toggle svg {
+  flex: none;
+  color: var(--accent-11);
+  transition: transform 0.15s ease;
+}
+
+.datatable-group-toggle[aria-expanded="true"] svg {
+  transform: rotate(90deg);
+}
+
+.datatable-group-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.datatable-group-count {
+  font-weight: 500;
+  color: var(--accent-11);
+}
+
+.datatable-body-row.datatable-total-row > .datatable-body-cell {
+  font-weight: 700;
+  color: var(--gray-12);
+  background-color: var(--gummy-surface-strong-bg);
+  border-top: 2px solid var(--gray-a7);
+}
+
+.datatable-total-row.is-top > .datatable-body-cell {
+  border-top: none;
+  border-bottom: 2px solid var(--gray-a7);
+}
+
+/* ------------------------------------------------------------------ Scroll mode
+ * (`paging: "scroll"`) and virtualised rows. */
+.datatable-scroll.is-scroll-mode {
+  max-height: 560px;
+}
+
+.datatable-virtual-spacer > td {
+  padding: 0;
+  border: 0;
+}
+
+.datatable-footer-count {
+  font-size: 14px;
+  color: var(--gray-11);
+}

@@ -7,6 +7,17 @@ export interface Country {
   image?: string;
   updated_at: string;
   updated_by_name: string;
+  /** Figures for the cell-format demo (deterministic, not real): a count, an area with a decimal, money, a ratio, a flag. */
+  population?: number;
+  area_km2?: number;
+  gdp_usd?: number;
+  growth?: number;
+  /** `growth` as whole points (the `percent` format's `of: 100` case). */
+  growth_pts?: number;
+  landlocked?: boolean;
+  /** Two more timestamps and a plain date, so the Formats page can show one format per column. */
+  created_at?: string;
+  joined_at?: string;
 }
 
 const flagUrl = (code: string) => `https://flagcdn.com/w40/${code.toLowerCase()}.png`;
@@ -60,6 +71,17 @@ const EDITORS = ["Admin", "Somchai", "Yuki", "Maria"];
 countries.forEach((country, index) => {
   country.updated_by_name = EDITORS[index % EDITORS.length];
   country.image = `https://flagcdn.com/w640/${country.code.toLowerCase()}.png`;
+  // Figures for the Formats demo: varied, deterministic, obviously not real.
+  const seed = index + 1;
+  country.population = ((seed * 7919) % 997) * 1_000_000 + seed * 12_345;
+  country.area_km2 = ((seed * 104_729) % 8_000_000) + 1234.5;
+  country.gdp_usd = (((seed * 31_337) % 1_900) + 50) * 1_000_000_000 + seed * 1_000_000;
+  country.growth = (((seed * 37) % 90) - 20) / 1000;
+  country.growth_pts = Math.round(country.growth * 1000) / 10;
+  country.landlocked = seed % 5 === 0;
+  const updated = new Date(country.updated_at);
+  country.created_at = new Date(updated.getTime() - seed * 36 * 60 * 60 * 1000).toISOString();
+  country.joined_at = `${1990 + (seed % 30)}-${String((seed % 12) + 1).padStart(2, "0")}-${String((seed % 27) + 1).padStart(2, "0")}`;
 });
 
 let nextId = 41;

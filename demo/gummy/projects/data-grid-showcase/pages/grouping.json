@@ -1,0 +1,143 @@
+{
+  "containers": [
+    {
+      "id": "page-grouping",
+      "name": "page-grouping",
+      "isArray": false,
+      "bins": [
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "Grouping",
+            "variant": "h3",
+            "weight": "bold"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "The 300 orders grouped by status, then city. Group rows count the orders and sum their items and totals; the total row at the bottom sums them all. Regroup from Columns → Group by.",
+            "variant": "body2",
+            "color": "gray"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "datatable",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "ordersByStatus",
+            "title": "Orders by status",
+            "columns": [
+              {
+                "accessor": "statusLabel",
+                "header": "Status",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "size": 250
+              },
+              {
+                "accessor": "number",
+                "header": "Order",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "lockVisible": true,
+                "aggregate": "count",
+                "size": 120
+              },
+              {
+                "accessor": "customerCity",
+                "header": "City",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "size": 140
+              },
+              {
+                "accessor": "customerName",
+                "header": "Customer",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "size": 200
+              },
+              {
+                "accessor": "itemCount",
+                "header": "Items",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "format": {
+                  "type": "number"
+                },
+                "aggregate": "sum",
+                "size": 90
+              },
+              {
+                "accessor": "total",
+                "header": "Total",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "format": {
+                  "type": "currency",
+                  "currency": "THB"
+                },
+                "aggregate": "sum",
+                "size": 150
+              },
+              {
+                "accessor": "handledBy",
+                "header": "Handled by",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "size": 160
+              }
+            ],
+            "grouping": {
+              "by": [
+                "statusLabel",
+                "customerCity"
+              ],
+              "totalRow": "bottom"
+            },
+            "api": {
+              "name": "listOrders",
+              "paths": [
+                "data"
+              ]
+            },
+            "cellLines": 1,
+            "canEdit": false,
+            "canDelete": false
+          }
+        }
+      ],
+      "gap": "16px",
+      "justifyItems": "stretch",
+      "alignItems": "stretch",
+      "justifyContent": "start",
+      "alignContent": "start",
+      "gridAutoFlow": "row"
+    }
+  ]
+}

@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
+import { WORKSPACE_VERSION } from '@gummy-ui/studio/headless'
 
 /*
  * `gummy mcp` end to end (see the grilled design `mcp-server`): the real CLI
@@ -52,7 +53,7 @@ describe('gummy mcp', () => {
     expect(out.saved.written).toContain('gummy/workspace.json')
     expect(out.saved.written).toContain('gummy/projects/shop-admin/pages/orders.json')
     const ws = JSON.parse(readFileSync(join(app, 'gummy/workspace.json'), 'utf8'))
-    expect(ws.version).toBe(53)
+    expect(ws.version).toBe(WORKSPACE_VERSION)
     expect(ws.state.projects[0].snapshot.pages.map((p: { key: string }) => p.key)).toEqual(['page1', 'orders'])
     const manifest = JSON.parse(readFileSync(join(app, 'gummy/projects/shop-admin/project.json'), 'utf8'))
     expect(manifest.pages.orders.src).toBe('pages/orders.json')

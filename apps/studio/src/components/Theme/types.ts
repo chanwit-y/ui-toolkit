@@ -30,14 +30,21 @@ export type BackdropConfig = {
   kind: BackdropKind
   /** `kind: color` — any CSS colour. */
   color: string
-  /** `kind: gradient` — both stops needed, at `angle` degrees. */
-  gradient: { from: string; to: string; angle: number }
+  /** `kind: color` in the dark appearance (blank = `color` in both). */
+  darkColor: string
+  /**
+   * `kind: gradient` — both stops needed, at `angle` degrees. `darkFrom` /
+   * `darkTo` replace their stop in the dark appearance (blank = the light
+   * stop in both), lowered to CSS `light-dark()` — the Radix theme root sets
+   * `color-scheme`, so the one exported string flips with the appearance.
+   */
+  gradient: { from: string; to: string; angle: number; darkFrom: string; darkTo: string }
   /** `kind: image` — a URL or a `data:` URL (uploaded, ≤ 300 KB), drawn `cover`. */
   image: string
 }
 
 export function createDefaultBackdrop(): BackdropConfig {
-  return { kind: 'default', color: '', gradient: { from: '', to: '', angle: 160 }, image: '' }
+  return { kind: 'default', color: '', darkColor: '', gradient: { from: '', to: '', angle: 160, darkFrom: '', darkTo: '' }, image: '' }
 }
 /**
  * The Radix palette — every name `ThemeProps['accentColor']` accepts, spelled
@@ -282,7 +289,7 @@ export const THEME_DEFAULTS = {
   surface: 'flat',
 } as const
 
-/** A theme saved before `surface` / `background` existed, with the defaults filled (the v54 migration, also run on load). */
+/** A theme saved before `surface` / `background` (v54) or the backdrop's dark stops (v55) existed, with the defaults filled. */
 export function normalizeThemeConfig(theme: Partial<StudioThemeConfig> & Pick<StudioThemeConfig, 'appearance' | 'accentColor' | 'radius' | 'panelBackground' | 'buttonColor' | 'dataTable'>): StudioThemeConfig {
   const def = createDefaultBackdrop()
   const bg = theme.background
@@ -295,6 +302,12 @@ export function normalizeThemeConfig(theme: Partial<StudioThemeConfig> & Pick<St
   }
 }
 
+/** A colour with a dark counterpart becomes CSS `light-dark()`, resolved by the theme root's `color-scheme`. */
+const appearanceColor = (light: string, dark: string): string => {
+  const d = dark.trim()
+  return d ? `light-dark(${light}, ${d})` : light
+}
+
 /**
  * The engine's `theme.background` for a backdrop config — the CSS string, or
  * `undefined` for the default / an unfinished one (a gradient missing a stop,
@@ -302,13 +315,16 @@ export function normalizeThemeConfig(theme: Partial<StudioThemeConfig> & Pick<St
  */
 export function backdropToCss(b: BackdropConfig): string | undefined {
   switch (b.kind) {
-    case 'color':
-      return b.color.trim() || undefined
+    case 'color': {
+      const color = b.color.trim()
+      return color ? appearanceColor(color, b.darkColor) : undefined
+    }
     case 'gradient': {
       const from = b.gradient.from.trim()
       const to = b.gradient.to.trim()
       if (!from || !to) return undefined
-      return `linear-gradient(${Number.isFinite(b.gradient.angle) ? b.gradient.angle : 160}deg, ${from}, ${to})`
+      const angle = Number.isFinite(b.gradient.angle) ? b.gradient.angle : 160
+      return `linear-gradient(${angle}deg, ${appearanceColor(from, b.gradient.darkFrom)}, ${appearanceColor(to, b.gradient.darkTo)})`
     }
     case 'image': {
       const url = b.image.trim()

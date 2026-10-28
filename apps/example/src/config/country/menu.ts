@@ -18,6 +18,8 @@ export const menu: TMenu = [
   { label: "Filter via API", icon: "search", navigate: { page: "filterApiDemo" } },
   { label: "Cell tooltip", icon: "info", navigate: { page: "cellTooltipDemo" } },
   { label: "Table layout", icon: "table", navigate: { page: "tableLayoutDemo" } },
+  { label: "Cell formats", icon: "hash", navigate: { page: "formatsDemo" } },
+  { label: "Data grid", icon: "table", navigate: { page: "dataGridDemo" } },
   { label: "Card", icon: "creditCard", navigate: { page: "cardDemo" } },
   { label: "HTML content", icon: "code", navigate: { page: "htmlContentDemo" } },
   { label: "Drawer", icon: "panelRight", navigate: { page: "drawerDemo" } },

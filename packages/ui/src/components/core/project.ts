@@ -79,6 +79,8 @@ export type GummyProject = {
   theme?: GummyProjectTheme;
   /** App-wide loads, fetched once (`<GlobalLoads>`). */
   globalLoads?: PageLoad[];
+  /** BCP 47 locale for formatted cells (`ColumnDef.format`), e.g. `"th-TH"`; absent = the browser's. */
+  locale?: string;
   /** Names the configs reference as `fn:<name>`; the app registers the functions. */
   customActions?: string[];
   /** Components the configs place by name; the app registers the React components. */
@@ -109,6 +111,7 @@ export function assertGummyProject(value: unknown): GummyProject {
       `schemaVersion ${JSON.stringify(value.schemaVersion)} is not supported by this version of @gummy-ui/ui (expected ${GUMMY_PROJECT_SCHEMA_VERSION}).`,
     );
   if (typeof value.name !== "string") throw new GummyProjectError("`name` must be a string.");
+  if (value.locale !== undefined && typeof value.locale !== "string") throw new GummyProjectError("`locale` must be a string.");
   if (!isRecord(value.model)) throw new GummyProjectError("`model` must be an object of model names.");
   if (!isRecord(value.api)) throw new GummyProjectError("`api` must be an object of endpoint names.");
   for (const [name, entry] of Object.entries(value.api)) {

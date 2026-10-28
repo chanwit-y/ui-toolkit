@@ -1,0 +1,221 @@
+{
+  "containers": [
+    {
+      "id": "page-formats",
+      "name": "page-formats",
+      "isArray": false,
+      "bins": [
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "Formats & styles",
+            "variant": "h3",
+            "weight": "bold"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "Every one of the 120 books, read whole from the API and paged in the browser. Price, stock, rating and dates are raw numbers and dates formatted by the table; the tones come from style rules — out of stock is a red fill, five or fewer amber, a rating of 4.5 or more green, and featured titles bold.",
+            "variant": "body2",
+            "color": "gray"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "datatable",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "books",
+            "title": "Books",
+            "columns": [
+              {
+                "accessor": "cover",
+                "header": "",
+                "enableSorting": false,
+                "enableColumnFilter": false,
+                "align": "start",
+                "html": "<img src=\"{{cover}}\" alt=\"\" style=\"width:36px;height:54px;object-fit:cover;border-radius:4px;display:block\">",
+                "size": 64,
+                "enableResizing": false
+              },
+              {
+                "accessor": "title",
+                "header": "Title",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "size": 260
+              },
+              {
+                "accessor": "authorName",
+                "header": "Author",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "size": 190
+              },
+              {
+                "accessor": "genreName",
+                "header": "Genre",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "size": 150
+              },
+              {
+                "accessor": "price",
+                "header": "Price",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "format": {
+                  "type": "currency",
+                  "currency": "THB"
+                },
+                "size": 140
+              },
+              {
+                "accessor": "stock",
+                "header": "Stock",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "format": {
+                  "type": "number"
+                },
+                "cellStyles": [
+                  {
+                    "when": {
+                      "left": {
+                        "key": "value"
+                      },
+                      "operator": "eq",
+                      "right": {
+                        "val": 0
+                      }
+                    },
+                    "tone": "red",
+                    "fill": true,
+                    "weight": "bold"
+                  },
+                  {
+                    "when": {
+                      "left": {
+                        "key": "value"
+                      },
+                      "operator": "lte",
+                      "right": {
+                        "val": 5
+                      }
+                    },
+                    "tone": "amber",
+                    "fill": true
+                  }
+                ],
+                "size": 100
+              },
+              {
+                "accessor": "rating",
+                "header": "Rating",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "format": {
+                  "type": "number",
+                  "decimals": 1
+                },
+                "cellStyles": [
+                  {
+                    "when": {
+                      "left": {
+                        "key": "value"
+                      },
+                      "operator": "gte",
+                      "right": {
+                        "val": 4.5
+                      }
+                    },
+                    "tone": "grass",
+                    "weight": "bold"
+                  }
+                ],
+                "size": 100
+              },
+              {
+                "accessor": "publishedAt",
+                "header": "Published",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "format": {
+                  "type": "date"
+                },
+                "size": 140
+              },
+              {
+                "accessor": "featured",
+                "header": "Featured",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "format": {
+                  "type": "boolean",
+                  "trueLabel": "★ Featured",
+                  "falseLabel": "—"
+                },
+                "size": 130
+              }
+            ],
+            "rowStyles": [
+              {
+                "when": {
+                  "left": {
+                    "key": "row",
+                    "path": "featured"
+                  },
+                  "operator": "eq",
+                  "right": {
+                    "val": true
+                  }
+                },
+                "weight": "bold"
+              }
+            ],
+            "api": {
+              "name": "listBooks",
+              "paths": [
+                "data"
+              ]
+            },
+            "cellLines": 1,
+            "canEdit": false,
+            "canDelete": false
+          }
+        }
+      ],
+      "gap": "16px",
+      "justifyItems": "stretch",
+      "alignItems": "stretch",
+      "justifyContent": "start",
+      "alignContent": "start",
+      "gridAutoFlow": "row"
+    }
+  ]
+}

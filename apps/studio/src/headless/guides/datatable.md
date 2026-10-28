@@ -7,7 +7,13 @@ and the edit modal's form sees the selected row under it.
 
 **Columns** — `columns: DataTableColumnConfig[]`, each with a unique `id`, an
 `accessor` (row field) and a `header`; then `enableSorting`, `align`,
-`useDateFormat` (a dayjs format), `pin` (`"" | left | right`), `html` (a
+`format` (how the cell shows its value: `{ type: "" | number | currency |
+percent | date | datetime | boolean | text, decimals, grouping, currency (an
+ISO code), percentOf: "1" | "100", pattern (dayjs tokens) / timeZone (dates),
+trueLabel / falseLabel }` — rendered with `Intl` in the project's locale
+(`update_shell` `locale`); numeric formats align to the end unless `align`
+says otherwise, sorting keeps the raw value, the search box matches the
+formatted text too), `pin` (`"" | left | right`), `html` (a
 `{{field}}` template, escaped and sanitised), `lines` (clamp), `size` /
 `minSize` / `maxSize`, `rowHeader`, `mergeRows`, `mergeColumns`, `group`.
 `update_item` replaces the whole `columns` array — send every column.
@@ -35,3 +41,27 @@ child canvas **1** the table's own filter form (Apply / Clear), and
 `actionSize` (`"" | "1" | "2" | "3"` — 24 / 32 / 40px, `""` = default 32px)
 sizes the row's Edit / Delete buttons and their glyphs; the ACTION column
 widens to fit.
+
+**AG Grid-style features** (every key optional; absent = the engine default):
+- Columns menu — `canChooseColumns` (default on), `columnsButton`,
+  `columnPersist: local | session | none`; per column `hide` (starts hidden)
+  and `lockVisible`. The layout (order, visibility, widths, pins, grouping) is
+  remembered in the browser.
+- Row selection — `selection: { enabled, mode: multi | single, idKey,
+  stateKey, headerCheckbox: page | all | none, keepAcrossPages }`. The picks
+  are page data `<stateKey>` (default `<name>Selected`) = `{ ids, rows,
+  count }`: bind a text / HTML / button request to `{ source: "state", key:
+  "<name>Selected", path: "ids" }`. Reload data on the table clears them.
+- Style rules — `rowStyles` and per column `cellStyles`: `[{ id, field:
+  value | row, path, op: eq | neq | gt | gte | lt | lte | set | unset, value,
+  tone (a Radix colour), fill, bold, italic, strike }]`; the first matching
+  rule's tone wins.
+- Grouping — `grouping: { enabled, by: [accessors], expanded: "0".."3" |
+  "all", userCanGroup, showCount, totalRow: none | top | bottom }` and per
+  column `aggregate: sum | avg | min | max | count`. Client-side only (off
+  with server pagination / sort).
+- Export — `canExport`, `exportButton`, `exportOptions: { fileName
+  ("orders-{{date}}"), columns: visible | all, values: formatted | raw, rows:
+  all | page }`; a button's `ExportTable` action does the same from outside.
+- `paging: pages | scroll` — scroll drops the pager (client-side only); more
+  than 60 rendered rows are virtualised either way.

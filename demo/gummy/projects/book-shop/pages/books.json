@@ -108,7 +108,10 @@
                 "enableSorting": true,
                 "enableColumnFilter": false,
                 "align": "start",
-                "useDateFormat": "DD/MM/YYYY"
+                "format": {
+                  "type": "date",
+                  "pattern": "DD/MM/YYYY"
+                }
               },
               {
                 "accessor": "rating",

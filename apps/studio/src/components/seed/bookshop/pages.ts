@@ -33,6 +33,7 @@ import {
   type Responsive,
   type SelectOption,
   type StudioNavigate,
+  defaultColumnFormat,
 } from '../../Layout/types'
 import { E } from './library'
 import {
@@ -323,7 +324,7 @@ function dashboardPage(): PageDef {
       columns: [
         column('bs-col-dash-number', 'number', 'Order'),
         column('bs-col-dash-customer', 'customerName', 'Customer'),
-        column('bs-col-dash-placed', 'placedAt', 'Placed', { useDateFormat: 'DD/MM/YYYY HH:mm' }),
+        column('bs-col-dash-placed', 'placedAt', 'Placed', { format: { ...defaultColumnFormat(), type: 'date', pattern: 'DD/MM/YYYY HH:mm' } }),
         column('bs-col-dash-status', 'statusLabel', 'Status', { html: '<span class="dt-badge">{{statusLabel}}</span>' }),
         column('bs-col-dash-total', 'totalText', 'Total', { align: 'end' }),
       ],
@@ -453,7 +454,7 @@ function booksPage(): PageDef {
           column('bs-col-books-genre', 'genreName', 'Genre', { enableSorting: true }),
           column('bs-col-books-price', 'priceText', 'Price', { enableSorting: true, sortField: 'price', align: 'end' }),
           column('bs-col-books-stock', 'stock', 'Stock', { enableSorting: true, align: 'end' }),
-          column('bs-col-books-published', 'publishedAt', 'Published', { enableSorting: true, useDateFormat: 'DD/MM/YYYY' }),
+          column('bs-col-books-published', 'publishedAt', 'Published', { enableSorting: true, format: { ...defaultColumnFormat(), type: 'date', pattern: 'DD/MM/YYYY' } }),
           column('bs-col-books-rating', 'rating', 'Rating', { enableSorting: true, align: 'end' }),
         ],
       },
@@ -666,7 +667,7 @@ function ordersPage(): PageDef {
         cellLines: 1,
         columns: [
           column('bs-col-orders-number', 'number', 'Order', { rowHeader: true, enableSorting: true, size: 120 }),
-          column('bs-col-orders-placed', 'placedAt', 'Placed', { enableSorting: true, useDateFormat: 'DD/MM/YYYY HH:mm' }),
+          column('bs-col-orders-placed', 'placedAt', 'Placed', { enableSorting: true, format: { ...defaultColumnFormat(), type: 'date', pattern: 'DD/MM/YYYY HH:mm' } }),
           column('bs-col-orders-customer', 'customerName', 'Name', { enableSorting: true, group: 'Customer' }),
           column('bs-col-orders-city', 'customerCity', 'City', { group: 'Customer' }),
           column('bs-col-orders-status', 'statusLabel', 'Status', { html: '<span class="dt-badge">{{statusLabel}}</span>', sortField: 'status', enableSorting: true }),
@@ -907,7 +908,7 @@ function customersPage(): PageDef {
         column('bs-col-customers-city', 'city', 'City', { enableSorting: true }),
         column('bs-col-customers-orders', 'orderCount', 'Orders', { enableSorting: true, align: 'end' }),
         column('bs-col-customers-spent', 'totalSpentText', 'Spent', { enableSorting: true, sortField: 'totalSpent', align: 'end' }),
-        column('bs-col-customers-joined', 'joinedAt', 'Joined', { enableSorting: true, useDateFormat: 'DD/MM/YYYY' }),
+        column('bs-col-customers-joined', 'joinedAt', 'Joined', { enableSorting: true, format: { ...defaultColumnFormat(), type: 'date', pattern: 'DD/MM/YYYY' } }),
       ],
     }),
   ])
@@ -944,7 +945,7 @@ function customerDetailPage(): PageDef {
           cellLines: 1,
           columns: [
             column('bs-col-cust-orders-number', 'number', 'Order'),
-            column('bs-col-cust-orders-placed', 'placedAt', 'Placed', { useDateFormat: 'DD/MM/YYYY' }),
+            column('bs-col-cust-orders-placed', 'placedAt', 'Placed', { format: { ...defaultColumnFormat(), type: 'date', pattern: 'DD/MM/YYYY' } }),
             column('bs-col-cust-orders-status', 'statusLabel', 'Status', { html: '<span class="dt-badge">{{statusLabel}}</span>' }),
             column('bs-col-cust-orders-total', 'totalText', 'Total', { align: 'end' }),
           ],

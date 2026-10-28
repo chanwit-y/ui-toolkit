@@ -8,6 +8,7 @@ import {
   ITEM_CONDITION_SOURCE,
   type DataCondition,
   type GridItemData,
+  defaultColumnFormat,
 } from '../../Layout/types'
 import { createDefaultBackdrop, type StudioThemeConfig } from '../../Theme/types'
 import { defaultShell } from '../../Workspace/snapshots'
@@ -213,7 +214,7 @@ function tablesPage(): PageDef {
           column('gs-col-books-genre', 'genreName', 'Genre', { enableSorting: true, size: 160 }),
           column('gs-col-books-price', 'priceText', 'Price', { enableSorting: true, sortField: 'price', align: 'end', size: 120 }),
           column('gs-col-books-stock', 'stock', 'Stock', { enableSorting: true, align: 'end', size: 100 }),
-          column('gs-col-books-published', 'publishedAt', 'Published', { enableSorting: true, useDateFormat: 'DD/MM/YYYY', size: 140 }),
+          column('gs-col-books-published', 'publishedAt', 'Published', { enableSorting: true, format: { ...defaultColumnFormat(), type: 'date', pattern: 'DD/MM/YYYY' }, size: 140 }),
           column('gs-col-books-isbn', 'isbn', 'ISBN', { size: 180 }),
           column('gs-col-books-rating', 'rating', 'Rating', { enableSorting: true, align: 'end', size: 100, pin: 'right' }),
         ],
@@ -424,17 +425,24 @@ function glassMenu(): MenuItemDef[] {
   ]
 }
 
-/** The plain sidebar and a neutral (panel) app bar, so both are glass; the Portal shows the pill one. */
+/** The pill sidebar (its idle pills are `--accent-2`, which flips with the appearance) under a neutral (panel) app bar, so both are glass; no breadcrumb strip, a hamburger as the collapse toggle. */
 function glassShell(): ShellSettings {
   const base = defaultShell('Glass showcase')
   return {
     ...base,
-    appBar: { ...base.appBar, icon: 'layoutDashboard' },
+    breadcrumbs: false,
+    appBar: { ...base.appBar, icon: 'layoutDashboard', sidebarToggle: { hide: 'menu', show: 'menu' } },
+    sidebar: { ...base.sidebar, variant: 'pill' },
     pageTransition: { type: 'fade-up', duration: '', easing: 'ease-out' },
   }
 }
 
-/** Glass over a configured gradient (the Portal keeps the engine's default accent backdrop). */
+/**
+ * Glass over a configured gradient (the Portal keeps the engine's default
+ * accent backdrop): lavender → pink in light, and its own deep indigo → plum
+ * stops in dark — a pale gradient under the dark panels would wash them out
+ * and leave the page text (`--gray-12`, near white) unreadable over it.
+ */
 function glassTheme(): StudioThemeConfig {
   return {
     appearance: 'light',
@@ -442,7 +450,11 @@ function glassTheme(): StudioThemeConfig {
     radius: 'large',
     panelBackground: 'solid',
     surface: 'glass',
-    background: { ...createDefaultBackdrop(), kind: 'gradient', gradient: { from: '#c7d2fe', to: '#fbcfe8', angle: 160 } },
+    background: {
+      ...createDefaultBackdrop(),
+      kind: 'gradient',
+      gradient: { from: '#c7d2fe', to: '#fbcfe8', angle: 160, darkFrom: '#312e81', darkTo: '#831843' },
+    },
     buttonColor: '',
     dataTable: {
       headerColor: '',

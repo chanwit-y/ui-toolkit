@@ -83,6 +83,16 @@ export type { ResolvedContainerSurface } from "./components/core/containerSurfac
 export * from "./api/APIMaster";
 export * from "./components/DataTable2";
 export { HtmlCell, renderHtmlCell, type HtmlCellProps } from "./components/HtmlCell";
+// Cell formats (`ColumnDef.format`): the pure formatter, the app locale and the cell.
+export { formatCell, columnFormat, NUMERIC_FORMATS, type CellFormat, type CellFormatType } from "./util/format";
+export { LocaleProvider, useLocale } from "./components/core/locale";
+export { FormattedCell, FormattedHtmlCell } from "./components/FormattedCell";
+// AG Grid-style table features: Columns menu, layout state, style rules, aggregates, CSV.
+export { DataTableColumnsMenu, type ColumnsMenuItem, type DataTableColumnsMenuProps } from "./components/DataTableColumnsMenu";
+export { reconcileColumnLayout, useColumnLayout, type ColumnLayout } from "./components/dataTableColumnState";
+export { resolveStyles, cellLook, ruleMatches, type ResolvedStyle } from "./components/dataTableStyles";
+export { aggregateValues } from "./components/dataTableGrouping";
+export { toCsv, csvCell, csvFileName, downloadCsv } from "./util/csv";
 export { ClampedCell, DEFAULT_CELL_LINES } from "./components/ClampedCell";
 export { DEFAULT_ACTION_SIZE } from "./components/dataTableActions";
 export { groupColumns, headerRows, computeSpans, columnMeta, type ColumnLayoutMeta } from "./components/dataTableLayout";
@@ -129,6 +139,13 @@ export type {
   DataTableAddButton,
   DataTableHeaderGap,
   DataTableActionSize,
+  DataTableStyleRule,
+  DataTableAggregate,
+  DataTableSelection,
+  DataTableGrouping,
+  DataTableExportOptions,
+  DataTableColumnState,
+  DataTableToolbarButton,
   // The engine's column config (not TanStack's `ColumnDef`, hence the prefix).
   ColumnDef as DataTableColumnDef,
 } from "./components/@types";

@@ -29,7 +29,8 @@ function make(initial: WorkspaceData) {
 }
 
 const COLUMN = {
-  enableSorting: false, enableColumnFilter: false, align: 'start', useDateFormat: '', pin: '', html: '', sortField: '',
+  enableSorting: false, enableColumnFilter: false, align: 'start', pin: '', html: '', sortField: '',
+  format: { type: '', decimals: '', grouping: true, currency: '', percentOf: '1', pattern: '', timeZone: '', trueLabel: '', falseLabel: '' },
   lines: '', rowHeader: false, mergeRows: false, mergeColumns: false, group: '', size: '', minSize: '', maxSize: '', resizable: true,
 }
 

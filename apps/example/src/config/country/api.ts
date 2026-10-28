@@ -167,6 +167,13 @@ export const api = {
     withOptions: false,
   },
   // Regions, each with its `countries[]` — the Repeater demo's nested source.
+  countriesLarge: {
+    url: "/collection/countries-large",
+    description: "2,000 countries rows (the 40 repeated) for scroll mode",
+    methods: "GET" as const,
+    response: "countryRes",
+    withOptions: false,
+  },
   regions: {
     url: "/collection/regions",
     description: "List regions with their countries",

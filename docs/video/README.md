@@ -54,3 +54,25 @@ Record one file per narration line as `voice/<line id>.wav` (`l1`, `l2a`, … �
 and run `bun build.ts --render-only`. Each line still starts at its mark, and a longer take
 pushes the lines after it and stretches its scene, so nothing needs re-cutting. `VOICE` and
 `RATE` change the generated voice.
+
+# Data grid preview video
+
+A ~90-second preview of the data table's AG Grid-style features (formats and style rules, the
+Columns menu, selection, grouping, export, scroll mode, then the studio panel), recorded on the
+demo's **Data grid showcase** project. Same pipeline (`pipeline.ts`), its own script and captures:
+
+| File | What it is |
+|---|---|
+| `grid/narration.ts` | the nine scenes (`g1`–`g9`) and their lines |
+| `grid/capture.ts` | the recorded scenes |
+| `grid/build.ts` | the build entry → `grid/out/gummy-data-grid.mp4` |
+
+Servers: `demo-api` (9100), `demo-grid` (3404) and `demo-studio` (3398). Each scene opens a fresh
+browser context, so no remembered column layout leaks between takes; nothing is written to
+`demo/gummy`.
+
+```bash
+bun grid/build.ts                     # capture every scene, then render
+bun grid/build.ts --only g5-grouping  # re-capture one scene, render
+bun grid/build.ts --render-only       # re-render from the last capture
+```

@@ -19,6 +19,11 @@ export type PageLoadDef = {
   /** How the page waits (the engine `PageLoad.loading`): the overlay, skeletons on the bound components, or nothing. */
   loading: LoadingMode
   errorMessage: string
+  /**
+   * A pseudo-load's fixed shape (a table's selection slice) — never on a
+   * stored load; `loadShape` returns it instead of walking an endpoint.
+   */
+  shape?: LoadShape
 }
 
 export type LoadingMode = 'cycle' | 'skeleton' | 'none'
@@ -104,6 +109,7 @@ export type LoadShape =
   | { shape: null; fields: null; reason: string }
 
 export function loadShape(load: PageLoadDef, endpoints: EndpointDef[], models: ModelDef[]): LoadShape {
+  if (load.shape) return load.shape
   if (load.read.endpointId == null) return { shape: null, fields: null, reason: 'Pick the load’s endpoint.' }
   const endpoint = endpoints.find((e) => e.id === load.read.endpointId)
   if (!endpoint) return { shape: null, fields: null, reason: 'The load’s endpoint is missing.' }

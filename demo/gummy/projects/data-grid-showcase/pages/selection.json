@@ -1,0 +1,227 @@
+{
+  "containers": [
+    {
+      "id": "page-selection",
+      "name": "page-selection",
+      "isArray": false,
+      "bins": [
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "Selection",
+            "variant": "h3",
+            "weight": "bold"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "Tick orders — the header box ticks every order that matches the search. The picks are page data (ordersSelected = { ids, rows, count }): the line below reads its count, and Clear selection reloads the table, which starts the picks afresh.",
+            "variant": "body2",
+            "color": "gray"
+          }
+        },
+        {
+          "sm": "8",
+          "md": "9",
+          "lg": "10",
+          "xl": "10",
+          "type": "html",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "selectionSummary",
+            "html": "<p style=\"margin:0\">Orders picked: <strong>{{count}}</strong> <span class=\"dt-muted\">· page data <code>ordersSelected</code></span></p>",
+            "value": {
+              "type": "state",
+              "key": "ordersSelected"
+            },
+            "prose": false
+          }
+        },
+        {
+          "sm": "4",
+          "md": "3",
+          "lg": "2",
+          "xl": "2",
+          "type": "button",
+          "justifySelf": "start",
+          "alignSelf": "stretch",
+          "element": {
+            "label": "Clear selection",
+            "icon": "refresh",
+            "variant": "outlined",
+            "actions": [
+              "ReloadDataTable"
+            ],
+            "reloadDataTable": "orders"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "datatable",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "orders",
+            "title": "Orders",
+            "columns": [
+              {
+                "accessor": "number",
+                "header": "Order",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "lockVisible": true,
+                "size": 120
+              },
+              {
+                "accessor": "placedAt",
+                "header": "Placed",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "format": {
+                  "type": "datetime",
+                  "timeZone": "Asia/Bangkok"
+                },
+                "size": 190
+              },
+              {
+                "accessor": "customerName",
+                "header": "Customer",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "size": 200
+              },
+              {
+                "accessor": "statusLabel",
+                "header": "Status",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "cellStyles": [
+                  {
+                    "when": {
+                      "left": {
+                        "key": "row",
+                        "path": "status"
+                      },
+                      "operator": "eq",
+                      "right": {
+                        "val": "refund_requested"
+                      }
+                    },
+                    "tone": "amber",
+                    "fill": true,
+                    "weight": "bold"
+                  },
+                  {
+                    "when": {
+                      "left": {
+                        "key": "row",
+                        "path": "status"
+                      },
+                      "operator": "eq",
+                      "right": {
+                        "val": "delivered"
+                      }
+                    },
+                    "tone": "grass"
+                  },
+                  {
+                    "when": {
+                      "left": {
+                        "key": "row",
+                        "path": "status"
+                      },
+                      "operator": "eq",
+                      "right": {
+                        "val": "cancelled"
+                      }
+                    },
+                    "tone": "gray",
+                    "strike": true
+                  },
+                  {
+                    "when": {
+                      "left": {
+                        "key": "row",
+                        "path": "status"
+                      },
+                      "operator": "eq",
+                      "right": {
+                        "val": "refunded"
+                      }
+                    },
+                    "tone": "gray",
+                    "italic": true
+                  }
+                ],
+                "size": 160
+              },
+              {
+                "accessor": "itemCount",
+                "header": "Items",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "format": {
+                  "type": "number"
+                },
+                "size": 90
+              },
+              {
+                "accessor": "total",
+                "header": "Total",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "format": {
+                  "type": "currency",
+                  "currency": "THB"
+                },
+                "size": 150
+              }
+            ],
+            "selection": {
+              "mode": "multi",
+              "headerCheckbox": "all"
+            },
+            "api": {
+              "name": "listOrders",
+              "paths": [
+                "data"
+              ]
+            },
+            "cellLines": 1,
+            "canEdit": false,
+            "canDelete": false
+          }
+        }
+      ],
+      "gap": "16px",
+      "justifyItems": "stretch",
+      "alignItems": "stretch",
+      "justifyContent": "start",
+      "alignContent": "start",
+      "gridAutoFlow": "row"
+    }
+  ]
+}

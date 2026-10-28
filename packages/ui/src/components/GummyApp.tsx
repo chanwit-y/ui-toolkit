@@ -8,6 +8,7 @@ import { SurfaceBackdrop } from "./SurfaceBackdrop";
 import { DataProvider, ThemeProvider } from "./context";
 import { ActionsProvider } from "./core/actions";
 import { ComponentsProvider } from "./core/components";
+import { LocaleProvider } from "./core/locale";
 import { GlobalLoads } from "./core/GlobalLoads";
 import { PageRouter } from "./core/PageRouter";
 import { fetchPageLoader, type PageBodyLoader } from "./core/pageBodies";
@@ -36,6 +37,8 @@ export type GummyAppProps = {
   getToken?: () => Promise<string>;
   /** HTTP base URL; wins over `env.API_URL`. */
   apiUrl?: string;
+  /** BCP 47 locale for formatted cells; overrides `project.locale`. Absent = the project's, else the browser's. */
+  locale?: string;
   /** Per-environment overrides of the project's `env`. */
   env?: Record<string, string>;
   /** A ready client (interceptors, custom error handling); wins over `apiUrl` / `getToken`. */
@@ -113,6 +116,7 @@ function DefaultNotFound({ firstPath }: { firstPath: string | undefined }) {
  * ```
  */
 export function GummyApp({
+  locale,
   project: rawProject,
   getToken,
   apiUrl,
@@ -208,6 +212,7 @@ export function GummyApp({
   return (
     <DataProvider>
       <ThemeProvider theme={project.theme?.theme} components={project.theme?.components ?? {}} className={className}>
+        <LocaleProvider locale={locale ?? project.locale}>
         <ActionsProvider actions={actions ?? {}}>
           <ComponentsProvider components={components ?? {}}>
             {authConfig ? (
@@ -228,6 +233,7 @@ export function GummyApp({
             )}
           </ComponentsProvider>
         </ActionsProvider>
+        </LocaleProvider>
       </ThemeProvider>
     </DataProvider>
   );

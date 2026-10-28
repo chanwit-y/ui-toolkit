@@ -125,6 +125,17 @@
       ],
       "port": 3403,
       "autoPort": false
+    },
+    {
+      "name": "demo-grid",
+      "comment": "The demo app rendering the Data grid showcase project (the data table's AG Grid-style features over the Book shop API \u2014 needs demo-api), port 3404.",
+      "runtimeExecutable": "/bin/bash",
+      "runtimeArgs": [
+        "-c",
+        "cd demo && PATH=/opt/homebrew/bin:$PATH exec bun run app:grid"
+      ],
+      "port": 3404,
+      "autoPort": false
     }
   ]
 }

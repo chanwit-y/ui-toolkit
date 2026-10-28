@@ -93,16 +93,22 @@ export type ColumnResize = {
 	freeze: () => void
 	/** Back to the column's starting width: its measured one, else its config `size`. */
 	reset: (column: Column<any, unknown>) => void
+	/**
+	 * Replace every width at once (the Columns menu's Reset, a restored layout):
+	 * a non-empty map is exact mode, an empty one returns to stretch.
+	 */
+	replace: (sizing: ColumnSizingState) => void
 }
 
 /**
  * Resize state for one table. `startExact` — a column declares a `size`, so
  * the table honours pixel widths from the first paint instead of stretching.
  */
-export function useColumnResize(enabled: boolean, startExact: boolean): ColumnResize {
-	const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({})
-	// Exact once a column declares a `size`, or once a gesture froze the layout.
-	const [frozen, setFrozen] = useState(false)
+export function useColumnResize(enabled: boolean, startExact: boolean, initialSizing?: ColumnSizingState): ColumnResize {
+	const [columnSizing, setColumnSizing] = useState<ColumnSizingState>(() => initialSizing ?? {})
+	// Exact once a column declares a `size`, once a gesture froze the layout, or
+	// when remembered widths came back with the column state.
+	const [frozen, setFrozen] = useState(() => Object.keys(initialSizing ?? {}).length > 0)
 	const exact = startExact || frozen
 	const tableRef = useRef<HTMLTableElement>(null)
 	// The widths measured at the freeze: what "reset" returns a column to.
@@ -130,6 +136,11 @@ export function useColumnResize(enabled: boolean, startExact: boolean): ColumnRe
 		else setColumnSizing((old) => ({ ...old, [column.id]: base }))
 	}, [])
 
+	const replace = useCallback((sizing: ColumnSizingState) => {
+		setColumnSizing(sizing)
+		setFrozen(Object.keys(sizing).length > 0)
+	}, [])
+
 	return {
 		tableOptions: {
 			enableColumnResizing: enabled,
@@ -142,6 +153,7 @@ export function useColumnResize(enabled: boolean, startExact: boolean): ColumnRe
 		tableRef,
 		freeze,
 		reset,
+		replace,
 	}
 }
 

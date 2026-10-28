@@ -1,0 +1,218 @@
+{
+  "containers": [
+    {
+      "id": "page-scroll",
+      "name": "page-scroll",
+      "isArray": false,
+      "bins": [
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "Scroll",
+            "variant": "h3",
+            "weight": "bold"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "typography",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "text": "All 300 orders in one scroller, no pager. Past 60 rows only the rows in view are drawn, so scrolling stays smooth; the header stays put and the order number stays pinned.",
+            "variant": "body2",
+            "color": "gray"
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "12",
+          "xl": "12",
+          "type": "datatable",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "ordersScroll",
+            "title": "All orders",
+            "columns": [
+              {
+                "accessor": "number",
+                "header": "Order",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "pin": "left",
+                "lockVisible": true,
+                "size": 120
+              },
+              {
+                "accessor": "placedAt",
+                "header": "Placed",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "format": {
+                  "type": "datetime",
+                  "timeZone": "Asia/Bangkok"
+                },
+                "size": 190
+              },
+              {
+                "accessor": "customerName",
+                "header": "Customer",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "size": 200
+              },
+              {
+                "accessor": "customerCity",
+                "header": "City",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "size": 140
+              },
+              {
+                "accessor": "statusLabel",
+                "header": "Status",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "cellStyles": [
+                  {
+                    "when": {
+                      "left": {
+                        "key": "row",
+                        "path": "status"
+                      },
+                      "operator": "eq",
+                      "right": {
+                        "val": "refund_requested"
+                      }
+                    },
+                    "tone": "amber",
+                    "fill": true,
+                    "weight": "bold"
+                  },
+                  {
+                    "when": {
+                      "left": {
+                        "key": "row",
+                        "path": "status"
+                      },
+                      "operator": "eq",
+                      "right": {
+                        "val": "delivered"
+                      }
+                    },
+                    "tone": "grass"
+                  },
+                  {
+                    "when": {
+                      "left": {
+                        "key": "row",
+                        "path": "status"
+                      },
+                      "operator": "eq",
+                      "right": {
+                        "val": "cancelled"
+                      }
+                    },
+                    "tone": "gray",
+                    "strike": true
+                  },
+                  {
+                    "when": {
+                      "left": {
+                        "key": "row",
+                        "path": "status"
+                      },
+                      "operator": "eq",
+                      "right": {
+                        "val": "refunded"
+                      }
+                    },
+                    "tone": "gray",
+                    "italic": true
+                  }
+                ],
+                "size": 160
+              },
+              {
+                "accessor": "itemCount",
+                "header": "Items",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "format": {
+                  "type": "number"
+                },
+                "size": 90
+              },
+              {
+                "accessor": "total",
+                "header": "Total",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "format": {
+                  "type": "currency",
+                  "currency": "THB"
+                },
+                "size": 150
+              },
+              {
+                "accessor": "paymentMethod",
+                "header": "Payment",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "size": 140
+              },
+              {
+                "accessor": "handledBy",
+                "header": "Handled by",
+                "enableSorting": true,
+                "enableColumnFilter": false,
+                "align": "start",
+                "size": 160
+              }
+            ],
+            "selection": {
+              "mode": "multi",
+              "stateKey": "scrollSelected",
+              "headerCheckbox": "all"
+            },
+            "paging": "scroll",
+            "api": {
+              "name": "listOrders",
+              "paths": [
+                "data"
+              ]
+            },
+            "cellLines": 1,
+            "canEdit": false,
+            "canDelete": false
+          }
+        }
+      ],
+      "gap": "16px",
+      "justifyItems": "stretch",
+      "alignItems": "stretch",
+      "justifyContent": "start",
+      "alignContent": "start",
+      "gridAutoFlow": "row"
+    }
+  ]
+}

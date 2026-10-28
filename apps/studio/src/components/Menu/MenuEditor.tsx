@@ -738,6 +738,16 @@ export function MenuEditor() {
               />
             </Field>
           </div>
+          <div className="max-w-sm">
+            <Field label="Locale (formatted table cells)">
+              <Input
+                value={shell.locale ?? ''}
+                onChange={(e) => setShell({ locale: e.target.value })}
+                placeholder="Default: the viewer's browser · th-TH · en-GB"
+                className="font-mono"
+              />
+            </Field>
+          </div>
           <p className="text-ui-xs text-ink-3">
             In the top bar, groups become dropdowns and there is no sidebar; below the md breakpoint both
             fall back to a drawer. Breadcrumbs follow each page’s parent (Page settings). With icons off, the

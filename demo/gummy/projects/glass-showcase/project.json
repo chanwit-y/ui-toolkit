@@ -316,7 +316,7 @@
       "radius": "large",
       "panelBackground": "solid",
       "surface": "glass",
-      "background": "linear-gradient(160deg, #c7d2fe, #fbcfe8)"
+      "background": "linear-gradient(160deg, light-dark(#c7d2fe, #312e81), light-dark(#fbcfe8, #831843))"
     },
     "components": {
       "dataTable": {

@@ -78,7 +78,9 @@ export class ConditionExpression {
 
   private _ref(ref: Ref): Primitive {
     if (ref.source === "state") return readSlice(ref.key!, ref.path) as Primitive;
-    return get(this?._contextData?.[ref.key!], ref.path ?? "");
+    const scoped = this?._contextData?.[ref.key!];
+    // No path: the value itself (`{ key: "value" }` in a table style rule).
+    return ref.path ? get(scoped, ref.path) : scoped;
   }
 
   public expression(expression: CondExpression) {

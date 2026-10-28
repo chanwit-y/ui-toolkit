@@ -81,7 +81,7 @@ import { cn, IconButton } from '../common'
 import { COMPONENT_BY_TYPE } from './componentCatalog'
 import { ENTER_DURATION_MS, prefersReducedMotion, UPGRADE_FADE_MS } from './gridAnimation'
 import { useGridStore, useIsEntering } from './gridStore'
-import { buildDataTablePreviewRows, buildHtmlPreviewValue, DATATABLE_PREVIEW_ROW_COUNT } from './dataTablePreview'
+import { buildDataTablePreviewRows, buildHtmlPreviewValue, DATATABLE_PREVIEW_ROW_COUNT, previewValueFor } from './dataTablePreview'
 import { useBindingToken } from './ItemBindingField'
 import { useActiveProject } from '../Workspace/workspaceStore'
 import type {
@@ -123,7 +123,8 @@ import type {
   UploadFileConfig,
   UploadImageConfig,
 } from './types'
-import { uploadAccept } from './types'
+import { columnFormatToEngine, styleRulesToEngine, uploadAccept } from './types'
+import { dataTableGridFeatures } from './gridConfig'
 import { escapeClassName } from './utils'
 
 type GridItemProps = {
@@ -888,15 +889,21 @@ function previewColumnSizing(c: ColumnSizingConfig) {
  * DataTable2 needs (Data/Loading/Snackbar/Query) come from `CoreProvider` in
  * `App.tsx`.
  */
+const NO_GROUP_BY: string[] = []
+
 function DataTableLivePreview({ config, filterCanvas }: { config: DataTableConfig; filterCanvas?: ChildCanvas }) {
   // Server filters on the canvas: the real Filter button (or inline bar), whose
   // form body is the read-only preview of the table's filter canvas.
   const showFilters = config.filtersEnabled && !!filterCanvas && filterCanvas.items.length > 0
-  const rows = useMemo(() => buildDataTablePreviewRows(config.columns), [config.columns])
+  const groupBy = config.grouping?.enabled ? config.grouping.by : NO_GROUP_BY
+  const rows = useMemo(() => buildDataTablePreviewRows(config.columns, groupBy), [config.columns, groupBy])
   const api = useMemo(() => async () => rows, [rows])
   // Layout flags DataTable2 reads off `meta`, set like the engine's builder
   // does: the column's own clamp, row header, merged cells, HTML.
   const layoutMeta = (c: DataTableColumnConfig) => ({
+    ...(columnFormatToEngine(c.format) ? { format: columnFormatToEngine(c.format) } : {}),
+    ...(styleRulesToEngine(c.cellStyles) ? { styles: styleRulesToEngine(c.cellStyles) } : {}),
+    ...(c.aggregate ? { aggregate: c.aggregate } : {}),
     ...(c.lines !== '' ? { lines: c.lines } : {}),
     ...(c.rowHeader ? { rowHeader: true } : {}),
     ...(c.mergeRows ? { mergeRows: true } : {}),
@@ -940,6 +947,11 @@ function DataTableLivePreview({ config, filterCanvas }: { config: DataTableConfi
       className="pointer-events-none w-full px-3 py-2"
     >
       <DataTable2
+        {...dataTableGridFeatures(config)}
+        // The canvas never remembers a layout: it shows the config.
+        columnState={{ persist: 'none' }}
+        hiddenColumns={config.columns.filter((c) => c.hide).map((c) => c.accessor.replace(/\./g, '_'))}
+        lockedColumns={config.columns.filter((c) => c.lockVisible || c.rowHeader).map((c) => c.accessor.replace(/\./g, '_'))}
         pinnedColumns={pinnedColumns}
         // Namespaced so the canvas's mock-row cache never collides with the
         // Live Preview modal's real fetch (react-query keys by name+title, and
@@ -978,7 +990,7 @@ function DataTableLivePreview({ config, filterCanvas }: { config: DataTableConfi
 /** The part of a datatable config that changes the *fetched* rows (not just the
  * column chrome) — used as the preview's remount key so edits refetch. */
 function dataTableRowsKey(config: DataTableConfig): string {
-  return JSON.stringify(config.columns.map((c) => [c.accessor, c.header, c.useDateFormat, c.html]))
+  return JSON.stringify([config.columns.map((c) => [c.accessor, c.header, c.format, c.html]), config.grouping?.enabled ? config.grouping.by : null])
 }
 
 /**
@@ -996,7 +1008,10 @@ function buildEditableTablePreviewRows(
     for (const column of columns) {
       const key = column.accessorKey
       if (!key) continue
-      if (/^id$|Id$|_id$/.test(key)) {
+      const formatted = previewValueFor(column.format, i)
+      if (formatted !== undefined) {
+        row[key] = formatted
+      } else if (/^id$|Id$|_id$/.test(key)) {
         row[key] = i + 1
       } else if (column.editor === 'number') {
         row[key] = (i + 1) * 10
@@ -1040,6 +1055,8 @@ function EditableTableLivePreview({ config }: { config: DataTableEditableConfig 
     header: c.header,
     editable: c.editable,
     editor: c.editor,
+    ...(columnFormatToEngine(c.format) ? { format: columnFormatToEngine(c.format) } : {}),
+    ...(styleRulesToEngine(c.cellStyles) ? { cellStyles: styleRulesToEngine(c.cellStyles) } : {}),
     ...(c.editor === 'select' ? { options: c.options } : {}),
     isRequired: c.isRequired,
     enableSorting: c.enableSorting,

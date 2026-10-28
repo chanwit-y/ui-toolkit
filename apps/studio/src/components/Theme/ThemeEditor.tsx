@@ -718,42 +718,72 @@ export function ThemeEditor() {
                 />
               </Field>
               {backdrop.kind === 'color' && (
-                <Field label="Colour">
-                  <ColorInput
-                    value={backdrop.color}
-                    onChange={(color) => updateBackground({ color })}
-                    placeholder="#e0e7ff · rgb(…) · var(--indigo-3)"
-                  />
-                </Field>
+                <>
+                  <Field label="Colour">
+                    <ColorInput
+                      value={backdrop.color}
+                      onChange={(color) => updateBackground({ color })}
+                      placeholder="#e0e7ff · rgb(…) · var(--indigo-3)"
+                    />
+                  </Field>
+                  <Field label="Colour in dark">
+                    <ColorInput
+                      value={backdrop.darkColor}
+                      onChange={(darkColor) => updateBackground({ darkColor })}
+                      placeholder="same in both"
+                    />
+                  </Field>
+                </>
               )}
             </div>
             {backdrop.kind === 'gradient' && (
-              <div className="grid gap-3 sm:grid-cols-3">
-                <Field label="From">
-                  <ColorInput
-                    value={backdrop.gradient.from}
-                    onChange={(from) => updateBackground({ gradient: { ...backdrop.gradient, from } })}
-                    placeholder="#c7d2fe"
-                  />
-                </Field>
-                <Field label="To">
-                  <ColorInput
-                    value={backdrop.gradient.to}
-                    onChange={(to) => updateBackground({ gradient: { ...backdrop.gradient, to } })}
-                    placeholder="#fbcfe8"
-                  />
-                </Field>
-                <Field label="Angle (deg)">
-                  <Input
-                    type="number"
-                    min={0}
-                    max={360}
-                    step={1}
-                    value={backdrop.gradient.angle}
-                    onChange={(e) => updateBackground({ gradient: { ...backdrop.gradient, angle: Number(e.target.value) || 0 } })}
-                  />
-                </Field>
-              </div>
+              <>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <Field label="From">
+                    <ColorInput
+                      value={backdrop.gradient.from}
+                      onChange={(from) => updateBackground({ gradient: { ...backdrop.gradient, from } })}
+                      placeholder="#c7d2fe"
+                    />
+                  </Field>
+                  <Field label="To">
+                    <ColorInput
+                      value={backdrop.gradient.to}
+                      onChange={(to) => updateBackground({ gradient: { ...backdrop.gradient, to } })}
+                      placeholder="#fbcfe8"
+                    />
+                  </Field>
+                  <Field label="Angle (deg)">
+                    <Input
+                      type="number"
+                      min={0}
+                      max={360}
+                      step={1}
+                      value={backdrop.gradient.angle}
+                      onChange={(e) => updateBackground({ gradient: { ...backdrop.gradient, angle: Number(e.target.value) || 0 } })}
+                    />
+                  </Field>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <Field label="From in dark">
+                    <ColorInput
+                      value={backdrop.gradient.darkFrom}
+                      onChange={(darkFrom) => updateBackground({ gradient: { ...backdrop.gradient, darkFrom } })}
+                      placeholder="same in both"
+                    />
+                  </Field>
+                  <Field label="To in dark">
+                    <ColorInput
+                      value={backdrop.gradient.darkTo}
+                      onChange={(darkTo) => updateBackground({ gradient: { ...backdrop.gradient, darkTo } })}
+                      placeholder="same in both"
+                    />
+                  </Field>
+                  <p className="self-end pb-1.5 text-ui-sm text-ink-3">
+                    A pale gradient washes out the dark panels — give the dark appearance its own stops.
+                  </p>
+                </div>
+              </>
             )}
             {backdrop.kind === 'image' && (
               <Field label="Image">

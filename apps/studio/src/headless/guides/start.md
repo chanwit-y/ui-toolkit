@@ -60,7 +60,7 @@ several things):
 | `pageId` (in `navigate`, `rowNavigate`, `itemNavigate`) | a page | its key, name or path |
 | `endpointId`, `deleteEndpointId`, `*EndpointId`, `dataSource.endpointId`, `read.endpointId` | a library endpoint | its name |
 | `loadId`, a `{ type: "state" }` / `{ source: "state" }` `key` | a page / global load | its key |
-| `modalItemId`, `observeToItemId`, `reloadTableItemId`, `enabledWhen.itemId` | an item on the page | its binding `name`, modal `id` or label |
+| `modalItemId`, `observeToItemId`, `reloadTableItemId`, `exportTableItemId`, `enabledWhen.itemId` | an item on the page | its binding `name`, modal `id` or label |
 | `componentId` | a declared custom component | its name |
 | `"fn:<x>"` in `actions` / `confirmTrue` / `confirmFalse` | a declared custom action | its name |
 

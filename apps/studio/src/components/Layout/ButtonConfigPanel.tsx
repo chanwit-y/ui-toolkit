@@ -56,6 +56,7 @@ const ACTION_LABELS: Record<BuiltinButtonActionKey, string> = {
   CloseModal: 'Close modal',
   Navigate: 'Go to page',
   ReloadDataTable: 'Reload data',
+  ExportTable: 'Export table (CSV)',
   SignIn: 'Sign in (SSO)',
   SignOut: 'Sign out (SSO)',
 }
@@ -294,6 +295,9 @@ export function ButtonConfigPanel({
   const usesSubmit = effectiveActions.some(isSubmit)
   const usesCloseModal = effectiveActions.includes('CloseModal')
   const usesReload = effectiveActions.includes('ReloadDataTable')
+  const usesExport = effectiveActions.includes('ExportTable')
+  const exportables = targets.dataTables ?? []
+  const exportDangling = !!config.exportTableItemId && !exportables.some((t) => t.itemId === config.exportTableItemId)
 
   const modalDangling =
     config.modalItemId !== '' && !targets.modals.some((m) => m.itemId === config.modalItemId)
@@ -425,6 +429,23 @@ export function ButtonConfigPanel({
           {config.reloadTableItemId === '' && (
             <WiringHint>Pick what to reload — a table, list or repeater, or one of the page’s loads.</WiringHint>
           )}
+        </>
+      )}
+
+      {usesExport && (
+        <>
+          <Field label="Export">
+            <Select
+              options={[
+                { value: '', label: '— none —' },
+                ...(exportDangling ? [{ value: config.exportTableItemId ?? '', label: '⚠ missing table' }] : []),
+                ...exportables.map((t) => ({ value: t.itemId, label: t.name || '(unnamed table)' })),
+              ]}
+              value={config.exportTableItemId ?? ''}
+              onChange={(v) => set('exportTableItemId', v)}
+            />
+          </Field>
+          {!config.exportTableItemId && <WiringHint>Pick the data table to download as CSV.</WiringHint>}
         </>
       )}
 

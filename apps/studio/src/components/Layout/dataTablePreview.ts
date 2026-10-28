@@ -1,6 +1,6 @@
 import dayjs from 'dayjs'
 import { templateFields } from '@gummy-ui/ui'
-import type { DataTableColumnConfig } from './types'
+import type { ColumnFormatConfig, DataTableColumnConfig } from './types'
 
 const ID_ISH = /^id$|Id$|_id$/
 /** Prose-like accessors get a paragraph so the line clamp / tooltip is visible on the canvas. */
@@ -22,9 +22,9 @@ function setPath(row: Record<string, unknown>, path: string, value: unknown) {
 
 /**
  * Synthesize mock preview rows from the authored columns, so the table body
- * always matches the inspector. Type-aware per column: an id-ish accessor
- * (`id`, `userId`, `user_id`) counts 1..N, a date-format column renders real
- * consecutive dates through dayjs with that format, everything else is
+ * always matches the inspector. Type-aware per column: a formatted column gets
+ * a raw value of its kind (a number, an ISO date, a boolean — the table formats
+ * it), an id-ish accessor (`id`, `userId`, `user_id`) counts 1..N, everything else is
  * "<Header> N". Fields a column's `html` template reads beyond the accessors
  * (`{{code}}`, `{{region.name}}`) are filled the same way, so an HTML cell
  * never previews blank. The base date is fixed so re-renders are deterministic.
@@ -32,20 +32,42 @@ function setPath(row: Record<string, unknown>, path: string, value: unknown) {
  * renders "Page 1 of 1" without making the cell tall.
  */
 export const DATATABLE_PREVIEW_ROW_COUNT = 5
+
+/** A raw mock value of the column's format kind for row `i`, or `undefined` when the column has no format. */
+export function previewValueFor(format: ColumnFormatConfig | undefined, i: number): unknown {
+  switch (format?.type) {
+    case 'number':
+      return (i + 1) * 1234.5
+    case 'currency':
+      return (i + 1) * 1250
+    case 'percent':
+      return format.percentOf === '100' ? (i + 1) * 12.5 : (i + 1) * 0.125
+    case 'date':
+    case 'datetime':
+      return dayjs('2026-01-05T09:30:00').add(i, 'day').toISOString()
+    case 'boolean':
+      return i % 2 === 0
+    default:
+      return undefined
+  }
+}
 export function buildDataTablePreviewRows(
   columns: DataTableColumnConfig[],
+  /** Accessors the table groups by: their values repeat in pairs, so the preview shows real groups. */
+  groupBy: string[] = [],
 ): Record<string, unknown>[] {
   return Array.from({ length: DATATABLE_PREVIEW_ROW_COUNT }, (_, i) => {
     const row: Record<string, unknown> = {}
     for (const column of columns) {
       if (!column.accessor) continue
-      if (column.useDateFormat) {
-        row[column.accessor] = dayjs('2026-01-05').add(i, 'day').format(column.useDateFormat)
+      const formatted = previewValueFor(column.format, i)
+      if (formatted !== undefined) {
+        row[column.accessor] = formatted
       } else if (ID_ISH.test(column.accessor)) {
         row[column.accessor] = i + 1
       } else if (PROSE_ISH.test(column.accessor)) {
         row[column.accessor] = `${column.header || column.accessor} ${i + 1} — ${PROSE}`
-      } else if (column.mergeRows) {
+      } else if (column.mergeRows || groupBy.includes(column.accessor)) {
         // Repeat down the rows in pairs so a `mergeRows` column shows its spans.
         row[column.accessor] = `${column.header || column.accessor} ${Math.floor(i / 2) + 1}`
       } else if (column.mergeColumns) {
