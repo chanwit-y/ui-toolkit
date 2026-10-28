@@ -229,6 +229,7 @@ export function FileCollectionConfigPanel({ itemId, config }: FileCollectionConf
       </Field>
       <Toggle label="Collapsible (48px rail)" checked={config.collapsible} onChange={(v) => set('collapsible', v)} />
       <Toggle label="Read-only" checked={config.readOnly} onChange={(v) => set('readOnly', v)} />
+      <Toggle label="… menu on rows" checked={config.showMenu ?? true} onChange={(v) => set('showMenu', v ? undefined : false)} />
       <Field label="Height (CSS)">
         <Input value={config.height} onChange={(e) => set('height', e.target.value)} placeholder="Fills the cell" className="font-mono" />
       </Field>

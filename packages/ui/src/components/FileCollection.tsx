@@ -233,6 +233,7 @@ export const FileCollection = ({
 	collapsible,
 	readOnly = false,
 	height,
+	menu = true,
 	api,
 	newItems = DEFAULT_NEW_ITEMS,
 	kindIcons,
@@ -470,6 +471,7 @@ export const FileCollection = ({
 
 	const actions: TreeActions = {
 		readOnly,
+		showMenu: menu,
 		newItems,
 		kindIcons,
 		canDrag,

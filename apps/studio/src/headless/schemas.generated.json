@@ -2870,6 +2870,10 @@
           "type": "string",
           "description": "CSS height (`480px`); `''` = fill the grid cell."
         },
+        "showMenu": {
+          "type": "boolean",
+          "description": "The … menu on rows and collection headers; absent = shown (engine `menu`)."
+        },
         "endpoints": {
           "type": "object",
           "properties": {

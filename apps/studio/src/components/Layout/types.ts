@@ -1319,6 +1319,8 @@ export type FileCollectionConfig = {
   readOnly: boolean
   /** CSS height (`480px`); `''` = fill the grid cell. */
   height: string
+  /** The … menu on rows and collection headers; absent = shown (engine `menu`). */
+  showMenu?: boolean
   endpoints: {
     list: FileCollectionListSlot
     createCollection: FormListCrudRef

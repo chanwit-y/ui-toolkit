@@ -5339,6 +5339,7 @@ export function fileCollectionDemoSeedItems(): GridItemData[] {
         title: 'Browse',
         collapsible: true,
         height: '320px',
+        showMenu: false,
         endpoints: {
           ...createDefaultFileCollectionConfig('browse').endpoints,
           list: { ...plain(FILE_COLLECTIONS_ENDPOINT_ID), apiPaths: 'data' },

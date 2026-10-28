@@ -31,6 +31,8 @@ export function safeIcon(key: string | undefined | null, fallback: IconKey = "fi
 /** What the rows may do; an absent handler hides its affordance (an unwired slot). */
 export type TreeActions = {
 	readOnly: boolean;
+	/** The **…** menu button on rows and collection headers (`menu: false` hides it). */
+	showMenu: boolean;
 	newItems: FileCollectionNewItem[];
 	kindIcons?: Record<string, string>;
 	onSelect: (node: FileCollectionNode) => void;
@@ -232,7 +234,7 @@ export function NodeRow({ node, level, isLast, selectedId, expanded, renamingId,
 
 	const canRename = !actions.readOnly && !!actions.onRenameItem;
 	const menuEntries: ReactNode[] = [];
-	if (!actions.readOnly) {
+	if (!actions.readOnly && actions.showMenu) {
 		if (isFolder && actions.onNewItem && actions.newItems.length) {
 			menuEntries.push(
 				<DropdownMenu.Sub key="new">
@@ -381,7 +383,7 @@ export function CollectionGroup({ collection, selectedId, expanded, collapsedCol
 	});
 	const canRename = !actions.readOnly && !!actions.onRenameCollection;
 	const showNew = !actions.readOnly && !!actions.onNewItem && actions.newItems.length > 0;
-	const showMenu = !actions.readOnly && (canRename || !!actions.onDeleteCollection);
+	const showMenu = !actions.readOnly && actions.showMenu && (canRename || !!actions.onDeleteCollection);
 	const showActions = showNew || showMenu || (!actions.readOnly && !!actions.onDeleteCollection);
 
 	return (

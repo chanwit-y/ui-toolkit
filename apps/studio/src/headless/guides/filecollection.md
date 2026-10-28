@@ -29,7 +29,9 @@ name, type, kind, path }` (bind with `source: "state"`, key = that slice).
   navigate target played when a **file** is clicked, params may use
   `{ type: "row", key: "id" }`.
 - `title`, `collapsible` (48px icon rail), `readOnly`, `height` (CSS, `''` =
-  fill the cell).
+  fill the cell), `showMenu: false` hides the … button on rows and
+  collection headers (Remove, the header +, rename by double-click / F2 and
+  drag stay).
 
 ```json
 { "name": "docs", "title": "Documents",

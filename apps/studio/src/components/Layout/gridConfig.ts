@@ -1130,6 +1130,7 @@ function fileCollectionElement(
     ...omitEmpty({ title: c.title, height: c.height }),
     ...(c.collapsible ? { collapsible: true } : {}),
     ...(c.readOnly ? { readOnly: true } : {}),
+    ...(c.showMenu === false ? { menu: false } : {}),
     api,
     ...(sameNewItems ? {} : { newItems }),
     ...(nonEmpty(kindIcons) ? { kindIcons } : {}),

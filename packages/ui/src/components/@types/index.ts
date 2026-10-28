@@ -989,6 +989,8 @@ export type FileCollectionElement = {
   readOnly?: boolean;
   /** CSS height of the item (`"480px"`). Absent ⇒ fills the grid cell. */
   height?: string;
+  /** The **…** menu on rows and collection headers. `false` hides it (Remove, the header +, rename by double-click / F2 and drag stay). Defaults to true. */
+  menu?: boolean;
   api: FileCollectionApi;
   /** The **New** menu. Defaults to "New folder" + "New file". */
   newItems?: FileCollectionNewItem[];

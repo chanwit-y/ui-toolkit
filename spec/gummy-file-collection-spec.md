@@ -644,3 +644,6 @@ These override the sections above where they differ.
    and collection header shows a hover-revealed trash button next to **…**
    that opens the same delete confirm — only while the delete slot is wired
    and not `readOnly` (added after the first round, on request).
+9. **`menu: false`** (studio `showMenu`, optional — absent = shown) hides
+   the **…** button on rows and collection headers; the Remove button, the
+   header **+**, rename by double-click / F2 and drag-and-drop stay.

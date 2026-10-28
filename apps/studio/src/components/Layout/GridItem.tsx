@@ -1576,6 +1576,7 @@ function FileCollectionLivePreview({ config }: { config: FileCollectionConfig })
   }))
   const actions = {
     readOnly: config.readOnly,
+    showMenu: config.showMenu ?? true,
     newItems,
     kindIcons: config.kindIcons,
     canDrag: false,

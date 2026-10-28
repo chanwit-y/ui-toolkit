@@ -72,6 +72,7 @@ export class FileCollection<M extends TModelMaster, A extends TApiMaster<M>> imp
       collapsible: props.collapsible,
       readOnly: props.readOnly,
       height: props.height,
+      menu: props.menu,
       api: config,
       newItems: props.newItems,
       kindIcons: props.kindIcons,
