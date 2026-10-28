@@ -888,6 +888,121 @@ export type RepeaterProps = Omit<RepeaterElement, "api"> & {
   renderBins: (container: Container, ctx: Record<string, unknown>) => ReactNode;
 };
 
+/* ---------------------------------------------------------------------------
+ * File collection (`filecollection`, see the spec `spec/gummy-file-collection-spec.md`)
+ * ------------------------------------------------------------------------- */
+
+/** One node of a file collection: a folder (nesting `children`) or a file. */
+export type FileCollectionNode = {
+  id: string;
+  collectionId: string;
+  /** `null` at the collection root. Derived while walking the response when absent on the wire. */
+  parentId: string | null;
+  name: string;
+  /** Decides structure (nesting, drop targets, duplicate, chevron). */
+  type: "folder" | "file";
+  /** Free text (`"markdown"`, `"invoice"`): drives the icon through `kindIcons` and is echoed on create. */
+  kind?: string | null;
+  /** An `IconData` key; wins over the kind → icon map. */
+  icon?: string | null;
+  createdAt?: number;
+  updatedAt?: number;
+  /** Folders only. */
+  children?: FileCollectionNode[];
+};
+
+/** A top-level group of the tree. */
+export type FileCollection = {
+  id: string;
+  name: string;
+  /** Root-level nodes, nested via `children`. Sibling order is the response order. */
+  directories: FileCollectionNode[];
+};
+
+/** What the selection state slice (`<name>Selected`) holds, or `null`. */
+export type FileCollectionSelected = FileCollectionNode & {
+  /** The collection name and every ancestor name joined by "/". */
+  path: string;
+};
+
+/** One entry of the **New** menu. */
+export type FileCollectionNewItem = {
+  label: string;
+  icon?: keyof typeof IconData;
+  type: "folder" | "file";
+  /** Sent as the new node's `kind`; absent ⇒ `null`. */
+  kind?: string;
+};
+
+/**
+ * The nine endpoint slots. `list` reads the nested collections; every
+ * mutation's body is fixed by the engine (`{ name }`, `{ collectionId,
+ * parentId, name, type, kind }`, `{ collectionId, parentId }`), its `params`
+ * map a URL `:param` to a **node / collection field** (`id`, `collectionId`,
+ * `parentId`, `name`, `kind`) and `extraParams` / `query` resolve from the
+ * route / global state / literals. A mutation's response is ignored: after a
+ * 2xx the tree is re-fetched. An absent slot hides the affordance it powers.
+ */
+export type FileCollectionApi = {
+  list: FormListReadApiRef;
+  createCollection?: FormListMutationApiRef;
+  renameCollection?: FormListMutationApiRef;
+  deleteCollection?: FormListDeleteApiRef;
+  createItem?: FormListMutationApiRef;
+  renameItem?: FormListMutationApiRef;
+  deleteItem?: FormListDeleteApiRef;
+  moveItem?: FormListMutationApiRef;
+  duplicateItem?: FormListMutationApiRef;
+};
+
+/** {@link FileCollectionApi} resolved against the ApiMaster. */
+export type FileCollectionApiConfig = {
+  list: FormListReadApi;
+  createCollection?: FormListMutationApi;
+  renameCollection?: FormListMutationApi;
+  deleteCollection?: FormListDeleteApi;
+  createItem?: FormListMutationApi;
+  renameItem?: FormListMutationApi;
+  deleteItem?: FormListDeleteApi;
+  moveItem?: FormListMutationApi;
+  duplicateItem?: FormListMutationApi;
+};
+
+/**
+ * A tree of collections → folders → files (Bin type `"filecollection"`) over
+ * a `list` endpoint, with create / rename / move / duplicate / delete through
+ * eight more slots (see {@link FileCollectionApi}). The selected node is
+ * published as the global-state slice `selection.stateKey` (default
+ * `<name>Selected`, a {@link FileCollectionSelected}); `selectNavigate` plays
+ * on a **file** click with `type:"row"` params reading the node. Expand state
+ * lives in memory by node id and survives the re-fetch every mutation
+ * triggers; collections start open, folders closed. `readOnly` (or every
+ * mutation slot absent) removes the menus, rename and drag while selection
+ * and expand keep working.
+ */
+export type FileCollectionElement = {
+  name: string;
+  /** Header text; absent ⇒ no header text (the buttons still render). */
+  title?: string;
+  /** The header shows a collapse toggle; collapsed = a 48px icon rail. */
+  collapsible?: boolean;
+  readOnly?: boolean;
+  /** CSS height of the item (`"480px"`). Absent ⇒ fills the grid cell. */
+  height?: string;
+  api: FileCollectionApi;
+  /** The **New** menu. Defaults to "New folder" + "New file". */
+  newItems?: FileCollectionNewItem[];
+  /** `kind` → `IconData` key; a node's own `icon` wins. */
+  kindIcons?: Record<string, string>;
+  selection?: { stateKey: string };
+  /** Played on a file click only. */
+  selectNavigate?: NavigateTarget;
+};
+
+export type FileCollectionProps = Omit<FileCollectionElement, "api"> & {
+  api: FileCollectionApiConfig;
+};
+
 export type PopoverProps = BaseComponentProps<
   "div",
   {
@@ -1879,6 +1994,7 @@ export type TElement =
   | DataTableEditableElement
   | FormListElement
   | RepeaterElement
+  | FileCollectionElement
   | DatePickerElement
   | DateRangePickerElement
   | DateTimePickerElement
@@ -2012,6 +2128,7 @@ export type BinType =
   | "datatableeditable"
   | "formlist"
   | "repeater"
+  | "filecollection"
   | "autocomplete"
   | "textfield"
   | "select"

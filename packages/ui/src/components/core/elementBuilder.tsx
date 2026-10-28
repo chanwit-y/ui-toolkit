@@ -58,7 +58,8 @@ export class ElementContext<M extends TModelMaster, A extends TApiMaster<M>> {
 	}
 
 	public get api() {
-		const apiName = this._element && 'api' in this._element && this._element.api ? this._element.api.name : undefined;
+		// A file collection's `api` is a slot map, not one ref: it resolves its own slots.
+		const apiName = this._element && 'api' in this._element && this._element.api && 'name' in this._element.api ? this._element.api.name : undefined;
 		const api = apiName ? this._apis?.api?.[apiName] as APIFunction : undefined;
 		if (!api) return undefined;
 		return api

@@ -6,6 +6,7 @@ import {
 import { containerColumnResizeDemo } from "./columnResizeDemo";
 import { containerDataTableDemo } from "./dataTableDemo";
 import { containerFormListDemo } from "./formListDemo";
+import { containerFileCollectionDemo } from "./fileCollectionDemo";
 import { containerHtmlColumnDemo } from "./htmlColumnDemo";
 import { containerPaginationDemo } from "./paginationDemo";
 import { containerRepeaterDemo } from "./repeaterDemo";
@@ -65,6 +66,15 @@ export const pages = {
     parent: "countryList",
     title: "Form list",
     containers: containerFormListDemo,
+  },
+  fileCollectionDemo: {
+    // The `filecollection` tree: collections → folders → files with every
+    // mutation slot, a bound card, and unwired / read-only variants
+    // (see ./fileCollectionDemo.ts).
+    path: "/file-collection",
+    parent: "countryList",
+    title: "File collection",
+    containers: containerFileCollectionDemo,
   },
   repeaterDemo: {
     // The read-only `repeater`: a card grid that links to the detail page and

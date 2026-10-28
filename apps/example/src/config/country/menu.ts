@@ -9,6 +9,7 @@ import type { TMenu } from "@gummy-ui/ui";
 export const menu: TMenu = [
   { label: "Countries", icon: "globe", navigate: { page: "countryList" } },
   { label: "Form list", icon: "list", navigate: { page: "formListDemo" } },
+  { label: "File collection", icon: "folder", navigate: { page: "fileCollectionDemo" } },
   { label: "Repeater", icon: "grid", navigate: { page: "repeaterDemo" } },
   { label: "Data table", icon: "list", navigate: { page: "dataTableDemo" } },
   { label: "Column resize", icon: "columns", navigate: { page: "columnResizeDemo" } },
