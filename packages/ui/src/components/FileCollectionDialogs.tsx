@@ -1,9 +1,45 @@
-import { Button, TextField } from "@radix-ui/themes";
+import { Button, TextField, type ThemeProps } from "@radix-ui/themes";
 import { useEffect, useMemo, useState } from "react";
 import type { FileCollection, FileCollectionNode } from "./@types";
 import { Modal } from "./Modal";
 import { SelectFieldBase } from "./SelectField";
+import { useTheme } from "./context";
 import { descendantIds, flattenFolders } from "./core/fileCollectionTree";
+
+type ModalActionsProps = {
+	/** The primary action's label ("Add", "Move", "Delete"). */
+	label: string;
+	/** Submits the enclosing form when "submit" (Enter in the field also does). */
+	type?: "button" | "submit";
+	/** `red` for a destructive action; absent = the theme's button colour, then the accent. */
+	color?: ThemeProps["accentColor"];
+	disabled?: boolean;
+	/** A request is in flight: the primary shows a spinner, both buttons lock. */
+	busy?: boolean;
+	onClick?: () => void;
+	onCancel: () => void;
+};
+
+/**
+ * The footer of every file-collection modal: a soft gray **Cancel** and a
+ * solid primary, both the standard size, right-aligned over a hairline. The
+ * primary takes the theme's button colour like every engine button
+ * (`ButtonBase`) and shows Radix's spinner while `busy`.
+ */
+export function ModalActions({ label, type = "button", color, disabled, busy, onClick, onCancel }: ModalActionsProps) {
+	const theme = useTheme();
+	const primaryColor = color || (theme.components.button?.color as ThemeProps["accentColor"]) || undefined;
+	return (
+		<div className="gummy-fc-modal-actions">
+			<Button type="button" size="2" variant="soft" color="gray" onClick={onCancel} disabled={busy} className="cursor-pointer">
+				Cancel
+			</Button>
+			<Button type={type} size="2" variant="solid" color={primaryColor} disabled={disabled} loading={busy} onClick={onClick} className="cursor-pointer gummy-fc-modal-primary">
+				{label}
+			</Button>
+		</div>
+	);
+}
 
 /*
  * The file collection's modals on the library `Modal`: the name prompt
@@ -47,14 +83,7 @@ export function NameModal({ id, open, title, fieldLabel, submitLabel = "Add", bu
 					<span>{fieldLabel}</span>
 					<TextField.Root autoFocus value={value} onChange={(e) => setValue(e.target.value)} placeholder={fieldLabel} />
 				</label>
-				<div className="gummy-fc-modal-actions">
-					<Button type="button" variant="ghost" color="gray" onClick={onClose} disabled={busy} className="cursor-pointer">
-						Cancel
-					</Button>
-					<Button type="submit" disabled={!trimmed || busy} className="cursor-pointer">
-						{submitLabel}
-					</Button>
-				</div>
+				<ModalActions label={submitLabel} type="submit" disabled={!trimmed} busy={busy} onCancel={onClose} />
 			</form>
 		</Modal>
 	);
@@ -78,14 +107,7 @@ export function DeleteModal({ id, open, title, description, blocked, busy, onClo
 		<Modal id={id} open={open} onOpenChange={(next) => { if (!next) onClose(); }} title={title} width="420px" minWidth="320px">
 			<div className="gummy-fc-modal-body">
 				<p>{blocked ? "Folder is not empty. Remove items before deleting." : description}</p>
-				<div className="gummy-fc-modal-actions">
-					<Button type="button" variant="ghost" color="gray" onClick={onClose} disabled={busy} className="cursor-pointer">
-						Cancel
-					</Button>
-					<Button type="button" color="red" disabled={!!blocked || busy} onClick={onConfirm} className="cursor-pointer">
-						Delete
-					</Button>
-				</div>
+				<ModalActions label="Delete" color="red" disabled={!!blocked} busy={busy} onClick={onConfirm} onCancel={onClose} />
 			</div>
 		</Modal>
 	);
@@ -151,19 +173,13 @@ export function MoveModal({ id, open, node, collections, busy, onClose, onConfir
 					onValueChange={(v) => setCollectionId(v)}
 				/>
 				<SelectFieldBase label="Folder" options={folderOptions} value={folderValue} onValueChange={(v) => setFolder(v)} />
-				<div className="gummy-fc-modal-actions">
-					<Button type="button" variant="ghost" color="gray" onClick={onClose} disabled={busy} className="cursor-pointer">
-						Cancel
-					</Button>
-					<Button
-						type="button"
-						disabled={!node || !collectionId || same || busy}
-						onClick={() => node && onConfirm(collectionId, parentId)}
-						className="cursor-pointer"
-					>
-						Move
-					</Button>
-				</div>
+				<ModalActions
+					label="Move"
+					disabled={!node || !collectionId || same}
+					busy={busy}
+					onClick={() => node && onConfirm(collectionId, parentId)}
+					onCancel={onClose}
+				/>
 			</div>
 		</Modal>
 	);

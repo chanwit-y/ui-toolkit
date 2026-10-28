@@ -383,6 +383,12 @@
 .gummy-fc-modal-actions {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
   gap: 0.5rem;
-  margin-top: 0.25rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--gray-a5);
+}
+.gummy-fc-modal-primary {
+  min-width: 5.5rem;
 }
