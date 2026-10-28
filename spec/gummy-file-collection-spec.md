@@ -640,3 +640,7 @@ These override the sections above where they differ.
    manager by `migrateV57` (workspace v58). No `demo/` project.
 7. Reference implementation: `synapse-rag/src/components/common/FileTree`
    (the copy with `InlineEditInput` and `MoveItemModal`).
+8. **Remove button** (§5.3, §5.4): besides the menu entry, every node row
+   and collection header shows a hover-revealed trash button next to **…**
+   that opens the same delete confirm — only while the delete slot is wired
+   and not `readOnly` (added after the first round, on request).

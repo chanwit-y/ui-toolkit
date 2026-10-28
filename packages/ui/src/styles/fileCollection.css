@@ -82,6 +82,12 @@
   width: 24px;
   height: 24px;
 }
+/* The Remove button: the destructive tone on hover / focus only. */
+.gummy-fc-icon-btn.is-danger:hover,
+.gummy-fc-icon-btn.is-danger:focus-visible {
+  background: var(--red-a3);
+  color: var(--red-11);
+}
 .gummy-fc-spinner {
   display: inline-flex;
   width: 28px;
@@ -330,6 +336,7 @@
 }
 .gummy-fc-row .gummy-fc-icon-btn {
   opacity: 0;
+  flex: 0 0 auto;
 }
 .gummy-fc-row:hover .gummy-fc-icon-btn,
 .gummy-fc-row:focus-within .gummy-fc-icon-btn,

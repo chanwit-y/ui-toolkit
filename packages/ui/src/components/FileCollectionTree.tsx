@@ -130,6 +130,26 @@ function NewEntries({ entries, onPick }: { entries: FileCollectionNewItem[]; onP
 	);
 }
 
+/** A hover-revealed icon button on a row (the Remove button); the click never selects or drags the row. */
+function RowButton({ label, icon, danger, onClick }: { label: string; icon: IconKey; danger?: boolean; onClick: () => void }) {
+	return (
+		<button
+			type="button"
+			className={`gummy-fc-icon-btn is-small${danger ? " is-danger" : ""}`}
+			aria-label={label}
+			title={label}
+			onClick={(e) => {
+				e.stopPropagation();
+				onClick();
+			}}
+			onPointerDown={(e) => e.stopPropagation()}
+			onKeyDown={(e) => e.stopPropagation()}
+		>
+			<Icon icon={icon} size={14} />
+		</button>
+	);
+}
+
 type MenuButtonProps = { label: string; icon: IconKey; small?: boolean; children: ReactNode; onOpenChange?: (open: boolean) => void };
 
 /** A `gummy-fc-icon-btn` opening a Radix dropdown (portaled, so it clears a modal). */
@@ -284,6 +304,9 @@ export function NodeRow({ node, level, isLast, selectedId, expanded, renamingId,
 						{node.name}
 					</span>
 				)}
+				{!actions.readOnly && actions.onDeleteItem && !isEditing && (
+					<RowButton label={`Remove ${node.name}`} icon="trash" danger onClick={() => actions.onDeleteItem?.(node)} />
+				)}
 				{menuEntries.length > 0 && !isEditing && (
 					<span data-open={menuOpen || undefined} className="contents">
 						<MenuButton label={`More actions for ${node.name}`} icon="moreHorizontal" small onOpenChange={setMenuOpen}>
@@ -359,6 +382,7 @@ export function CollectionGroup({ collection, selectedId, expanded, collapsedCol
 	const canRename = !actions.readOnly && !!actions.onRenameCollection;
 	const showNew = !actions.readOnly && !!actions.onNewItem && actions.newItems.length > 0;
 	const showMenu = !actions.readOnly && (canRename || !!actions.onDeleteCollection);
+	const showActions = showNew || showMenu || (!actions.readOnly && !!actions.onDeleteCollection);
 
 	return (
 		<div data-collection-id={collection.id} role="none">
@@ -410,12 +434,15 @@ export function CollectionGroup({ collection, selectedId, expanded, collapsedCol
 						</span>
 					)}
 				</div>
-				{(showNew || showMenu) && !isEditing && (
+				{showActions && !isEditing && (
 					<div className="gummy-fc-collection-actions" data-open={menuOpen || undefined}>
 						{showNew && (
 							<MenuButton label="New" icon="puls" small onOpenChange={setMenuOpen}>
 								<NewEntries entries={actions.newItems} onPick={(entry) => actions.onNewItem?.(collection.id, null, entry, true)} />
 							</MenuButton>
+						)}
+						{!actions.readOnly && actions.onDeleteCollection && (
+							<RowButton label={`Remove ${collection.name}`} icon="trash" danger onClick={() => actions.onDeleteCollection?.(collection)} />
 						)}
 						{showMenu && (
 							<MenuButton label={`More actions for ${collection.name}`} icon="moreHorizontal" small onOpenChange={setMenuOpen}>
