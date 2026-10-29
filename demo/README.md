@@ -74,6 +74,26 @@ backdrop, and the Book shop stays flat.
 bun run --cwd demo app:glass     # http://localhost:3403 (VITE_GUMMY_PROJECT=glass-showcase)
 ```
 
+
+## Charts showcase — the chart's ten types
+
+The fifth project, **Charts showcase**, puts the config-driven `chart` (see
+`spec/gummy-chart-spec.md`) over the Book shop's analytics aggregates
+(`/api/analytics/*`, see `api/README.md`) and its raw lists, one page per
+family: **Sales** (bars with a target read off the response, a line, a stacked
+area, a click that lands in page data), **Mix** (a donut whose clicked slice
+opens that genre's books, the best-selling authors, the order funnel, a
+pyramid, a status bar), **Compare** (bars + a right-axis line, a bubble scatter
+of every book), **Patterns** (a weekday × hour heatmap, the genre scorecard as
+two radars) and **KPIs** (four gauges). Every chart is JSON: series, axes,
+formats, reference lines, legend and click-through; no ECharts option is ever
+saved.
+
+```bash
+bun run --cwd demo api           # the analytics live on the mock API
+bun run --cwd demo app:charts    # http://localhost:3405 (VITE_GUMMY_PROJECT=charts-showcase)
+```
+
 ## Who you are
 
 Sign-in is the project's Azure SSO entry (`auth` in `project.json`). With no

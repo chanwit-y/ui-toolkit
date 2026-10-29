@@ -605,6 +605,143 @@
     "authorItemParam": {
       "authorId": "string",
       "id": "string"
+    },
+    "salesSeriesRes": {
+      "data": {
+        "type": "array",
+        "collection": {
+          "period": "string",
+          "label": "string",
+          "orders": "number",
+          "items": "number",
+          "revenue": "number",
+          "revenueText": "string"
+        }
+      },
+      "total": "number",
+      "by": "string",
+      "target": {
+        "type": "object",
+        "collection": {
+          "revenue": "number",
+          "orders": "number"
+        }
+      }
+    },
+    "salesQuery": {
+      "by": "string"
+    },
+    "genreStatsRes": {
+      "data": {
+        "type": "array",
+        "collection": {
+          "genreId": "string",
+          "genre": "string",
+          "color": "string",
+          "books": "number",
+          "copies": "number",
+          "revenue": "number",
+          "revenueText": "string",
+          "avgRating": "number",
+          "avgPrice": "number",
+          "stock": "number"
+        }
+      },
+      "total": "number"
+    },
+    "statusStatsRes": {
+      "data": {
+        "type": "array",
+        "collection": {
+          "status": "string",
+          "label": "string",
+          "orders": "number",
+          "revenue": "number",
+          "revenueText": "string"
+        }
+      },
+      "total": "number"
+    },
+    "authorStatsRes": {
+      "data": {
+        "type": "array",
+        "collection": {
+          "authorId": "string",
+          "author": "string",
+          "books": "number",
+          "copies": "number",
+          "revenue": "number",
+          "revenueText": "string"
+        }
+      },
+      "total": "number"
+    },
+    "limitQuery": {
+      "limit": "number"
+    },
+    "cityStatsRes": {
+      "data": {
+        "type": "array",
+        "collection": {
+          "city": "string",
+          "customers": "number",
+          "orders": "number",
+          "revenue": "number",
+          "revenueText": "string"
+        }
+      },
+      "total": "number"
+    },
+    "orderHeatRes": {
+      "data": {
+        "type": "array",
+        "collection": {
+          "weekday": "string",
+          "hour": "string",
+          "orders": "number",
+          "revenue": "number"
+        }
+      },
+      "total": "number"
+    },
+    "kpiListRes": {
+      "data": {
+        "type": "array",
+        "collection": {
+          "key": "string",
+          "label": "string",
+          "value": "number",
+          "min": "number",
+          "max": "number",
+          "target": "number",
+          "unit": "string"
+        }
+      },
+      "total": "number"
+    },
+    "kpiQuery": {
+      "key": "string"
+    },
+    "orderFunnelRes": {
+      "data": {
+        "type": "array",
+        "collection": {
+          "stage": "string",
+          "orders": "number"
+        }
+      },
+      "total": "number"
+    },
+    "genreScoresRes": {
+      "data": {
+        "type": "array",
+        "collection": {
+          "genre": "string",
+          "metric": "string",
+          "score": "number"
+        }
+      },
+      "total": "number"
     }
   },
   "api": {
@@ -841,6 +978,72 @@
       "description": "The dashboard numbers",
       "methods": "GET",
       "response": "summaryRes",
+      "withOptions": false
+    },
+    "salesSeries": {
+      "url": "/api/analytics/sales",
+      "description": "Sales by day / week / month, with a target",
+      "methods": "GET",
+      "response": "salesSeriesRes",
+      "query": "salesQuery",
+      "withOptions": false
+    },
+    "genreStats": {
+      "url": "/api/analytics/genres",
+      "description": "Books, copies, revenue, rating and stock per genre",
+      "methods": "GET",
+      "response": "genreStatsRes",
+      "withOptions": false
+    },
+    "statusStats": {
+      "url": "/api/analytics/statuses",
+      "description": "Orders and revenue per status",
+      "methods": "GET",
+      "response": "statusStatsRes",
+      "withOptions": false
+    },
+    "authorStats": {
+      "url": "/api/analytics/authors",
+      "description": "The best-selling authors",
+      "methods": "GET",
+      "response": "authorStatsRes",
+      "query": "limitQuery",
+      "withOptions": false
+    },
+    "cityStats": {
+      "url": "/api/analytics/cities",
+      "description": "Customers, orders and revenue per city",
+      "methods": "GET",
+      "response": "cityStatsRes",
+      "withOptions": false
+    },
+    "orderHeat": {
+      "url": "/api/analytics/order-heat",
+      "description": "Orders per weekday and hour",
+      "methods": "GET",
+      "response": "orderHeatRes",
+      "withOptions": false
+    },
+    "kpis": {
+      "url": "/api/analytics/kpis",
+      "description": "The shop's KPIs (?key picks one)",
+      "methods": "GET",
+      "response": "kpiListRes",
+      "query": "kpiQuery",
+      "withOptions": false
+    },
+    "orderFunnel": {
+      "url": "/api/analytics/funnel",
+      "description": "The order pipeline, placed to delivered",
+      "methods": "GET",
+      "response": "orderFunnelRes",
+      "withOptions": false
+    },
+    "genreScores": {
+      "url": "/api/analytics/genre-scores",
+      "description": "A 0–100 score per genre and metric",
+      "methods": "GET",
+      "response": "genreScoresRes",
       "withOptions": false
     }
   },

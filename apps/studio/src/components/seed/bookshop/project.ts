@@ -13,6 +13,7 @@ import { navigate } from './ui'
 import { portalProject } from '../portal/project'
 import { glassProject } from '../glass/project'
 import { gridProject } from '../grid/project'
+import { chartsProject } from '../charts/project'
 
 /**
  * The Book shop demo as a studio workspace (see the grilled design
@@ -189,7 +190,7 @@ export function bookshopWorkspace(): WorkspaceData {
     version: 59,
     appearance: 'light',
     user: 'Chanwit Yimneam',
-    projects: [bookshopProject(library), portalProject(), glassProject(), gridProject()],
+    projects: [bookshopProject(library), portalProject(), glassProject(), gridProject(), chartsProject()],
     library,
     activity: [],
   }
@@ -200,7 +201,7 @@ export function bookshopWorkspaceFile(workspace: WorkspaceData = bookshopWorkspa
   return { state: workspace, version: workspace.version }
 }
 
-/** The exported project folders by file key — `book-shop`, `gummy-portal`, `glass-showcase`. */
+/** The exported project folders by file key — `book-shop`, `gummy-portal`, `glass-showcase`, `data-grid-showcase`, `charts-showcase`. */
 export function bookshopFolders(workspace: WorkspaceData = bookshopWorkspace()): Record<string, ProjectFolder> {
   return projectFolders(workspace.projects, workspace.library)
 }

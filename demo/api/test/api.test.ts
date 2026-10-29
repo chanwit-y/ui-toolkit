@@ -641,3 +641,55 @@ describe('cors', () => {
     for (const h of ['app-version', 'authorization', 'content-type', 'access-control-allow-origin']) expect(allowed).toContain(h);
   });
 });
+
+describe('analytics', () => {
+  test('sales by period: zero periods included, a target over the mean', async () => {
+    const week = await get('/api/analytics/sales');
+    expect(week.status).toBe(200);
+    expect(week.json.by).toBe('week');
+    expect(week.json.total).toBe(week.json.data.length);
+    expect(week.json.data.length).toBeGreaterThanOrEqual(13);
+    expect(week.json.data[0]).toMatchObject({ period: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/), revenueText: expect.stringMatching(/^฿/) });
+    const mean = week.json.data.reduce((s: number, r: { revenue: number }) => s + r.revenue, 0) / week.json.data.length;
+    expect(week.json.target.revenue).toBeCloseTo(mean * 1.1, 0);
+    const month = await get('/api/analytics/sales?by=month');
+    expect(month.json.data.length).toBeGreaterThanOrEqual(3);
+    expect(month.json.data.every((r: { period: string }) => r.period.endsWith('-01'))).toBe(true);
+    const day = await get('/api/analytics/sales?by=day');
+    expect(day.json.data.length).toBeGreaterThanOrEqual(89);
+  });
+
+  test('genres / statuses / authors / cities / funnel / scores', async () => {
+    const genres = await get('/api/analytics/genres');
+    expect(genres.json.total).toBe(8);
+    expect(genres.json.data[0]).toHaveProperty('revenue');
+    const statuses = await get('/api/analytics/statuses');
+    expect(statuses.json.data.map((r: { status: string }) => r.status)).toEqual(['pending', 'paid', 'shipped', 'delivered', 'refund_requested', 'refunded', 'cancelled']);
+    expect(statuses.json.data.reduce((s: number, r: { orders: number }) => s + r.orders, 0)).toBe(300);
+    const authors = await get('/api/analytics/authors?limit=5');
+    expect(authors.json.total).toBe(5);
+    expect(authors.json.data[0].revenue).toBeGreaterThanOrEqual(authors.json.data[4].revenue);
+    const cities = await get('/api/analytics/cities');
+    expect(cities.json.data.reduce((s: number, r: { customers: number }) => s + r.customers, 0)).toBe(60);
+    const funnel = await get('/api/analytics/funnel');
+    expect(funnel.json.data.map((r: { stage: string }) => r.stage)).toEqual(['Placed', 'Paid', 'Shipped', 'Delivered']);
+    expect(funnel.json.data[0].orders).toBe(300);
+    expect(funnel.json.data[3].orders).toBeLessThanOrEqual(funnel.json.data[2].orders);
+    const scores = await get('/api/analytics/genre-scores');
+    expect(scores.json.total).toBe(8 * 5);
+    expect(scores.json.data.every((r: { score: number }) => r.score >= 0 && r.score <= 100)).toBe(true);
+  });
+
+  test('order heat and KPIs', async () => {
+    const heat = await get('/api/analytics/order-heat');
+    expect(heat.json.total % 7).toBe(0);
+    expect(heat.json.data.reduce((s: number, r: { orders: number }) => s + r.orders, 0)).toBe(300);
+    const kpis = await get('/api/analytics/kpis');
+    expect(kpis.json.data.map((k: { key: string }) => k.key)).toEqual(['fulfilment', 'refunds', 'inStock', 'rating']);
+    const one = await get('/api/analytics/kpis?key=rating');
+    expect(one.json.total).toBe(1);
+    expect(one.json.data[0]).toMatchObject({ key: 'rating', max: 5 });
+    const unknown = await get('/api/analytics/kpis?key=nope');
+    expect(unknown.json.total).toBe(4);
+  });
+});

@@ -2,6 +2,8 @@ import { AUTH_PROFILE_LOAD_ID } from '../../Workspace/auth'
 import {
   createChildCanvas,
   createDefaultButtonItemConfig,
+  createDefaultChartConfig,
+  createDefaultChartOptions,
   createDefaultDataTableConfig,
   createDefaultHtmlContentConfig,
   createDefaultItemSettings,
@@ -9,6 +11,8 @@ import {
   DEFAULT_COLUMN_SIZING,
   defaultColumnFormat,
   type ButtonItemConfig,
+  type ChartConfig,
+  type ChartOptionsConfig,
   type ChildCanvas,
   type DataCondition,
   type DataTableColumnConfig,
@@ -178,6 +182,26 @@ export function table(
     },
     // [0] the edit modal's form, [1] the filter form.
     childCanvases: [canvas(canvases.modal ?? []), canvas(canvases.filters ?? [])],
+    ...extra,
+  }
+}
+
+/* ------------------------------------------------------------------ charts */
+
+/** A chart (see `spec/gummy-chart-spec.md`): every option key present, the given ones over the defaults; `dataPath` defaults to `data`. */
+export function chart(
+  id: string,
+  config: Omit<Partial<ChartConfig>, 'options'> & { name: string; options?: Partial<ChartOptionsConfig> },
+  colSpan = HALF,
+  extra: Partial<GridItemData> = {},
+): GridItemData {
+  const { options, ...rest } = config
+  return {
+    id,
+    label: 'Chart',
+    type: 'chart',
+    settings: settings(colSpan),
+    config: { ...createDefaultChartConfig(config.name), dataPath: 'data', ...rest, options: { ...createDefaultChartOptions(), ...(options ?? {}) } },
     ...extra,
   }
 }

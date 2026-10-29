@@ -113,9 +113,11 @@ function axisOption(
 function gridOption(element: ChartOptionInput["element"], horizontal: boolean, rightAxis: boolean): Obj {
   const xTitle = !!element.xAxis?.title;
   const yTitle = !!element.yAxis?.title;
+  // A horizontal bar's end labels sit past the bar: leave them room on the right.
+  const labelRoom = horizontal && element.showDataLabels ? 72 : 16;
   return {
     left: (horizontal ? xTitle : yTitle) ? 56 : 12,
-    right: rightAxis ? (element.yAxisRight?.title ? 56 : 12) : 16,
+    right: rightAxis ? (element.yAxisRight?.title ? 56 : 12) : labelRoom,
     top: 20,
     bottom: (horizontal ? yTitle : xTitle) ? 44 : 12,
     containLabel: true,
