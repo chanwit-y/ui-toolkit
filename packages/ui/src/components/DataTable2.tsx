@@ -769,7 +769,7 @@ export const DataTable2 = <T extends Record<string, any>>({
 	// `cellLines`; HTML cells (`meta.html`) render whole.
 	const cellLinesFor = (column: Column<any, unknown>): number => {
 		const meta = column.columnDef.meta as { html?: boolean; lines?: number } | undefined
-		if (meta?.html) return 0
+		if (meta?.html || column.id === SELECT_COLUMN_ID) return 0
 		return meta?.lines ?? cellLines
 	}
 	// Merged cells (`mergeRows` / `mergeColumns`) are computed for the rows on
@@ -885,7 +885,7 @@ export const DataTable2 = <T extends Record<string, any>>({
 							rowSpan={span?.rowSpan}
 							colSpan={span?.colSpan}
 							data-accent-color={look.tone}
-							className={`datatable-body-cell px-4 py-1 ${pinClass(cell.column)} ${meta.rowHeader ? 'datatable-row-header' : ''} ${span && span.rowSpan > 1 ? 'datatable-cell-merged' : ''} ${look.className}`}
+							className={`datatable-body-cell ${cell.column.id === SELECT_COLUMN_ID ? 'px-1' : 'px-4'} py-1 ${pinClass(cell.column)} ${meta.rowHeader ? 'datatable-row-header' : ''} ${span && span.rowSpan > 1 ? 'datatable-cell-merged' : ''} ${look.className}`}
 							style={{ ...(span && span.colSpan > 1 ? {} : sizeStyle(cell.column)), textAlign: align[cell.column.id], ...pinStyle(cell.column), ...(grouped && cell.column.id === labelColumnId ? { paddingInlineStart: 16 + row.depth * 16 } : {}) }}
 						>
 							<div className="min-h-10 flex flex-col justify-center">

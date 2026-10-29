@@ -129,6 +129,19 @@ export type {
 } from "./components/@types";
 export * from "./components/Repeater";
 export type { RepeaterElement, RepeaterProps, RepeaterItemSpan } from "./components/@types";
+export * from "./components/FileCollection";
+export * from "./components/core/fileCollectionTree";
+export { FILE_COLLECTION_MUTATIONS } from "./components/core/fileCollection";
+export type {
+	FileCollection as FileCollectionGroup,
+	FileCollectionNode,
+	FileCollectionSelected,
+	FileCollectionNewItem,
+	FileCollectionApi,
+	FileCollectionApiConfig,
+	FileCollectionElement,
+	FileCollectionProps,
+} from "./components/@types";
 export type {
   DataTableApi,
   DataTablePagination,

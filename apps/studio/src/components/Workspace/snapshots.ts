@@ -32,6 +32,8 @@ import {
   formatsDemoSeedItems,
   DATA_GRID_PAGE_ID,
   dataGridDemoSeedItems,
+  FILE_COLLECTION_PAGE_ID,
+  fileCollectionDemoSeedItems,
   TABLE_LAYOUT_PAGE_ID,
   tableLayoutDemoSeedItems,
   CARD_PAGE_ID,
@@ -542,6 +544,26 @@ export function dataGridDemoPage(): PageDef {
   }
 }
 
+/**
+ * The "File collection" demo page of the seeded project (the example app's
+ * `/file-collection`). Used by the fresh seed and appended to an existing
+ * seeded project by `migrateV57`.
+ */
+export function fileCollectionDemoPage(): PageDef {
+  return {
+    id: FILE_COLLECTION_PAGE_ID,
+    key: 'fileCollection',
+    name: 'File collection',
+    path: '/file-collection',
+    grid: {
+      items: fileCollectionDemoSeedItems(),
+      containerSettings: defaultContainerSettings,
+      fieldSeq: 0,
+    },
+    parentId: 'seed-page-countries',
+  }
+}
+
 export function cellTooltipDemoPage(): PageDef {
   return {
     id: CELL_TOOLTIP_PAGE_ID,
@@ -840,6 +862,7 @@ export const OPTION_DEMO_MENU_ICONS: Record<string, string> = {
   [TABLE_LAYOUT_PAGE_ID]: 'table',
   [FORMATS_PAGE_ID]: 'hash',
   [DATA_GRID_PAGE_ID]: 'table',
+  [FILE_COLLECTION_PAGE_ID]: 'folder',
   [CARD_PAGE_ID]: 'creditCard',
   [HTML_CONTENT_PAGE_ID]: 'code',
   [DRAWER_PAGE_ID]: 'panelRight',
@@ -885,6 +908,7 @@ export function countryProjectSnapshot(library: LibraryData): ProjectSnapshot {
       },
       ...optionDemoPages(),
       formListDemoPage(),
+      fileCollectionDemoPage(),
       repeaterDemoPage(),
       paginationDemoPage(),
       dataTableDemoPage(),

@@ -28,6 +28,7 @@ import {
 } from './DisplayConfigPanel'
 import { FieldConfigPanel } from './FieldConfigPanel'
 import { FormListConfigPanel } from './FormListConfigPanel'
+import { FileCollectionConfigPanel } from './FileCollectionConfigPanel'
 import { RepeaterConfigPanel } from './RepeaterConfigPanel'
 import { useBreadcrumb, useGridStore, useSelectedItem, type SidebarView } from './gridStore'
 import { RadioConfigPanel } from './RadioConfigPanel'
@@ -49,6 +50,7 @@ import type {
   DividerConfig,
   FormListConfig,
   RepeaterConfig,
+  FileCollectionConfig,
   HiddenConfig,
   DrawerConfig,
   ModalConfig,
@@ -238,6 +240,11 @@ export function Sidebar({ gridConfigJson, fullGridCss }: SidebarProps) {
             <FormListConfigPanel
               itemId={selectedItem.id}
               config={selectedItem.config as FormListConfig}
+            />
+          ) : selectedItem.type === 'filecollection' && selectedItem.config ? (
+            <FileCollectionConfigPanel
+              itemId={selectedItem.id}
+              config={selectedItem.config as FileCollectionConfig}
             />
           ) : selectedItem.type === 'repeater' && selectedItem.config ? (
             <RepeaterConfigPanel

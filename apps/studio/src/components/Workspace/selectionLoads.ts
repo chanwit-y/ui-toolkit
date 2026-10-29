@@ -1,5 +1,12 @@
 import { walkItems } from '../Layout/pageLinks'
-import { createFormListCrudRef, selectionStateKey, type DataTableConfig, type GridItemData } from '../Layout/types'
+import {
+  createFormListCrudRef,
+  fileCollectionStateKey,
+  selectionStateKey,
+  type DataTableConfig,
+  type FileCollectionConfig,
+  type GridItemData,
+} from '../Layout/types'
 import type { ModelField } from '../Model/types'
 import type { PageLoadDef } from './pageLoads'
 
@@ -15,6 +22,24 @@ const selectionField = (name: string, kind: ModelField['kind'], arrayOf: ModelFi
 export function selectionLoads(items: GridItemData[]): PageLoadDef[] {
   const out: PageLoadDef[] = []
   walkItems(items, (item) => {
+    if (item.type === 'filecollection' && item.config) {
+      // A file collection's selected node (see the spec §5.6), under its state key.
+      const config = item.config as FileCollectionConfig
+      const key = fileCollectionStateKey(config.name, config.selection)
+      out.push({
+        id: key,
+        key,
+        read: createFormListCrudRef(),
+        paths: '',
+        loading: 'none',
+        errorMessage: '',
+        shape: {
+          shape: 'object',
+          fields: ['id', 'collectionId', 'parentId', 'name', 'type', 'kind', 'path'].map((f) => selectionField(f, 'string')),
+        },
+      })
+      return
+    }
     if (item.type !== 'datatable' || !item.config) return
     const config = item.config as DataTableConfig
     if (!config.selection?.enabled) return

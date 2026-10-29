@@ -3,8 +3,7 @@ import { countrySeedTheme } from '../seed/country'
 import {
   createDefaultBackdrop,
   createDefaultDesignTheme,
-  nearestAccent,
-  paletteSurfaces,
+  paletteTheme,
   type BackdropConfig,
   type DataTableThemeConfig,
   type DesignSurfaces,
@@ -28,8 +27,8 @@ type ThemeStore = {
   updateSurfaces: (mode: ThemeAppearance, patch: Partial<DesignSurfaces>) => void
   /** Set the design-only font. */
   setFont: (font: string) => void
-  /** Apply a palette preset: nearest Radix accent, optionally its surfaces. */
-  applyPalette: (palette: ThemePalette, surfaces: boolean) => void
+  /** Apply a palette preset to every colour setting (`paletteTheme`). */
+  applyPalette: (palette: ThemePalette) => void
 }
 
 /**
@@ -67,15 +66,18 @@ export const useThemeStore = create<ThemeStore>((set) => ({
       config: { ...s.config, design: { ...(s.config.design ?? createDefaultDesignTheme()), font } },
     })),
 
-  applyPalette: (palette, surfaces) =>
+  applyPalette: (palette) =>
     set((s) => {
-      const accentColor = nearestAccent(palette.colors[palette.accent])
+      const t = paletteTheme(palette)
       const design = s.config.design ?? createDefaultDesignTheme()
       return {
         config: {
           ...s.config,
-          accentColor,
-          design: surfaces ? { ...design, ...paletteSurfaces(palette) } : design,
+          accentColor: t.accentColor,
+          buttonColor: t.buttonColor,
+          dataTable: { ...s.config.dataTable, ...t.dataTable },
+          design: { ...design, ...t.surfaces },
+          background: t.background,
         },
       }
     }),

@@ -16,6 +16,7 @@
 @import "../../../packages/ui/src/styles/approvalLine.css";
 @import "../../../packages/ui/src/styles/workflowEditor.css";
 @import "../../../packages/ui/src/styles/profile.css";
+@import "../../../packages/ui/src/styles/fileCollection.css";
 @import "../../../packages/ui/src/styles/auth.css";
 @import "../../../packages/ui/src/styles/sidebar.css";
 /* Surface tokens (flat / glass): the canvas frame and the Live Preview carry `data-surface`. */

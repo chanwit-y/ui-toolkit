@@ -27,6 +27,7 @@ import {
   createDefaultPopoverConfig,
   createDefaultRadioConfig,
   createDefaultRepeaterConfig,
+  createDefaultFileCollectionConfig,
   createDefaultReplaceProfileConfig,
   createDefaultSelectFieldConfig,
   createDefaultSwitchConfig,
@@ -169,6 +170,7 @@ const DEFAULT_CONFIGS: Record<ComponentType, { prefix?: string; create: (name: s
   datatableeditable: { prefix: 'editableTable', create: (n) => createDefaultDataTableEditableConfig(n) },
   formlist: { prefix: 'formList', create: (n) => createDefaultFormListConfig(n) },
   repeater: { prefix: 'repeater', create: (n) => createDefaultRepeaterConfig(n) },
+  filecollection: { prefix: 'fileCollection', create: (n) => createDefaultFileCollectionConfig(n) },
   text: { create: () => createDefaultTextConfig() },
   typography: { create: () => createDefaultTypographyConfig() },
   avatar: { prefix: 'avatar', create: (n) => createDefaultAvatarConfig(n) },
@@ -213,6 +215,8 @@ const FULL_BLEED = new Set<ComponentType>([
   'custom', 'approvalline', 'switchprofile', 'replaceprofile', 'workfloweditor', 'tab',
 ])
 const UPLOADS = new Set<ComponentType>(['uploadimage', 'uploadfile'])
+// A file collection is a sidebar-shaped tree: a quarter of the row on desktop, half on a tablet.
+const SIDEBARS = new Set<ComponentType>(['filecollection'])
 const WIDE_INPUTS = new Set<ComponentType>([
   'textfield', 'textarea', 'select', 'autocomplete', 'multiAutocomplete', 'checkbox', 'switch', 'radio', 'text', 'typography',
 ])
@@ -257,7 +261,9 @@ export function createItem(
   const defaultLg = UPLOADS.has(type) ? 6 : WIDE_INPUTS.has(type) ? 4 : 2
   const colSpan = FULL_BLEED.has(type)
     ? { xs: bpCols.xs, sm: bpCols.sm, md: bpCols.md, lg: bpCols.lg }
-    : { xs: bpCols.xs, sm: Math.min(3, bpCols.sm), md: Math.min(2, bpCols.md), lg: Math.min(defaultLg, bpCols.lg) }
+    : SIDEBARS.has(type)
+      ? { xs: bpCols.xs, sm: bpCols.sm, md: Math.min(3, bpCols.md), lg: Math.min(3, bpCols.lg) }
+      : { xs: bpCols.xs, sm: Math.min(3, bpCols.sm), md: Math.min(2, bpCols.md), lg: Math.min(defaultLg, bpCols.lg) }
   const item: GridItemData = {
     id: createId(),
     label: opts.label ?? `Item ${(opts.siblingCount ?? 0) + 1}`,

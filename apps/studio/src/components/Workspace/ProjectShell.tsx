@@ -1,10 +1,11 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Navigate, Outlet, useParams } from 'react-router-dom'
 import { AppearanceSync } from '../AppearanceSync'
 import { AppShell } from '../AppShell'
 import { useEnvStore } from '../Env/envStore'
 import { useGridStore } from '../Layout/gridStore'
 import { LibraryScopeContext } from '../Library/scope'
+import { chromeThemeStyle } from '../Theme/designTheme'
 import { useThemeStore } from '../Theme/themeStore'
 import { applyPageGrid, applyProjectState, collectProjectState, isHydrating } from './liveStores'
 import { useProject, useWorkspaceStore } from './workspaceStore'
@@ -30,6 +31,9 @@ export function ProjectShell() {
   const project = useProject(projectId)
   const storedPageId = useWorkspaceStore((s) => s.activePageId)
   const appearance = useThemeStore((s) => s.config.appearance)
+  // The chrome follows the project's theme (accent + design surfaces) while a project is open.
+  const themeConfig = useThemeStore((s) => s.config)
+  const chromeTheme = useMemo(() => chromeThemeStyle(themeConfig), [themeConfig])
   const saveProjectState = useWorkspaceStore((s) => s.saveProjectState)
   const setSaveState = useWorkspaceStore((s) => s.setSaveState)
   const setActiveProjectId = useWorkspaceStore((s) => s.setActiveProjectId)
@@ -121,9 +125,11 @@ export function ProjectShell() {
   return (
     <LibraryScopeContext.Provider value="project">
       <AppearanceSync appearance={appearance} />
-      <AppShell project={project} />
-      <div className="flex min-h-0 flex-1 flex-col">
-        <Outlet />
+      <div className="flex min-h-0 flex-1 flex-col bg-surface text-ink" style={chromeTheme} data-project-chrome>
+        <AppShell project={project} />
+        <div className="flex min-h-0 flex-1 flex-col">
+          <Outlet />
+        </div>
       </div>
     </LibraryScopeContext.Provider>
   )

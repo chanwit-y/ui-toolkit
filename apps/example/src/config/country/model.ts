@@ -367,4 +367,36 @@ export const model: TModelMaster = {
     steps: "any",
   },
   workflowParam: { id: "string" },
+  // File collection demo page (`/file-collection`): the nested tree and the
+  // fixed mutation bodies (see spec/gummy-file-collection-spec.md §2.3).
+  fileCollectionRes: {
+    data: {
+      type: "array",
+      collection: { id: "string", name: "string", directories: "any" },
+    },
+    status: "number",
+    success: "boolean",
+    message: "string",
+  },
+  fileNodeRes: {
+    data: {
+      type: "object",
+      collection: {
+        id: "string",
+        collectionId: "string",
+        parentId: "string",
+        name: "string",
+        type: "string",
+        kind: "string",
+        createdAt: "number",
+        updatedAt: "number",
+      },
+    },
+    status: "number",
+    success: "boolean",
+    message: "string",
+  },
+  nameBody: { name: "string" },
+  fileItemCreateBody: { collectionId: "string", parentId: "string", name: "string", type: "string", kind: "string" },
+  fileItemMoveBody: { collectionId: "string", parentId: "string" },
 };

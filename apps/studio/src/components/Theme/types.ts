@@ -269,14 +269,69 @@ export function nearestAccent(hex: string): AccentColor {
   return best
 }
 
+/** `a` mixed towards `b` by `t` (0–1), as a hex colour. */
+export function mixHex(a: string, b: string, t: number): string {
+  const [r1, g1, b1] = rgb(a)
+  const [r2, g2, b2] = rgb(b)
+  const c = (x: number, y: number) => Math.round(x + (y - x) * t)
+  return '#' + [c(r1, r2), c(g1, g2), c(b1, b2)].map((v) => v.toString(16).padStart(2, '0')).join('')
+}
+
 /** The mockup's `paletteTheme`: lightest swatches become the light surfaces,
- * darkest the dark ones, text the opposite end. */
+ * darkest the dark ones, text the opposite end, the border a 12% mix of the
+ * text into the panel. */
 export function paletteSurfaces(p: ThemePalette): { light: DesignSurfaces; dark: DesignSurfaces } {
   const byLight = p.colors.slice().sort((a, b) => hexLuminance(b) - hexLuminance(a))
   const last = byLight.length - 1
+  const light = { surface: byLight[0], panel: byLight[1], text: byLight[last] }
+  const dark = { surface: byLight[last], panel: byLight[last - 1], text: byLight[0] }
   return {
-    light: { surface: byLight[0], panel: byLight[1], text: byLight[last], border: '' },
-    dark: { surface: byLight[last], panel: byLight[last - 1], text: byLight[0], border: '' },
+    light: { ...light, border: mixHex(light.panel, light.text, 0.12) },
+    dark: { ...dark, border: mixHex(dark.panel, dark.text, 0.12) },
+  }
+}
+
+/** Everything a palette pick sets (see `applyPalette`): the colour settings of the whole Theme page. */
+export type PaletteTheme = {
+  accentColor: AccentColor
+  buttonColor: string
+  dataTable: Pick<DataTableThemeConfig, 'headerColor' | 'headerTextColor' | 'headerHoverColor' | 'paginationButtonColor' | 'paginationButtonHoverColor' | 'rowHoverColor' | 'editButtonColor' | 'deleteButtonColor'>
+  surfaces: { light: DesignSurfaces; dark: DesignSurfaces }
+  background: BackdropConfig
+}
+
+/**
+ * A palette applied to **every colour setting** of the Theme page, so a pick
+ * leaves nothing on the old colours: the accent (the marked swatch snapped
+ * to Radix), the button colour and every data-table role on that accent
+ * (delete stays red), both modes' surfaces (`paletteSurfaces`) and a glass
+ * backdrop gradient — the two lightest swatches in light, the two darkest in
+ * dark. The font, radius, density and the header's font keys are not colours
+ * and stay.
+ */
+export function paletteTheme(p: ThemePalette): PaletteTheme {
+  const accentColor = nearestAccent(p.colors[p.accent])
+  const byLight = p.colors.slice().sort((a, b) => hexLuminance(b) - hexLuminance(a))
+  const last = byLight.length - 1
+  return {
+    accentColor,
+    buttonColor: accentColor,
+    dataTable: {
+      headerColor: accentColor,
+      headerTextColor: '',
+      headerHoverColor: accentColor,
+      paginationButtonColor: accentColor,
+      paginationButtonHoverColor: accentColor,
+      rowHoverColor: accentColor,
+      editButtonColor: accentColor,
+      deleteButtonColor: 'red',
+    },
+    surfaces: paletteSurfaces(p),
+    background: {
+      ...createDefaultBackdrop(),
+      kind: 'gradient',
+      gradient: { from: byLight[0], to: byLight[1], angle: 160, darkFrom: byLight[last], darkTo: byLight[last - 1] },
+    },
   }
 }
 

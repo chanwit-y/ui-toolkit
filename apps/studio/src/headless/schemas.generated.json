@@ -2851,6 +2851,247 @@
       ],
       "description": "A field is a primitive, a nested object, or an array."
     },
+    "FileCollectionConfig": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "collapsible": {
+          "type": "boolean"
+        },
+        "readOnly": {
+          "type": "boolean"
+        },
+        "height": {
+          "type": "string",
+          "description": "CSS height (`480px`); `''` = fill the grid cell."
+        },
+        "showMenu": {
+          "type": "boolean",
+          "description": "The … menu on rows and collection headers; absent = shown (engine `menu`)."
+        },
+        "endpoints": {
+          "type": "object",
+          "properties": {
+            "list": {
+              "$ref": "#/definitions/FileCollectionListSlot"
+            },
+            "createCollection": {
+              "$ref": "#/definitions/FormListCrudRef"
+            },
+            "renameCollection": {
+              "$ref": "#/definitions/FormListCrudRef"
+            },
+            "deleteCollection": {
+              "$ref": "#/definitions/FileCollectionDeleteSlot"
+            },
+            "createItem": {
+              "$ref": "#/definitions/FormListCrudRef"
+            },
+            "renameItem": {
+              "$ref": "#/definitions/FormListCrudRef"
+            },
+            "deleteItem": {
+              "$ref": "#/definitions/FileCollectionDeleteSlot"
+            },
+            "moveItem": {
+              "$ref": "#/definitions/FormListCrudRef"
+            },
+            "duplicateItem": {
+              "$ref": "#/definitions/FormListCrudRef"
+            }
+          },
+          "required": [
+            "list",
+            "createCollection",
+            "renameCollection",
+            "deleteCollection",
+            "createItem",
+            "renameItem",
+            "deleteItem",
+            "moveItem",
+            "duplicateItem"
+          ],
+          "additionalProperties": false
+        },
+        "newItems": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/FileCollectionNewItemConfig"
+          }
+        },
+        "kindIcons": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "`kind` → `IconData` key."
+        },
+        "selection": {
+          "type": "object",
+          "properties": {
+            "stateKey": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "stateKey"
+          ],
+          "additionalProperties": false
+        },
+        "selectNavigate": {
+          "$ref": "#/definitions/StudioNavigate",
+          "description": "Played on a **file** click; absent = off."
+        }
+      },
+      "required": [
+        "name",
+        "title",
+        "collapsible",
+        "readOnly",
+        "height",
+        "endpoints",
+        "newItems",
+        "kindIcons",
+        "selection"
+      ],
+      "additionalProperties": false,
+      "description": "Editable config for a file collection (see `spec/gummy-file-collection-spec.md`). Maps onto the engine's `FileCollectionElement`: nine endpoint slots — `list` reads the nested collections, the eight mutations send fixed bodies and map their URL `:param`s to a node field (a `row` source) or the route / state / a literal — an unwired slot (`endpointId: null`) hides its affordance. The selected node is page data under `selection.stateKey` (`''` = `<name>Selected`); `selectNavigate` plays on a file click."
+    },
+    "FileCollectionDeleteSlot": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "confirmEnabled": {
+          "type": "boolean"
+        },
+        "confirmTitle": {
+          "type": "string"
+        },
+        "confirmDescription": {
+          "type": "string",
+          "description": "May contain `{{name}}` and `{{count}}`."
+        },
+        "snackbarSuccessEnabled": {
+          "type": "boolean"
+        },
+        "snackbarSuccessType": {
+          "$ref": "#/definitions/ButtonSnackbarVariant"
+        },
+        "snackbarSuccessMessage": {
+          "type": "string"
+        },
+        "snackbarErrorException": {
+          "type": "boolean"
+        },
+        "endpointId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "params": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/NavParamSource"
+          }
+        },
+        "extra": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/NavParamSource"
+          }
+        }
+      },
+      "required": [
+        "confirmDescription",
+        "confirmEnabled",
+        "confirmTitle",
+        "endpointId",
+        "extra",
+        "params",
+        "snackbarErrorException",
+        "snackbarSuccessEnabled",
+        "snackbarSuccessMessage",
+        "snackbarSuccessType"
+      ],
+      "description": "A delete slot: a CRUD ref plus the confirm and snackbar fields (like a data table's delete)."
+    },
+    "FileCollectionListSlot": {
+      "type": "object",
+      "properties": {
+        "endpointId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "params": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/NavParamSource"
+          }
+        },
+        "extra": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/NavParamSource"
+          },
+          "description": "Query fields (the read call's `query`)."
+        },
+        "apiPaths": {
+          "type": "string",
+          "description": "Dot path into the response to the collections array (`''` = the response itself)."
+        }
+      },
+      "required": [
+        "endpointId",
+        "params",
+        "extra",
+        "apiPaths"
+      ],
+      "additionalProperties": false,
+      "description": "The `list` slot: a CRUD ref plus the dot path to the collections array."
+    },
+    "FileCollectionNewItemConfig": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "icon": {
+          "type": "string",
+          "description": "`IconData` key; `''` = the structural default glyph."
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "folder",
+            "file"
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "description": "Sent as the new node's `kind`; `''` = none."
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "icon",
+        "type",
+        "kind"
+      ],
+      "additionalProperties": false,
+      "description": "One entry of a file collection's **New** menu (`id` is studio-only, never exported)."
+    },
     "FilterDefaultRow": {
       "type": "object",
       "properties": {

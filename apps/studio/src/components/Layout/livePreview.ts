@@ -109,6 +109,10 @@ function toPreviewBin(bin: ParsedBin, wiring: LivePreviewWiring): ParsedBin {
     const read = (el?.apiCrud as Record<string, Record<string, unknown>> | undefined)?.read
     const gap = wiringGap(read?.name, wiring)
     if (gap) return placeholderBin(bin, `[ ${label} "${displayName}" — ${gap} ]`)
+  } else if (type === 'filecollection') {
+    const list = (el?.api as { list?: Record<string, unknown> } | undefined)?.list
+    const gap = wiringGap(list?.name, wiring)
+    if (gap) return placeholderBin(bin, `[ ${label} "${displayName}" — ${gap} ]`)
   } else if (type === 'workfloweditor') {
     const api = (el?.users as { api?: Record<string, unknown> } | undefined)?.api
     const gap = wiringGap(api?.name, wiring)

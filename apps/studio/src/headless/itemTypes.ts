@@ -47,6 +47,12 @@ export const ITEM_TYPES: Record<ComponentType, ItemTypeInfo> = {
   },
   datatableeditable: { configType: 'DataTableEditableConfig', summary: 'A table edited in place, row by row.', canvases: none, guide: 'datatableeditable' },
   formlist: { configType: 'FormListConfig', summary: 'A repeating form backed by CRUD endpoints: one row form per record with Save / Remove / Add.', canvases: one('row template (fields only, one form per row)'), guide: 'formlist' },
+  filecollection: {
+    configType: 'FileCollectionConfig',
+    summary: 'A tree of collections → folders → files over a list endpoint, with create / rename / move / duplicate / delete slots; the selected node is page data.',
+    canvases: none,
+    guide: 'filecollection',
+  },
   repeater: { configType: 'RepeaterConfig', summary: 'A read-only list: its item template renders once per array item, with the item in scope for bindings.', canvases: one('item template (bind with source "row")'), guide: 'repeater' },
   text: { configType: 'TextConfig', summary: 'A short piece of text (static or bound).', canvases: none, guide: 'display' },
   typography: { configType: 'TypographyConfig', summary: 'A heading / body text in a typography variant (static or bound).', canvases: none, guide: 'display' },

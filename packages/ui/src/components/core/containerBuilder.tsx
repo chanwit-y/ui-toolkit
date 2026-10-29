@@ -31,7 +31,7 @@ type StateBinding = { name: string; key: string; path?: string };
 function collectStateBindings(containers: Container[], out: StateBinding[] = []): StateBinding[] {
 	for (const c of containers) {
 		for (const b of c.bins) {
-			if (b.type === "formlist" || b.type === "repeater") continue;
+			if (b.type === "formlist" || b.type === "repeater" || b.type === "filecollection") continue;
 			const el = b.element as
 				| { name?: string; value?: DataValue; tabs?: { container: Container }[]; content?: Container; collapse?: Container }
 				| undefined;

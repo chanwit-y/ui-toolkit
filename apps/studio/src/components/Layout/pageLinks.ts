@@ -1,5 +1,5 @@
 import type { PageDef } from '../Workspace/types'
-import type { ButtonItemConfig, DataTableConfig, GridItemData } from './types'
+import type { ButtonItemConfig, DataTableConfig, FileCollectionConfig, GridItemData } from './types'
 
 /** Visit every item of a canvas tree, child canvases included. */
 export function walkItems(items: GridItemData[], visit: (item: GridItemData) => void): void {
@@ -36,6 +36,13 @@ export function pageLinks(page: PageDef): PageLink[] {
           via: `${t.title || t.name || 'table'} row`,
           buttonId: item.id,
         })
+      }
+      return
+    }
+    if (item.type === 'filecollection') {
+      const f = item.config as FileCollectionConfig
+      if (f.selectNavigate?.pageId) {
+        out.push({ kind: 'page', pageId: f.selectNavigate.pageId, via: `${f.title || f.name || 'files'} file`, buttonId: item.id })
       }
       return
     }

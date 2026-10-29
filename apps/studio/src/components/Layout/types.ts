@@ -1269,6 +1269,156 @@ export function createDefaultFormListConfig(name: string): FormListConfig {
   }
 }
 
+/** One entry of a file collection's **New** menu (`id` is studio-only, never exported). */
+export type FileCollectionNewItemConfig = {
+  id: string
+  label: string
+  /** `IconData` key; `''` = the structural default glyph. */
+  icon: string
+  type: 'folder' | 'file'
+  /** Sent as the new node's `kind`; `''` = none. */
+  kind: string
+}
+
+/** The `list` slot: a CRUD ref plus the dot path to the collections array. */
+export type FileCollectionListSlot = {
+  endpointId: string | null
+  params: Record<string, NavParamSource>
+  /** Query fields (the read call's `query`). */
+  extra: Record<string, NavParamSource>
+  /** Dot path into the response to the collections array (`''` = the response itself). */
+  apiPaths: string
+}
+
+/** A delete slot: a CRUD ref plus the confirm and snackbar fields (like a data table's delete). */
+export type FileCollectionDeleteSlot = FormListCrudRef & {
+  confirmEnabled: boolean
+  confirmTitle: string
+  /** May contain `{{name}}` and `{{count}}`. */
+  confirmDescription: string
+  snackbarSuccessEnabled: boolean
+  snackbarSuccessType: ButtonSnackbarVariant
+  snackbarSuccessMessage: string
+  snackbarErrorException: boolean
+}
+
+/**
+ * Editable config for a file collection (see
+ * `spec/gummy-file-collection-spec.md`). Maps onto the engine's
+ * `FileCollectionElement`: nine endpoint slots — `list` reads the nested
+ * collections, the eight mutations send fixed bodies and map their URL
+ * `:param`s to a node field (a `row` source) or the route / state / a
+ * literal — an unwired slot (`endpointId: null`) hides its affordance. The
+ * selected node is page data under `selection.stateKey` (`''` =
+ * `<name>Selected`); `selectNavigate` plays on a file click.
+ */
+export type FileCollectionConfig = {
+  name: string
+  title: string
+  collapsible: boolean
+  readOnly: boolean
+  /** CSS height (`480px`); `''` = fill the grid cell. */
+  height: string
+  /** The … menu on rows and collection headers; absent = shown (engine `menu`). */
+  showMenu?: boolean
+  endpoints: {
+    list: FileCollectionListSlot
+    createCollection: FormListCrudRef
+    renameCollection: FormListCrudRef
+    deleteCollection: FileCollectionDeleteSlot
+    createItem: FormListCrudRef
+    renameItem: FormListCrudRef
+    deleteItem: FileCollectionDeleteSlot
+    moveItem: FormListCrudRef
+    duplicateItem: FormListCrudRef
+  }
+  newItems: FileCollectionNewItemConfig[]
+  /** `kind` → `IconData` key. */
+  kindIcons: Record<string, string>
+  selection: { stateKey: string }
+  /** Played on a **file** click; absent = off. */
+  selectNavigate?: StudioNavigate
+}
+
+/** The mutation slots of a file collection, in panel order. */
+export const FILE_COLLECTION_MUTATION_SLOTS = [
+  'createCollection',
+  'renameCollection',
+  'deleteCollection',
+  'createItem',
+  'renameItem',
+  'deleteItem',
+  'moveItem',
+  'duplicateItem',
+] as const
+export type FileCollectionMutationSlot = (typeof FILE_COLLECTION_MUTATION_SLOTS)[number]
+
+/** The slots whose fixed body the engine sends (the endpoint should declare a body model). */
+export const FILE_COLLECTION_BODY_SLOTS: ReadonlySet<FileCollectionMutationSlot> = new Set([
+  'createCollection',
+  'renameCollection',
+  'createItem',
+  'renameItem',
+  'moveItem',
+])
+
+/** The node fields a mutation's `row` source may read. */
+export const FILE_COLLECTION_NODE_FIELDS = ['id', 'collectionId', 'parentId', 'name', 'kind'] as const
+
+export function createFileCollectionDeleteSlot(title: string, description: string): FileCollectionDeleteSlot {
+  return {
+    ...createFormListCrudRef(),
+    confirmEnabled: true,
+    confirmTitle: title,
+    confirmDescription: description,
+    snackbarSuccessEnabled: false,
+    snackbarSuccessType: 'success',
+    snackbarSuccessMessage: '',
+    snackbarErrorException: true,
+  }
+}
+
+/** The default New menu: a folder and a file. */
+export function defaultFileCollectionNewItems(): FileCollectionNewItemConfig[] {
+  return [
+    { id: 'ni-folder', label: 'New folder', icon: 'folder', type: 'folder', kind: '' },
+    { id: 'ni-file', label: 'New file', icon: 'file', type: 'file', kind: '' },
+  ]
+}
+
+/** Defaults for a freshly dropped file collection: nothing wired. */
+export function createDefaultFileCollectionConfig(name: string): FileCollectionConfig {
+  return {
+    name,
+    title: 'Files',
+    collapsible: false,
+    readOnly: false,
+    height: '',
+    endpoints: {
+      list: { ...createFormListCrudRef(), apiPaths: '' },
+      createCollection: createFormListCrudRef(),
+      renameCollection: createFormListCrudRef(),
+      deleteCollection: createFileCollectionDeleteSlot(
+        'Delete collection',
+        'Delete "{{name}}" and its {{count}} files? This cannot be undone.',
+      ),
+      createItem: createFormListCrudRef(),
+      renameItem: createFormListCrudRef(),
+      deleteItem: createFileCollectionDeleteSlot('Delete item', 'Delete "{{name}}"? This cannot be undone.'),
+      moveItem: createFormListCrudRef(),
+      duplicateItem: createFormListCrudRef(),
+    },
+    newItems: defaultFileCollectionNewItems(),
+    kindIcons: {},
+    selection: { stateKey: '' },
+  }
+}
+
+/** The selection slice key of a file collection. */
+export function fileCollectionStateKey(name: string, selection: { stateKey: string } | undefined): string {
+  return selection?.stateKey.trim() || `${name}Selected`
+}
+
 /**
  * A display prop bound to the item of the enclosing repeater (see the grilled
  * repeater design): the item field `key` plus an optional lodash `path` into
@@ -2326,6 +2476,7 @@ export type GridItemData = {
     | DataTableEditableConfig
     | FormListConfig
     | RepeaterConfig
+    | FileCollectionConfig
     | TextConfig
     | TypographyConfig
     | AvatarConfig
@@ -2430,6 +2581,7 @@ export function collectButtonTargets(items: GridItemData[]): ButtonRefTargets {
         (item.type === 'datatable' ||
           item.type === 'datatableeditable' ||
           item.type === 'formlist' ||
+          item.type === 'filecollection' ||
           (item.type === 'repeater' &&
             (item.config as RepeaterConfig | undefined)?.source === 'endpoint')) &&
         item.config

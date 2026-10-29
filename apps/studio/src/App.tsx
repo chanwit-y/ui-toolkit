@@ -17,8 +17,9 @@ function App() {
   // ThemeProvider wraps Radix's <Theme>, supplying the accent CSS vars the
   // canvas previews use (the primary/brand color real components tint to).
   // Its props are derived from the Theme page's store, so authored tokens
-  // apply live to the whole app (canvas cells + Live Preview; the zinc studio
-  // chrome keeps its own fixed palette).
+  // apply live to the whole app (canvas cells + Live Preview); inside a
+  // project the studio chrome follows them too (`chromeThemeStyle` on the
+  // ProjectShell), the portal keeps the neutral tokens.
   // CoreProvider (isRoot) supplies the observe table + Data/Query/Loading
   // contexts that engine-aware previews need — the select cell renders the real
   // Autocomplete2, which calls useCore/useData/useQuery and would otherwise throw.
