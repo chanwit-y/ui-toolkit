@@ -299,9 +299,24 @@ export function ChartView({ element, raw, status, refreshing, error, onRetry, on
   const hue = element.options?.hue;
   const accent = theme.theme?.accentColor;
 
-  // Theme bridge: re-read the Radix variables when the appearance, surface or accent changes.
+  // Theme bridge: re-read the Radix variables when the appearance, surface or accent changes —
+  // and again whenever <html> or an enclosing Radix theme root changes its class / style: the
+  // provider flips `.dark` on <html> in an effect that runs after this one, Radix's `Theme` syncs
+  // its own `light` / `dark` class a commit later, and a consumer may flip either itself.
   useLayoutEffect(() => {
-    if (frameRef.current) setTokens(readChartTheme(frameRef.current, { glass, hue }));
+    const el = frameRef.current;
+    if (!el) return;
+    const read = () => {
+      const next = readChartTheme(el, { glass, hue });
+      setTokens((prev) => (prev && JSON.stringify(prev) === JSON.stringify(next) ? prev : next));
+    };
+    read();
+    if (typeof MutationObserver === "undefined") return;
+    const mo = new MutationObserver(read);
+    const watch = { attributes: true, attributeFilter: ["class", "style", "data-surface"] };
+    mo.observe(document.documentElement, watch);
+    for (let node = el.parentElement?.closest(".radix-themes"); node; node = node.parentElement?.closest(".radix-themes")) mo.observe(node, watch);
+    return () => mo.disconnect();
   }, [theme.appearance, glass, accent, hue]);
 
   const model = useMemo(() => buildChartModel(element, raw, locale), [element, raw, locale]);

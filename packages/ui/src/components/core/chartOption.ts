@@ -86,11 +86,13 @@ function axisOption(
   opts: { categories?: string[]; defaultGrid: boolean; horizontal?: boolean; locale?: string; boundaryGap?: boolean; inverse?: boolean; position?: "left" | "right" },
 ): Obj {
   const many = (opts.categories?.length ?? 0) > 12;
+  // Many categories on a horizontal x axis turn their labels 45°: the title moves below them.
+  const rotated = kind === "category" && many && !opts.horizontal;
   const format = def?.format;
   return {
     type: kind,
     ...(opts.categories ? { data: opts.categories } : {}),
-    ...(def?.title ? { name: def.title, nameLocation: "middle", nameGap: opts.horizontal ? 36 : kind === "value" ? 44 : 28, nameTextStyle: { color: tokens.textSecondary, fontSize: 12 } } : {}),
+    ...(def?.title ? { name: def.title, nameLocation: "middle", nameGap: rotated ? 58 : opts.horizontal ? 36 : kind === "value" ? 44 : 28, nameTextStyle: { color: tokens.textSecondary, fontSize: 12 } } : {}),
     ...(def?.min !== undefined ? { min: def.min } : {}),
     ...(def?.max !== undefined ? { max: def.max } : {}),
     ...(opts.boundaryGap !== undefined ? { boundaryGap: opts.boundaryGap } : {}),
@@ -103,8 +105,9 @@ function axisOption(
       fontSize: 12,
       fontFamily: tokens.fontFamily,
       ...(kind === "value" && format ? { formatter: (v: unknown) => fmt(v, format, opts.locale) } : {}),
-      ...(kind === "category" && many && !opts.horizontal ? { rotate: 45, interval: "auto" } : {}),
-      ...(kind === "category" ? { hideOverlap: true } : {}),
+      ...(rotated ? { rotate: 45, interval: "auto" } : {}),
+      // A narrow value axis (a horizontal bar's x) would otherwise print its ticks over each other.
+      hideOverlap: true,
     },
     splitLine: { show: def?.showGrid ?? opts.defaultGrid, lineStyle: { color: tokens.line, width: 1 } },
   };
@@ -120,7 +123,6 @@ function gridOption(element: ChartOptionInput["element"], horizontal: boolean, r
     right: rightAxis ? (element.yAxisRight?.title ? 56 : 12) : labelRoom,
     top: 20,
     bottom: (horizontal ? yTitle : xTitle) ? 44 : 12,
-    containLabel: true,
   };
 }
 
@@ -444,7 +446,7 @@ function gaugeOption(input: ChartOptionInput): EChartsOption {
       animationDuration: 400,
       textStyle: { color: tokens.text, fontFamily: tokens.fontFamily },
       tooltip: { show: false },
-      grid: { left: 12, right: 12, top: 28, bottom: 28, containLabel: true },
+      grid: { left: 12, right: 12, top: 28, bottom: 28 },
       xAxis: { type: "value", min: g.min, max: g.max, axisLine: { show: false }, axisTick: { show: false }, splitLine: { show: false }, axisLabel: { color: tokens.textSecondary, fontSize: 11, formatter: (v: unknown) => fmt(v, format, locale) } },
       yAxis: { type: "category", data: [""], show: false },
       series: [
@@ -536,7 +538,7 @@ function heatmapOption(input: ChartOptionInput): EChartsOption {
         return tooltipRows([{ color: tokens.accent, label: `${hm.xs[c.xi]} · ${hm.ys[c.yi]}`, value: fmt(c.value, format, locale) }], tokens);
       },
     },
-    grid: { left: element.yAxis?.title ? 56 : 12, right: 12, top: 12, bottom: element.xAxis?.title ? 44 : 12, containLabel: true },
+    grid: { left: element.yAxis?.title ? 56 : 12, right: 12, top: 12, bottom: element.xAxis?.title ? 44 : 12 },
     xAxis: { ...axisOption(element.xAxis, "category", tokens, { categories: hm.xs, defaultGrid: false, locale }), splitArea: { show: false } },
     yAxis: { ...axisOption(element.yAxis, "category", tokens, { categories: hm.ys, defaultGrid: false, locale, inverse: true }), splitArea: { show: false } },
     visualMap: {

@@ -76,3 +76,27 @@ bun grid/build.ts                     # capture every scene, then render
 bun grid/build.ts --only g5-grouping  # re-capture one scene, render
 bun grid/build.ts --render-only       # re-render from the last capture
 ```
+
+# Charts preview video
+
+A ~100-second preview of the `chart` element (bars with a target read off the response and a
+click into page data, line / stacked area, donut + legend toggles + click-through navigation,
+ranked bars, funnel, bar + right-axis line, bubble scatter, heatmap, radars, gauges, a live
+dark-mode flip, then the studio's type picker), recorded on the demo's **Charts showcase**
+project:
+
+| File | What it is |
+|---|---|
+| `charts/narration.ts` | the eight scenes (`c1`–`c8`) and their lines |
+| `charts/capture.ts` | the recorded scenes; a chart is one `<canvas>`, so bars and slices are found by sampling its pixels |
+| `charts/build.ts` | the build entry → `charts/out/gummy-charts.mp4` |
+
+Servers: `demo-api` (9100), `demo-charts` (3405) and `demo-studio` (3398). Scene `c7-studio`
+switches the weekly chart's type and undoes it, but the autosave still writes `updatedAt` and an
+activity entry — afterwards run `git checkout -- demo/gummy` and restart `demo-studio`.
+
+```bash
+bun charts/build.ts                   # capture every scene, then render
+bun charts/build.ts --only c3-mix     # re-capture one scene, render
+bun charts/build.ts --render-only     # re-render from the last capture
+```
