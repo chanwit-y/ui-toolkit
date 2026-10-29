@@ -29,6 +29,7 @@ import {
 import { FieldConfigPanel } from './FieldConfigPanel'
 import { FormListConfigPanel } from './FormListConfigPanel'
 import { FileCollectionConfigPanel } from './FileCollectionConfigPanel'
+import { ChartConfigPanel } from './ChartConfigPanel'
 import { RepeaterConfigPanel } from './RepeaterConfigPanel'
 import { useBreadcrumb, useGridStore, useSelectedItem, type SidebarView } from './gridStore'
 import { RadioConfigPanel } from './RadioConfigPanel'
@@ -51,6 +52,7 @@ import type {
   FormListConfig,
   RepeaterConfig,
   FileCollectionConfig,
+  ChartConfig,
   HiddenConfig,
   DrawerConfig,
   ModalConfig,
@@ -246,6 +248,8 @@ export function Sidebar({ gridConfigJson, fullGridCss }: SidebarProps) {
               itemId={selectedItem.id}
               config={selectedItem.config as FileCollectionConfig}
             />
+          ) : selectedItem.type === 'chart' && selectedItem.config ? (
+            <ChartConfigPanel itemId={selectedItem.id} config={selectedItem.config as ChartConfig} />
           ) : selectedItem.type === 'repeater' && selectedItem.config ? (
             <RepeaterConfigPanel
               itemId={selectedItem.id}

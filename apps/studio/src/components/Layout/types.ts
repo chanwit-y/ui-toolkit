@@ -1,4 +1,5 @@
 import type { CellFormat, DataTableAggregate, DataTableStyleRule, DataType } from '@gummy-ui/ui'
+export { LOW_CONTRAST_HUES, MAX_SERIES } from '@gummy-ui/ui'
 import type { Breakpoint } from './breakpoints'
 import type { ComponentType } from './componentCatalog'
 
@@ -1419,6 +1420,265 @@ export function fileCollectionStateKey(name: string, selection: { stateKey: stri
   return selection?.stateKey.trim() || `${name}Selected`
 }
 
+/* ----------------------------------------------------------------------------
+ * Chart (see `spec/gummy-chart-spec.md` §3)
+ * ------------------------------------------------------------------------- */
+
+/** The ten v1 chart types (engine `ChartElement.chart`). */
+export type ChartType = 'bar' | 'line' | 'area' | 'barLine' | 'pie' | 'scatter' | 'radar' | 'gauge' | 'heatmap' | 'funnel'
+
+export const CHART_TYPE_OPTIONS: { value: ChartType; label: string; icon: string }[] = [
+  { value: 'bar', label: 'Bar', icon: 'chartBar' },
+  { value: 'line', label: 'Line', icon: 'chartLine' },
+  { value: 'area', label: 'Area', icon: 'chartArea' },
+  { value: 'barLine', label: 'Bar + line', icon: 'chartBarLine' },
+  { value: 'pie', label: 'Pie', icon: 'chartPie' },
+  { value: 'scatter', label: 'Scatter', icon: 'chartScatter' },
+  { value: 'radar', label: 'Radar', icon: 'chartRadar' },
+  { value: 'gauge', label: 'Gauge', icon: 'gauge' },
+  { value: 'heatmap', label: 'Heatmap', icon: 'heatmap' },
+  { value: 'funnel', label: 'Funnel', icon: 'funnel' },
+]
+
+/** One series card: a value field across the rows (engine `ChartSeriesDef`). */
+export type ChartSeriesConfig = {
+  /** Studio-only stable card identity; never exported. */
+  id: string
+  /** Row accessor (dot path). */
+  field: string
+  /** `''` = the field name. */
+  label: string
+  /** A Radix hue name; `''` = the palette slot by position. */
+  color: string
+  /** `barLine` only. */
+  axis: 'left' | 'right'
+  /** `barLine` only. */
+  shape: 'bar' | 'line'
+  /** `bar` with `options.mode: stackGroup`: series sharing an id stack together; `''` = own stack. */
+  stack: string
+  /** Value formatting (tooltip, direct labels, the series' axis). */
+  format: ColumnFormatConfig
+}
+
+/** One cartesian axis (engine `ChartAxisDef`); numbers as text, `''` = auto. */
+export type ChartAxisConfig = {
+  title: string
+  min: string
+  max: string
+  /** Tick-label format; type `''` = plain. */
+  format: ColumnFormatConfig
+  showGrid: boolean
+}
+
+/** A gauge colour band up to `to` (a number as text; `''` on the last band = the max). */
+export type ChartGaugeBandConfig = { id: string; to: string; color: string }
+
+/** Every per-type knob, always present so a type switch keeps what was set; the panel shows the ones the type uses. */
+export type ChartOptionsConfig = {
+  /** bar, funnel */
+  orientation: 'vertical' | 'horizontal'
+  /** bar */
+  mode: 'grouped' | 'stacked' | 'stackGroup'
+  /** bar, barLine: px as text, `''` = auto */
+  barMaxWidth: string
+  /** line, area, barLine */
+  smooth: boolean
+  showMarkers: boolean
+  /** area */
+  stacked: boolean
+  /** pie: `''` = pie, `"60%"` = donut */
+  innerRadius: string
+  /** pie, funnel */
+  labelPosition: 'outside' | 'inside' | 'none'
+  /** donut: static text, or `$total` = the sum of the values */
+  centerText: string
+  /** scatter: the numeric x accessor (replaces the category `xField`) */
+  xField: string
+  /** scatter: `''` = fixed marker size, a field = bubble */
+  sizeField: string
+  /** scatter: `''` = no point labels */
+  labelField: string
+  /** radar */
+  radarShape: 'polygon' | 'circle'
+  /** radar: `''` = auto per indicator */
+  radarMax: string
+  /** gauge */
+  gaugeShape: 'radial' | 'linear'
+  /** gauge: `''` = 0 / 100 */
+  min: string
+  max: string
+  bands: ChartGaugeBandConfig[]
+  /** heatmap */
+  yField: string
+  valueField: string
+  /** heatmap: a Radix hue name for the sequential ramp; `''` = the accent */
+  hue: string
+  showValues: boolean
+  /** funnel */
+  funnelShape: 'funnel' | 'pyramid'
+  sort: 'none' | 'asc' | 'desc'
+}
+
+/** A reference line (engine `ChartReferenceLine`): `value` is a number as text, or a dot path into the raw response. */
+export type ChartReferenceLineConfig = {
+  /** Studio-only stable card identity; never exported. */
+  id: string
+  /** `''` = the formatted value. */
+  label: string
+  value: string
+  /** The axis the line crosses (`y` = a horizontal line on a vertical bar). */
+  axis: 'x' | 'y'
+  /** A Radix hue name; `''` = the secondary text colour. */
+  color: string
+  dashed: boolean
+}
+
+export type ChartLegendPosition = 'top' | 'bottom' | 'left' | 'right'
+
+/**
+ * Editable config for a `chart` item (see `spec/gummy-chart-spec.md` §3).
+ * Rows come from `endpointId` + `dataPath` + `requestMapping` (literal / URL /
+ * page-state sources — a chart has no filter form) or from a page load
+ * (`rowsBinding`); the clicked datum is page data `<name>Selected` while
+ * `clickState.enabled`, and `clickNavigate` plays with `row` params reading it.
+ */
+export type ChartConfig = {
+  /** Binding name; the state slice defaults to `${name}Selected`. */
+  name: string
+  /** `''` = no header. */
+  title: string
+  subtitle: string
+  footnote: string
+  type: ChartType
+  /** The data endpoint, by `EndpointDef.id` (`null` = unwired). */
+  endpointId: string | null
+  /** Dot path to the row array in the response; `''` = the response is the array. */
+  dataPath: string
+  /** Rows from a page load instead of the endpoint (engine `items`); `null` = the endpoint. */
+  rowsBinding: ItemBinding
+  /** Engine `api.params` / `api.query` / `api.body` — one row per request key (no filter sources). */
+  requestMapping: RequestMapRow[]
+  /** The category / slice label / indicator accessor (scatter reads `options.xField`, gauge none). */
+  xField: string
+  /** How `xField` shows; a `date` type with a pattern also buckets rows by that label. */
+  xFormat: ColumnFormatConfig
+  /** A field whose distinct values each become a series; `''` = manual series. */
+  splitBy: string
+  series: ChartSeriesConfig[]
+  xAxis: ChartAxisConfig
+  yAxis: ChartAxisConfig
+  /** `barLine` only. */
+  yAxisRight: ChartAxisConfig
+  options: ChartOptionsConfig
+  referenceLines: ChartReferenceLineConfig[]
+  legend: { show: boolean; position: ChartLegendPosition }
+  /** Selective direct labels: ends of bars, the last point of a line. */
+  showDataLabels: boolean
+  /** CSS length of the plot; `''` = 320px. */
+  height: string
+  /** `''` = "No data". */
+  emptyText: string
+  /** Click → page; absent = off. */
+  clickNavigate?: StudioNavigate
+  /** Click → page data; absent = off. `stateKey` `''` = `${name}Selected`. */
+  clickState?: { enabled: boolean; stateKey: string }
+}
+
+export function createDefaultChartSeries(id = 's-1', field = 'value', label = 'Value'): ChartSeriesConfig {
+  return { id, field, label, color: '', axis: 'left', shape: 'bar', stack: '', format: { ...defaultColumnFormat(), type: 'number' } }
+}
+
+export function createDefaultChartAxis(showGrid: boolean): ChartAxisConfig {
+  return { title: '', min: '', max: '', format: defaultColumnFormat(), showGrid }
+}
+
+export function createDefaultChartOptions(): ChartOptionsConfig {
+  return {
+    orientation: 'vertical',
+    mode: 'grouped',
+    barMaxWidth: '',
+    smooth: false,
+    showMarkers: true,
+    stacked: false,
+    innerRadius: '',
+    labelPosition: 'outside',
+    centerText: '',
+    xField: '',
+    sizeField: '',
+    labelField: '',
+    radarShape: 'polygon',
+    radarMax: '',
+    gaugeShape: 'radial',
+    min: '',
+    max: '',
+    bands: [],
+    yField: '',
+    valueField: '',
+    hue: '',
+    showValues: false,
+    funnelShape: 'funnel',
+    sort: 'desc',
+  }
+}
+
+export function createDefaultChartConfig(name: string): ChartConfig {
+  return {
+    name,
+    title: 'Chart',
+    subtitle: '',
+    footnote: '',
+    type: 'bar',
+    endpointId: null,
+    dataPath: '',
+    rowsBinding: null,
+    requestMapping: [],
+    xField: 'name',
+    xFormat: defaultColumnFormat(),
+    splitBy: '',
+    series: [createDefaultChartSeries()],
+    xAxis: createDefaultChartAxis(false),
+    yAxis: createDefaultChartAxis(true),
+    yAxisRight: createDefaultChartAxis(false),
+    options: createDefaultChartOptions(),
+    referenceLines: [],
+    legend: { show: true, position: 'top' },
+    showDataLabels: false,
+    height: '',
+    emptyText: '',
+  }
+}
+
+/** The click-state slice key of a chart. */
+export function chartStateKey(name: string, clickState: { stateKey: string } | undefined): string {
+  return clickState?.stateKey.trim() || `${name}Selected`
+}
+
+/** What each chart type reads (spec §3.3): drives the panel's sections and `validate_project`. */
+export type ChartTypeFeatures = {
+  /** Reads `xField` (+ `xFormat`). */
+  xField: boolean
+  /** Supports the `splitBy` pivot. */
+  splitBy: boolean
+  /** Exactly one series. */
+  singleSeries: boolean
+  axes: 'xy' | 'xyRight' | 'radar' | 'titles' | 'none'
+  referenceLines: boolean
+  options: (keyof ChartOptionsConfig)[]
+}
+
+export const CHART_TYPE_FEATURES: Record<ChartType, ChartTypeFeatures> = {
+  bar: { xField: true, splitBy: true, singleSeries: false, axes: 'xy', referenceLines: true, options: ['orientation', 'mode', 'barMaxWidth'] },
+  line: { xField: true, splitBy: true, singleSeries: false, axes: 'xy', referenceLines: true, options: ['smooth', 'showMarkers'] },
+  area: { xField: true, splitBy: true, singleSeries: false, axes: 'xy', referenceLines: true, options: ['smooth', 'showMarkers', 'stacked'] },
+  barLine: { xField: true, splitBy: false, singleSeries: false, axes: 'xyRight', referenceLines: true, options: ['smooth', 'showMarkers', 'barMaxWidth'] },
+  pie: { xField: true, splitBy: false, singleSeries: true, axes: 'none', referenceLines: false, options: ['innerRadius', 'labelPosition', 'centerText'] },
+  scatter: { xField: false, splitBy: true, singleSeries: false, axes: 'xy', referenceLines: true, options: ['xField', 'sizeField', 'labelField'] },
+  radar: { xField: true, splitBy: true, singleSeries: false, axes: 'radar', referenceLines: false, options: ['radarShape', 'radarMax'] },
+  gauge: { xField: false, splitBy: false, singleSeries: true, axes: 'none', referenceLines: true, options: ['gaugeShape', 'min', 'max', 'bands'] },
+  heatmap: { xField: true, splitBy: false, singleSeries: true, axes: 'titles', referenceLines: false, options: ['yField', 'valueField', 'hue', 'showValues'] },
+  funnel: { xField: true, splitBy: false, singleSeries: true, axes: 'none', referenceLines: false, options: ['orientation', 'funnelShape', 'labelPosition', 'sort'] },
+}
+
 /**
  * A display prop bound to the item of the enclosing repeater (see the grilled
  * repeater design): the item field `key` plus an optional lodash `path` into
@@ -2477,6 +2737,7 @@ export type GridItemData = {
     | FormListConfig
     | RepeaterConfig
     | FileCollectionConfig
+    | ChartConfig
     | TextConfig
     | TypographyConfig
     | AvatarConfig
@@ -2582,6 +2843,7 @@ export function collectButtonTargets(items: GridItemData[]): ButtonRefTargets {
           item.type === 'datatableeditable' ||
           item.type === 'formlist' ||
           item.type === 'filecollection' ||
+          (item.type === 'chart' && !(item.config as ChartConfig | undefined)?.rowsBinding) ||
           (item.type === 'repeater' &&
             (item.config as RepeaterConfig | undefined)?.source === 'endpoint')) &&
         item.config

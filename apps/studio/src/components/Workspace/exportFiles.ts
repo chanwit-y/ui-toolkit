@@ -1,6 +1,6 @@
 import type { EndpointDef } from '../Api/types'
 import { buttonNavigates, walkItems } from '../Layout/pageLinks'
-import type { ButtonItemConfig, DataTableConfig, FileCollectionConfig, GridItemData } from '../Layout/types'
+import type { ButtonItemConfig, ChartConfig, DataTableConfig, FileCollectionConfig, GridItemData } from '../Layout/types'
 import type { ModelDef } from '../Model/types'
 import { pathParams } from './snapshots'
 import type { PageDef, ProjectDef } from './types'
@@ -52,6 +52,11 @@ function pageButtons(
     if (item.type === 'filecollection') {
       const f = item.config as FileCollectionConfig
       if (f.selectNavigate?.pageId) out.push({ label: `${f.title || f.name} file`, does: `go to ${pageName(f.selectNavigate.pageId)}` })
+      return
+    }
+    if (item.type === 'chart') {
+      const c = item.config as ChartConfig | undefined
+      if (c?.clickNavigate?.pageId) out.push({ label: `${c.title || c.name} click`, does: `go to ${pageName(c.clickNavigate.pageId)}` })
       return
     }
     if (item.type !== 'button') return

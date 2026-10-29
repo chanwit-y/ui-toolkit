@@ -2,6 +2,8 @@ import { walkItems } from '../Layout/pageLinks'
 import {
   createFormListCrudRef,
   fileCollectionStateKey,
+  chartStateKey,
+  type ChartConfig,
   selectionStateKey,
   type DataTableConfig,
   type FileCollectionConfig,
@@ -36,6 +38,24 @@ export function selectionLoads(items: GridItemData[]): PageLoadDef[] {
         shape: {
           shape: 'object',
           fields: ['id', 'collectionId', 'parentId', 'name', 'type', 'kind', 'path'].map((f) => selectionField(f, 'string')),
+        },
+      })
+      return
+    }
+    if (item.type === 'chart' && item.config) {
+      const config = item.config as ChartConfig
+      if (!config.clickState?.enabled) return
+      const key = chartStateKey(config.name, config.clickState)
+      out.push({
+        id: key,
+        key,
+        read: createFormListCrudRef(),
+        paths: '',
+        loading: 'none',
+        errorMessage: '',
+        shape: {
+          shape: 'object',
+          fields: [selectionField('$series', 'string'), selectionField('$value', 'number'), selectionField('$x', 'string'), selectionField('$y', 'string'), selectionField('$percent', 'number')],
         },
       })
       return
