@@ -186,7 +186,7 @@ export function bookshopProject(library: LibraryData = bookshopLibrary()): Proje
 export function bookshopWorkspace(): WorkspaceData {
   const library = bookshopLibrary()
   return {
-    version: 58,
+    version: 59,
     appearance: 'light',
     user: 'Chanwit Yimneam',
     projects: [bookshopProject(library), portalProject(), glassProject(), gridProject()],

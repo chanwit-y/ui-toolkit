@@ -23,6 +23,13 @@ import {
   createDefaultItemSettings,
   createDefaultRepeaterConfig,
   createDefaultFileCollectionConfig,
+  createDefaultChartConfig,
+  createDefaultChartSeries,
+  createDefaultChartAxis,
+  createDefaultChartOptions,
+  type ChartConfig,
+  type ChartSeriesConfig,
+  type ChartOptionsConfig,
   createDefaultTypographyConfig,
   createDefaultApprovalLineConfig,
   type ApprovalLineConfig,
@@ -217,6 +224,7 @@ export function countrySeedModels(): ModelDef[] {
     ...approvalSeedModels(),
     ...workflowSeedModels(),
     ...fileCollectionSeedModels(),
+    ...chartSeedModels(),
     ...profileSeedModels(),
     ...profileByEmailSeedModels(),
   ]
@@ -1888,6 +1896,7 @@ export function countrySeedEndpoints(): EndpointDef[] {
     ...tableLayoutSeedEndpoints(),
     ...dataGridSeedEndpoints(),
     ...fileCollectionSeedEndpoints(),
+    ...chartSeedEndpoints(),
     ...pageDataSeedEndpoints(),
     ...approvalSeedEndpoints(),
     ...workflowSeedEndpoints(),
@@ -5351,5 +5360,341 @@ export function fileCollectionDemoSeedItems(): GridItemData[] {
         kindIcons,
       },
     },
+  ]
+}
+
+
+/* ---------------------------------------------------------------------------
+ * Charts demo (see `spec/gummy-chart-spec.md` §8)
+ * ------------------------------------------------------------------------- */
+
+export const CHART_PAGE_ID = 'seed-page-charts'
+export const YEAR_QUERY_MODEL_ID = 'seed-model-year-query'
+export const KPI_QUERY_MODEL_ID = 'seed-model-kpi-query'
+export const PRODUCTION_REPORT_RES_MODEL_ID = 'seed-model-production-report-res'
+export const SALES_RES_MODEL_ID = 'seed-model-sales-res'
+export const SHARE_RES_MODEL_ID = 'seed-model-share-res'
+export const KPI_RES_MODEL_ID = 'seed-model-kpi-res'
+export const ACTIVITY_RES_MODEL_ID = 'seed-model-activity-res'
+export const FUNNEL_RES_MODEL_ID = 'seed-model-funnel-res'
+export const SITE_STATS_RES_MODEL_ID = 'seed-model-site-stats-res'
+export const SCORES_RES_MODEL_ID = 'seed-model-scores-res'
+export const PRODUCTION_REPORT_ENDPOINT_ID = 'seed-endpoint-production-report'
+export const SALES_BY_MONTH_ENDPOINT_ID = 'seed-endpoint-sales-by-month'
+export const SALES_SHARE_ENDPOINT_ID = 'seed-endpoint-sales-share'
+export const PLANT_KPI_ENDPOINT_ID = 'seed-endpoint-plant-kpi'
+export const ACTIVITY_HEAT_ENDPOINT_ID = 'seed-endpoint-activity-heat'
+export const SALES_FUNNEL_ENDPOINT_ID = 'seed-endpoint-sales-funnel'
+export const SITE_STATS_ENDPOINT_ID = 'seed-endpoint-site-stats'
+export const SITE_SCORES_ENDPOINT_ID = 'seed-endpoint-site-scores'
+export const CHART_PRODUCTION_ITEM_ID = 'seed-item-chart-production'
+
+/** The Charts demo's models: the `/collection/analytics/*` rows (one `DataReport`-shaped reply with a crossline). */
+export function chartSeedModels(): ModelDef[] {
+  const envelope = () => [field('status', 'number'), field('success', 'boolean'), field('message')]
+  const rows = (id: string, name: string, children: ModelField[], extra: ModelField[] = []): ModelDef => ({
+    id,
+    name,
+    fields: [field('data', 'array', children, 'object'), ...extra, ...envelope()],
+  })
+  return [
+    { id: YEAR_QUERY_MODEL_ID, name: 'yearQuery', fields: [field('year')] },
+    { id: KPI_QUERY_MODEL_ID, name: 'kpiQuery', fields: [field('name')] },
+    rows(
+      PRODUCTION_REPORT_RES_MODEL_ID,
+      'productionReportRes',
+      [field('month'), field('site'), field('tonnes', 'number'), field('cost', 'number')],
+      [
+        field('crossline', 'array', [field('label'), field('value', 'number')], 'object'),
+        field('targets', 'array', [field('label'), field('value', 'number')], 'object'),
+      ],
+    ),
+    rows(SALES_RES_MODEL_ID, 'salesRes', [field('month'), field('revenue', 'number'), field('orders', 'number'), field('margin', 'number')]),
+    rows(SHARE_RES_MODEL_ID, 'shareRes', [field('channel'), field('amount', 'number')]),
+    rows(KPI_RES_MODEL_ID, 'kpiRes', [field('name'), field('label'), field('value', 'number'), field('min', 'number'), field('max', 'number')]),
+    rows(ACTIVITY_RES_MODEL_ID, 'activityRes', [field('day'), field('hour'), field('count', 'number')]),
+    rows(FUNNEL_RES_MODEL_ID, 'funnelRes', [field('stage'), field('count', 'number')]),
+    rows(SITE_STATS_RES_MODEL_ID, 'siteStatsRes', [field('site'), field('region'), field('output', 'number'), field('cost', 'number'), field('headcount', 'number')]),
+    rows(SCORES_RES_MODEL_ID, 'scoresRes', [field('metric'), field('site'), field('score', 'number')]),
+  ]
+}
+
+/** The eight read endpoints over the mock API's `/collection/analytics/*`. */
+export function chartSeedEndpoints(): EndpointDef[] {
+  const base = { withOptions: false, query: null, parameter: null, body: null, method: 'GET' as const }
+  return [
+    { ...base, id: PRODUCTION_REPORT_ENDPOINT_ID, name: 'productionReport', description: 'Monthly production per site, with a target crossline', url: '/collection/analytics/production', response: PRODUCTION_REPORT_RES_MODEL_ID, query: YEAR_QUERY_MODEL_ID },
+    { ...base, id: SALES_BY_MONTH_ENDPOINT_ID, name: 'salesByMonth', description: 'Monthly revenue, orders and margin', url: '/collection/analytics/sales', response: SALES_RES_MODEL_ID },
+    { ...base, id: SALES_SHARE_ENDPOINT_ID, name: 'salesShare', description: 'Revenue share by channel', url: '/collection/analytics/share', response: SHARE_RES_MODEL_ID },
+    { ...base, id: PLANT_KPI_ENDPOINT_ID, name: 'plantKpi', description: 'One KPI row (gauge); ?name picks it', url: '/collection/analytics/kpi', response: KPI_RES_MODEL_ID, query: KPI_QUERY_MODEL_ID },
+    { ...base, id: ACTIVITY_HEAT_ENDPOINT_ID, name: 'activityHeat', description: 'Activity by weekday and hour', url: '/collection/analytics/activity', response: ACTIVITY_RES_MODEL_ID },
+    { ...base, id: SALES_FUNNEL_ENDPOINT_ID, name: 'salesFunnel', description: 'Sales funnel stages', url: '/collection/analytics/funnel', response: FUNNEL_RES_MODEL_ID },
+    { ...base, id: SITE_STATS_ENDPOINT_ID, name: 'siteStats', description: 'Per-site output, cost and headcount', url: '/collection/analytics/sites', response: SITE_STATS_RES_MODEL_ID },
+    { ...base, id: SITE_SCORES_ENDPOINT_ID, name: 'siteScores', description: 'Scorecard per site and metric', url: '/collection/analytics/scores', response: SCORES_RES_MODEL_ID },
+  ]
+}
+
+/**
+ * The "Charts" example page (the example app's `/charts`): the ten chart
+ * types over the analytics endpoints — grouped and stacked bars with a target
+ * read off the response, a split line and a stacked area, bars + a line on
+ * the right axis, a horizontal bar, a donut with its total, a funnel and a
+ * pyramid, three gauges, a heatmap, a bubble scatter and two radars — and a
+ * block bound to the first chart's clicked datum.
+ */
+export function chartDemoSeedItems(): GridItemData[] {
+  const full = () => createDefaultItemSettings({ colSpan: { xs: 4, sm: 6, md: 8, lg: 12 } })
+  const half = () => createDefaultItemSettings({ colSpan: { xs: 4, sm: 6, md: 4, lg: 6 } })
+  const third = () => createDefaultItemSettings({ colSpan: { xs: 4, sm: 6, md: 4, lg: 4 } })
+  const fmt = (patch: Partial<ColumnFormatConfig>): ColumnFormatConfig => ({ ...defaultColumnFormat(), ...patch })
+  const number0 = fmt({ type: 'number', decimals: 0 })
+  const thb = fmt({ type: 'currency', currency: 'THB', decimals: 0 })
+  const month = fmt({ type: 'date', pattern: 'MMM' })
+  const series = (id: string, field: string, label: string, format: ColumnFormatConfig, extra: Partial<ChartSeriesConfig> = {}): ChartSeriesConfig => ({
+    ...createDefaultChartSeries(id, field, label),
+    format,
+    ...extra,
+  })
+  const chart = (id: string, settings: GridItemData['settings'], config: Omit<Partial<ChartConfig>, 'options'> & { name: string; options?: Partial<ChartOptionsConfig> }): GridItemData => ({
+    id,
+    label: 'Chart',
+    type: 'chart',
+    settings,
+    config: { ...createDefaultChartConfig(config.name), dataPath: 'data', ...config, options: { ...createDefaultChartOptions(), ...(config.options ?? {}) } },
+  })
+  const caption = (id: string, text: string): GridItemData => ({
+    id,
+    label: 'Typography',
+    type: 'typography',
+    settings: full(),
+    config: { ...createDefaultTypographyConfig(), text, color: 'gray' },
+  })
+  const production = (id: string, name: string, mode: 'grouped' | 'stacked'): GridItemData =>
+    chart(id, half(), {
+      name,
+      title: 'Production by site',
+      subtitle: mode === 'stacked' ? 'Stacked — the target line is read off the response' : 'Grouped — splitBy: site',
+      endpointId: PRODUCTION_REPORT_ENDPOINT_ID,
+      requestMapping: [{ id: `${id}-year`, slot: 'query', key: 'year', source: { type: 'url', key: 'year', source: 'query' } }],
+      xField: 'month',
+      xFormat: month,
+      splitBy: 'site',
+      series: [series(`${id}-s1`, 'tonnes', 'Tonnes', number0)],
+      options: { mode },
+      yAxis: { ...createDefaultChartAxis(true), title: 'Tonnes', format: number0 },
+      referenceLines:
+        mode === 'stacked'
+          ? [
+              { id: `${id}-rl1`, label: 'Target', value: 'crossline[0].value', axis: 'y', color: 'amber', dashed: true },
+              { id: `${id}-rl2`, label: 'Floor', value: '600', axis: 'y', color: 'gray', dashed: false },
+            ]
+          : [{ id: `${id}-rl1`, label: 'Site target', value: '420', axis: 'y', color: 'amber', dashed: true }],
+      showDataLabels: mode === 'grouped',
+      clickState: { enabled: true, stateKey: 'productionSelected' },
+      footnote: 'Click a bar: the datum lands in page data productionSelected.',
+    })
+  return [
+    caption('seed-item-chart-caption-bar', 'Bars with a reference line read off the response (`crossline[0].value`), split into series by site; the block beside is bound to the clicked datum.'),
+    production(CHART_PRODUCTION_ITEM_ID, 'production', 'grouped'),
+    production('seed-item-chart-production-stacked', 'productionStacked', 'stacked'),
+    {
+      id: 'seed-item-chart-selected',
+      label: 'HTML content',
+      type: 'html',
+      settings: full(),
+      config: {
+        ...createDefaultHtmlContentConfig('clickedDatum'),
+        html: '<p class="dt-muted">Clicked datum</p><dl><dt>Site</dt><dd><strong>{{site}}</strong></dd><dt>Month</dt><dd>{{month}}</dd><dt>Series</dt><dd>{{$series}}</dd><dt>Value</dt><dd>{{$value}}</dd></dl>',
+        binding: { key: 'productionSelected', path: '', source: 'state' },
+      },
+    },
+    chart('seed-item-chart-line', half(), {
+      name: 'productionLine',
+      title: 'Production trend',
+      subtitle: 'splitBy: site · smooth · last-point labels',
+      endpointId: PRODUCTION_REPORT_ENDPOINT_ID,
+      type: 'line',
+      xField: 'month',
+      xFormat: month,
+      splitBy: 'site',
+      series: [series('seed-chart-line-s1', 'tonnes', 'Tonnes', number0)],
+      options: { smooth: true },
+      showDataLabels: true,
+      legend: { show: true, position: 'bottom' },
+    }),
+    chart('seed-item-chart-area', half(), {
+      name: 'costArea',
+      title: 'Cost, stacked',
+      subtitle: 'area · stacked · no markers',
+      endpointId: PRODUCTION_REPORT_ENDPOINT_ID,
+      type: 'area',
+      xField: 'month',
+      xFormat: month,
+      splitBy: 'site',
+      series: [series('seed-chart-area-s1', 'cost', 'Cost', thb)],
+      options: { stacked: true, showMarkers: false },
+    }),
+    chart('seed-item-chart-combo', half(), {
+      name: 'sales',
+      title: 'Revenue and margin',
+      subtitle: 'Bars on the left axis, margin as a line on the right',
+      endpointId: SALES_BY_MONTH_ENDPOINT_ID,
+      type: 'barLine',
+      xField: 'month',
+      xFormat: month,
+      series: [
+        series('seed-chart-combo-s1', 'revenue', 'Revenue', thb),
+        series('seed-chart-combo-s2', 'orders', 'Orders', number0),
+        series('seed-chart-combo-s3', 'margin', 'Margin', fmt({ type: 'percent', decimals: 1 }), { shape: 'line', axis: 'right', color: 'pink' }),
+      ],
+      yAxis: { ...createDefaultChartAxis(true), title: 'THB / orders', format: number0 },
+      yAxisRight: { ...createDefaultChartAxis(false), title: 'Margin', format: fmt({ type: 'percent', decimals: 0 }), min: '0', max: '0.5' },
+      options: { smooth: true },
+    }),
+    chart('seed-item-chart-hbar', half(), {
+      name: 'shareBar',
+      title: 'Revenue share by channel',
+      subtitle: 'orientation: horizontal · one series, so no legend',
+      endpointId: SALES_SHARE_ENDPOINT_ID,
+      xField: 'channel',
+      series: [series('seed-chart-hbar-s1', 'amount', 'Revenue', thb, { color: 'teal' })],
+      options: { orientation: 'horizontal', barMaxWidth: '28' },
+      showDataLabels: true,
+    }),
+    chart('seed-item-chart-donut', third(), {
+      name: 'shareDonut',
+      title: 'Revenue share',
+      subtitle: 'innerRadius 60% · centerText $total',
+      endpointId: SALES_SHARE_ENDPOINT_ID,
+      type: 'pie',
+      xField: 'channel',
+      series: [series('seed-chart-donut-s1', 'amount', 'Revenue', thb)],
+      options: { innerRadius: '60%', centerText: '$total' },
+      legend: { show: true, position: 'right' },
+      clickState: { enabled: true, stateKey: '' },
+    }),
+    chart('seed-item-chart-funnel', third(), {
+      name: 'funnel',
+      title: 'Sales funnel',
+      subtitle: 'sort: desc (the API sends the stages unsorted)',
+      endpointId: SALES_FUNNEL_ENDPOINT_ID,
+      type: 'funnel',
+      xField: 'stage',
+      series: [series('seed-chart-funnel-s1', 'count', 'Count', number0)],
+      options: { labelPosition: 'inside' },
+      showDataLabels: true,
+    }),
+    chart('seed-item-chart-pyramid', third(), {
+      name: 'pyramid',
+      title: 'Pyramid',
+      subtitle: 'funnelShape: pyramid · labels outside',
+      endpointId: SALES_FUNNEL_ENDPOINT_ID,
+      type: 'funnel',
+      xField: 'stage',
+      series: [series('seed-chart-pyramid-s1', 'count', 'Count', number0)],
+      options: { funnelShape: 'pyramid' },
+      legend: { show: false, position: 'top' },
+    }),
+    chart('seed-item-chart-gauge', third(), {
+      name: 'availability',
+      title: 'Plant availability',
+      subtitle: 'Bands red → amber → grass, a target tick at 90',
+      endpointId: PLANT_KPI_ENDPOINT_ID,
+      requestMapping: [{ id: 'seed-chart-gauge-q', slot: 'query', key: 'name', source: { type: 'value', value: 'availability' } }],
+      type: 'gauge',
+      series: [series('seed-chart-gauge-s1', 'value', 'Availability', fmt({ type: 'percent', decimals: 1, percentOf: '100' }))],
+      options: {
+        min: '0',
+        max: '100',
+        bands: [
+          { id: 'seed-chart-gauge-b1', to: '50', color: 'red' },
+          { id: 'seed-chart-gauge-b2', to: '75', color: 'amber' },
+          { id: 'seed-chart-gauge-b3', to: '', color: 'grass' },
+        ],
+      },
+      referenceLines: [{ id: 'seed-chart-gauge-rl1', label: 'Target', value: '90', axis: 'y', color: 'amber', dashed: false }],
+      height: '260px',
+    }),
+    chart('seed-item-chart-gauge-linear', third(), {
+      name: 'oee',
+      title: 'OEE',
+      subtitle: 'gaugeShape: linear',
+      endpointId: PLANT_KPI_ENDPOINT_ID,
+      requestMapping: [{ id: 'seed-chart-oee-q', slot: 'query', key: 'name', source: { type: 'value', value: 'oee' } }],
+      type: 'gauge',
+      series: [series('seed-chart-oee-s1', 'value', 'OEE', fmt({ type: 'percent', decimals: 0, percentOf: '100' }), { color: 'iris' })],
+      options: {
+        gaugeShape: 'linear',
+        min: '0',
+        max: '100',
+        bands: [
+          { id: 'seed-chart-oee-b1', to: '40', color: 'red' },
+          { id: 'seed-chart-oee-b2', to: '70', color: 'amber' },
+          { id: 'seed-chart-oee-b3', to: '', color: 'grass' },
+        ],
+      },
+      referenceLines: [{ id: 'seed-chart-oee-rl1', label: 'World class', value: '85', axis: 'y', color: '', dashed: false }],
+      height: '120px',
+    }),
+    chart('seed-item-chart-nps', third(), {
+      name: 'nps',
+      title: 'Net promoter score',
+      subtitle: 'min −100 · no bands (the accent fills the arc)',
+      endpointId: PLANT_KPI_ENDPOINT_ID,
+      requestMapping: [{ id: 'seed-chart-nps-q', slot: 'query', key: 'name', source: { type: 'value', value: 'nps' } }],
+      type: 'gauge',
+      series: [series('seed-chart-nps-s1', 'value', 'NPS', number0)],
+      options: { min: '-100', max: '100' },
+      height: '260px',
+    }),
+    chart('seed-item-chart-heatmap', half(), {
+      name: 'activity',
+      title: 'Activity by hour',
+      subtitle: 'hue: teal · values hidden (hover a cell)',
+      endpointId: ACTIVITY_HEAT_ENDPOINT_ID,
+      type: 'heatmap',
+      xField: 'hour',
+      series: [series('seed-chart-heat-s1', 'count', 'Events', number0)],
+      options: { yField: 'day', valueField: 'count', hue: 'teal' },
+      xAxis: { ...createDefaultChartAxis(false), title: 'Hour' },
+    }),
+    chart('seed-item-chart-scatter', half(), {
+      name: 'sites',
+      title: 'Output vs headcount',
+      subtitle: 'Bubble: size = cost · splitBy: region',
+      endpointId: SITE_STATS_ENDPOINT_ID,
+      type: 'scatter',
+      splitBy: 'region',
+      series: [series('seed-chart-scatter-s1', 'output', 'Output (t/day)', fmt({ type: 'number', decimals: 1 }))],
+      options: { xField: 'headcount', sizeField: 'cost' },
+      xAxis: { ...createDefaultChartAxis(false), title: 'Headcount', format: number0 },
+      yAxis: { ...createDefaultChartAxis(true), title: 'Output', format: number0 },
+      referenceLines: [{ id: 'seed-chart-scatter-rl1', label: 'Output target', value: '500', axis: 'y', color: 'amber', dashed: true }],
+      legend: { show: true, position: 'bottom' },
+    }),
+    chart('seed-item-chart-radar', half(), {
+      name: 'scores',
+      title: 'Site scorecard',
+      subtitle: 'splitBy: site · radarMax 100',
+      endpointId: SITE_SCORES_ENDPOINT_ID,
+      type: 'radar',
+      xField: 'metric',
+      splitBy: 'site',
+      series: [series('seed-chart-radar-s1', 'score', 'Score', number0)],
+      options: { radarMax: '100' },
+      legend: { show: true, position: 'right' },
+    }),
+    chart('seed-item-chart-radar-circle', half(), {
+      name: 'scoresCircle',
+      title: 'Same data, circle',
+      subtitle: 'radarShape: circle · legend bottom',
+      endpointId: SITE_SCORES_ENDPOINT_ID,
+      type: 'radar',
+      xField: 'metric',
+      splitBy: 'site',
+      series: [series('seed-chart-radar2-s1', 'score', 'Score', number0)],
+      options: { radarShape: 'circle', radarMax: '100' },
+      legend: { show: true, position: 'bottom' },
+    }),
   ]
 }

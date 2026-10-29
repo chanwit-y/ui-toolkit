@@ -10,6 +10,7 @@ import { approvalRoutes } from './routes/approvals.js';
 import { workflowRoutes } from './routes/workflows.js';
 import { userProfileRoutes } from './routes/userProfile.js';
 import { fileCollectionRoutes } from './routes/fileCollections.js';
+import { analyticsRoutes } from './routes/analytics.js';
 
 const app = new Hono();
 const PORT = Number(process.env.PORT) || 9000;
@@ -36,6 +37,7 @@ app.route('/', approvalRoutes);
 app.route('/', workflowRoutes);
 app.route('/', userProfileRoutes);
 app.route('/', fileCollectionRoutes);
+app.route('/', analyticsRoutes);
 
 // Health check
 app.get('/health', (c) => {
