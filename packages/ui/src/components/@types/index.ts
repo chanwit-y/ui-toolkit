@@ -1005,6 +1005,147 @@ export type FileCollectionProps = Omit<FileCollectionElement, "api"> & {
   api: FileCollectionApiConfig;
 };
 
+/* ----------------------------------------------------------------------------
+ * Chart (see `spec/gummy-chart-spec.md`)
+ * ------------------------------------------------------------------------- */
+
+/** The ten v1 chart types; modifiers (orientation, stacking, donut, bubble, …) live in `options`. */
+export type ChartType =
+  | "bar"
+  | "line"
+  | "area"
+  | "barLine"
+  | "pie"
+  | "scatter"
+  | "radar"
+  | "gauge"
+  | "heatmap"
+  | "funnel";
+
+/** One series: a value field across the rows, named and formatted. */
+export type ChartSeriesDef = {
+  /** Row accessor (dot path). */
+  field: string;
+  /** Legend / tooltip label; absent ⇒ the field name. */
+  label?: string;
+  /** A Radix hue name (`"blue"`); absent ⇒ the palette slot by position. */
+  color?: string;
+  /** `barLine` only: which y axis the series reads. */
+  axis?: "left" | "right";
+  /** `barLine` only: bars or a line. */
+  shape?: "bar" | "line";
+  /** `bar` with `options.mode: "stackGroup"`: series sharing an id stack together. */
+  stack?: string;
+  /** Value formatting (tooltip, direct labels, the series' axis). */
+  format?: CellFormat;
+};
+
+/** One cartesian axis. */
+export type ChartAxisDef = {
+  title?: string;
+  min?: number;
+  max?: number;
+  /** Tick-label format. */
+  format?: CellFormat;
+  showGrid?: boolean;
+};
+
+/** A gauge colour band up to `to` (absent on the last band ⇒ the gauge max). */
+export type ChartGaugeBand = { to?: number; color?: string };
+
+/** Per-type knobs; the type reads only the keys the spec lists for it. */
+export type ChartOptionsDef = {
+  /** bar, funnel */
+  orientation?: "vertical" | "horizontal";
+  /** bar */
+  mode?: "grouped" | "stacked" | "stackGroup";
+  /** bar, barLine — px */
+  barMaxWidth?: number;
+  /** line, area, barLine */
+  smooth?: boolean;
+  showMarkers?: boolean;
+  /** area */
+  stacked?: boolean;
+  /** pie: `"60%"` ⇒ donut */
+  innerRadius?: string;
+  /** pie, funnel */
+  labelPosition?: "outside" | "inside" | "none";
+  /** donut: static text, or `"$total"` = the sum of the values */
+  centerText?: string;
+  /** scatter: a field whose value scales the marker (bubble) */
+  sizeField?: string;
+  /** scatter: a field drawn beside each point */
+  labelField?: string;
+  /** radar */
+  radarShape?: "polygon" | "circle";
+  radarMax?: number;
+  /** gauge */
+  gaugeShape?: "radial" | "linear";
+  min?: number;
+  max?: number;
+  bands?: ChartGaugeBand[];
+  /** heatmap: the hue of the sequential ramp; absent ⇒ the accent */
+  hue?: string;
+  showValues?: boolean;
+  /** funnel */
+  funnelShape?: "funnel" | "pyramid";
+  sort?: "none" | "asc" | "desc";
+};
+
+/** A reference line: a fixed number, or a path into the **raw** response (before `api.paths`). */
+export type ChartReferenceLine = {
+  label?: string;
+  value: number | { path: string[] };
+  /** The axis the line crosses; default `y` (a horizontal line on a vertical bar). */
+  axis?: "x" | "y";
+  /** A Radix hue name; absent ⇒ the secondary text colour. */
+  color?: string;
+  dashed?: boolean;
+};
+
+export type ChartLegendPosition = "top" | "bottom" | "left" | "right";
+
+/**
+ * The engine `chart` element (see `spec/gummy-chart-spec.md` §4). Exactly one
+ * of `api` (an endpoint, fetched like a repeater's read) / `items` (an array in
+ * page data). `x.field` is the category / slice-label / indicator / numeric-x
+ * (scatter) / column (heatmap) accessor; `y.field` + `value.field` are the
+ * heatmap's row and cell accessors. The clicked datum reaches the page
+ * through `clickState.stateKey` and `clickNavigate` (`row` params read it).
+ */
+export type ChartElement = {
+  name: string;
+  chart: ChartType;
+  title?: string;
+  subtitle?: string;
+  footnote?: string;
+  api?: API;
+  items?: DataValue;
+  x?: { field: string; format?: CellFormat };
+  y?: { field: string };
+  value?: { field: string };
+  /** A field whose distinct values each become a series (one `series` entry = the value field). */
+  splitBy?: string;
+  series: ChartSeriesDef[];
+  xAxis?: ChartAxisDef;
+  yAxis?: ChartAxisDef;
+  yAxisRight?: ChartAxisDef;
+  options?: ChartOptionsDef;
+  referenceLines?: ChartReferenceLine[];
+  legend?: { show?: boolean; position?: ChartLegendPosition };
+  showDataLabels?: boolean;
+  /** CSS length of the plot; absent ⇒ 320px. */
+  height?: string;
+  emptyText?: string;
+  clickNavigate?: NavigateTarget;
+  clickState?: { stateKey: string };
+};
+
+/** `Chart` component props: the element with its `api` resolved by the builder. */
+export type ChartProps = Omit<ChartElement, "api"> & {
+  api?: FormListReadApi;
+};
+
 export type PopoverProps = BaseComponentProps<
   "div",
   {
@@ -1997,6 +2138,7 @@ export type TElement =
   | FormListElement
   | RepeaterElement
   | FileCollectionElement
+  | ChartElement
   | DatePickerElement
   | DateRangePickerElement
   | DateTimePickerElement
@@ -2131,6 +2273,7 @@ export type BinType =
   | "formlist"
   | "repeater"
   | "filecollection"
+  | "chart"
   | "autocomplete"
   | "textfield"
   | "select"

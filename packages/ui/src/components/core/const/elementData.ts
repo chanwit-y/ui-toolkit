@@ -11,6 +11,7 @@ import { DataTableEditable } from "../dataTableEditable";
 import { FormList } from "../formList";
 import { Repeater } from "../repeater";
 import { FileCollection } from "../fileCollection";
+import { Chart } from "../chart";
 import { Hidden } from "../hidden";
 import { Modal } from "../modal";
 import { Radio } from "../radio";
@@ -57,6 +58,7 @@ export const ElementData = {
 	formlist: FormList,
 	repeater: Repeater,
 	filecollection: FileCollection,
+	chart: Chart,
 	textfield: TextField,
 	textarea: Textarea,
 	checkbox: Checkbox,
