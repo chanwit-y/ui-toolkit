@@ -54,6 +54,25 @@ export function designThemeStyle(config: StudioThemeConfig): CSSProperties | und
   return style as CSSProperties
 }
 
+/**
+ * The studio chrome inside a project follows the project's theme: the ink
+ * tokens the chrome is built from (`bg-panel`, `text-ink`, `bg-accent`,
+ * `ring-focus`, …) are re-pointed at the project's Radix accent and, when the
+ * Theme page's design surfaces are set, at those surfaces — so the component
+ * palette, the top bar and the inspector take a chosen palette the way the
+ * canvas frame does. The portal and the template editor keep the neutral
+ * tokens. Only the active appearance's surfaces apply; `.dark` still flips.
+ */
+export function chromeThemeStyle(config: StudioThemeConfig): CSSProperties {
+  return {
+    ...(designThemeStyle(config) ?? {}),
+    // Radix's accent vars resolve here: the whole studio sits inside the library ThemeProvider.
+    '--accent': 'var(--accent-9)',
+    '--accent-ink': 'var(--accent-contrast)',
+    '--focus': 'var(--accent-8)',
+  } as CSSProperties
+}
+
 /** Ink to put on a given accent hex. */
 export function accentInk(hex: string): string {
   return hexLuminance(hex) > 0.55 ? '#14161a' : '#ffffff'
