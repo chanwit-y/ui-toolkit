@@ -21,7 +21,7 @@ export function MenuButton({ items, label, className }: { items: { label: string
         <MoreHorizontal aria-hidden className="size-3.5" />
       </button>
       {open && (
-        <ul role="menu" className="absolute right-0 top-full z-50 mt-1 min-w-44 rounded-lg border border-line bg-surface py-1 shadow-xl">
+        <ul role="menu" className="logic-drop-in absolute right-0 top-full z-50 mt-1 min-w-44 rounded-lg border border-line bg-surface py-1 shadow-xl">
           {items.map((it) => (
             <li key={it.label}>
               <button

@@ -517,3 +517,35 @@ body {
   text-decoration-skip-ink: none;
   text-underline-offset: 3px;
 }
+
+/* Logic UI motion (spec §14): short, one-shot, and off under reduced motion.
+   `logic-pop` marks a value that just changed (the Try-it result, a ✓ / ✗ dot),
+   `logic-drop-in` a list that just opened, `logic-fade-in` a panel that just
+   appeared, `logic-bar-ring` an insert landing in the formula bar. */
+@keyframes logic-pop {
+  0% { transform: scale(1.08); filter: brightness(1.15); }
+  100% { transform: scale(1); filter: none; }
+}
+@keyframes logic-drop-in {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes logic-fade-in {
+  from { opacity: 0; transform: translateX(-4px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes logic-bar-flash {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--logic-field) 45%, transparent); }
+  100% { box-shadow: 0 0 0 6px transparent; }
+}
+.logic-pop { animation: logic-pop 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); transform-origin: left center; }
+.logic-drop-in { animation: logic-drop-in 0.14s ease-out; transform-origin: top left; }
+.logic-fade-in { animation: logic-fade-in 0.18s ease-out; }
+.logic-bar-ring { position: absolute; inset: 0; border-radius: 7px; pointer-events: none; animation: logic-bar-flash 0.45s ease-out; }
+.logic-dot { transition: background-color 0.2s, color 0.2s; }
+.logic-card { transition: border-color 0.25s, opacity 0.25s, box-shadow 0.25s; }
+.logic-card[data-match] { box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 25%, transparent); }
+@media (prefers-reduced-motion: reduce) {
+  .logic-pop, .logic-drop-in, .logic-fade-in, .logic-bar-ring { animation: none; }
+  .logic-dot, .logic-card { transition: none; }
+}

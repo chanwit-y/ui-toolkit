@@ -100,7 +100,7 @@ function OperandPicker({ value, choices, onPick, onFormula, label }: { value: Ex
         <ChevronDown aria-hidden className="ml-auto size-3.5 shrink-0 text-ink-3" />
       </button>
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-1 w-72 overflow-hidden rounded-lg border border-line bg-surface shadow-xl">
+        <div className="logic-drop-in absolute left-0 top-full z-50 mt-1 w-72 overflow-hidden rounded-lg border border-line bg-surface shadow-xl">
           <div className="flex items-center gap-1.5 border-b border-line px-2">
             <Search aria-hidden className="size-3.5 text-ink-3" />
             <input

@@ -371,6 +371,7 @@ Deferred: a decision-table view for large rules; persisting samples; drag-and-dr
 4. **Logic tab**: *+ Formula* / *+ Rule* are two buttons rather than a *+ New ▾* menu (a new formula opens on the templates); edits autosave into the project with **no undo** (the workspace store has none); `?item=<id>` selects an item (the inspector's saved-item pill links there); *Used by* jumps to a page with `state.selectItem`, which `ProjectShell` turns into `focusGridItem` (drills into child canvases, then selects).
 5. **Insert** starts open for formulas on screens ≥ 1100px (dialog) / ≥ 1360px (Logic tab), closed otherwise and for conditions in Visual mode; Code mode opens it.
 6. **Try it** samples live in a module-level session map keyed by the operand's code label (`[qty]`, `$country.name`); a page reload clears them.
+7. **Motion** (added later the same day): one-shot, 140–450 ms, all off under `prefers-reduced-motion` (`logic-pop` / `logic-drop-in` / `logic-fade-in` / `logic-bar-ring` / `logic-dot` / `logic-card` in the studio `index.css`) — the Try-it result and the ✓ / ✗ dots pop when their value flips, the matching rule card's edge and the dimming ease, the *← matches* tag, suggestion lists, the operand picker and the ⋯ menus drop in, the Insert column and the templates fade in, and a ring flashes on the formula bar when an insert lands.
 
 ## 15. As built (PR 4, Book shop — 2026-10-30)
 
