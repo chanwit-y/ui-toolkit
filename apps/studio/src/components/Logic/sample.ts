@@ -151,3 +151,64 @@ export function evaluateSample(
   const r = evaluateFormula({ expr: engine as Expr, format: out.format, onEmpty: out.onEmpty, onDivideByZero: out.onDivideByZero }, scope)
   return { text: r.error ? '—' : formatResult(r.value, out.format) || '(empty)', raw: r.value, error: r.error }
 }
+
+// ---- Try it (spec §14.6) ------------------------------------------------------------
+
+/** A sample ref as the expression it stands for (a page-data ref by load **key** → its id). */
+export function sampleRefExpr(r: SampleRef, loads: { id: string; key: string }[]): Expr {
+  if (r.ref === 'state') return { ref: 'state', key: loads.find((l) => l.key === r.key)?.id ?? r.key, ...(r.path ? { path: r.path } : {}) }
+  if (r.ref === 'url') return { ref: 'url', key: r.key, ...(r.source ? { source: r.source } : {}) }
+  return { ref: r.ref, key: r.key, ...(r.path ? { path: r.path } : {}) } as Expr
+}
+
+/** The samples typed so far this studio session, by ref label (in memory only). */
+const SESSION = new Map<string, string>()
+const listeners = new Set<() => void>()
+let version = 0
+const emit = () => {
+  version++
+  listeners.forEach((l) => l())
+}
+
+export const sampleSession = {
+  get: (id: string) => SESSION.get(id),
+  set: (id: string, text: string) => {
+    SESSION.set(id, text)
+    emit()
+  },
+  reset: (ids: string[]) => {
+    ids.forEach((id) => SESSION.delete(id))
+    emit()
+  },
+  subscribe: (l: () => void) => {
+    listeners.add(l)
+    return () => {
+      listeners.delete(l)
+    }
+  },
+  version: () => version,
+}
+
+/** A condition / branch evaluator over one set of samples (the per-line dots, the matching rule card). */
+export type SampleEval = { holds: (c: StudioCondition) => boolean | null }
+
+export function makeSampleEval(
+  refs: SampleRef[],
+  samples: Record<string, string>,
+  formulas: FormulaLibDef[],
+  rules: RuleLibDef[],
+  names: LogicNames,
+  fieldTypes?: Record<string, string>,
+): SampleEval {
+  const library = logicLibraryToEngine(formulas, rules, names.loads)
+  const scope = sampleScope(refs, samples, library, fieldTypes)
+  return {
+    holds: (c) => {
+      try {
+        return evaluateCondition(logicToEngine(c, names) as Cond | { rule: string }, scope)
+      } catch {
+        return null
+      }
+    },
+  }
+}

@@ -753,3 +753,26 @@ export function useActiveItem(): GridItemData | null {
         : null),
   )
 }
+
+/**
+ * Selects an item anywhere on the hydrated page: drills into the child
+ * canvases on the way (from the root), then selects it. No-op when absent.
+ */
+export function focusGridItem(itemId: string): void {
+  const find = (items: GridItemData[], path: { itemId: string; canvasIndex: number }[]): { itemId: string; canvasIndex: number }[] | null => {
+    for (const item of items) {
+      if (item.id === itemId) return path
+      for (const [i, c] of (item.childCanvases ?? []).entries()) {
+        const hit = find(c.items, [...path, { itemId: item.id, canvasIndex: i }])
+        if (hit) return hit
+      }
+    }
+    return null
+  }
+  const store = useGridStore.getState()
+  const path = find(store.items, [])
+  if (!path) return
+  store.exitToDepth(0)
+  for (const step of path) useGridStore.getState().enterCanvas(step.itemId, step.canvasIndex)
+  useGridStore.getState().selectItem(itemId)
+}

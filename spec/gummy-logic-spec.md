@@ -362,3 +362,13 @@ PR 3 on this branch, after PR 1 and PR 2 are committed, in two commits:
 Pure helpers live in a React-free module (`Workspace/logic.ts` or `Logic/model.ts`) with `bun:test` coverage: a ref's operand type, the operators for a type, the value-input kind, sample defaults, highlight segments, AST equality for the match hint, the two-level depth check. The UI is verified in the browser against the seeded Logic page (Discount rate's sample still gives 6099). Book shop usage moves to PR 4.
 
 Deferred: a decision-table view for large rules; persisting samples; drag-and-drop from Insert.
+
+### 14.11 As built (PR 3 — 2026-10-30)
+
+1. **Files**: `Logic/model.ts` (pure, `model.test.ts`), `pills.tsx`, `CodeInput.tsx` (the formula bar — every code field uses it), `ConditionLine.tsx`, `ConditionGroup.tsx`, `RuleCards.tsx`, `TryIt.tsx`, `LogicEditor.tsx` (the three-column body shared by the dialog and the Logic tab), `MenuButton.tsx`; `editors.tsx` keeps only `ExprField`. The palette, the token row and the outline rule editor are gone.
+2. **The condition line** lays out in one row when its box is at least 26rem wide and stacks otherwise (a container query), so it fits the inspector, sub-groups and rule cards alike.
+3. **Rule conditions** have no Code mode of their own (as before); a branch condition deeper than two levels shows its code field in the card.
+4. **Logic tab**: *+ Formula* / *+ Rule* are two buttons rather than a *+ New ▾* menu (a new formula opens on the templates); edits autosave into the project with **no undo** (the workspace store has none); `?item=<id>` selects an item (the inspector's saved-item pill links there); *Used by* jumps to a page with `state.selectItem`, which `ProjectShell` turns into `focusGridItem` (drills into child canvases, then selects).
+5. **Insert** starts open for formulas on screens ≥ 1100px (dialog) / ≥ 1360px (Logic tab), closed otherwise and for conditions in Visual mode; Code mode opens it.
+6. **Try it** samples live in a module-level session map keyed by the operand's code label (`[qty]`, `$country.name`); a page reload clears them.
+

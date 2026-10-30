@@ -26,9 +26,12 @@ const PERCENT_OF_OPTIONS = [
 export function ColumnFormatFields({
   column,
   onChange,
+  hideType,
 }: {
   column: { format: ColumnFormatConfig }
   onChange: (format: ColumnFormatConfig) => void
+  /** Only the chosen type's knobs (the logic editor's "Show as" chips pick the type). */
+  hideType?: boolean
 }) {
   const f = column.format ?? defaultColumnFormat()
   const set = (patch: Partial<ColumnFormatConfig>) => onChange({ ...f, ...patch })
@@ -53,10 +56,12 @@ export function ColumnFormatFields({
   )
   return (
     <div className="space-y-1.5">
-      <label className="block space-y-1">
-        <span className="text-ui-sm font-medium text-ink-2">Format</span>
-        <Select options={FORMAT_OPTIONS} value={f.type} onChange={(v) => set({ type: v as ColumnFormatType })} />
-      </label>
+      {!hideType && (
+        <label className="block space-y-1">
+          <span className="text-ui-sm font-medium text-ink-2">Format</span>
+          <Select options={FORMAT_OPTIONS} value={f.type} onChange={(v) => set({ type: v as ColumnFormatType })} />
+        </label>
+      )}
       {f.type === 'number' && (
         <div className="flex items-end gap-1.5">
           {decimals}

@@ -357,14 +357,19 @@ export function ConditionLine({ value, onChange, env, layout = 'row', onRemove, 
         {trailing}
       </div>
     )
+  // One row when there is room, the three parts stacked when the line is narrow (a container query).
   return (
-    <div className="grid grid-cols-[minmax(0,1.2fr)_minmax(7.5rem,0.7fr)_minmax(0,1.2fr)_auto] items-start gap-1.5">
-      {left}
-      {op}
-      <div className="min-w-0">{right}</div>
-      <div className="flex items-center gap-1">
-        {trailing}
-        {remove}
+    <div className="@container">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-1.5 @[26rem]:grid-cols-[minmax(0,1.2fr)_minmax(7.5rem,0.7fr)_minmax(0,1.2fr)_auto]">
+        <div className="min-w-0 @[26rem]:contents">
+          <div className="min-w-0">{left}</div>
+          <div className="mt-1.5 min-w-0 @[26rem]:mt-0">{op}</div>
+          {right ? <div className="mt-1.5 min-w-0 @[26rem]:mt-0">{right}</div> : <div className="hidden @[26rem]:block" />}
+        </div>
+        <div className="flex items-center gap-1">
+          {trailing}
+          {remove}
+        </div>
       </div>
     </div>
   )
