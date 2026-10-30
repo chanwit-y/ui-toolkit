@@ -1,6 +1,8 @@
 import { describe, expect, test } from 'bun:test'
 import type { Expr } from '@gummy-ui/ui'
 import {
+  countFieldRefs,
+  renameFieldRefs,
   conditionIssues,
   createFormulaDef,
   createRuleDef,
@@ -163,5 +165,22 @@ describe('visual tokens', () => {
     const flat = leftToRight('1 + 2 * 3', names)!
     expect(printExpr(flat, names)).toBe('(1 + 2) × 3')
     expect(printExpr(parseExpr('1 + 2 * 3', names).value!, names)).toBe('1 + 2 × 3')
+  })
+})
+
+describe('field renames', () => {
+  const items = [
+    { id: 'a', config: { name: 'qty' }, condition: { cmp: 'gt', left: { ref: 'field', key: 'qty' }, right: { lit: 0 } } },
+    { id: 'b', childCanvases: [{ items: [{ id: 'c', valueFormula: { expr: { op: '*', args: [{ ref: 'field', key: 'qty' }, { ref: 'field', key: 'price' }] } } }] }] },
+    { id: 'd', condition: { cmp: 'eq', left: { ref: 'state', key: 'qty' }, right: { lit: 1 } } },
+  ]
+  test('counts and renames only field references', () => {
+    expect(countFieldRefs(items, 'qty')).toBe(2)
+    const next = renameFieldRefs(items, 'qty', 'quantity')
+    expect(countFieldRefs(next, 'qty')).toBe(0)
+    expect(countFieldRefs(next, 'quantity')).toBe(2)
+    expect(next[0].config).toEqual({ name: 'qty' })
+    expect(next[2]).toBe(items[2])
+    expect(renameFieldRefs(items, 'nope', 'x')).toBe(items)
   })
 })

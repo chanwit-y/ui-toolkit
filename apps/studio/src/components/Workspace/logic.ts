@@ -954,3 +954,45 @@ export function mixesPrecedence(text: string): boolean {
   }
   return false
 }
+
+// ---- field renames -------------------------------------------------------------
+
+const isFieldRef = (o: Record<string, unknown>, name: string) => o.ref === 'field' && o.key === name
+
+/** How many `[name]` field references a node (an item tree, a saved item, …) holds. */
+export function countFieldRefs(node: unknown, name: string): number {
+  if (Array.isArray(node)) return node.reduce((n: number, x) => n + countFieldRefs(x, name), 0)
+  if (!node || typeof node !== 'object') return 0
+  const o = node as Record<string, unknown>
+  if (isFieldRef(o, name)) return 1
+  return Object.values(o).reduce((n: number, v) => n + countFieldRefs(v, name), 0)
+}
+
+/**
+ * The node with every `[from]` field reference reading `[to]` — conditions,
+ * Enabled when, value formulas, bindings, saved items alike. Untouched
+ * branches keep their identity; nothing else is renamed (the field's own
+ * `name` is not a reference).
+ */
+export function renameFieldRefs<T>(node: T, from: string, to: string): T {
+  if (Array.isArray(node)) {
+    let changed = false
+    const next = node.map((x) => {
+      const y = renameFieldRefs(x, from, to)
+      if (y !== x) changed = true
+      return y
+    })
+    return (changed ? next : node) as T
+  }
+  if (!node || typeof node !== 'object') return node
+  const o = node as Record<string, unknown>
+  if (isFieldRef(o, from)) return { ...o, key: to } as T
+  let changed = false
+  const next: Record<string, unknown> = {}
+  for (const [k, v] of Object.entries(o)) {
+    const w = renameFieldRefs(v, from, to)
+    if (w !== v) changed = true
+    next[k] = w
+  }
+  return (changed ? next : node) as T
+}

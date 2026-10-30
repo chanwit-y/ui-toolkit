@@ -5,6 +5,7 @@ import { ENTER_DURATION_MS, prefersReducedMotion } from './gridAnimation'
 import { ancestorRepeaters, isBlockedInRepeater, withoutBlockedItems } from './repeaterRules'
 import { readSeedCount } from './perf'
 import { countrySeedGridItems } from '../seed/country'
+import { renameFieldRefs } from '../Workspace/logic'
 import {
   addTab,
   canvasAtPath,
@@ -147,6 +148,8 @@ type GridState = {
   ) => void
   /** The item's own logic: Show when, Enabled when, value formula + mode (`null` clears). */
   updateItemLogic: (id: string, patch: ItemLogicPatch) => void
+  /** A field was renamed: every `[from]` reference on the page (all canvases) now reads `[to]`. One undo step. */
+  renameFieldRefsOnPage: (from: string, to: string) => void
   updateItemConfig: (
     id: string,
     patch: Partial<
@@ -508,6 +511,10 @@ export const useGridStore = create<GridState>((set, get) => {
     updateItemPageData: (id, patch) => setActiveCanvas((canvas) => setItemPageData(canvas, id, patch)),
 
     updateItemLogic: (id, patch) => setActiveCanvas((canvas) => setItemLogic(canvas, id, patch)),
+    renameFieldRefsOnPage: (from, to) => {
+      const items = renameFieldRefs(get().items, from, to)
+      if (items !== get().items) set({ items })
+    },
 
     // Config edits change the cell's preview but never the grid layout, so they
     // skip the FLIP animation. No-op for items without a config (non-textfield).
