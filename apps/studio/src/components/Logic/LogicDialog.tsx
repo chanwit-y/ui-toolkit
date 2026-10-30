@@ -20,7 +20,7 @@ import {
 } from '../Workspace/logic'
 import { useActiveProject, useWorkspaceStore } from '../Workspace/workspaceStore'
 import { CodeInput, InsertContext, type InsertTarget } from './CodeInput'
-import { ConditionEditor, Palette, RuleEditor, TokenRow, type LogicEnv } from './editors'
+import { ConditionEditor, Palette, RuleEditor, type LogicEnv } from './editors'
 import { evaluateSample, sampleRefs } from './sample'
 import { useLogicLibrary, type LogicScopeInfo } from './scope'
 
@@ -65,7 +65,7 @@ function useFormulaText(initial: Expr, env: LogicEnv) {
   const [text, setText] = useState(() => printExpr(initial, env.names))
   const [expr, setExpr] = useState<Expr>(initial)
   const parsed = useMemo(() => parseExpr(text, env.names), [text, env.names])
-  const error = parsed.value === undefined && text.trim() ? `${parsed.error} (at ${parsed.at + 1})` : null
+  const error = parsed.value === undefined && text.trim() ? { message: parsed.error, at: parsed.at } : null
   const update = (t: string) => {
     setText(t)
     const r = parseExpr(t, env.names)
@@ -78,7 +78,6 @@ function useFormulaText(initial: Expr, env: LogicEnv) {
 function FormulaBody({
   ft,
   env,
-  mode,
   format,
   setFormat,
   onEmpty,
@@ -88,7 +87,6 @@ function FormulaBody({
 }: {
   ft: ReturnType<typeof useFormulaText>
   env: LogicEnv
-  mode: 'visual' | 'code'
   format: ColumnFormatConfig
   setFormat: (f: ColumnFormatConfig) => void
   onEmpty: FormulaBlankPolicy
@@ -101,14 +99,18 @@ function FormulaBody({
     format.type === 'percent' && format.percentOf === '1' && 'op' in ft.expr && ft.expr.op === '*' && 'lit' in ft.expr.args[1] && ft.expr.args[1].lit === 100
   return (
     <div className="space-y-3">
-      {mode === 'code' || ft.error ? (
-        <>
-          {mode === 'visual' && <p className="text-ui-xs text-warn">Code has problems — fix them here, then go back to Visual.</p>}
-          <CodeInput multiline aria-label="Formula code" value={ft.text} onChange={ft.setText} error={ft.error} scope={env.scope} formulas={env.formulas} rules={env.rules} placeholder="[Qty] × [Unit price]" />
-        </>
-      ) : (
-        <TokenRow label="Formula tokens" text={ft.text} onText={ft.setText} />
-      )}
+      <CodeInput
+        aria-label="Formula code"
+        value={ft.text}
+        onChange={ft.setText}
+        error={ft.error?.message}
+        errorAt={ft.error?.at}
+        scope={env.scope}
+        formulas={env.formulas}
+        rules={env.rules}
+        operators
+        placeholder="Type a field name, a number or a function — e.g. qty × price"
+      />
       {flat && (
         <div className="rounded-md border border-warn/50 bg-panel p-2 text-ui-sm text-ink-2">
           <strong className="text-ink">× and ÷ are calculated before + and −.</strong> Check this is what you meant: it reads{' '}
@@ -332,7 +334,7 @@ export function LogicDialog({ target, scope, title, onClose }: { target: LogicTa
               <Section
                 title={showFormula ? 'Formula' : 'Conditions'}
                 aside={
-                  <SegmentedControl
+                  showCondition && <SegmentedControl
                     aria-label="Editor mode"
                     options={[
                       { value: 'visual', label: 'Visual' },
@@ -344,7 +346,7 @@ export function LogicDialog({ target, scope, title, onClose }: { target: LogicTa
                 }
               >
                 {showFormula ? (
-                  <FormulaBody ft={ft} env={env} mode={mode} format={format} setFormat={setFormat} onEmpty={onEmpty} setOnEmpty={setOnEmpty} onDivide={onDivide} setOnDivide={setOnDivide} />
+                  <FormulaBody ft={ft} env={env} format={format} setFormat={setFormat} onEmpty={onEmpty} setOnEmpty={setOnEmpty} onDivide={onDivide} setOnDivide={setOnDivide} />
                 ) : (
                   <ConditionEditor value={cond} onChange={setCond} env={env} mode={mode} />
                 )}

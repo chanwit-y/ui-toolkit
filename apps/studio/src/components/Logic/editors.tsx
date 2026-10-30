@@ -1,21 +1,19 @@
-import type { Cond, CondOperator, Expr, LogicResultType, Rule } from '@gummy-ui/ui'
+import type { Cond, Expr, LogicResultType, Rule } from '@gummy-ui/ui'
 import { useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { Button, cn, Select } from '../common'
+import { Button, cn } from '../common'
 import {
-  joinLexemes,
-  lexemes,
   LOGIC_FUNCTIONS,
   parseCondition,
   parseExpr,
   printCondition,
   printExpr,
   type FormulaLibDef,
-  type Lexeme,
   type LogicNames,
   type RuleLibDef,
   type StudioCondition,
 } from '../Workspace/logic'
 import { CodeInput, InsertContext } from './CodeInput'
+import { ConditionLine } from './ConditionLine'
 import type { LogicScopeInfo } from './scope'
 
 /** What every editor piece needs: the operand scope, the saved items and the names. */
@@ -31,7 +29,7 @@ export type LogicEnv = { scope: LogicScopeInfo; formulas: FormulaLibDef[]; rules
 export function ExprField({ value, onChange, env, label, placeholder }: { value: Expr; onChange: (e: Expr) => void; env: LogicEnv; label: string; placeholder?: string }) {
   const printed = useMemo(() => printExpr(value, env.names), [value, env.names])
   const [text, setText] = useState(printed)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<{ message: string; at: number } | null>(null)
   const last = useRef(printed)
   useEffect(() => {
     if (printed !== last.current) {
@@ -45,14 +43,15 @@ export function ExprField({ value, onChange, env, label, placeholder }: { value:
       aria-label={label}
       value={text}
       placeholder={placeholder}
-      error={error}
+      error={error?.message}
+      errorAt={error?.at}
       scope={env.scope}
       formulas={env.formulas}
       rules={env.rules}
       onChange={(t) => {
         setText(t)
         const r = parseExpr(t, env.names)
-        if (r.value === undefined) return setError(t.trim() ? r.error : null)
+        if (r.value === undefined) return setError(t.trim() ? { message: r.error, at: r.at } : null)
         setError(null)
         last.current = printExpr(r.value, env.names)
         onChange(r.value)
@@ -181,197 +180,12 @@ export function Palette({ env, condition }: { env: LogicEnv; condition?: boolean
   )
 }
 
-// ---- Visual mode: the formula as tokens ------------------------------------------
-
-const TOKEN_TONE: Record<Lexeme['kind'], string> = {
-  field: 'border-line-strong bg-sunken text-ink',
-  state: 'border-line-strong bg-sunken text-ink',
-  operand: 'border-line-strong bg-sunken text-ink',
-  saved: 'border-line bg-panel-2 italic text-ink',
-  rule: 'border-warn/60 bg-panel-2 text-ink',
-  value: 'border-line bg-panel text-ink',
-  op: 'border-transparent bg-transparent text-ink-2 font-semibold',
-  cmp: 'border-transparent bg-transparent text-ink-2 font-semibold',
-  paren: 'border-transparent bg-transparent text-ink-3',
-  comma: 'border-transparent bg-transparent text-ink-3',
-  fn: 'border-line bg-panel-2 text-ink font-semibold',
-  keyword: 'border-transparent bg-transparent text-ink-2 font-semibold',
-}
-
-/**
- * The formula as a row of tokens (Visual mode): click one to select it, the
- * palette inserts after it (or at the end), Delete / Backspace removes it,
- * ← → move. The text stays the source of truth.
- */
-export function TokenRow({ text, onText, label }: { text: string; onText: (t: string) => void; label: string }) {
-  const tokens = lexemes(text)
-  const [sel, setSel] = useState<number | null>(null)
-  const ctx = useContext(InsertContext)
-  const rowRef = useRef<HTMLDivElement>(null)
-  // The palette's target reads the latest text / selection through a ref, so
-  // it is registered once (a fresh object per render would re-render the
-  // dialog, which re-renders this row, …).
-  const latest = useRef({ text, sel, onText })
-  latest.current = { text, sel, onText }
-  const target = useMemo(
-    () => ({
-      insert: (code: string) => {
-        const { text: t, sel: s, onText: set } = latest.current
-        const list = lexemes(t) ?? []
-        const add = lexemes(code) ?? [{ text: code, kind: 'operand' as const }]
-        const at = s === null ? list.length : s + 1
-        set(joinLexemes([...list.slice(0, at), ...add, ...list.slice(at)]))
-        setSel(at + add.length - 1)
-      },
-    }),
-    [],
-  )
-  const register = () => ctx?.setTarget(target)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(register, [])
-  if (!tokens) return null
-  const remove = () => {
-    if (sel === null) return
-    onText(joinLexemes(tokens.filter((_, i) => i !== sel)))
-    setSel(sel > 0 ? sel - 1 : tokens.length > 1 ? 0 : null)
-  }
-  return (
-    <div
-      ref={rowRef}
-      role="listbox"
-      aria-label={label}
-      tabIndex={0}
-      onFocus={register}
-      onKeyDown={(e) => {
-        if (e.key === 'Backspace' || e.key === 'Delete') {
-          e.preventDefault()
-          remove()
-        } else if (e.key === 'ArrowLeft') setSel((s) => (s === null ? tokens.length - 1 : Math.max(0, s - 1)))
-        else if (e.key === 'ArrowRight') setSel((s) => (s === null ? 0 : Math.min(tokens.length - 1, s + 1)))
-        else if (e.key === 'Escape') setSel(null)
-      }}
-      onClick={(e) => {
-        if (e.target === rowRef.current) setSel(null)
-      }}
-      className="flex min-h-14 flex-wrap content-start items-center gap-1 rounded-md border border-dashed border-line-strong bg-sunken/40 p-2 outline-none focus:ring-2 focus:ring-focus"
-    >
-      {tokens.length === 0 && <span className="text-ui-sm text-ink-3">Click the palette to add operators and operands</span>}
-      {tokens.map((t, i) => (
-        <button
-          key={`${i}-${t.text}`}
-          type="button"
-          role="option"
-          aria-selected={sel === i}
-          onClick={(e) => {
-            e.stopPropagation()
-            setSel(sel === i ? null : i)
-            rowRef.current?.focus()
-          }}
-          className={cn('rounded border px-1.5 py-0.5 font-mono text-ui-sm', TOKEN_TONE[t.kind], sel === i && 'ring-2 ring-focus')}
-        >
-          {t.text}
-        </button>
-      ))}
-      {sel !== null && (
-        <span className="ml-auto text-ui-xs text-ink-3">
-          inserts after the selected token · <kbd>⌫</kbd> removes it
-        </span>
-      )}
-    </div>
-  )
-}
-
 // ---- conditions ----------------------------------------------------------------
-
-const CMP_OPTIONS: { value: CondOperator; label: string }[] = [
-  { value: 'eq', label: '=' },
-  { value: 'neq', label: '≠' },
-  { value: 'gt', label: '>' },
-  { value: 'gte', label: '≥' },
-  { value: 'lt', label: '<' },
-  { value: 'lte', label: '≤' },
-  { value: 'empty', label: 'is empty' },
-  { value: 'notEmpty', label: 'is not empty' },
-  { value: 'contains', label: 'contains' },
-  { value: 'in', label: 'is one of' },
-  { value: 'between', label: 'between' },
-]
 
 const DEPTH_TONE = ['border-l-ink-2', 'border-l-ok', 'border-l-warn', 'border-l-danger']
 
 function blankCompare(): Cond {
   return { cmp: 'eq', left: { lit: '' }, right: { lit: '' } }
-}
-
-/** `IN (…)`'s list as one comma-separated field. */
-function ListField({ value, onChange, env }: { value: Expr[]; onChange: (v: Expr[]) => void; env: LogicEnv }) {
-  const printed = value.map((v) => printExpr(v, env.names)).join(', ')
-  const [text, setText] = useState(printed)
-  const [error, setError] = useState<string | null>(null)
-  return (
-    <CodeInput
-      aria-label="Values"
-      value={text}
-      placeholder="'TH', 'ID'"
-      error={error}
-      scope={env.scope}
-      formulas={env.formulas}
-      rules={env.rules}
-      onChange={(t) => {
-        setText(t)
-        const r = parseCondition(`row IN (${t})`, env.names)
-        if (r.value === undefined || !('cmp' in r.value) || !Array.isArray(r.value.right)) return setError(t.trim() ? 'Write values separated by commas' : null)
-        setError(null)
-        onChange(r.value.right)
-      }}
-    />
-  )
-}
-
-function CompareRow({ value, onChange, onRemove, env }: { value: Extract<Cond, { cmp: string }>; onChange: (c: Cond) => void; onRemove?: () => void; env: LogicEnv }) {
-  const rights = Array.isArray(value.right) ? value.right : value.right ? [value.right] : []
-  const setOp = (op: CondOperator) => {
-    if (op === 'empty' || op === 'notEmpty') return onChange({ cmp: op, left: value.left })
-    if (op === 'in') return onChange({ cmp: op, left: value.left, right: rights.length ? rights : [{ lit: '' }] })
-    if (op === 'between') return onChange({ cmp: op, left: value.left, right: [rights[0] ?? { lit: 0 }, rights[1] ?? { lit: 0 }] })
-    onChange({ cmp: op, left: value.left, right: rights[0] ?? { lit: '' } })
-  }
-  return (
-    <div className="flex flex-wrap items-start gap-1.5">
-      <div className="min-w-40 flex-1">
-        <ExprField label="Left side" value={value.left} onChange={(left) => onChange({ ...value, left })} env={env} placeholder="[Field]" />
-      </div>
-      <div className="w-32">
-        <Select aria-label="Comparison" options={CMP_OPTIONS} value={value.cmp} onChange={(op) => setOp(op as CondOperator)} />
-      </div>
-      {value.cmp === 'in' && (
-        <div className="min-w-40 flex-1">
-          <ListField value={rights} onChange={(right) => onChange({ ...value, right })} env={env} />
-        </div>
-      )}
-      {value.cmp === 'between' && (
-        <>
-          <div className="min-w-24 flex-1">
-            <ExprField label="From" value={rights[0] ?? { lit: 0 }} onChange={(lo) => onChange({ ...value, right: [lo, rights[1] ?? { lit: 0 }] })} env={env} />
-          </div>
-          <span className="pt-1 text-ui-sm text-ink-3">and</span>
-          <div className="min-w-24 flex-1">
-            <ExprField label="To" value={rights[1] ?? { lit: 0 }} onChange={(hi) => onChange({ ...value, right: [rights[0] ?? { lit: 0 }, hi] })} env={env} />
-          </div>
-        </>
-      )}
-      {value.cmp !== 'in' && value.cmp !== 'between' && value.cmp !== 'empty' && value.cmp !== 'notEmpty' && (
-        <div className="min-w-40 flex-1">
-          <ExprField label="Right side" value={rights[0] ?? { lit: '' }} onChange={(right) => onChange({ ...value, right })} env={env} placeholder="value" />
-        </div>
-      )}
-      {onRemove && (
-        <Button size="sm" aria-label="Remove condition" onClick={onRemove}>
-          ×
-        </Button>
-      )}
-    </div>
-  )
 }
 
 /** An AND / OR group: rows and nested groups, the logic toggle, add condition / group. */
@@ -402,7 +216,7 @@ function GroupEditor({ value, onChange, onRemove, env, depth = 0 }: { value: Ext
       {items.length === 0 && <p className="text-ui-xs text-ink-3">{isAll ? 'No lines: always true.' : 'No lines: always false.'}</p>}
       {items.map((c, i) =>
         'cmp' in c ? (
-          <CompareRow key={i} value={c} env={env} onChange={(n) => setAt(i, n)} onRemove={() => removeAt(i)} />
+          <ConditionLine key={i} value={c} env={env} onChange={(n) => setAt(i, n)} onRemove={() => removeAt(i)} />
         ) : (
           <GroupEditor key={i} value={c} env={env} depth={depth + 1} onChange={(n) => setAt(i, n)} onRemove={() => removeAt(i)} />
         ),
@@ -423,7 +237,7 @@ function GroupEditor({ value, onChange, onRemove, env, depth = 0 }: { value: Ext
 export function ConditionEditor({ value, onChange, env, mode }: { value: StudioCondition; onChange: (c: StudioCondition) => void; env: LogicEnv; mode: 'visual' | 'code' }) {
   const printed = useMemo(() => printCondition(value, env.names), [value, env.names])
   const [text, setText] = useState(printed)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<{ message: string; at: number } | null>(null)
   useEffect(() => {
     if (mode === 'visual') {
       setText(printed)
@@ -436,7 +250,9 @@ export function ConditionEditor({ value, onChange, env, mode }: { value: StudioC
         multiline
         aria-label="Condition code"
         value={text}
-        error={error}
+        error={error?.message}
+        errorAt={error?.at}
+        condition
         scope={env.scope}
         formulas={env.formulas}
         rules={env.rules}
@@ -444,7 +260,7 @@ export function ConditionEditor({ value, onChange, env, mode }: { value: StudioC
         onChange={(t) => {
           setText(t)
           const r = parseCondition(t, env.names)
-          if (r.value === undefined) return setError(`${r.error} (at ${r.at + 1})`)
+          if (r.value === undefined) return setError({ message: r.error, at: r.at })
           setError(null)
           onChange(r.value)
         }}

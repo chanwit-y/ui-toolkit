@@ -846,8 +846,43 @@ export function lexemes(text: string): Lexeme[] | null {
   }
   return toks.map((t, i) => {
     const end = toks[i + 1]?.at ?? text.length
-    const raw = text.slice(t.at, end).trim()
-    const kind: LexemeKind =
+    return { text: text.slice(t.at, end).trim(), kind: lexemeKind(toks, i) }
+  })
+}
+
+/**
+ * Code text → the character span and kind of every token, never throwing (the
+ * formula bar's colouring): when the text stops lexing, the tokens before the
+ * problem and `failedAt` where it starts.
+ */
+export function lexSpans(text: string): { spans: { from: number; to: number; kind: LexemeKind }[]; failedAt?: number } {
+  let toks: Tok[]
+  let failedAt: number | undefined
+  try {
+    toks = lex(text)
+  } catch (e) {
+    if (!(e instanceof LogicParseError)) throw e
+    failedAt = e.at
+    try {
+      toks = lex(text.slice(0, e.at))
+    } catch {
+      toks = []
+      failedAt = 0
+    }
+  }
+  const stop = failedAt ?? text.length
+  return {
+    spans: toks.map((t, i) => {
+      const next = toks[i + 1]?.at ?? stop
+      return { from: t.at, to: t.at + text.slice(t.at, next).trimEnd().length, kind: lexemeKind(toks, i) }
+    }),
+    failedAt,
+  }
+}
+
+function lexemeKind(toks: Tok[], i: number): LexemeKind {
+  const t = toks[i]
+  return (
       t.k === 'field'
         ? 'field'
         : t.k === 'state'
@@ -871,8 +906,7 @@ export function lexemes(text: string): Lexeme[] | null {
                           : t.k === 'word' && KEYWORDS.has(t.v.toUpperCase())
                             ? 'keyword'
                             : 'operand'
-    return { text: raw, kind }
-  })
+  )
 }
 
 /** Tokens → code text, spaced the way the printer spaces it. */

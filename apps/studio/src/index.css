@@ -74,6 +74,19 @@
   --grid-line: rgba(20, 22, 26, 0.055);
   --grid-edge: rgba(20, 22, 26, 0.13);
   --shadow-frame: 0 1px 2px rgba(16, 18, 22, 0.06), 0 8px 24px -12px rgba(16, 18, 22, 0.18);
+
+  /* Logic operand hues (spec §14.9) — only logic pills and the formula bar use them. */
+  --logic-field: #1d4ed8;
+  --logic-field-tint: #e8effd;
+  --logic-data: #6d28d9;
+  --logic-data-tint: #f1ebfd;
+  --logic-saved: #0f766e;
+  --logic-saved-tint: #e1f3f0;
+  --logic-rule: #9a5300;
+  --logic-rule-tint: #fcf0da;
+  --logic-value: #15803d;
+  --logic-value-tint: #e5f4e9;
+  --logic-fn: var(--ink);
 }
 
 .dark {
@@ -95,6 +108,18 @@
   --grid-line: rgba(240, 241, 242, 0.05);
   --grid-edge: rgba(240, 241, 242, 0.14);
   --shadow-frame: 0 1px 2px rgba(0, 0, 0, 0.5), 0 12px 28px -14px rgba(0, 0, 0, 0.8);
+
+  --logic-field: #8db4ff;
+  --logic-field-tint: rgba(84, 132, 255, 0.18);
+  --logic-data: #c6a8ff;
+  --logic-data-tint: rgba(150, 104, 255, 0.2);
+  --logic-saved: #62d6c6;
+  --logic-saved-tint: rgba(40, 190, 170, 0.17);
+  --logic-rule: #f5b759;
+  --logic-rule-tint: rgba(240, 164, 74, 0.17);
+  --logic-value: #7fd894;
+  --logic-value-tint: rgba(95, 207, 143, 0.15);
+  --logic-fn: var(--ink);
 }
 
 @theme inline {
@@ -115,6 +140,17 @@
   --color-ok: var(--ok);
   --color-grid-line: var(--grid-line);
   --color-grid-edge: var(--grid-edge);
+  --color-logic-field: var(--logic-field);
+  --color-logic-field-tint: var(--logic-field-tint);
+  --color-logic-data: var(--logic-data);
+  --color-logic-data-tint: var(--logic-data-tint);
+  --color-logic-saved: var(--logic-saved);
+  --color-logic-saved-tint: var(--logic-saved-tint);
+  --color-logic-rule: var(--logic-rule);
+  --color-logic-rule-tint: var(--logic-rule-tint);
+  --color-logic-value: var(--logic-value);
+  --color-logic-value-tint: var(--logic-value-tint);
+  --color-logic-fn: var(--logic-fn);
 
   --font-sans: var(--font-ui);
   --font-mono: var(--font-code);
@@ -412,4 +448,72 @@ body {
 .auth-preview .auth-card {
   padding: 1rem;
   gap: 0.5rem;
+}
+
+/* Logic formula bar (spec §14.2): a transparent textarea over a coloured
+   overlay with the same metrics. Highlights may not change glyph widths, so
+   pills are drawn with a box-shadow spread instead of padding. */
+.logic-bar {
+  position: relative;
+}
+.logic-bar > .logic-bar-overlay,
+.logic-bar > textarea {
+  font-family: var(--font-code);
+  font-size: 12px;
+  line-height: 20px;
+  letter-spacing: 0;
+  padding: 6px 9px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  tab-size: 2;
+}
+.logic-bar > .logic-bar-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  color: var(--ink);
+  border: 1px solid transparent;
+}
+.logic-bar > textarea {
+  position: relative;
+  display: block;
+  width: 100%;
+  resize: none;
+  overflow: hidden;
+  background: transparent;
+  color: transparent;
+  caret-color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  outline: none;
+}
+.logic-bar > textarea:focus {
+  border-color: var(--line-strong);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus) 18%, transparent);
+}
+.logic-bar > textarea::placeholder {
+  color: var(--ink-3);
+  font-family: var(--font-ui);
+}
+.logic-bar[data-invalid] > textarea {
+  border-color: color-mix(in srgb, var(--danger) 60%, var(--line));
+}
+.logic-hl {
+  border-radius: 4px;
+}
+.logic-hl-field { color: var(--logic-field); background: var(--logic-field-tint); box-shadow: 0 0 0 1.5px var(--logic-field-tint); }
+.logic-hl-data { color: var(--logic-data); background: var(--logic-data-tint); box-shadow: 0 0 0 1.5px var(--logic-data-tint); }
+.logic-hl-saved { color: var(--logic-saved); background: var(--logic-saved-tint); box-shadow: 0 0 0 1.5px var(--logic-saved-tint); }
+.logic-hl-rule { color: var(--logic-rule); background: var(--logic-rule-tint); box-shadow: 0 0 0 1.5px var(--logic-rule-tint); }
+.logic-hl-value { color: var(--logic-value); }
+.logic-hl-fn { color: var(--logic-fn); -webkit-text-stroke: 0.35px currentColor; }
+.logic-hl-op { color: var(--ink-2); -webkit-text-stroke: 0.3px currentColor; }
+.logic-hl-punct { color: var(--ink-3); }
+.logic-hl-plain { color: var(--ink); }
+.logic-hl-error {
+  color: var(--danger);
+  text-decoration: underline wavy var(--danger);
+  text-decoration-skip-ink: none;
+  text-underline-offset: 3px;
 }

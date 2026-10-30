@@ -3,10 +3,13 @@ import { useParams } from 'react-router-dom'
 import type { PickableField } from '../common'
 import { useActiveItems, useGridStore } from '../Layout/gridStore'
 import { usePageLoads } from '../Layout/pageData'
+import { flattenModelFields } from '../Layout/rowFields'
+import { useProjectEndpoints, useProjectModels } from '../Library/scope'
+import { loadShape, type PageLoadDef } from '../Workspace/pageLoads'
 import { useRepeaterScope } from '../Layout/repeaterScope'
 import { isBlockedInRepeater } from '../Layout/repeaterRules'
 import { enclosingDataTable } from '../Layout/ShowWhenPanel'
-import type { DataTableConfig, GridItemData, RadioConfig } from '../Layout/types'
+import type { DataTableConfig, GridItemData, RadioConfig, SelectFieldConfig } from '../Layout/types'
 import { makeLogicNames, type FormulaLibDef, type LogicNames, type RuleLibDef } from '../Workspace/logic'
 import { pathParams } from '../Workspace/snapshots'
 import { useActivePages, useActiveProject } from '../Workspace/workspaceStore'
@@ -19,9 +22,12 @@ import { useActivePages, useActiveProject } from '../Workspace/workspaceStore'
  */
 export type LogicField = { name: string; kind: string; options?: { value: string; label: string }[] }
 
+/** A page load in scope; `fields` are the dotted paths its data offers (`null` when unknown). */
+export type LogicLoad = { id: string; key: string; fields?: PickableField[] | null }
+
 export type LogicScopeInfo = {
   fields: LogicField[]
-  loads: { id: string; key: string }[]
+  loads: LogicLoad[]
   /** The nearest item: a repeater item, a table row (style rules / computed columns). */
   row: { label: string; fields: PickableField[] | null; hint?: string; extras: { code: string; label: string }[] } | null
   /** The data table whose modal holds the item (`row.$table`). */
@@ -48,6 +54,47 @@ export function useLogicLibrary(loads: { id: string; key: string }[] = []): {
 /** Canvases drawn on the same form as their host (a nested container, a tab's panels, a card's slots, a paper). */
 const SAME_FORM = new Set(['container', 'tab', 'card', 'paper'])
 
+/** A form field's value type, by its item type first (a date picker stores dates whatever its `dataType`). */
+function fieldKind(item: GridItemData, dataType: string | undefined): string {
+  switch (item.type) {
+    case 'switch':
+    case 'checkbox':
+      return 'boolean'
+    case 'datepicker':
+    case 'datetimepicker':
+      return 'date'
+    case 'multiAutocomplete':
+    case 'daterangepicker':
+    case 'uploadfile':
+    case 'workfloweditor':
+      return 'list'
+    default:
+      return dataType ?? 'text'
+  }
+}
+
+/** The values a field offers as options: a radio's, a static select / autocomplete's. */
+function fieldOptions(item: GridItemData): { value: string; label: string }[] | undefined {
+  if (item.type === 'radio') return (item.config as RadioConfig).options.map((o) => ({ value: o.value, label: o.label }))
+  if (item.type === 'select' || item.type === 'autocomplete') {
+    const c = item.config as SelectFieldConfig
+    if (c.mode !== 'static') return undefined
+    const id = c.idKey || 'id'
+    const label = c.displayKey || id
+    return c.options.filter((o) => o[id] != null).map((o) => ({ value: String(o[id]), label: String(o[label] ?? o[id]) }))
+  }
+  return undefined
+}
+
+/** A load's offered paths: an object's fields (dotted), a list's length. */
+function loadFields(load: PageLoadDef, endpoints: Parameters<typeof loadShape>[1], models: Parameters<typeof loadShape>[2]): PickableField[] | null {
+  const shape = loadShape(load, endpoints, models)
+  if (shape.shape === 'object') return flattenModelFields(shape.fields)
+  if (shape.shape === 'array') return [{ name: 'length', kind: 'number' }]
+  if (shape.shape === 'value') return []
+  return null
+}
+
 /** The form fields of a canvas, through the hosts that share its form. */
 export function formFieldsOf(items: GridItemData[]): LogicField[] {
   const out: LogicField[] = []
@@ -57,9 +104,8 @@ export function formFieldsOf(items: GridItemData[]): LogicField[] {
       if (!isBlockedInRepeater(item.type)) continue
       const config = item.config as { name?: string; dataType?: string } | undefined
       if (!config?.name) continue
-      const options =
-        item.type === 'radio' ? (item.config as RadioConfig).options.map((o) => ({ value: o.value, label: o.label })) : undefined
-      out.push({ name: config.name, kind: item.type === 'switch' || item.type === 'checkbox' ? 'boolean' : (config.dataType ?? 'text'), ...(options ? { options } : {}) })
+      const options = fieldOptions(item)
+      out.push({ name: config.name, kind: fieldKind(item, config.dataType), ...(options?.length ? { options } : {}) })
     }
   }
   walk(items)
@@ -72,6 +118,8 @@ export function useCanvasLogicScope(): LogicScopeInfo {
   const rootItems = useGridStore((s) => s.items)
   const activePath = useGridStore((s) => s.activePath)
   const loads = usePageLoads()
+  const endpoints = useProjectEndpoints()
+  const models = useProjectModels()
   const repeater = useRepeaterScope()
   const pages = useActivePages()
   const { pageId } = useParams()
@@ -80,7 +128,7 @@ export function useCanvasLogicScope(): LogicScopeInfo {
     const page = pages.find((p) => p.id === pageId)
     return {
       fields: formFieldsOf(items),
-      loads: loads.map((l) => ({ id: l.id, key: l.key })),
+      loads: loads.map((l) => ({ id: l.id, key: l.key, fields: loadFields(l, endpoints, models) })),
       row: repeater
         ? {
             label: 'Repeater item',
@@ -92,7 +140,7 @@ export function useCanvasLogicScope(): LogicScopeInfo {
       table: table ? (table.config as DataTableConfig).name : null,
       urlParams: page ? pathParams(page.path) : [],
     }
-  }, [items, rootItems, activePath, loads, repeater, pages, pageId])
+  }, [items, rootItems, activePath, loads, endpoints, models, repeater, pages, pageId])
 }
 
 /** The scope for a data table's row (a style rule, a computed column): the row's fields, the cell's value. */
@@ -116,11 +164,13 @@ export function useTableRowScope(fields: PickableField[] | null, withValue: bool
 /** The scope for a saved formula / rule (the Logic tab): every form field of the project, every load. */
 export function useLibraryLogicScope(): LogicScopeInfo {
   const project = useActiveProject()
+  const endpoints = useProjectEndpoints()
+  const models = useProjectModels()
   return useMemo(() => {
     const pages = project?.snapshot.pages ?? []
     const seen = new Set<string>()
     const fields = pages.flatMap((p) => formFieldsOf(p.grid.items)).filter((f) => (seen.has(f.name) ? false : (seen.add(f.name), true)))
-    const loads = [...(project?.snapshot.globalLoads ?? []), ...pages.flatMap((p) => p.loads ?? [])].map((l) => ({ id: l.id, key: l.key }))
+    const loads = [...(project?.snapshot.globalLoads ?? []), ...pages.flatMap((p) => p.loads ?? [])].map((l) => ({ id: l.id, key: l.key, fields: loadFields(l, endpoints, models) }))
     return {
       fields,
       loads,
@@ -128,5 +178,5 @@ export function useLibraryLogicScope(): LogicScopeInfo {
       table: null,
       urlParams: [],
     }
-  }, [project])
+  }, [project, endpoints, models])
 }
