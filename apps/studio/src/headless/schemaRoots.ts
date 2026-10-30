@@ -34,6 +34,7 @@ export const SCHEMA_ROOTS: { file: string; types: string[] }[] = [
       'PaperConfig',
       'CardConfig',
       'HtmlContentConfig',
+      'FormulaWidgetConfig',
       'CustomComponentConfig',
       'ApprovalLineConfig',
       'SwitchProfileConfig',

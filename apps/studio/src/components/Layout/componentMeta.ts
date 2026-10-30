@@ -38,6 +38,7 @@ export type ComponentType =
   | 'paper'
   | 'card'
   | 'html'
+  | 'formula'
   | 'custom'
   | 'approvalline'
   | 'switchprofile'
@@ -127,6 +128,13 @@ export const COMPONENT_META_GROUPS: { category: string; items: ComponentMeta[] }
       { type: 'hidden', label: 'Hidden' },
       { type: 'empty', label: 'Empty' },
     ],
+  },
+  {
+    // The end user's formula: a typography result, a click opens the editor
+    // modal in the running app (the Display group's Formula tile is the
+    // studio-authored one). The toolbox adds its Saved formula tile here.
+    category: 'Logic',
+    items: [{ type: 'formula', label: 'New formula' }],
   },
 ]
 

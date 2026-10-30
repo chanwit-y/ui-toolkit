@@ -27,6 +27,9 @@ type ItemBindingFieldProps = {
   allowState?: boolean
   /** Offer a formula (a computed value, see `spec/gummy-logic-spec.md`); text-like props only. */
   allowFormula?: boolean
+  /** Open the formula editor as soon as its chip mounts (the Formula tile was just dropped). */
+  autoOpenFormula?: boolean
+  onAutoOpened?: () => void
 }
 
 /**
@@ -39,7 +42,7 @@ type ItemBindingFieldProps = {
  * (free text when it can't be resolved) plus an optional path; page-data
  * mode picks a load and a field of its model (or `$status`).
  */
-export function ItemBindingField({ label, binding, onChange, scope, kinds, allowState = true, allowFormula = false }: ItemBindingFieldProps) {
+export function ItemBindingField({ label, binding, onChange, scope, kinds, allowState = true, allowFormula = false, autoOpenFormula, onAutoOpened }: ItemBindingFieldProps) {
   const loads = usePageLoads()
   const logicScope = useCanvasLogicScope()
   const mode: Mode = binding === null ? 'static' : binding.source === 'state' ? 'state' : binding.source === 'formula' ? 'formula' : 'item'
@@ -105,6 +108,8 @@ export function ItemBindingField({ label, binding, onChange, scope, kinds, allow
           value={binding.formula}
           onChange={(formula) => onChange(formula ? { key: '', path: '', source: 'formula', formula } : null)}
           hint="Shown through the formula’s output format."
+          autoOpen={autoOpenFormula}
+          onAutoOpened={onAutoOpened}
         />
       )}
       {binding && mode === 'state' && (

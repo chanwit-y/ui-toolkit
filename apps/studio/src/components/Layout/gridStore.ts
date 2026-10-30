@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type { Breakpoint } from './breakpoints'
-import type { ComponentType } from './componentCatalog'
+import type { ComponentPreset, ComponentType } from './componentCatalog'
 import { ENTER_DURATION_MS, prefersReducedMotion } from './gridAnimation'
 import { ancestorRepeaters, isBlockedInRepeater, withoutBlockedItems } from './repeaterRules'
 import { readSeedCount } from './perf'
@@ -71,6 +71,8 @@ export type NewComponent = {
   label: string
   /** `custom` only: the registry declaration the new item is mapped onto. */
   componentId?: string
+  /** A preset tile: the item starts configured for it, selected, with its editor open. */
+  preset?: ComponentPreset
 }
 
 /** Which panel the right sidebar shows. `inspector` resolves to the selected
@@ -113,6 +115,9 @@ type GridState = {
   selectedItemId: string | null
   sidebarView: SidebarView
   previewBreakpoint: Breakpoint
+  /** The item whose logic editor should open as soon as its chip mounts (a
+   * preset tile was just dropped); the chip clears it once opened. */
+  logicOpenItemId: string | null
 
   // Undo/redo (see the grilled design): per-page snapshot history of the
   // canvas tree. Depths are mirrored here for the toolbar; the entries
@@ -215,6 +220,7 @@ type GridState = {
   showContainer: () => void
   setSidebarView: (view: SidebarView) => void
   setPreviewBreakpoint: (bp: Breakpoint) => void
+  clearLogicOpen: () => void
 }
 
 function createId(): string {
@@ -408,6 +414,7 @@ export const useGridStore = create<GridState>((set, get) => {
     selectedItemId: null,
     sidebarView: 'inspector',
     previewBreakpoint: 'lg',
+    logicOpenItemId: null,
 
     undoDepth: 0,
     redoDepth: 0,
@@ -446,6 +453,7 @@ export const useGridStore = create<GridState>((set, get) => {
           columns: settings.columns,
           label: component?.label,
           componentId: component?.componentId,
+          preset: component?.preset,
           siblingCount: items.length,
         })
 
@@ -457,6 +465,9 @@ export const useGridStore = create<GridState>((set, get) => {
           : get().enteringIds
         setActiveCanvas((canvas) => insertItems(canvas, [newItem], index))
         set({ fieldSeq, enteringIds })
+        // A preset tile has one job, so its editor opens at once: select the
+        // cell (the inspector shows its Props) and flag it for the chip.
+        if (component?.preset) set({ selectedItemId: newItem.id, sidebarView: 'inspector', logicOpenItemId: newItem.id })
         if (willEnter) scheduleEnterClear(newItem.id)
       }),
 
@@ -619,6 +630,7 @@ export const useGridStore = create<GridState>((set, get) => {
     clearSelection: () => set({ selectedItemId: null }),
 
     showContainer: () => set({ selectedItemId: null, sidebarView: 'layout' }),
+    clearLogicOpen: () => set({ logicOpenItemId: null }),
 
     setSidebarView: (view) => set({ sidebarView: view }),
 

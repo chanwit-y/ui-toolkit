@@ -66,12 +66,26 @@ export function CodeInput({ value, onChange, scope, formulas, rules, error, erro
   const spans = useMemo(() => highlightSpans(value, error ? errorAt : undefined), [value, error, errorAt])
   const call = caret === null ? null : callAt(value, caret)
 
-  // Grow with the text (the overlay has the same metrics, so it follows).
+  // Grow with the text (the overlay has the same metrics, so it follows) — and
+  // re-fit when the bar's width changes under it (a canvas cell across
+  // breakpoints or a resized pane), since the wrapped line count changes too.
   useLayoutEffect(() => {
     const el = ref.current
     if (!el) return
-    el.style.height = 'auto'
-    el.style.height = `${el.scrollHeight}px`
+    const fit = () => {
+      el.style.height = 'auto'
+      el.style.height = `${el.scrollHeight}px`
+    }
+    fit()
+    if (typeof ResizeObserver === 'undefined') return
+    let width = el.clientWidth
+    const ro = new ResizeObserver(() => {
+      if (el.clientWidth === width) return
+      width = el.clientWidth
+      fit()
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
   }, [value, multiline])
 
   // Where an outside insert (an operator button, the Insert list) lands while the bar isn't focused.

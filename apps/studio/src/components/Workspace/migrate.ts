@@ -116,6 +116,7 @@ import {
   fileCollectionDemoPage,
   chartDemoPage,
   logicDemoPage,
+  formulaDemoPage,
   cardDemoPage,
   htmlContentDemoPage,
   drawerDemoPage,
@@ -149,6 +150,7 @@ import type {
 } from './types'
 import { migrateItemConditions } from './logic'
 import { LOGIC_PAGE_ID, LOGIC_REQUIRED_ITEM_IDS, logicDemoSeedItems, logicSeedFormulas, logicSeedRules } from '../seed/logic'
+import { FORMULA_PAGE_ID, FORMULA_WIDGET_ITEM_IDS, formulaDemoSeedItems } from '../seed/formula'
 import { walkItems } from '../Layout/pageLinks'
 import type { ContainerConfig } from '../Layout/types'
 import { defaultMenu } from './menu'
@@ -1124,6 +1126,35 @@ function migrateV61(data: { projects: ProjectDef[]; library: LibraryData }): {
     const at = page.grid.items.findIndex((item) => item.id === 'seed-item-logic-enable-h-title')
     page.grid.items.splice(at === -1 ? page.grid.items.length : at, 0, ...items)
   }
+  return migrateV62(data)
+}
+
+/**
+ * v62 → v63: the seeded **Formula** page (what the palette's Formula tile
+ * produces — inline formulas as typographies over a form) is appended to the
+ * seeded project, with its sidebar link (by id, so a deleted page stays gone).
+ */
+function migrateV62(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  const projects = data.projects.map((p) => (p.id === 'seed-project-country' ? appendDemoPages(p, [formulaDemoPage()]) : p))
+  return migrateV63({ projects, library: data.library })
+}
+
+/**
+ * v63 → v64: the seeded Formula page gains the **Your own formula** section
+ * (the end user's `formula` element) at its end — guarded on the item ids,
+ * so an edited page isn't touched twice.
+ */
+function migrateV63(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  const page = data.projects.find((p) => p.id === 'seed-project-country')?.snapshot.pages.find((pg) => pg.id === FORMULA_PAGE_ID)
+  if (page && !page.grid.items.some((item) => FORMULA_WIDGET_ITEM_IDS.includes(item.id))) {
+    page.grid.items.push(...formulaDemoSeedItems().filter((item) => FORMULA_WIDGET_ITEM_IDS.includes(item.id)))
+  }
   return data
 }
 
@@ -1850,7 +1881,7 @@ export function withSeedLibrary(library: LibraryData): LibraryData {
 }
 
 /** The workspace version this build writes (and the newest it reads). */
-export const WORKSPACE_VERSION = 62
+export const WORKSPACE_VERSION = 64
 
 /** What a persisted payload migrates to: the stored fields at the current shape. */
 export type MigratedWorkspace = Pick<WorkspaceData, 'appearance' | 'user' | 'activity' | 'projects' | 'library'>
@@ -2079,7 +2110,15 @@ export function migrateWorkspace(persisted: unknown): MigratedWorkspace | null {
     const normalized = { ...library, auth: (library.auth ?? []).map((a) => normalizeAuthDef(a)) }
     return { appearance, user, activity, ...migrateV61({ projects: data.projects, library: normalized }) }
   }
-  if (data.version !== 62) return null
+  if (data.version === 62) {
+    const normalized = { ...library, auth: (library.auth ?? []).map((a) => normalizeAuthDef(a)) }
+    return { appearance, user, activity, ...migrateV62({ projects: data.projects, library: normalized }) }
+  }
+  if (data.version === 63) {
+    const normalized = { ...library, auth: (library.auth ?? []).map((a) => normalizeAuthDef(a)) }
+    return { appearance, user, activity, ...migrateV63({ projects: data.projects, library: normalized }) }
+  }
+  if (data.version !== 64) return null
   // Same version, possibly older entry shapes (fields added without a bump): fill the defaults.
   return { appearance, user, activity, projects: data.projects, library: { ...library, auth: (library.auth ?? []).map((a) => normalizeAuthDef(a)) } }
 }

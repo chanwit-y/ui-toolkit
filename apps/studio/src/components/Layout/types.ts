@@ -2343,6 +2343,46 @@ export function createDefaultHtmlContentConfig(name: string): HtmlContentConfig 
   }
 }
 
+/** Where the end user's formula is kept (engine `FormulaWidgetElement.persist`). */
+export type FormulaWidgetPersist = 'local' | 'session' | 'none'
+
+/**
+ * Editable config for a `formula` element (the Logic group's New formula
+ * tile): a formula the **end user** writes in the running app — the result
+ * as a typography, a click opens the editor modal. `formula` is the starting
+ * one (inline with its format and blank policies, or a saved formula), null =
+ * empty until the user writes one. See `spec/gummy-logic-spec.md` §18.
+ */
+export type FormulaWidgetConfig = {
+  name: string
+  label: string
+  placeholder: string
+  formula: StudioFormula | null
+  variant: TypographyConfig['variant']
+  weight: TypographyConfig['weight']
+  color: TypographyConfig['color']
+  align: TypographyConfig['align']
+  persist: FormulaWidgetPersist
+  allowFormat: boolean
+  editLabel: string
+}
+
+export function createDefaultFormulaWidgetConfig(name: string): FormulaWidgetConfig {
+  return {
+    name,
+    label: '',
+    placeholder: '',
+    formula: null,
+    variant: 'h5',
+    weight: '',
+    color: '',
+    align: '',
+    persist: 'local',
+    allowFormat: true,
+    editLabel: '',
+  }
+}
+
 /**
  * Editable config for a custom component (see the grilled design). Maps onto
  * the engine `CustomComponentElement`: `componentId` is the project
@@ -2777,6 +2817,7 @@ export type GridItemData = {
     | PaperConfig
     | CardConfig
     | HtmlContentConfig
+    | FormulaWidgetConfig
     | CustomComponentConfig
     | ApprovalLineConfig
     | SwitchProfileConfig

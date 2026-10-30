@@ -61,6 +61,7 @@ import type {
   CardConfig,
   CardActionConfig,
   HtmlContentConfig,
+  FormulaWidgetConfig,
   CustomComponentConfig,
   ApprovalLineConfig,
   ApprovalLineKeyConfig,
@@ -1326,6 +1327,27 @@ function avatarElement(c: AvatarConfig, refs: ButtonRefMaps): Record<string, unk
 }
 
 /** `html` → engine `HtmlContentElement`: the template, the binding as a `type:"row"` value, `prose` only when off. */
+/**
+ * `formula` → engine `FormulaWidgetElement`: the starting formula as an
+ * `Expr` (an inline one brings its format and blank policies; a saved one is
+ * referenced by name), the look and persistence only off the defaults.
+ */
+function formulaWidgetElement(c: FormulaWidgetConfig, refs: ButtonRefMaps): Record<string, unknown> {
+  const dv = c.formula ? (formulaToDataValue(c.formula, refs.logic) as Record<string, unknown>) : undefined
+  return {
+    name: c.name,
+    ...omitEmpty({ label: c.label, placeholder: c.placeholder, editLabel: c.editLabel, weight: c.weight, color: c.color, align: c.align }),
+    ...(c.variant !== 'h5' ? { variant: c.variant } : {}),
+    // `formulaToDataValue` gives `{ type: "formula", expr | formula, format?, onEmpty?, onDivideByZero? }`.
+    ...(dv?.expr ? { formula: dv.expr } : dv?.formula ? { formula: { formula: dv.formula } } : {}),
+    ...(dv?.format ? { format: dv.format } : {}),
+    ...(dv?.onEmpty ? { onEmpty: dv.onEmpty } : {}),
+    ...(dv?.onDivideByZero ? { onDivideByZero: dv.onDivideByZero } : {}),
+    ...(c.persist !== 'local' ? { persist: c.persist } : {}),
+    ...(c.allowFormat ? {} : { allowFormat: false }),
+  }
+}
+
 function htmlContentElement(c: HtmlContentConfig, refs: ButtonRefMaps): Record<string, unknown> {
   return {
     name: c.name,
@@ -2225,6 +2247,8 @@ function buildElement(
       return item.config ? typographyElement(item.config as TypographyConfig, refs) : undefined
     case 'html':
       return item.config ? htmlContentElement(item.config as HtmlContentConfig, refs) : undefined
+    case 'formula':
+      return item.config ? formulaWidgetElement(item.config as FormulaWidgetConfig, refs) : undefined
     case 'custom':
       return item.config ? customComponentElement(item.config as CustomComponentConfig, refs) : undefined
     case 'switchprofile':

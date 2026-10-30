@@ -77,6 +77,7 @@ import {
   Type,
   Upload,
   User,
+  Maximize2,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import dayjs from 'dayjs'
@@ -88,6 +89,13 @@ import { useGridStore, useIsEntering } from './gridStore'
 import { buildDataTablePreviewRows, buildHtmlPreviewValue, DATATABLE_PREVIEW_ROW_COUNT, previewValueFor } from './dataTablePreview'
 import { useBindingToken } from './ItemBindingField'
 import { useActiveProject } from '../Workspace/workspaceStore'
+import { FormulaWidgetView } from '@gummy-ui/ui'
+import type { FormulaWidgetConfig } from './types'
+import { Sigma } from 'lucide-react'
+import { ExprField, type LogicEnv } from '../Logic/editors'
+import { LogicDialog } from '../Logic/LogicDialog'
+import { useCanvasLogicScope, useLogicLibrary } from '../Logic/scope'
+import { isSavedFormula, type StudioFormula } from '../Workspace/logic'
 import type {
   AvatarConfig,
   ButtonConfig,
@@ -197,6 +205,8 @@ function thresholdsForType(type: GridItemData['type']): LiveThresholds {
     type === 'card' ||
     // An HTML block is markup — legible at any width.
     type === 'html' ||
+    // The end user's formula previews as its caption + placeholder — any width.
+    type === 'formula' ||
     // A custom component previews as its placeholder box — any width.
     type === 'custom' ||
     // An approval line is avatars on a line — it scrolls when narrow.
@@ -317,6 +327,9 @@ function CellContent({ item }: { item: GridItemData }) {
   if (item.type === 'html' && item.config) {
     return <GlyphChip Icon={Code} />
   }
+  if (item.type === 'formula' && item.config) {
+    return <GlyphChip Icon={Sigma} />
+  }
   if (item.type === 'custom' && item.config) {
     return <GlyphChip Icon={Puzzle} />
   }
@@ -402,6 +415,8 @@ function ActiveBody({ item }: { item: GridItemData }) {
                                       ? CreditCard
                                     : item.type === 'html'
                                       ? Code
+                                    : item.type === 'formula'
+                                      ? Sigma
                                     : item.type === 'custom'
                                       ? Puzzle
                                     : item.type === 'approvalline'
@@ -1122,6 +1137,46 @@ function TextLivePreview({ config }: { config: TextConfig }) {
   )
 }
 
+/** The inline formula a selected text / typography cell edits in place (a saved reference keeps the token preview). */
+function inlineFormulaOf(item: GridItemData): Exclude<StudioFormula, { formulaId: string }> | null {
+  if (item.type !== 'typography' && item.type !== 'text') return null
+  const binding = (item.config as TypographyConfig | TextConfig | undefined)?.binding
+  const formula = binding?.source === 'formula' ? binding.formula : undefined
+  return formula && !isSavedFormula(formula) ? formula : null
+}
+
+/**
+ * A selected Formula cell (a text / typography bound to an inline formula —
+ * what the palette's Formula tile drops) turns into its editor: the formula
+ * bar in place of the `{ƒ formula}` token, and a button opening the full
+ * dialog (format, blank policies, Try it, Save as). Writes go straight to the
+ * binding, so the inspector's chip shows the same formula. The one live cell
+ * that takes pointer events — a click inside still lands on the (already
+ * selected) cell, and the grip keeps the drag.
+ */
+function FormulaCellEditor({ item, formula }: { item: GridItemData; formula: Exclude<StudioFormula, { formulaId: string }> }) {
+  const updateItemConfig = useGridStore((s) => s.updateItemConfig)
+  const scope = useCanvasLogicScope()
+  const { formulas, rules, names } = useLogicLibrary(scope.loads)
+  const env: LogicEnv = useMemo(() => ({ scope, formulas, rules, names }), [scope, formulas, rules, names])
+  const [open, setOpen] = useState(false)
+  // "Formula" (the tile's label) stays as is; "Total" becomes "Total formula".
+  const label = /formula/i.test(item.label) ? item.label : `${item.label} formula`
+  const save = (next: StudioFormula | null) =>
+    updateItemConfig(item.id, { binding: next ? { key: '', path: '', source: 'formula', formula: next } : null } as Partial<TypographyConfig>)
+  return (
+    <div data-grid-item-content className="pointer-events-auto flex h-full w-full items-center gap-1 px-2">
+      <div className="min-w-0 flex-1">
+        <ExprField label={label} value={formula.expr} env={env} onChange={(expr) => save({ ...formula, expr })} placeholder="Type a field, a number or a function" />
+      </div>
+      <IconButton label={`Open the ${label} editor`} className="h-7! w-7! shrink-0" onClick={() => setOpen(true)}>
+        <Maximize2 className="h-3.5 w-3.5" aria-hidden="true" />
+      </IconButton>
+      {open && <LogicDialog target={{ kind: 'formula', value: formula, onSave: save }} scope={scope} title={label} onClose={() => setOpen(false)} />}
+    </div>
+  )
+}
+
 /**
  * The live, real `<Typography>` from the library. Always live and inert. The
  * curated config maps 1:1 onto props; `''` overrides pass `undefined` so the
@@ -1418,6 +1473,29 @@ function HtmlContentLivePreview({ config }: { config: HtmlContentConfig }) {
       <div className="gummy-html-content">
         <HtmlCell template={config.html} row={value} value={value.value} className={config.prose ? 'gummy-html-prose' : ''} />
       </div>
+    </div>
+  )
+}
+
+/**
+ * The end user's formula on the canvas: the library's view over a sample —
+ * the `{ƒ result}` token when a starting formula is set, else the
+ * placeholder. The modal is the running app's (the Live Preview opens it).
+ */
+function FormulaWidgetLivePreview({ config }: { config: FormulaWidgetConfig }) {
+  return (
+    <div data-grid-item-content className="pointer-events-none flex h-full w-full items-center px-3 py-2">
+      <FormulaWidgetView
+        label={config.label || undefined}
+        placeholder={config.placeholder || undefined}
+        variant={config.variant}
+        weight={config.weight || undefined}
+        color={(config.color || undefined) as TypographyProps['color']}
+        align={(config.align || undefined) as 'left' | 'center' | 'right' | undefined}
+        editLabel={config.editLabel || undefined}
+        text="{ƒ result}"
+        hasFormula={!!config.formula}
+      />
     </div>
   )
 }
@@ -2008,6 +2086,9 @@ function renderLive(item: GridItemData, isLive: boolean) {
   if (item.type === 'html' && item.config) {
     return <HtmlContentLivePreview config={item.config as HtmlContentConfig} />
   }
+  if (item.type === 'formula' && item.config) {
+    return <FormulaWidgetLivePreview config={item.config as FormulaWidgetConfig} />
+  }
   if (item.type === 'custom' && item.config) {
     return <CustomComponentLivePreview config={item.config as CustomComponentConfig} />
   }
@@ -2103,6 +2184,7 @@ export function GridItem({ item, isSelected }: GridItemProps) {
   const isEntering = useIsEntering(item.id)
   const isLive = useIsLiveWidth(cellEl, thresholdsForType(item.type)) && !isEntering
   const live = renderLive(item, isLive)
+  const inlineFormula = inlineFormulaOf(item)
 
   // Fade the cell's content: the chip fades in over the enter "pop", and the
   // live preview fades in the instant the cell finishes entering. Later
@@ -2201,7 +2283,10 @@ export function GridItem({ item, isSelected }: GridItemProps) {
         fade target for the entrance and chip→live hand-off.
       */}
       <div ref={contentRef} className="h-full w-full">
-        {live ?? (isSelected ? <ActiveBody item={item} /> : <CellContent item={item} />)}
+        {/* A selected Formula cell edits its formula in place (see FormulaCellEditor). */}
+        {(isSelected && inlineFormula && <FormulaCellEditor item={item} formula={inlineFormula} />) ||
+          live ||
+          (isSelected ? <ActiveBody item={item} /> : <CellContent item={item} />)}
       </div>
     </div>
   )

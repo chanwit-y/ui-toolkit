@@ -192,7 +192,7 @@ export function bookshopWorkspace(): WorkspaceData {
   // The page builders speak the pre-v60 show-when helpers (`whenRole`, …): one condition each.
   for (const p of projects) for (const pg of p.snapshot.pages) migrateItemConditions(pg.grid.items)
   return {
-    version: 62,
+    version: 64,
     appearance: 'light',
     user: 'Chanwit Yimneam',
     projects,

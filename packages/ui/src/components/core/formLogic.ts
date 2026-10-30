@@ -28,7 +28,7 @@ export type FieldGate = {
 };
 
 /** Bins whose names aren't fields of the enclosing form (see `schema.ts`). */
-const NOT_FIELDS = new Set(["formlist", "repeater", "filecollection", "chart", "custom", "switchprofile", "replaceprofile"]);
+const NOT_FIELDS = new Set(["formlist", "repeater", "filecollection", "chart", "custom", "formula", "switchprofile", "replaceprofile"]);
 
 type FieldLike = {
   name?: string;

@@ -1,5 +1,6 @@
 import type { Breakpoint } from './breakpoints'
-import type { ComponentType } from './componentCatalog'
+import type { ComponentPreset, ComponentType } from './componentCatalog'
+import { inlineFormula } from '../Workspace/logic'
 import { updateContainerBreakpoint, updateItemBreakpoint } from './gridSettings'
 import {
   childCanvasCount,
@@ -20,6 +21,7 @@ import {
   createDefaultFormListConfig,
   createDefaultHiddenConfig,
   createDefaultHtmlContentConfig,
+  createDefaultFormulaWidgetConfig,
   createDefaultItemSettings,
   createDefaultModalConfig,
   createDefaultMultiAutocompleteConfig,
@@ -182,6 +184,7 @@ const DEFAULT_CONFIGS: Record<ComponentType, { prefix?: string; create: (name: s
   paper: { create: () => createDefaultPaperConfig() },
   card: { prefix: 'card', create: (n) => createDefaultCardConfig(n) },
   html: { prefix: 'html', create: (n) => createDefaultHtmlContentConfig(n) },
+  formula: { prefix: 'formula', create: (n) => createDefaultFormulaWidgetConfig(n) },
   custom: { prefix: 'custom', create: (n) => createDefaultCustomComponentConfig(n) },
   approvalline: { prefix: 'approval', create: (n) => createDefaultApprovalLineConfig(n) },
   switchprofile: { prefix: 'switchProfile', create: (n) => createDefaultSwitchProfileConfig(n) },
@@ -220,7 +223,7 @@ const UPLOADS = new Set<ComponentType>(['uploadimage', 'uploadfile'])
 // A file collection is a sidebar-shaped tree: a quarter of the row on desktop, half on a tablet.
 const SIDEBARS = new Set<ComponentType>(['filecollection'])
 const WIDE_INPUTS = new Set<ComponentType>([
-  'textfield', 'textarea', 'select', 'autocomplete', 'multiAutocomplete', 'checkbox', 'switch', 'radio', 'text', 'typography',
+  'textfield', 'textarea', 'select', 'autocomplete', 'multiAutocomplete', 'checkbox', 'switch', 'radio', 'text', 'typography', 'formula',
 ])
 
 /**
@@ -237,6 +240,8 @@ export function createItem(
     label?: string
     /** `custom` only: the registry declaration the new item is mapped onto. */
     componentId?: string
+    /** A preset tile of `type` (`formula`: a typography bound to an empty inline formula). */
+    preset?: ComponentPreset
     /** Used when no `label` is given: `Item <n>`. */
     siblingCount?: number
   },
@@ -244,7 +249,12 @@ export function createItem(
   const { prefix, create } = DEFAULT_CONFIGS[type]
   const fieldSeq = prefix ? opts.fieldSeq + 1 : opts.fieldSeq
   let config: ItemConfig | undefined
-  if (type === 'custom') {
+  if (opts.preset === 'formula' && type === 'typography') {
+    // The Formula tile: a typography already in Formula mode, with a blank
+    // fallback (the default "Typography" would show whenever the result is
+    // empty) and an empty expression (the default `0` would read as a value).
+    config = { ...createDefaultTypographyConfig(), text: '', binding: { key: '', path: '', source: 'formula', formula: inlineFormula({ lit: '' }) } }
+  } else if (type === 'custom') {
     // A tile for a declared component names the item after it (`statBadge_3`)
     // and maps it at once; the generic tile stays unmapped.
     const declared = opts.componentId

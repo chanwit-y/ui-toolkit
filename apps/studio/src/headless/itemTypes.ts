@@ -65,6 +65,12 @@ export const ITEM_TYPES: Record<ComponentType, ItemTypeInfo> = {
   avatar: { configType: 'AvatarConfig', summary: 'A round image with a fallback (static or bound).', canvases: none, guide: 'display' },
   divider: { configType: 'DividerConfig', summary: 'A horizontal rule.', canvases: none, guide: 'display' },
   html: { configType: 'HtmlContentConfig', summary: 'A sanitised HTML block, optionally a {{path}} template over a bound value.', canvases: none, guide: 'html' },
+  formula: {
+    configType: 'FormulaWidgetConfig',
+    summary: 'A formula the end user writes in the running app: the result as a typography, a click opens the editor modal; kept in browser storage per page + name.',
+    canvases: none,
+    guide: 'formula',
+  },
   custom: { configType: 'CustomComponentConfig', summary: 'A React component the app registers by name (declared under the project’s custom components).', canvases: none, guide: 'custom' },
   approvalline: { configType: 'ApprovalLineConfig', summary: 'An approval workflow tracker drawn from raw step rows.', canvases: none, guide: 'approvalline' },
   switchprofile: { configType: 'SwitchProfileConfig', summary: 'Lets the signed-in person switch between their profiles (a global-state slice).', canvases: none, guide: 'profile' },

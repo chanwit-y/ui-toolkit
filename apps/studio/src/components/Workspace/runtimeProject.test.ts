@@ -10,7 +10,7 @@ function project(id: string, name: string, pageNames = ['Home']): ProjectDef {
   return { id, name, description: '', createdAt: 0, updatedAt: 0, snapshot: { ...snapshot, pages: pageNames.map((n) => createPage(n)) } }
 }
 
-const payload = (projects: ProjectDef[], lib = library()) => JSON.stringify({ state: { projects, library: lib }, version: 62 })
+const payload = (projects: ProjectDef[], lib = library()) => JSON.stringify({ state: { projects, library: lib }, version: 64 })
 
 describe('projectFileKeys', () => {
   test('slugs the names and numbers clashes in workspace order', () => {

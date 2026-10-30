@@ -144,6 +144,9 @@ export function TypographyConfigPanel({
   const set = <K extends keyof TypographyConfig>(key: K, value: TypographyConfig[K]) =>
     updateItemConfig(itemId, { [key]: value } as Partial<TypographyConfig>)
   const scope = useRepeaterScope()
+  // The Formula tile drops a typography and asks for its editor at once.
+  const autoOpenFormula = useGridStore((s) => s.logicOpenItemId === itemId)
+  const clearLogicOpen = useGridStore((s) => s.clearLogicOpen)
 
   return (
     <div className="space-y-3">
@@ -158,6 +161,8 @@ export function TypographyConfigPanel({
         onChange={(b) => set('binding', b)}
         scope={scope}
         kinds={TEXT_KINDS}
+        autoOpenFormula={autoOpenFormula}
+        onAutoOpened={clearLogicOpen}
       />
       <Field label="Variant">
         <Select
