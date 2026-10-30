@@ -153,6 +153,7 @@ export const model: TModelMaster = {
     total: "number",
     customerType: "string",
     company: "string",
+    taxId: "string",
     discountCode: "string",
     accept: "boolean",
   },

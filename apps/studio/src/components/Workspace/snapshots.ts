@@ -90,6 +90,7 @@ import {
 } from '../seed/country'
 import { builtinTemplates } from '../seed/templates'
 import { LOGIC_PAGE_ID, logicDemoSeedItems, logicSeedFormulas, logicSeedRules } from '../seed/logic'
+import { FORMULA_PAGE_ID, formulaDemoSeedItems } from '../seed/formula'
 import { migrateItemConditions } from './logic'
 import { createDefaultBackdrop, type StudioThemeConfig } from '../Theme/types'
 import type { LibraryData, MenuItemDef, PageDef, PageGrid, ProjectSnapshot, AppBarSettings, ShellSettings, SidebarSettings } from './types'
@@ -575,6 +576,27 @@ export function logicDemoPage(): PageDef {
 }
 
 /**
+ * The "Formula" demo page of the seeded project: what the palette's Formula
+ * tile produces, one inline formula per operator / function / format over a
+ * form. Used by the fresh seed and appended to an existing seeded project by
+ * `migrateV62`.
+ */
+export function formulaDemoPage(): PageDef {
+  return {
+    id: FORMULA_PAGE_ID,
+    key: 'formula',
+    name: 'Formula',
+    path: '/formula',
+    grid: {
+      items: formulaDemoSeedItems(),
+      containerSettings: defaultContainerSettings,
+      fieldSeq: 0,
+    },
+    parentId: 'seed-page-countries',
+  }
+}
+
+/**
  * The "Charts" demo page of the seeded project (the example app's `/charts`,
  * see `spec/gummy-chart-spec.md`). Used by the fresh seed and appended to an
  * existing seeded project by `migrateV58`.
@@ -915,6 +937,7 @@ export const OPTION_DEMO_MENU_ICONS: Record<string, string> = {
   [FILE_COLLECTION_PAGE_ID]: 'folder',
   [CHART_PAGE_ID]: 'chartBar',
   [LOGIC_PAGE_ID]: 'sigma',
+  [FORMULA_PAGE_ID]: 'calculator',
   [CARD_PAGE_ID]: 'creditCard',
   [HTML_CONTENT_PAGE_ID]: 'code',
   [DRAWER_PAGE_ID]: 'panelRight',
@@ -963,6 +986,7 @@ export function countryProjectSnapshot(library: LibraryData): ProjectSnapshot {
       fileCollectionDemoPage(),
       chartDemoPage(),
       logicDemoPage(),
+      formulaDemoPage(),
       repeaterDemoPage(),
       paginationDemoPage(),
       dataTableDemoPage(),

@@ -49,6 +49,7 @@ const ITEM_FIELDS = {
       'Show when (gummy://guide/concepts/logic): Code-mode text — "[customerType] = \'Business\'", "IF((Is business))", "$country.$status = \'success\'", "row.featured = TRUE" — or "adding" / "editing" inside a data table’s edit modal, or a Cond JSON. Hidden fields are not validated or sent. null clears.',
   },
   enabledWhen: { description: 'Inputs and buttons: enabled while it holds — same forms as condition. Disabled fields are not validated but are sent. null clears.' },
+  requiredWhen: { description: 'Required form fields: required only while it holds — same forms as condition; otherwise the field may be blank (and is not stripped from the payload). null clears.' },
   valueFormula: { description: 'Form fields: the value from a formula — "((Subtotal))" (a saved formula / rule), "[qty] * [unitPrice]", or a StudioFormula object. null clears.' },
   valueMode: { type: 'string', enum: ['initial', 'computed'], description: 'With valueFormula: computed = locked and recalculated live; initial (default) = seeds the field once.' },
   initialValue: obj('Form fields: prefill from a page load — { source: "state", key: "<load>", path }; null clears.'),
@@ -112,7 +113,7 @@ function applyItemEdits(s: Session, projectId: string, page: PageDef, item: Grid
     assertMatches('GridItemSettings', settings, 'layout')
     next = { ...next, settings }
   }
-  for (const key of ['condition', 'enabledWhen', 'valueFormula', 'initialValue'] as const) {
+  for (const key of ['condition', 'enabledWhen', 'requiredWhen', 'valueFormula', 'initialValue'] as const) {
     if (i[key] === undefined) continue
     if (i[key] === null) {
       next = { ...next }
@@ -336,7 +337,7 @@ export const structureTools: Tool[] = [
   {
     name: 'update_item',
     description:
-      'Edit an item: label, a deep-merge config patch (checked against the type’s schema; references may be names), layout, condition (Show when), enabledWhen, valueFormula / valueMode, initialValue. Send whole arrays (columns, series, options, actions) — arrays replace.',
+      'Edit an item: label, a deep-merge config patch (checked against the type’s schema; references may be names), layout, condition (Show when), enabledWhen, requiredWhen, valueFormula / valueMode, initialValue. Send whole arrays (columns, series, options, actions) — arrays replace.',
     inputSchema: writeInput({ project: PROJECT, page: PAGE, item: ITEM, ...ITEM_FIELDS }, ['project', 'page', 'item']),
     write: true,
     run: (s, i) => {

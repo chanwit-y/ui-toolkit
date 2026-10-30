@@ -1,12 +1,15 @@
 import { useDraggable } from '@dnd-kit/core'
-import { Blocks, Database, Files, Layers, LayoutTemplate, Puzzle, Search, type LucideIcon } from 'lucide-react'
+import { Blocks, Database, Files, Layers, LayoutTemplate, Puzzle, Search, Sigma, type LucideIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { cn } from '../common'
 import { childCanvasCount } from './types'
 import { COMPONENT_GROUPS, type ComponentDef, type ComponentGroup } from './componentCatalog'
 import { useGridStore } from './gridStore'
 import { isValidComponentName } from '../Workspace/customComponents'
-import { useActiveProject } from '../Workspace/workspaceStore'
+import { createFormulaDef, type FormulaLibDef } from '../Workspace/logic'
+import { useActiveProject, useWorkspaceStore } from '../Workspace/workspaceStore'
+import { LogicDialog } from '../Logic/LogicDialog'
+import { useLibraryLogicScope, useLogicLibrary } from '../Logic/scope'
 import { DataPanel } from './DataPanel'
 import { LayersPanel } from './LayersPanel'
 import { PagesPanel } from './PagesPanel'
@@ -22,6 +25,11 @@ type ToolboxItemProps = {
   def: ComponentDef
 }
 
+/** A tile's identity: the type, qualified for a declared component or a preset (several tiles share one type). */
+function tileKey(def: ComponentDef): string {
+  return def.componentId ? `${def.type}:${def.componentId}` : def.preset ? `${def.type}:${def.preset}` : def.type
+}
+
 // A palette tile: drag it onto the canvas to insert at the drop point (handled
 // in Layout's DndContext), or click it to append (dnd-kit's 4px activation
 // distance keeps a plain click from starting a drag). Container-hosting types
@@ -35,7 +43,7 @@ function ToolboxItem({ def }: ToolboxItemProps) {
     (s) => isBlockedInRepeater(def.type) && ancestorRepeaters(s.items, s.activePath).length > 0,
   )
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-    id: `${TOOLBOX_DRAG_PREFIX}${def.componentId ? `${def.type}:${def.componentId}` : def.type}`,
+    id: `${TOOLBOX_DRAG_PREFIX}${tileKey(def)}`,
     data: { from: 'toolbox', def } satisfies ToolboxDragData,
     disabled: blocked,
   })
@@ -50,9 +58,9 @@ function ToolboxItem({ def }: ToolboxItemProps) {
           ? BLOCKED_IN_REPEATER_HINT
           : def.componentId
           ? `${def.hint ? `${def.hint}. ` : ''}Drag ${def.label} onto the canvas, or click to append it (mapped onto the declared component)`
-          : `Drag ${def.label} onto the canvas, or click to append it`
+          : `${def.hint ? `${def.hint}. ` : ''}Drag ${def.label} onto the canvas, or click to append it`
       }
-      onClick={() => addItem({ type: def.type, label: def.label, componentId: def.componentId })}
+      onClick={() => addItem({ type: def.type, label: def.label, componentId: def.componentId, preset: def.preset })}
       {...listeners}
       {...attributes}
       className={cn(
@@ -162,9 +170,66 @@ function useCustomComponentGroup(enabled: boolean): ComponentGroup | null {
   }, [enabled, defs])
 }
 
+/** The tile's words, so the palette search finds it. */
+const CONFIGURE_FORMULA = { label: 'Saved formula', hint: 'Configure a saved formula for this project — pick it in any Formula cell or chip, edit it on the Logic tab' }
+
+/** `New formula`, `New formula 2`, … — a name no saved formula has yet. */
+function newFormulaName(formulas: FormulaLibDef[]): string {
+  const taken = new Set(formulas.map((f) => f.name.trim()))
+  let name = 'New formula'
+  for (let n = 2; taken.has(name); n++) name = `New formula ${n}`
+  return name
+}
+
+/**
+ * A palette tile that opens the formula configuration modal straight from
+ * the toolbox: Done adds the formula to the project's library (the Logic
+ * tab), where every Formula cell and chip can pick it by name. Not a
+ * draggable — nothing lands on the canvas; drop a Formula tile for that.
+ */
+function ConfigureFormulaTile() {
+  const project = useActiveProject()
+  const updateLogic = useWorkspaceStore((s) => s.updateProjectLogic)
+  const scope = useLibraryLogicScope()
+  const { formulas } = useLogicLibrary(scope.loads)
+  const [draft, setDraft] = useState<FormulaLibDef | null>(null)
+  if (!project) return null
+  return (
+    <>
+      <button
+        type="button"
+        title={`${CONFIGURE_FORMULA.hint}.`}
+        onClick={() => setDraft(createFormulaDef(newFormulaName(formulas), { lit: '' }))}
+        className={cn(
+          'group relative flex h-[58px] flex-col items-center justify-center gap-1.5 rounded-md border border-line bg-surface p-1 text-center text-ui-xs font-medium leading-tight text-ink-2',
+          'transition-[border-color,color,transform] duration-100 hover:border-line-strong hover:text-ink active:scale-[0.97]',
+        )}
+      >
+        <Sigma className="h-[15px] w-[15px] text-ink-3 transition-colors group-hover:text-ink" aria-hidden="true" />
+        <span className="max-w-full truncate px-0.5">{CONFIGURE_FORMULA.label}</span>
+      </button>
+      {draft && (
+        <LogicDialog
+          target={{
+            kind: 'savedFormula',
+            value: draft,
+            onSave: (def) => updateLogic(project.id, { formulas: [...formulas, def] }),
+          }}
+          scope={scope}
+          title="New formula"
+          onClose={() => setDraft(null)}
+        />
+      )}
+    </>
+  )
+}
+
 function Palette({ templateMode }: { templateMode: boolean }) {
   const [query, setQuery] = useState('')
   const customGroup = useCustomComponentGroup(!templateMode)
+  // The Logic section (inside a project): the Configure formula tile, searchable like the others.
+  const q = query.trim().toLowerCase()
+  const showLogic = !templateMode && (!q || `${CONFIGURE_FORMULA.label} ${CONFIGURE_FORMULA.hint} logic`.toLowerCase().includes(q))
 
   const groups = useMemo(() => {
     const all = customGroup ? [...COMPONENT_GROUPS, customGroup] : COMPONENT_GROUPS
@@ -203,7 +268,7 @@ function Palette({ templateMode }: { templateMode: boolean }) {
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto p-2">
-        {groups.length === 0 ? (
+        {groups.length === 0 && !showLogic ? (
           <p className="px-1 py-6 text-center text-ui text-ink-3">
             No components match “{query}”.
           </p>
@@ -213,11 +278,21 @@ function Palette({ templateMode }: { templateMode: boolean }) {
               <h3 className="sec-label block px-1 pb-1.5 pt-1">{group.category}</h3>
               <div className="grid grid-cols-2 gap-1.5">
                 {group.items.map((def) => (
-                  <ToolboxItem key={def.componentId ? `${def.type}:${def.componentId}` : def.type} def={def} />
+                  <ToolboxItem key={tileKey(def)} def={def} />
                 ))}
+                {/* The Saved formula tile rides in the Logic group beside New formula. */}
+                {group.category === 'Logic' && showLogic && <ConfigureFormulaTile />}
               </div>
             </div>
           ))
+        )}
+        {showLogic && !groups.some((g) => g.category === 'Logic') && (
+          <div className="mb-3 last:mb-0">
+            <h3 className="sec-label block px-1 pb-1.5 pt-1">Logic</h3>
+            <div className="grid grid-cols-2 gap-1.5">
+              <ConfigureFormulaTile />
+            </div>
+          </div>
         )}
       </div>
     </>

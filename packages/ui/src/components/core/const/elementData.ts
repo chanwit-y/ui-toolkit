@@ -26,6 +26,7 @@ import { Tab } from "../tab";
 import { Paper } from "../paper";
 import { Card } from "../card";
 import { HtmlContent } from "../htmlContent";
+import { FormulaWidget } from "../formulaWidget";
 import { CustomComponent } from "../customComponent";
 import { ApprovalLine } from "../approvalLine";
 import { SwitchProfile } from "../switchProfile";
@@ -74,6 +75,7 @@ export const ElementData = {
 	paper: Paper,
 	card: Card,
 	html: HtmlContent,
+	formula: FormulaWidget,
 	custom: CustomComponent,
 	approvalline: ApprovalLine,
 	switchprofile: SwitchProfile,

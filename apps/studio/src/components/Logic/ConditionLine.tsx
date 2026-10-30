@@ -61,7 +61,7 @@ export function operandChoices(env: LogicEnv): OperandChoice[] {
   return out
 }
 
-function OperandPicker({ value, choices, onPick, onFormula, label }: { value: Expr | null; choices: OperandChoice[]; onPick: (e: Expr) => void; onFormula: () => void; label: string }) {
+function OperandPicker({ value, choices, onPick, onFormula, label, fit }: { value: Expr | null; choices: OperandChoice[]; onPick: (e: Expr) => void; onFormula: () => void; label: string; /** The list takes the trigger's width (the narrow inspector) instead of its own. */ fit?: boolean }) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [active, setActive] = useState(0)
@@ -100,7 +100,7 @@ function OperandPicker({ value, choices, onPick, onFormula, label }: { value: Ex
         <ChevronDown aria-hidden className="ml-auto size-3.5 shrink-0 text-ink-3" />
       </button>
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-1 w-72 overflow-hidden rounded-lg border border-line bg-surface shadow-xl">
+        <div className={cn('logic-drop-in absolute left-0 top-full z-50 mt-1 overflow-hidden rounded-lg border border-line bg-surface shadow-xl', fit ? 'right-0' : 'w-72')}>
           <div className="flex items-center gap-1.5 border-b border-line px-2">
             <Search aria-hidden className="size-3.5 text-ink-3" />
             <input
@@ -316,7 +316,7 @@ export function ConditionLine({ value, onChange, env, layout = 'row', onRemove, 
       <FxToggle on label="Pick a field instead" onClick={() => setLeftFx(false)} />
     </div>
   ) : (
-    <OperandPicker label="Compare" value={isBlankOperand(value.left) ? null : value.left} choices={choices} onPick={setLeft} onFormula={() => setLeftFx(true)} />
+    <OperandPicker label="Compare" fit={layout === 'stack'} value={isBlankOperand(value.left) ? null : value.left} choices={choices} onPick={setLeft} onFormula={() => setLeftFx(true)} />
   )
   const op = (
     <Select

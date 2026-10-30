@@ -1,12 +1,96 @@
-import { SegmentedControl, Select } from '../common'
+import { useEffect, useState } from 'react'
+import { useParams } from 'react-router-dom'
+import { Button, SegmentedControl, Select } from '../common'
 import { WiringHint } from '../Layout/ButtonConfigPanel'
 import { useGridStore } from '../Layout/gridStore'
 import { LoadFieldPicker, usePageLoads } from '../Layout/pageData'
 import { isBlockedInRepeater } from '../Layout/repeaterRules'
 import type { GridItemData } from '../Layout/types'
-import { inlineFormula } from '../Workspace/logic'
+import { countFieldRefs, inlineFormula, renameFieldRefs } from '../Workspace/logic'
+import { useActiveProject, useWorkspaceStore } from '../Workspace/workspaceStore'
 import { LogicChip, showWhenPresets } from './LogicChip'
-import { useCanvasLogicScope } from './scope'
+import { useCanvasLogicScope, useLogicLibrary } from './scope'
+
+/** Every form field name on a page, through all its canvases. */
+function pageFieldNames(items: GridItemData[]): string[] {
+  const out: string[] = []
+  const walk = (list: GridItemData[]) => {
+    for (const item of list) {
+      const name = (item.config as { name?: string } | undefined)?.name
+      if (isBlockedInRepeater(item.type) && name) out.push(name)
+      for (const c of item.childCanvases ?? []) walk(c.items)
+    }
+  }
+  walk(items)
+  return out
+}
+
+/** The name each field had when the studio last saw its references settled (this session). */
+const settledNames = new Map<string, string>()
+
+/**
+ * After a field is renamed, the logic that still reads the old name (spec
+ * §13.1: field refs are by name): on this page — every canvas — and in the
+ * saved formulas / rules, unless another page still has a field with the old
+ * name (then the saved items are left alone).
+ */
+function FieldRenameNotice({ item }: { item: GridItemData }) {
+  const name = (item.config as { name?: string } | undefined)?.name ?? ''
+  const rootItems = useGridStore((s) => s.items)
+  const renameOnPage = useGridStore((s) => s.renameFieldRefsOnPage)
+  const project = useActiveProject()
+  const updateLogic = useWorkspaceStore((s) => s.updateProjectLogic)
+  const { formulas, rules } = useLogicLibrary()
+  const { pageId } = useParams()
+  const [, rerender] = useState(0)
+  const prev = settledNames.get(item.id)
+
+  let notice: { pageCount: number; savedCount: number; savedBlocked: boolean } | null = null
+  if (prev !== undefined && prev !== name && prev.trim() && name.trim() && !pageFieldNames(rootItems).includes(prev)) {
+    const pageCount = countFieldRefs(rootItems, prev)
+    const savedCount = countFieldRefs(formulas, prev) + countFieldRefs(rules, prev)
+    const savedBlocked = (project?.snapshot.pages ?? []).some((pg) => pg.id !== pageId && pageFieldNames(pg.grid.items).includes(prev))
+    if (pageCount + (savedBlocked ? 0 : savedCount) > 0) notice = { pageCount, savedCount, savedBlocked }
+  }
+  // Nothing pending: the current name is the settled one. A blank name is a
+  // rename in progress (cleared before retyping), so the old one is kept.
+  useEffect(() => {
+    if (!notice && name.trim()) settledNames.set(item.id, name)
+  })
+  if (!notice || prev === undefined) return null
+  const settle = () => {
+    settledNames.set(item.id, name)
+    rerender((n) => n + 1)
+  }
+  const apply = () => {
+    if (notice!.pageCount) renameOnPage(prev, name)
+    if (project && !notice!.savedBlocked && notice!.savedCount) updateLogic(project.id, { formulas: renameFieldRefs(formulas, prev, name), rules: renameFieldRefs(rules, prev, name) })
+    settle()
+  }
+  const parts = [
+    notice.pageCount ? `${notice.pageCount} on this page` : '',
+    notice.savedCount && !notice.savedBlocked ? `${notice.savedCount} in saved formulas / rules` : '',
+  ].filter(Boolean)
+  const total = notice.pageCount + (notice.savedBlocked ? 0 : notice.savedCount)
+  return (
+    <div role="status" className="space-y-1.5 rounded-md border border-warn/50 bg-panel p-2 text-ui-sm text-ink-2">
+      <p>
+        Renamed from <span className="font-mono text-ink">[{prev}]</span>. {parts.join(' and ')} still {total === 1 ? 'reads' : 'read'} the old name.
+      </p>
+      {notice.savedBlocked && notice.savedCount > 0 && (
+        <p className="text-ui-xs text-ink-3">Saved formulas / rules are left alone: another page still has a field named {prev}.</p>
+      )}
+      <div className="flex gap-1.5">
+        <Button size="sm" variant="primary" onClick={apply}>
+          Update to [{name}]
+        </Button>
+        <Button size="sm" onClick={settle}>
+          Keep
+        </Button>
+      </div>
+    </div>
+  )
+}
 
 /**
  * The inspected item's logic (spec §8.2 — it replaced "Show when" and "Show
@@ -27,6 +111,7 @@ export function LogicPanel({ item }: { item: GridItemData }) {
 
   return (
     <div className="mb-3 space-y-3 rounded-lg border border-line bg-panel p-2">
+      {isField && <FieldRenameNotice item={item} />}
       <LogicChip
         kind="condition"
         label="Show when"
@@ -47,6 +132,19 @@ export function LogicPanel({ item }: { item: GridItemData }) {
             value={item.enabledWhen}
             onChange={(enabledWhen) => updateLogic(item.id, { enabledWhen })}
             hint={isField ? 'Disabled, a field is not validated but is still sent.' : 'Disabled until the condition first holds.'}
+          />
+        </div>
+      )}
+      {isField && (item.config as { isRequired?: boolean } | undefined)?.isRequired && (
+        <div className="border-t border-line pt-2">
+          <LogicChip
+            kind="condition"
+            label="Required when"
+            emptyLabel="Always required"
+            scope={scope}
+            value={item.requiredWhen}
+            onChange={(requiredWhen) => updateLogic(item.id, { requiredWhen })}
+            hint="While it doesn’t hold the field may be left blank; it is not removed from the payload."
           />
         </div>
       )}

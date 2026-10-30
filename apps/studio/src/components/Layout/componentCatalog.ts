@@ -37,12 +37,21 @@ import {
   ToggleLeft,
   Type,
   type LucideIcon,
+  Sigma,
   Upload,
   User,
 } from 'lucide-react'
 import { COMPONENT_META_GROUPS, type ComponentType } from './componentMeta'
 
 export type { ComponentType } from './componentMeta'
+
+/**
+ * A tile that is a preset of an existing type, not a type of its own:
+ * `formula` drops a `typography` already bound to an inline formula and opens
+ * the formula editor at once (see `spec/gummy-logic-spec.md` — formulas are
+ * value kinds in existing slots, never a Bin).
+ */
+export type ComponentPreset = 'formula'
 
 export type ComponentDef = {
   type: ComponentType
@@ -52,6 +61,8 @@ export type ComponentDef = {
   /** A `custom` tile for one declaration of the project's registry (Env →
    * Custom components): the dropped item is mapped onto it right away. */
   componentId?: string
+  /** A preset tile of `type` (see {@link ComponentPreset}). */
+  preset?: ComponentPreset
   /** Shown under the tile label / in search (a declaration's description). */
   hint?: string
 }
@@ -88,6 +99,7 @@ const ICONS: Record<ComponentType, LucideIcon> = {
   avatar: User,
   divider: SeparatorHorizontal,
   html: Code,
+  formula: Sigma,
   custom: Puzzle,
   approvalline: Workflow,
   switchprofile: UserCheck,
@@ -104,6 +116,13 @@ const ICONS: Record<ComponentType, LucideIcon> = {
   empty: SquareDashed,
 }
 
+/** The preset tiles, keyed by the type each sits right after. They are not in
+ * `componentMeta.ts`: that list is the type list the MCP and `COMPONENT_TYPES`
+ * read, where a second `typography` would be a duplicate type. */
+const PRESET_TILES_AFTER: Partial<Record<ComponentType, ComponentDef[]>> = {
+  typography: [{ type: 'typography', preset: 'formula', label: 'Formula', icon: Sigma, hint: 'A typography showing a formula’s result' }],
+}
+
 /**
  * The toolbox palette, grouped into categories. Order here is the render order
  * (`componentMeta.ts` holds the types, labels and categories; adding a component
@@ -111,10 +130,12 @@ const ICONS: Record<ComponentType, LucideIcon> = {
  */
 export const COMPONENT_GROUPS: ComponentGroup[] = COMPONENT_META_GROUPS.map((group) => ({
   category: group.category,
-  items: group.items.map((item) => ({ ...item, icon: ICONS[item.type] })),
+  items: group.items.flatMap((item) => [{ ...item, icon: ICONS[item.type] }, ...(PRESET_TILES_AFTER[item.type] ?? [])]),
 }))
 
-/** Flat lookup: ComponentType → its palette definition (type-name label + icon). */
+/** Flat lookup: ComponentType → its palette definition (type-name label + icon). Preset tiles are left out. */
 export const COMPONENT_BY_TYPE = Object.fromEntries(
-  COMPONENT_GROUPS.flatMap((group) => group.items).map((def) => [def.type, def]),
+  COMPONENT_GROUPS.flatMap((group) => group.items)
+    .filter((def) => !def.preset)
+    .map((def) => [def.type, def]),
 ) as Record<ComponentType, ComponentDef>

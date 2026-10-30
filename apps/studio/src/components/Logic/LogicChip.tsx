@@ -54,18 +54,28 @@ export function LogicChip({
   scope,
   hint,
   emptyLabel,
+  autoOpen,
+  onAutoOpened,
   ...slot
 }: {
   label: string
   scope: LogicScopeInfo
   hint?: string
   emptyLabel: string
+  /** Open the dialog as soon as the chip mounts (a preset tile was just dropped); `onAutoOpened` then clears the request. */
+  autoOpen?: boolean
+  onAutoOpened?: () => void
 } & (
   | { kind: 'condition'; value: StudioCondition | null | undefined; onChange: (v: StudioCondition | null) => void; presets?: ConditionPreset[] }
   | { kind: 'formula'; value: StudioFormula | null | undefined; onChange: (v: StudioFormula | null) => void }
 )) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(!!autoOpen)
   const [saveAs, setSaveAs] = useState<string | null>(null)
+  // Consume the request once, so a re-mount (a tab switch, a reselect) doesn't reopen.
+  useEffect(() => {
+    if (autoOpen) onAutoOpened?.()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount only
+  }, [])
   const [formatAnchor, setFormatAnchor] = useState<DOMRect | null>(null)
   const [note, setNote] = useState<string | null>(null)
   const project = useActiveProject()

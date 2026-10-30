@@ -183,7 +183,8 @@ function MenuEntry({ item, depth, inset }: EntryProps) {
   // deleted, missing param) renders disabled — the mount-time check already warned.
   const url = buildNavigateUrl(item.navigate, pages, { params, searchParams }, true);
   const active = isTargetActive(item.navigate, pages, pathname);
-  const shift = pill && active && indicator;
+  // Off the rail only: there every icon sits on the rail's centre.
+  const shift = pill && active && indicator && !rail;
   return (
     <li className={active && indicator ? "relative" : undefined}>
       {active && indicator && <Indicator inset={inset} />}
@@ -264,7 +265,6 @@ function MenuGroup({ item, depth, inset }: EntryProps & { item: Extract<MenuItem
       style={{ paddingLeft: pad }}
       data-active={pill && rail && holdsActive ? "" : undefined}
       data-holds-active={pill && !rail && holdsActive ? "" : undefined}
-      data-shift={pill && rail && holdsActive && indicator ? "" : undefined}
       data-child={pill && depth > 0 ? "" : undefined}
       data-open={shown ? "" : undefined}
       aria-label={rail ? item.label : undefined}
@@ -455,7 +455,7 @@ export function AppSidebar({
 
   const nav = (
     <nav aria-label="Main" className="flex min-h-0 flex-1 flex-col">
-      <ul className={`flex-1 overflow-y-auto overflow-x-hidden p-2 ${variant === "pill" ? "space-y-2" : "space-y-0.5"}`}>
+      <ul className={`gummy-side-list flex-1 overflow-y-auto overflow-x-hidden p-2 ${variant === "pill" ? "space-y-2" : "space-y-0.5"}`}>
         {menu.map((item, i) => (
           <MenuEntry key={i} item={item} depth={0} inset={NAV_PAD} />
         ))}

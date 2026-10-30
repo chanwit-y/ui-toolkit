@@ -99,7 +99,7 @@ export function RuleCards({
   const setAt = (i: number, patch: Partial<Branch>) => setBranches(value.branches.map((b, j) => (j === i ? { ...b, ...patch } : b)))
   const list = value.branches.map((b, i) => ({ id: ids.current[i], b, i }))
 
-  const tag = (on: boolean) => (on ? <span className="rounded-full bg-accent px-1.5 py-px text-[10px] font-semibold text-accent-ink">← matches</span> : null)
+  const tag = (on: boolean) => (on ? <span className="logic-drop-in rounded-full bg-accent px-1.5 py-px text-[10px] font-semibold text-accent-ink">← matches</span> : null)
 
   return (
     <div className="space-y-2">
@@ -117,7 +117,7 @@ export function RuleCards({
           const isMatch = matched === i
           const dim = matched !== null && matched !== i
           return (
-            <div className={cn('rounded-lg border bg-panel p-2.5 transition-opacity', isMatch ? 'border-l-4 border-accent' : 'border-line', dim && 'opacity-60')}>
+            <div data-match={isMatch || undefined} className={cn('logic-card rounded-lg border border-l-4 bg-panel p-2.5', isMatch ? 'border-accent' : 'border-line border-l-line', dim && 'opacity-60')}>
               <div className="mb-1.5 flex items-center gap-1.5">
                 {grip}
                 <span className="rounded bg-ink px-1.5 py-px text-[10px] font-bold tracking-wide text-surface">{i ? 'ELSE IF' : 'IF'}</span>
@@ -192,7 +192,7 @@ export function RuleCards({
       >
         + ELSE IF
       </button>
-      <div className={cn('rounded-lg border bg-panel p-2.5', matched === -1 ? 'border-l-4 border-accent' : 'border-line', matched !== null && matched !== -1 && 'opacity-60')}>
+      <div data-match={matched === -1 || undefined} className={cn('logic-card rounded-lg border border-l-4 bg-panel p-2.5', matched === -1 ? 'border-accent' : 'border-line border-l-line', matched !== null && matched !== -1 && 'opacity-60')}>
         <div className="mb-1.5 flex items-center gap-1.5">
           <span className="rounded bg-panel-2 px-1.5 py-px text-[10px] font-bold tracking-wide text-ink">OTHERWISE</span>
           {tag(matched === -1)}

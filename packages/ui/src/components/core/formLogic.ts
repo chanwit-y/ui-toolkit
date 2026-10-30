@@ -20,19 +20,24 @@ export type FieldGate = {
   conditions: AnyCondition[];
   /** A `Cond` / saved-rule `enabledWhen` (the observe form is the component's own). */
   enabledWhen?: AnyCondition;
+  /** With `isRequired`: the field is required only while it holds. */
+  requiredWhen?: AnyCondition;
   disabled: boolean;
   /** `valueMode: "computed"` with a formula `value`. */
   computed?: DataValue;
 };
 
 /** Bins whose names aren't fields of the enclosing form (see `schema.ts`). */
-const NOT_FIELDS = new Set(["formlist", "repeater", "filecollection", "chart", "custom", "switchprofile", "replaceprofile"]);
+const NOT_FIELDS = new Set(["formlist", "repeater", "filecollection", "chart", "custom", "formula", "switchprofile", "replaceprofile"]);
 
 type FieldLike = {
   name?: string;
   dataType?: string;
   disabled?: boolean;
   enabledWhen?: AnyCondition;
+  requiredWhen?: AnyCondition;
+  isRequired?: boolean;
+  errorMessage?: string;
   valueMode?: string;
   value?: DataValue;
 };
@@ -64,6 +69,7 @@ export function collectFieldGates(containers: Container[]): FieldGate[] {
         // A `hidden` bin (`_id`) carries the record's identity: never hidden away.
         conditions: b.type === "hidden" ? [] : conditions,
         enabledWhen: el.enabledWhen && !isLegacyCondition(el.enabledWhen) ? el.enabledWhen : undefined,
+        requiredWhen: el.isRequired && el.requiredWhen ? el.requiredWhen : undefined,
         disabled: el.disabled === true,
         computed: el.valueMode === "computed" && el.value?.type === "formula" ? el.value : undefined,
       });
@@ -90,12 +96,15 @@ export type GateDecisions = {
   skip: Set<string>;
   /** Disabled: validated as anything, still submitted. */
   relax: Set<string>;
+  /** `requiredWhen` not holding: validated as optional (may be blank), not stripped from the payload. */
+  optional: Set<string>;
 };
 
 export function gateDecisions(gates: FieldGate[], scope: LogicScope, legacyCtx: Record<string, unknown>): GateDecisions {
   const shown = new Set<string>();
   const hidden = new Set<string>();
   const relax = new Set<string>();
+  const optional = new Set<string>();
   for (const g of gates) {
     if (!g.conditions.every((c) => conditionHolds(c, scope, legacyCtx))) {
       hidden.add(g.name);
@@ -104,19 +113,31 @@ export function gateDecisions(gates: FieldGate[], scope: LogicScope, legacyCtx: 
     shown.add(g.name);
     if (g.computed) continue;
     if (g.disabled || (g.enabledWhen && !conditionHolds(g.enabledWhen, scope, legacyCtx))) relax.add(g.name);
+    else if (g.requiredWhen && !conditionHolds(g.requiredWhen, scope, legacyCtx)) optional.add(g.name);
   }
   // A name drawn twice stays in the form while one of its bins shows.
   const skip = new Set([...hidden].filter((n) => !shown.has(n)));
-  return { skip, relax };
+  return { skip, relax, optional };
 }
 
-/** The form schema without the skipped fields and with the relaxed ones accepting anything. */
-export function narrowSchema(schema: z.ZodTypeAny, { skip, relax }: GateDecisions): z.ZodTypeAny {
-  if ((!skip.size && !relax.size) || !(schema instanceof z.ZodObject)) return schema;
+/**
+ * The field's schema with the required rule lifted: blank (`undefined`,
+ * `null`, `""`, `[]`) passes, anything else still meets its other rules.
+ */
+function optionalOf(field: z.ZodTypeAny): z.ZodTypeAny {
+  return z.preprocess((v) => (v === "" || (Array.isArray(v) && v.length === 0) ? undefined : v), field.nullish());
+}
+
+/** The form schema without the skipped fields, the relaxed ones accepting anything, the optional ones allowed blank. */
+export function narrowSchema(schema: z.ZodTypeAny, { skip, relax, optional }: GateDecisions): z.ZodTypeAny {
+  if ((!skip.size && !relax.size && !optional.size) || !(schema instanceof z.ZodObject)) return schema;
   const shape = { ...(schema.shape as Record<string, z.ZodTypeAny>) };
   skip.forEach((n) => delete shape[n]);
   relax.forEach((n) => {
     if (n in shape) shape[n] = z.any();
+  });
+  optional.forEach((n) => {
+    if (n in shape) shape[n] = optionalOf(shape[n]);
   });
   return z.object(shape);
 }

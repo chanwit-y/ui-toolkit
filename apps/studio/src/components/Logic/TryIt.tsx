@@ -83,13 +83,13 @@ export function TryIt({ state }: { state: TryItState }) {
       <div className="sec-label">Try it</div>
       <div className="rounded-lg border border-line bg-panel p-3">
         {kind === 'condition' && result ? (
-          <div data-testid="logic-sample-result" className={cn('inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-ui font-semibold', result.raw ? 'bg-logic-value-tint text-logic-value' : 'bg-panel-2 text-ink-2')}>
+          <div key={String(result.raw)} data-testid="logic-sample-result" className={cn('logic-pop inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-ui font-semibold', result.raw ? 'bg-logic-value-tint text-logic-value' : 'bg-panel-2 text-ink-2')}>
             {result.raw ? <Check aria-hidden className="size-3.5" /> : <X aria-hidden className="size-3.5" />}
             {result.raw ? 'True' : 'False'}
           </div>
         ) : result ? (
           <>
-            <div data-testid="logic-sample-result" className="break-all font-mono text-[18px] font-semibold leading-tight text-ink">
+            <div key={result.text} data-testid="logic-sample-result" className="logic-pop break-all font-mono text-[18px] font-semibold leading-tight text-ink">
               {result.text}
             </div>
             {result.error ? (

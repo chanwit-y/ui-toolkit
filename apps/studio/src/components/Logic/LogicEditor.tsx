@@ -76,7 +76,7 @@ function InsertList({ env }: { env: LogicEnv }) {
   const fns = LOGIC_FUNCTIONS.filter((f) => !q || `${f.fn} ${f.hint}`.toLowerCase().includes(q))
   let lastGroup = ''
   return (
-    <aside aria-label="Insert" className="flex min-h-0 flex-col gap-2">
+    <aside aria-label="Insert" className="logic-fade-in flex min-h-0 flex-col gap-2">
       <div className="sec-label">Insert</div>
       <label className="flex items-center gap-1.5 rounded-md border border-line bg-surface px-2">
         <Search aria-hidden className="size-3.5 text-ink-3" />
@@ -226,7 +226,7 @@ function FormulaBody({
           placeholder="Type a field name, a number or a function — e.g. qty × price"
         />
         {empty && (
-          <div className="space-y-1">
+          <div className="logic-fade-in space-y-1">
             <div className="text-ui-xs text-ink-3">Start from</div>
             <div className="flex flex-wrap gap-1.5">
               {templates.map((t) => (

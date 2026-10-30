@@ -123,6 +123,7 @@ export const readTools: Tool[] = [
       const logic = {
         ...(item.condition ? { condition: printCondition(item.condition, names) } : {}),
         ...(item.enabledWhen ? { enabledWhen: printCondition(item.enabledWhen, names) } : {}),
+        ...(item.requiredWhen ? { requiredWhen: printCondition(item.requiredWhen, names) } : {}),
         ...(item.valueFormula
           ? { valueFormula: 'formulaId' in item.valueFormula ? `((${names.formulas.find((f) => f.id === (item.valueFormula as { formulaId: string }).formulaId)?.name ?? '?'}))` : printExpr(item.valueFormula.expr, names) }
           : {}),

@@ -27,6 +27,7 @@ export const menu: TMenu = [
   { label: "Drawer", icon: "panelRight", navigate: { page: "drawerDemo" } },
   { label: "Switch", icon: "toggleLeft", navigate: { page: "switchDemo" } },
   { label: "Logic", icon: "sigma", navigate: { page: "logicDemo" } },
+  { label: "Formula", icon: "calculator", navigate: { page: "formulaDemo" } },
   { label: "Custom actions", icon: "terminal", navigate: { page: "customActionsDemo" } },
   { label: "Custom components", icon: "puzzle", navigate: { page: "customComponentsDemo" } },
   { label: "Upload", icon: "upload", navigate: { page: "uploadDemo" } },

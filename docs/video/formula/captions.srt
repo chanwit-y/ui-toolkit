@@ -1,0 +1,111 @@
+1
+00:00:00,700 --> 00:00:07,532
+Gummy formulas, in full. Nine functions, five operators, and every place a formula can run.
+
+2
+00:00:08,482 --> 00:00:17,383
+Start with arithmetic: plus, minus, times and divide, with parentheses. Each value here is a formula, reading the form as you type.
+
+3
+00:00:17,383 --> 00:00:21,363
+ROUND sets the decimals, and a format writes the result in baht.
+
+4
+00:00:21,813 --> 00:00:28,117
+The ampersand joins text, with fields and quoted words side by side. LEN counts the characters.
+
+5
+00:00:28,567 --> 00:00:33,066
+MIN and MAX pick the smallest and the largest. ABS drops the sign.
+
+6
+00:00:33,354 --> 00:00:40,182
+TODAY is the current date, and DAYS counts the days between two dates. Pick a start date, and the count follows.
+
+7
+00:00:40,632 --> 00:00:45,875
+COUNT and SUM read a list. Here, that list is page data: twelve months of sales.
+
+8
+00:00:45,875 --> 00:00:53,620
+COUNT gives the number of months. SUM adds up any field you name. And they combine, so revenue over months is a monthly average.
+
+9
+00:00:54,070 --> 00:00:58,847
+Leave an input blank, and the result stays blank, instead of a broken number.
+
+10
+00:00:59,769 --> 00:01:07,106
+Each formula can choose otherwise. Count blanks as zero, or treat a divide by zero as an error, drawn as a dash.
+
+11
+00:01:07,556 --> 00:01:13,340
+A formula can also fill a field. Subtotal is computed and locked, and it is sent with the form.
+
+12
+00:01:13,340 --> 00:01:19,833
+A condition can compare a formula too. Under a subtotal of five thousand, the discount code stays locked.
+
+13
+00:01:19,833 --> 00:01:29,100
+Raise the quantity. Formulas can be saved, reused by name, and can call a rule. Total takes the subtotal, the rule's discount rate, and VAT.
+
+14
+00:01:29,100 --> 00:01:32,558
+And past five thousand, the discount code unlocks.
+
+15
+00:01:32,723 --> 00:01:40,894
+In a table, a formula is a computed column. Density divides two fields of each row, and Member for counts days with DAYS and TODAY.
+
+16
+00:01:41,344 --> 00:01:50,096
+So far, you wrote every formula. The formula element lets your users write their own, in the running app. They click a value, and an editor opens.
+
+17
+00:01:50,096 --> 00:02:00,115
+They get the same editor as the studio. Search the Insert list, or type a word and let the bar complete it. Try it follows every keystroke, and a slip is caught right there.
+
+18
+00:02:00,414 --> 00:02:06,405
+Show as picks the format: number, currency, percent or date. Done puts it on the page.
+
+19
+00:02:07,333 --> 00:02:11,755
+It stays in their browser across a reload, kept per page and per element.
+
+20
+00:02:13,246 --> 00:02:15,648
+And Reset goes back to where it started.
+
+21
+00:02:17,865 --> 00:02:23,058
+In Gummy Studio, the Formula tile drops a value on the canvas and opens the editor.
+
+22
+00:02:23,058 --> 00:02:30,342
+The Insert list holds the form's fields, page data and saved formulas, then all nine functions, each with a short hint.
+
+23
+00:02:30,342 --> 00:02:37,064
+Or just type a word. The bar completes it, writes the right syntax, and shows what each function needs next.
+
+24
+00:02:37,064 --> 00:02:43,667
+Decide what a blank or a divide by zero should do. Try it runs the real engine, and gives the reason for the error.
+
+25
+00:02:44,873 --> 00:02:49,037
+Done, and the formula sits in its cell, ready to edit in place.
+
+26
+00:02:49,487 --> 00:02:57,054
+Save a formula once, and use it anywhere by name. Total is built from Subtotal, a rule and VAT, with Try it beside it.
+
+27
+00:02:57,054 --> 00:03:01,449
+Used by lists every place it runs, and JSON is what ships to the app.
+
+28
+00:03:02,850 --> 00:03:08,778
+Nine functions, five operators, one formula language, all as configuration.

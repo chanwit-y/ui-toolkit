@@ -2174,6 +2174,7 @@ export type TElement =
   | PaperElement
   | CardElement
   | HtmlContentElement
+  | FormulaWidgetElement
   | CustomComponentElement
   | ApprovalLineElement
   | SwitchProfileElement
@@ -2315,6 +2316,7 @@ export type BinType =
   | "paper"
   | "card"
   | "html"
+  | "formula"
   | "custom"
   | "approvalline"
   | "switchprofile"
@@ -3164,6 +3166,41 @@ export type HtmlContentElement = {
 };
 
 /**
+ * The `formula` element: a formula the **end user** writes in the running
+ * app. It shows the result as a typography; a click opens a modal with the
+ * formula text (`core/formulaText.ts` grammar — the enclosing form's fields
+ * by name, page data, functions, operators), a live result and the output
+ * format. The user's formula is kept per page + `name` in browser storage
+ * (`persist`), falling back to the config's `formula`. Display-only: not a
+ * field of the enclosing form (`schema.ts` skips it).
+ */
+export type FormulaWidgetElement = {
+  name: string;
+  /** A caption above the result. */
+  label?: string;
+  /** Shown (muted) until the user sets a formula and no `formula` is configured. */
+  placeholder?: string;
+  /** The starting formula; "Reset" in the modal returns to it. */
+  formula?: Expr;
+  /** The starting output format (the user may change it unless `allowFormat: false`). */
+  format?: CellFormat;
+  onEmpty?: FormulaBlankPolicy;
+  onDivideByZero?: FormulaBlankPolicy;
+  /** The result typography's look. */
+  variant?: TypographyElement["variant"];
+  weight?: TypographyElement["weight"];
+  color?: TypographyElement["color"];
+  align?: TypographyElement["align"];
+  /** Where the user's formula is kept: `local` (default) / `session` storage under `gummy.formula.<page key>.<name>`, or `none` (memory only). */
+  persist?: "local" | "session" | "none";
+  /** Let the user change the output format in the modal (default true). */
+  allowFormat?: boolean;
+  /** The edit button's label / the modal title (default "Edit formula"). */
+  editLabel?: string;
+  className?: string;
+};
+
+/**
  * The `custom` element (see the grilled custom-components design): a React
  * component the consumer coded in the app and registered under `component`
  * in `<ComponentsProvider components={…}>`. Display-only — not a field of the
@@ -3365,6 +3402,11 @@ export type FieldValueMode = "initial" | "computed";
 export type FieldLogic = {
   /** Enabled while it holds; a disabled field is not validated but is submitted. */
   enabledWhen?: AnyCondition;
+  /**
+   * With `isRequired`: required only while it holds — otherwise the field
+   * validates as optional (its other rules still apply) and is not stripped from the payload.
+   */
+  requiredWhen?: AnyCondition;
   /** How a `value` formula feeds the field (default `initial`). */
   valueMode?: FieldValueMode;
 };

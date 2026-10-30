@@ -1,0 +1,67 @@
+1
+00:00:00,700 --> 00:00:10,028
+Gummy can now calculate. Formulas compute a value, rules pick one, and conditions show, hide or enable anything, all as configuration.
+
+2
+00:00:10,978 --> 00:00:18,181
+This form is config alone. Type a quantity and a price, and the subtotal, the discount and the total follow as you go.
+
+3
+00:00:18,181 --> 00:00:22,156
+Cross ten thousand, and a rule moves the discount to its next tier.
+
+4
+00:00:22,156 --> 00:00:29,887
+Pick Business. The company field appears, and the tax ID becomes required. A hidden field is neither validated nor sent.
+
+5
+00:00:30,337 --> 00:00:37,306
+In Gummy Studio, every item has a logic panel, and a condition is built by picking, not by typing syntax.
+
+6
+00:00:37,306 --> 00:00:42,821
+The operators and the value follow the field: its options here, a number box for a number.
+
+7
+00:00:43,572 --> 00:00:48,313
+Saved rules sit in the same list, so a condition used twice is written once.
+
+8
+00:00:48,763 --> 00:00:53,670
+Formulas get one smart bar. Start from a template, or just type a word.
+
+9
+00:00:53,670 --> 00:01:00,988
+It suggests fields, functions and saved formulas, writes the right syntax, and shows what each function needs next.
+
+10
+00:01:00,988 --> 00:01:07,152
+Choose how the result is shown, and Try it runs the real engine on sample values, already filled in.
+
+11
+00:01:08,187 --> 00:01:14,947
+A rule is a stack of cards: if, else if, otherwise. Checked from the top, the first match wins.
+
+12
+00:01:14,947 --> 00:01:20,311
+Change a sample, and the matching card moves with it, with a tick or a cross on every line.
+
+13
+00:01:21,707 --> 00:01:26,841
+The Logic tab shows where each saved item is used, one click from the item itself.
+
+14
+00:01:29,007 --> 00:01:32,964
+Rename a field, and the studio offers to bring its logic along.
+
+15
+00:01:35,045 --> 00:01:42,316
+And it all runs from JSON in the real app. The Book shop reads the next step on an order from a rule, and its age from a formula.
+
+16
+00:01:42,316 --> 00:01:45,995
+Another order, another answer, with no code behind it.
+
+17
+00:01:46,695 --> 00:01:51,112
+Gummy UI. Configure the logic, and keep your code for the business.

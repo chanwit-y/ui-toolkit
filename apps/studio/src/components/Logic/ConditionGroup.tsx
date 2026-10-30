@@ -47,7 +47,8 @@ export function SampleDot({ cond }: { cond: Cond }) {
       role="img"
       aria-label={holds ? 'holds for the samples' : 'fails for the samples'}
       title={holds ? 'True for the Try-it samples' : 'False for the Try-it samples'}
-      className={cn('grid size-4 shrink-0 place-items-center rounded-full text-[10px] font-bold', holds ? 'bg-logic-value-tint text-logic-value' : 'bg-panel-2 text-ink-3')}
+      key={String(holds)}
+      className={cn('logic-dot logic-pop grid size-4 shrink-0 place-items-center rounded-full text-[10px] font-bold', holds ? 'bg-logic-value-tint text-logic-value' : 'bg-panel-2 text-ink-3')}
     >
       {holds ? '✓' : '✗'}
     </span>

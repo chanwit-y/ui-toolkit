@@ -18,6 +18,7 @@ import filecollection from './guides/filecollection.md' with { type: 'text' }
 import display from './guides/display.md' with { type: 'text' }
 import formlist from './guides/formlist.md' with { type: 'text' }
 import html from './guides/html.md' with { type: 'text' }
+import formula from './guides/formula.md' with { type: 'text' }
 import modal from './guides/modal.md' with { type: 'text' }
 import profile from './guides/profile.md' with { type: 'text' }
 import radio from './guides/radio.md' with { type: 'text' }
@@ -61,6 +62,7 @@ export const GUIDES: Record<string, string> = {
   filecollection,
   formlist,
   html,
+  formula,
   modal,
   profile,
   radio,

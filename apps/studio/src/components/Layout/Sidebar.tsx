@@ -2,6 +2,8 @@ import { CodeViewer, cn } from '../common'
 import { ButtonConfigPanel } from './ButtonConfigPanel'
 import { CardConfigPanel } from './CardConfigPanel'
 import { HtmlContentConfigPanel } from './HtmlContentConfigPanel'
+import { FormulaWidgetConfigPanel } from './FormulaWidgetConfigPanel'
+import type { FormulaWidgetConfig } from './types'
 import { CustomComponentConfigPanel } from './CustomComponentConfigPanel'
 import { ApprovalLineConfigPanel } from './ApprovalLineConfigPanel'
 import { ReplaceProfileConfigPanel, SwitchProfileConfigPanel } from './ProfileConfigPanel'
@@ -294,6 +296,8 @@ export function Sidebar({ gridConfigJson, fullGridCss }: SidebarProps) {
             <CardConfigPanel itemId={selectedItem.id} config={selectedItem.config as CardConfig} />
           ) : selectedItem.type === 'html' && selectedItem.config ? (
             <HtmlContentConfigPanel itemId={selectedItem.id} config={selectedItem.config as HtmlContentConfig} />
+          ) : selectedItem.type === 'formula' && selectedItem.config ? (
+            <FormulaWidgetConfigPanel itemId={selectedItem.id} config={selectedItem.config as FormulaWidgetConfig} />
           ) : selectedItem.type === 'custom' && selectedItem.config ? (
             <CustomComponentConfigPanel itemId={selectedItem.id} config={selectedItem.config as CustomComponentConfig} />
           ) : selectedItem.type === 'approvalline' && selectedItem.config ? (

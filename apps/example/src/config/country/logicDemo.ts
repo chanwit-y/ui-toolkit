@@ -124,6 +124,9 @@ export const containerLogicDemo: Container[] = [
       },
       { ...textField("company", "Company name", { isRequired: true }, half), condition: { rule: "isBusiness" } },
 
+      ...section("Required when", "Tax ID is required only for a Business customer: for Personal it may be left blank."),
+      textField("taxId", "Tax ID", { isRequired: true, errorMessage: "A business needs a tax ID", requiredWhen: { rule: "isBusiness" } }, half),
+
       ...section("Enabled when", "Discount code unlocks once the subtotal reaches 5,000. Save is clickable only while Accept the terms is on; a disabled field is not validated but is still sent."),
       textField("discountCode", "Discount code", {
         helperText: "Needs a subtotal of 5,000",
