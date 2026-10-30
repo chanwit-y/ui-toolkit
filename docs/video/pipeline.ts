@@ -215,6 +215,8 @@ export async function buildVideo(spec: VideoSpec, argv = process.argv.slice(2)) 
         `;${lines.map((_, i) => `[a${i}]`).join('')}amix=inputs=${lines.length}:normalize=0,apad=whole_dur=${total.toFixed(3)}[a]`,
       '-map', '[a]', '-ar', '48000', audio])
 
+    // A caption lingers briefly, but never into the next line's (they'd stack).
+    const captionEnd = (i: number, min = 0) => Math.min(Math.max(lines[i].end + 0.35, lines[i].start + min), lines[i + 1]?.start ?? Infinity)
     const ass = join(work, 'captions.ass')
     writeFileSync(ass, [
       '[Script Info]', 'ScriptType: v4.00+', 'PlayResX: 1920', 'PlayResY: 1080', 'WrapStyle: 0', '',
@@ -222,14 +224,14 @@ export async function buildVideo(spec: VideoSpec, argv = process.argv.slice(2)) 
       'Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding',
       'Style: Caption,Helvetica Neue,44,&H00FFFFFF,&H00FFFFFF,&H64140E1E,&H64140E1E,0,0,0,0,100,100,0,0,3,18,0,2,260,260,64,1', '',
       '[Events]', 'Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text',
-      ...lines.map((l) => `Dialogue: 0,${assTime(l.start)},${assTime(Math.max(l.end + 0.35, l.start + 1.4))},Caption,,0,0,0,,${l.text}`),
+      ...lines.map((l, i) => `Dialogue: 0,${assTime(l.start)},${assTime(captionEnd(i, 1.4))},Caption,,0,0,0,,${l.text}`),
     ].join('\n') + '\n')
 
     const final = join(out, spec.outFile)
     run('ffmpeg', ['-y', '-loglevel', 'error', '-i', video, '-i', audio, '-vf', `ass=${ass}`, '-map', '0:v', '-map', '1:a',
       '-c:v', 'libx264', '-preset', 'slow', '-crf', '18', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', '-shortest', final])
 
-    writeFileSync(join(spec.dir, 'captions.srt'), lines.map((l, i) => `${i + 1}\n${srtTime(l.start)} --> ${srtTime(l.end + 0.35)}\n${l.text}\n`).join('\n'))
+    writeFileSync(join(spec.dir, 'captions.srt'), lines.map((l, i) => `${i + 1}\n${srtTime(l.start)} --> ${srtTime(captionEnd(i))}\n${l.text}\n`).join('\n'))
     writeFileSync(join(spec.dir, 'script.md'), [
       `# ${spec.title} — narration and timings`,
       '',

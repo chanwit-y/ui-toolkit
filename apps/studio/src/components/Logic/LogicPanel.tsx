@@ -52,9 +52,10 @@ function FieldRenameNotice({ item }: { item: GridItemData }) {
     const savedBlocked = (project?.snapshot.pages ?? []).some((pg) => pg.id !== pageId && pageFieldNames(pg.grid.items).includes(prev))
     if (pageCount + (savedBlocked ? 0 : savedCount) > 0) notice = { pageCount, savedCount, savedBlocked }
   }
-  // Nothing pending: the current name is the settled one.
+  // Nothing pending: the current name is the settled one. A blank name is a
+  // rename in progress (cleared before retyping), so the old one is kept.
   useEffect(() => {
-    if (!notice) settledNames.set(item.id, name)
+    if (!notice && name.trim()) settledNames.set(item.id, name)
   })
   if (!notice || prev === undefined) return null
   const settle = () => {

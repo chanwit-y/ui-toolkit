@@ -1,3 +1,10 @@
+# Gummy videos
+
+Four narrated videos share this pipeline: the Studio intro below, `grid/`, `charts/` and `logic/`
+(`bun logic/build.ts` → `logic/out/gummy-logic.mp4`, ~110 s, scenes `l1`–`l8`: formulas, rules and
+conditions over `api` + `example` + `studio` + `demo-api` + `demo`; the studio runs on its own seed
+in a fresh browser context, so unlike the others it writes nothing to `demo/gummy`).
+
 # Gummy Studio intro video
 
 A ~85-second product intro over the Book shop demo (plan: `docs/prompts/intro-video.md`). Every

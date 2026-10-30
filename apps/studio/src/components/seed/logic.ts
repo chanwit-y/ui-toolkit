@@ -108,7 +108,8 @@ export function logicDemoSeedItems(): GridItemData[] {
     label: 'Text Field',
     type: 'textfield',
     settings: createDefaultItemSettings({ colSpan }),
-    config: { ...createDefaultTextFieldConfig(name), label, errorMessage: `${label} is required`, ...extra },
+    // The canvas previews a set error message, so only a required field has one.
+    config: { ...createDefaultTextFieldConfig(name), label, ...(extra.isRequired ? { errorMessage: `${label} is required` } : {}), ...extra },
     ...item,
   })
   const column = (accessor: string, header: string, extra: Partial<DataTableColumnConfig> = {}): DataTableColumnConfig => ({

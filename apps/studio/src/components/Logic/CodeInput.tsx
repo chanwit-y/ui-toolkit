@@ -168,7 +168,7 @@ export function CodeInput({ value, onChange, scope, formulas, rules, error, erro
           className={multiline ? 'min-h-24' : undefined}
         />
         {items.length > 0 && (
-          <ul role="listbox" aria-label="Suggestions" className="logic-drop-in absolute left-0 top-full z-50 mt-1 max-h-64 w-80 overflow-auto rounded-lg border border-line bg-surface py-1 shadow-xl">
+          <ul role="listbox" aria-label="Suggestions" className="logic-drop-in absolute left-0 top-full z-50 mt-1 max-h-64 w-full max-w-80 overflow-auto rounded-lg border border-line bg-surface py-1 shadow-xl">
             {items.map((s, i) => (
               <li key={`${s.label}-${i}`} role="option" aria-selected={i === active}>
                 <button
