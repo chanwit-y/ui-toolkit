@@ -1247,6 +1247,493 @@
       ],
       "description": "Line-clamp choices for a data table cell / column: `0` = wrap freely."
     },
+    "ChartAxisConfig": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "min": {
+          "type": "string"
+        },
+        "max": {
+          "type": "string"
+        },
+        "format": {
+          "$ref": "#/definitions/ColumnFormatConfig",
+          "description": "Tick-label format; type `''` = plain."
+        },
+        "showGrid": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "title",
+        "min",
+        "max",
+        "format",
+        "showGrid"
+      ],
+      "additionalProperties": false,
+      "description": "One cartesian axis (engine `ChartAxisDef`); numbers as text, `''` = auto."
+    },
+    "ChartConfig": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Binding name; the state slice defaults to `${name}Selected`."
+        },
+        "title": {
+          "type": "string",
+          "description": "`''` = no header."
+        },
+        "subtitle": {
+          "type": "string"
+        },
+        "footnote": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/definitions/ChartType"
+        },
+        "endpointId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The data endpoint, by `EndpointDef.id` (`null` = unwired)."
+        },
+        "dataPath": {
+          "type": "string",
+          "description": "Dot path to the row array in the response; `''` = the response is the array."
+        },
+        "rowsBinding": {
+          "$ref": "#/definitions/ItemBinding",
+          "description": "Rows from a page load instead of the endpoint (engine `items`); `null` = the endpoint."
+        },
+        "requestMapping": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/RequestMapRow"
+          },
+          "description": "Engine `api.params` / `api.query` / `api.body` — one row per request key (no filter sources)."
+        },
+        "xField": {
+          "type": "string",
+          "description": "The category / slice label / indicator accessor (scatter reads `options.xField`, gauge none)."
+        },
+        "xFormat": {
+          "$ref": "#/definitions/ColumnFormatConfig",
+          "description": "How `xField` shows; a `date` type with a pattern also buckets rows by that label."
+        },
+        "splitBy": {
+          "type": "string",
+          "description": "A field whose distinct values each become a series; `''` = manual series."
+        },
+        "series": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ChartSeriesConfig"
+          }
+        },
+        "xAxis": {
+          "$ref": "#/definitions/ChartAxisConfig"
+        },
+        "yAxis": {
+          "$ref": "#/definitions/ChartAxisConfig"
+        },
+        "yAxisRight": {
+          "$ref": "#/definitions/ChartAxisConfig",
+          "description": "`barLine` only."
+        },
+        "options": {
+          "$ref": "#/definitions/ChartOptionsConfig"
+        },
+        "referenceLines": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ChartReferenceLineConfig"
+          }
+        },
+        "legend": {
+          "type": "object",
+          "properties": {
+            "show": {
+              "type": "boolean"
+            },
+            "position": {
+              "$ref": "#/definitions/ChartLegendPosition"
+            }
+          },
+          "required": [
+            "show",
+            "position"
+          ],
+          "additionalProperties": false
+        },
+        "showDataLabels": {
+          "type": "boolean",
+          "description": "Selective direct labels: ends of bars, the last point of a line."
+        },
+        "height": {
+          "type": "string",
+          "description": "CSS length of the plot; `''` = 320px."
+        },
+        "emptyText": {
+          "type": "string",
+          "description": "`''` = \"No data\"."
+        },
+        "clickNavigate": {
+          "$ref": "#/definitions/StudioNavigate",
+          "description": "Click → page; absent = off."
+        },
+        "clickState": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "stateKey": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "enabled",
+            "stateKey"
+          ],
+          "additionalProperties": false,
+          "description": "Click → page data; absent = off. `stateKey` `''` = `${name}Selected`."
+        }
+      },
+      "required": [
+        "name",
+        "title",
+        "subtitle",
+        "footnote",
+        "type",
+        "endpointId",
+        "dataPath",
+        "rowsBinding",
+        "requestMapping",
+        "xField",
+        "xFormat",
+        "splitBy",
+        "series",
+        "xAxis",
+        "yAxis",
+        "yAxisRight",
+        "options",
+        "referenceLines",
+        "legend",
+        "showDataLabels",
+        "height",
+        "emptyText"
+      ],
+      "additionalProperties": false,
+      "description": "Editable config for a `chart` item (see `spec/gummy-chart-spec.md` §3). Rows come from `endpointId` + `dataPath` + `requestMapping` (literal / URL / page-state sources — a chart has no filter form) or from a page load (`rowsBinding`); the clicked datum is page data `<name>Selected` while `clickState.enabled`, and `clickNavigate` plays with `row` params reading it."
+    },
+    "ChartGaugeBandConfig": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        },
+        "color": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "to",
+        "color"
+      ],
+      "additionalProperties": false,
+      "description": "A gauge colour band up to `to` (a number as text; `''` on the last band = the max)."
+    },
+    "ChartLegendPosition": {
+      "type": "string",
+      "enum": [
+        "top",
+        "bottom",
+        "left",
+        "right"
+      ]
+    },
+    "ChartOptionsConfig": {
+      "type": "object",
+      "properties": {
+        "orientation": {
+          "type": "string",
+          "enum": [
+            "vertical",
+            "horizontal"
+          ],
+          "description": "bar, funnel"
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "grouped",
+            "stacked",
+            "stackGroup"
+          ],
+          "description": "bar"
+        },
+        "barMaxWidth": {
+          "type": "string",
+          "description": "bar, barLine: px as text, `''` = auto"
+        },
+        "smooth": {
+          "type": "boolean",
+          "description": "line, area, barLine"
+        },
+        "showMarkers": {
+          "type": "boolean"
+        },
+        "stacked": {
+          "type": "boolean",
+          "description": "area"
+        },
+        "innerRadius": {
+          "type": "string",
+          "description": "pie: `''` = pie, `\"60%\"` = donut"
+        },
+        "labelPosition": {
+          "type": "string",
+          "enum": [
+            "outside",
+            "inside",
+            "none"
+          ],
+          "description": "pie, funnel"
+        },
+        "centerText": {
+          "type": "string",
+          "description": "donut: static text, or `$total` = the sum of the values"
+        },
+        "xField": {
+          "type": "string",
+          "description": "scatter: the numeric x accessor (replaces the category `xField`)"
+        },
+        "sizeField": {
+          "type": "string",
+          "description": "scatter: `''` = fixed marker size, a field = bubble"
+        },
+        "labelField": {
+          "type": "string",
+          "description": "scatter: `''` = no point labels"
+        },
+        "radarShape": {
+          "type": "string",
+          "enum": [
+            "polygon",
+            "circle"
+          ],
+          "description": "radar"
+        },
+        "radarMax": {
+          "type": "string",
+          "description": "radar: `''` = auto per indicator"
+        },
+        "gaugeShape": {
+          "type": "string",
+          "enum": [
+            "radial",
+            "linear"
+          ],
+          "description": "gauge"
+        },
+        "min": {
+          "type": "string",
+          "description": "gauge: `''` = 0 / 100"
+        },
+        "max": {
+          "type": "string"
+        },
+        "bands": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ChartGaugeBandConfig"
+          }
+        },
+        "yField": {
+          "type": "string",
+          "description": "heatmap"
+        },
+        "valueField": {
+          "type": "string"
+        },
+        "hue": {
+          "type": "string",
+          "description": "heatmap: a Radix hue name for the sequential ramp; `''` = the accent"
+        },
+        "showValues": {
+          "type": "boolean"
+        },
+        "funnelShape": {
+          "type": "string",
+          "enum": [
+            "funnel",
+            "pyramid"
+          ],
+          "description": "funnel"
+        },
+        "sort": {
+          "type": "string",
+          "enum": [
+            "none",
+            "asc",
+            "desc"
+          ]
+        }
+      },
+      "required": [
+        "orientation",
+        "mode",
+        "barMaxWidth",
+        "smooth",
+        "showMarkers",
+        "stacked",
+        "innerRadius",
+        "labelPosition",
+        "centerText",
+        "xField",
+        "sizeField",
+        "labelField",
+        "radarShape",
+        "radarMax",
+        "gaugeShape",
+        "min",
+        "max",
+        "bands",
+        "yField",
+        "valueField",
+        "hue",
+        "showValues",
+        "funnelShape",
+        "sort"
+      ],
+      "additionalProperties": false,
+      "description": "Every per-type knob, always present so a type switch keeps what was set; the panel shows the ones the type uses."
+    },
+    "ChartReferenceLineConfig": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Studio-only stable card identity; never exported."
+        },
+        "label": {
+          "type": "string",
+          "description": "`''` = the formatted value."
+        },
+        "value": {
+          "type": "string"
+        },
+        "axis": {
+          "type": "string",
+          "enum": [
+            "x",
+            "y"
+          ],
+          "description": "The axis the line crosses (`y` = a horizontal line on a vertical bar)."
+        },
+        "color": {
+          "type": "string",
+          "description": "A Radix hue name; `''` = the secondary text colour."
+        },
+        "dashed": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "value",
+        "axis",
+        "color",
+        "dashed"
+      ],
+      "additionalProperties": false,
+      "description": "A reference line (engine `ChartReferenceLine`): `value` is a number as text, or a dot path into the raw response."
+    },
+    "ChartSeriesConfig": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Studio-only stable card identity; never exported."
+        },
+        "field": {
+          "type": "string",
+          "description": "Row accessor (dot path)."
+        },
+        "label": {
+          "type": "string",
+          "description": "`''` = the field name."
+        },
+        "color": {
+          "type": "string",
+          "description": "A Radix hue name; `''` = the palette slot by position."
+        },
+        "axis": {
+          "type": "string",
+          "enum": [
+            "left",
+            "right"
+          ],
+          "description": "`barLine` only."
+        },
+        "shape": {
+          "type": "string",
+          "enum": [
+            "bar",
+            "line"
+          ],
+          "description": "`barLine` only."
+        },
+        "stack": {
+          "type": "string",
+          "description": "`bar` with `options.mode: stackGroup`: series sharing an id stack together; `''` = own stack."
+        },
+        "format": {
+          "$ref": "#/definitions/ColumnFormatConfig",
+          "description": "Value formatting (tooltip, direct labels, the series' axis)."
+        }
+      },
+      "required": [
+        "id",
+        "field",
+        "label",
+        "color",
+        "axis",
+        "shape",
+        "stack",
+        "format"
+      ],
+      "additionalProperties": false,
+      "description": "One series card: a value field across the rows (engine `ChartSeriesDef`)."
+    },
+    "ChartType": {
+      "type": "string",
+      "enum": [
+        "bar",
+        "line",
+        "area",
+        "barLine",
+        "pie",
+        "scatter",
+        "radar",
+        "gauge",
+        "heatmap",
+        "funnel"
+      ],
+      "description": "The ten v1 chart types (engine `ChartElement.chart`)."
+    },
     "CheckboxConfig": {
       "type": "object",
       "properties": {

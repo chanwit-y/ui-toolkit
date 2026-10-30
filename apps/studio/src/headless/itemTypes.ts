@@ -53,6 +53,12 @@ export const ITEM_TYPES: Record<ComponentType, ItemTypeInfo> = {
     canvases: none,
     guide: 'filecollection',
   },
+  chart: {
+    configType: 'ChartConfig',
+    summary: 'A chart over an endpoint or page data: ten types, series, axes, reference lines, click-through.',
+    canvases: none,
+    guide: 'chart',
+  },
   repeater: { configType: 'RepeaterConfig', summary: 'A read-only list: its item template renders once per array item, with the item in scope for bindings.', canvases: one('item template (bind with source "row")'), guide: 'repeater' },
   text: { configType: 'TextConfig', summary: 'A short piece of text (static or bound).', canvases: none, guide: 'display' },
   typography: { configType: 'TypographyConfig', summary: 'A heading / body text in a typography variant (static or bound).', canvases: none, guide: 'display' },

@@ -7,6 +7,7 @@ import { bookshopFolders, bookshopWorkspace, bookshopWorkspaceFile, BOOKSHOP_KEY
 import { PORTAL_KEY } from '../portal/project'
 import { GLASS_KEY } from '../glass/project'
 import { GRID_KEY } from '../grid/project'
+import { CHARTS_KEY } from '../charts/project'
 
 /**
  * The Book shop demo's workspace (see the grilled design `bookshop-demo`):
@@ -70,7 +71,7 @@ describe('Book shop workspace', () => {
 
   test('exports the Book shop as a valid, fully wired project folder', () => {
     const folders = bookshopFolders()
-    expect(Object.keys(folders)).toEqual([BOOKSHOP_KEY, PORTAL_KEY, GLASS_KEY, GRID_KEY])
+    expect(Object.keys(folders)).toEqual([BOOKSHOP_KEY, PORTAL_KEY, GLASS_KEY, GRID_KEY, CHARTS_KEY])
     const { project, pages } = folders[BOOKSHOP_KEY]
     const refs = checkProject(project, pages)
     expect(Object.keys(project.pages)).toHaveLength(11)
@@ -109,6 +110,21 @@ describe('Book shop workspace', () => {
     })
   })
 
+  test('exports the Charts showcase: every chart type over the analytics endpoints, a donut that opens a genre', () => {
+    const { project, pages } = bookshopFolders()[CHARTS_KEY]
+    const refs = checkProject(project, pages, 'Charts showcase')
+    expect(Object.keys(project.pages)).toHaveLength(6)
+    expect(project.auth).toBeUndefined()
+    expect([...refs.apis].sort()).toEqual(['authorStats', 'cityStats', 'genreScores', 'genreStats', 'kpis', 'listBooks', 'orderFunnel', 'orderHeat', 'salesSeries', 'statusStats'])
+    const charts = collect(Object.values(pages), (o) => (o.type === 'chart' && o.element && typeof o.element === 'object' ? [(o.element as { chart: string }).chart] : []))
+    expect(new Set(charts)).toEqual(new Set(['bar', 'line', 'area', 'barLine', 'pie', 'scatter', 'radar', 'gauge', 'heatmap', 'funnel']))
+    const donut = collect(Object.values(pages), (o) => (o.type === 'chart' && (o.element as { name?: string })?.name === 'genreShare' ? [o.element] : []))[0] as Record<string, unknown>
+    expect(donut.clickNavigate).toEqual({ page: 'genreBooks', params: { genre: { type: 'row', key: 'genreId' } } })
+    expect(donut.clickState).toEqual({ stateKey: 'genreSelected' })
+    // No ECharts key ever reaches the saved document.
+    expect(JSON.stringify(pages)).not.toMatch(/echarts|series\.type|xAxis\.type/)
+  })
+
   const tracked = (key: string) => {
     const dir = join(demoGummy, 'projects', key)
     const project = JSON.parse(readFileSync(join(dir, 'project.json'), 'utf8')) as GummyProject
@@ -127,6 +143,8 @@ describe('Book shop workspace', () => {
     checkProject(glass.project, glass.bodies, 'Glass showcase')
     const grid = tracked(GRID_KEY)
     checkProject(grid.project, grid.bodies, 'Data grid showcase')
+    const charts = tracked(CHARTS_KEY)
+    checkProject(charts.project, charts.bodies, 'Charts showcase')
   })
 
   test("the studio opens the generated workspace.json without changing it", async () => {

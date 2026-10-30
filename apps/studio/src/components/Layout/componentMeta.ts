@@ -16,6 +16,7 @@ export type ComponentType =
   | 'formlist'
   | 'repeater'
   | 'filecollection'
+  | 'chart'
   | 'autocomplete'
   | 'textfield'
   | 'select'
@@ -85,6 +86,7 @@ export const COMPONENT_META_GROUPS: { category: string; items: ComponentMeta[] }
       { type: 'formlist', label: 'Form List' },
       { type: 'repeater', label: 'Repeater' },
       { type: 'filecollection', label: 'File Collection' },
+      { type: 'chart', label: 'Chart' },
     ],
   },
   {

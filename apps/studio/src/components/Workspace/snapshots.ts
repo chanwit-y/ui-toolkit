@@ -34,6 +34,8 @@ import {
   dataGridDemoSeedItems,
   FILE_COLLECTION_PAGE_ID,
   fileCollectionDemoSeedItems,
+  CHART_PAGE_ID,
+  chartDemoSeedItems,
   TABLE_LAYOUT_PAGE_ID,
   tableLayoutDemoSeedItems,
   CARD_PAGE_ID,
@@ -549,6 +551,31 @@ export function dataGridDemoPage(): PageDef {
  * `/file-collection`). Used by the fresh seed and appended to an existing
  * seeded project by `migrateV57`.
  */
+/**
+ * The "Charts" demo page of the seeded project (the example app's `/charts`,
+ * see `spec/gummy-chart-spec.md`). Used by the fresh seed and appended to an
+ * existing seeded project by `migrateV58`.
+ */
+export function chartDemoPage(): PageDef {
+  return {
+    id: CHART_PAGE_ID,
+    key: 'charts',
+    name: 'Charts',
+    path: '/charts',
+    grid: {
+      items: chartDemoSeedItems(),
+      containerSettings: defaultContainerSettings,
+      fieldSeq: 0,
+    },
+    parentId: 'seed-page-countries',
+  }
+}
+
+/**
+ * The "File collection" demo page of the seeded project (the example app's
+ * `/file-collection`). Used by the fresh seed and appended to an existing
+ * seeded project by `migrateV57`.
+ */
 export function fileCollectionDemoPage(): PageDef {
   return {
     id: FILE_COLLECTION_PAGE_ID,
@@ -863,6 +890,7 @@ export const OPTION_DEMO_MENU_ICONS: Record<string, string> = {
   [FORMATS_PAGE_ID]: 'hash',
   [DATA_GRID_PAGE_ID]: 'table',
   [FILE_COLLECTION_PAGE_ID]: 'folder',
+  [CHART_PAGE_ID]: 'chartBar',
   [CARD_PAGE_ID]: 'creditCard',
   [HTML_CONTENT_PAGE_ID]: 'code',
   [DRAWER_PAGE_ID]: 'panelRight',
@@ -909,6 +937,7 @@ export function countryProjectSnapshot(library: LibraryData): ProjectSnapshot {
       ...optionDemoPages(),
       formListDemoPage(),
       fileCollectionDemoPage(),
+      chartDemoPage(),
       repeaterDemoPage(),
       paginationDemoPage(),
       dataTableDemoPage(),

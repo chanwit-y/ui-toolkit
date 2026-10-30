@@ -60,6 +60,8 @@ import {
   FORMAT_DEMO_FIELDS,
   dataGridSeedEndpoints,
   fileCollectionSeedModels,
+  chartSeedModels,
+  chartSeedEndpoints,
   fileCollectionSeedEndpoints,
   DATA_TABLE_PAGE_ID,
   HTML_COLUMNS_PAGE_ID,
@@ -112,6 +114,7 @@ import {
   formatsDemoPage,
   dataGridDemoPage,
   fileCollectionDemoPage,
+  chartDemoPage,
   cardDemoPage,
   htmlContentDemoPage,
   drawerDemoPage,
@@ -1046,8 +1049,24 @@ function migrateV57(data: { projects: ProjectDef[]; library: LibraryData }): {
   library: LibraryData
 } {
   const seeded = seedLibraryAdditions(data.projects, data.library, fileCollectionSeedModels(), fileCollectionSeedEndpoints())
-  return {
+  return migrateV58({
     projects: seeded.projects.map((p) => (p.id === 'seed-project-country' ? appendDemoPages(p, [fileCollectionDemoPage()]) : p)),
+    library: seeded.library,
+  })
+}
+
+/**
+ * v58 → v59: the chart (see `spec/gummy-chart-spec.md`). A new item type, so
+ * no item changes; the library gains the analytics models + endpoints and the
+ * seeded project the **Charts** page.
+ */
+function migrateV58(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  const seeded = seedLibraryAdditions(data.projects, data.library, chartSeedModels(), chartSeedEndpoints())
+  return {
+    projects: seeded.projects.map((p) => (p.id === 'seed-project-country' ? appendDemoPages(p, [chartDemoPage()]) : p)),
     library: seeded.library,
   }
 }
@@ -1775,7 +1794,7 @@ export function withSeedLibrary(library: LibraryData): LibraryData {
 }
 
 /** The workspace version this build writes (and the newest it reads). */
-export const WORKSPACE_VERSION = 58
+export const WORKSPACE_VERSION = 59
 
 /** What a persisted payload migrates to: the stored fields at the current shape. */
 export type MigratedWorkspace = Pick<WorkspaceData, 'appearance' | 'user' | 'activity' | 'projects' | 'library'>
@@ -1988,7 +2007,11 @@ export function migrateWorkspace(persisted: unknown): MigratedWorkspace | null {
     const normalized = { ...library, auth: (library.auth ?? []).map((a) => normalizeAuthDef(a)) }
     return { appearance, user, activity, ...migrateV57({ projects: data.projects, library: normalized }) }
   }
-  if (data.version !== 58) return null
+  if (data.version === 58) {
+    const normalized = { ...library, auth: (library.auth ?? []).map((a) => normalizeAuthDef(a)) }
+    return { appearance, user, activity, ...migrateV58({ projects: data.projects, library: normalized }) }
+  }
+  if (data.version !== 59) return null
   // Same version, possibly older entry shapes (fields added without a bump): fill the defaults.
   return { appearance, user, activity, projects: data.projects, library: { ...library, auth: (library.auth ?? []).map((a) => normalizeAuthDef(a)) } }
 }

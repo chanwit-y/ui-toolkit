@@ -2,6 +2,7 @@ import type { ThemeProps } from '@radix-ui/themes'
 import type { DataTableAddButton, DataType } from '@gummy-ui/ui'
 import {
   ApprovalLineView,
+  ChartView,
   FileCollectionView,
   parseCollections,
   SwitchProfileView,
@@ -126,9 +127,11 @@ import type {
   UploadFileConfig,
   UploadImageConfig,
   FileCollectionConfig,
+  ChartConfig,
 } from './types'
 import { columnFormatToEngine, styleRulesToEngine, uploadAccept } from './types'
-import { dataTableGridFeatures } from './gridConfig'
+import { chartElementLook, dataTableGridFeatures } from './gridConfig'
+import { buildChartPreviewRows, previewReferenceLines } from './chartPreview'
 import { escapeClassName } from './utils'
 
 type GridItemProps = {
@@ -200,6 +203,8 @@ function thresholdsForType(type: GridItemData['type']): LiveThresholds {
     type === 'approvalline' ||
     // A file collection is a sidebar-shaped tree — it truncates names when narrow.
     type === 'filecollection' ||
+    // A chart scales to its cell; the sample data shows at any width.
+    type === 'chart' ||
     // The profile elements are a short list / a button and a banner.
     type === 'switchprofile' ||
     type === 'replaceprofile' ||
@@ -1525,6 +1530,33 @@ function ApprovalLineLivePreview({ config }: { config: ApprovalLineConfig }) {
   )
 }
 
+/**
+ * The real `ChartView` over deterministic sample rows (spec §3.5): the look
+ * keys come from the same export the runtime gets, so orientation, stacking,
+ * colours and the legend preview exactly; a "Sample data" pill marks the frame
+ * (the Live Preview fetches the endpoint for real). Always live and inert.
+ */
+function ChartLivePreview({ config }: { config: ChartConfig }) {
+  const element = useMemo(
+    () => ({ name: config.name, ...previewReferenceLines(chartElementLook(config)) }) as unknown as Parameters<typeof ChartView>[0]['element'],
+    [config],
+  )
+  const rows = useMemo(() => buildChartPreviewRows(config), [config])
+  const sourceLabel = config.rowsBinding ? 'Page data — sample' : 'Sample data'
+  return (
+    <div data-grid-item-content className="pointer-events-none h-full w-full">
+      <ChartView
+        element={element}
+        raw={rows}
+        status="ready"
+        badge={
+          <span className="absolute right-3 top-3 z-10 rounded-full bg-[var(--amber-a3)] px-2 py-0.5 text-[10px] text-[var(--amber-11)]">{sourceLabel}</span>
+        }
+      />
+    </div>
+  )
+}
+
 /** A small tree for the file collection's canvas preview (the real rows are fetched at runtime). */
 const FILE_COLLECTION_PREVIEW: FileCollectionGroup[] = parseCollections([
   {
@@ -1984,6 +2016,9 @@ function renderLive(item: GridItemData, isLive: boolean) {
   }
   if (item.type === 'filecollection' && item.config) {
     return <FileCollectionLivePreview config={item.config as FileCollectionConfig} />
+  }
+  if (item.type === 'chart' && item.config) {
+    return <ChartLivePreview config={item.config as ChartConfig} />
   }
   if (item.type === 'switchprofile' && item.config) {
     return <SwitchProfileLivePreview config={item.config as SwitchProfileConfig} />

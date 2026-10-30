@@ -18,6 +18,12 @@ import {
   uploadAccept,
   type FileCollectionConfig,
   type FileCollectionDeleteSlot,
+  type ChartConfig,
+  type ChartAxisConfig,
+  type ChartOptionsConfig,
+  CHART_TYPE_FEATURES,
+  createDefaultChartOptions,
+  chartStateKey,
   FILE_COLLECTION_MUTATION_SLOTS,
   defaultFileCollectionNewItems,
 } from './types'
@@ -1333,6 +1339,144 @@ function customComponentElement(c: CustomComponentConfig, refs: ButtonRefMaps): 
  * URL's `:param` DataValues (minus `skipParams`, which the element fills
  * itself) and the query extras.
  */
+
+/* ---------------------------------------------------------------- chart */
+
+const num = (text: string): number | undefined => {
+  const t = text.trim()
+  if (t === '') return undefined
+  const n = Number(t)
+  return Number.isFinite(n) ? n : undefined
+}
+
+function chartAxisDef(a: ChartAxisConfig, defaultGrid: boolean): Record<string, unknown> | undefined {
+  const out: Record<string, unknown> = {
+    ...(a.title ? { title: a.title } : {}),
+    ...(num(a.min) !== undefined ? { min: num(a.min) } : {}),
+    ...(num(a.max) !== undefined ? { max: num(a.max) } : {}),
+    ...columnFormatExport(a.format),
+    ...(a.showGrid !== defaultGrid ? { showGrid: a.showGrid } : {}),
+  }
+  return Object.keys(out).length ? out : undefined
+}
+
+/**
+ * The look of a chart (everything but its source, click-through and name):
+ * the engine keys spec §4 lists, only off the defaults and only those the
+ * type uses. Shared by the export and the canvas preview (which renders the
+ * real `ChartView` over sample rows).
+ */
+export function chartElementLook(c: ChartConfig): Record<string, unknown> {
+  const f = CHART_TYPE_FEATURES[c.type]
+  const o = c.options
+  const defaults = createDefaultChartOptions()
+  const uses = (key: keyof ChartOptionsConfig) => f.options.includes(key)
+  const series = (f.singleSeries ? c.series.slice(0, 1) : c.series).map((s) => ({
+    field: s.field,
+    ...(s.label ? { label: s.label } : {}),
+    ...(s.color ? { color: s.color } : {}),
+    ...(c.type === 'barLine' && s.axis === 'right' ? { axis: 'right' } : {}),
+    ...(c.type === 'barLine' && s.shape === 'line' ? { shape: 'line' } : {}),
+    ...(c.type === 'bar' && o.mode === 'stackGroup' && s.stack ? { stack: s.stack } : {}),
+    ...columnFormatExport(s.format),
+  }))
+  const options: Record<string, unknown> = {}
+  const keep = <K extends keyof ChartOptionsConfig>(key: K, value: unknown) => {
+    if (uses(key) && value !== undefined && value !== defaults[key]) options[key] = value
+  }
+  keep('orientation', o.orientation)
+  keep('mode', o.mode)
+  keep('barMaxWidth', num(o.barMaxWidth))
+  keep('smooth', o.smooth)
+  keep('showMarkers', o.showMarkers)
+  keep('stacked', o.stacked)
+  keep('innerRadius', o.innerRadius || undefined)
+  keep('labelPosition', o.labelPosition)
+  keep('centerText', o.centerText || undefined)
+  keep('sizeField', o.sizeField || undefined)
+  keep('labelField', o.labelField || undefined)
+  keep('radarShape', o.radarShape)
+  keep('radarMax', num(o.radarMax))
+  keep('gaugeShape', o.gaugeShape)
+  keep('min', num(o.min))
+  keep('max', num(o.max))
+  if (uses('bands') && o.bands.length) {
+    options.bands = o.bands.map((b) => ({
+      ...(num(b.to) !== undefined ? { to: num(b.to) } : {}),
+      ...(b.color ? { color: b.color } : {}),
+    }))
+  }
+  keep('hue', o.hue || undefined)
+  keep('showValues', o.showValues)
+  keep('funnelShape', o.funnelShape)
+  keep('sort', o.sort)
+  // scatter / heatmap read their fields through the engine's one vocabulary: x / y / value.
+  const x = c.type === 'scatter' ? o.xField : f.xField ? c.xField : ''
+  const xFormat = f.xField ? columnFormatExport(c.xFormat) : {}
+  const referenceLines = f.referenceLines
+    ? c.referenceLines
+        .map((l) => {
+          const value = num(l.value)
+          const path = l.value.trim()
+          if (value === undefined && !path) return undefined
+          return {
+            ...(l.label ? { label: l.label } : {}),
+            value: value !== undefined ? value : { path: path.split('.').map((s) => s.trim()).filter(Boolean) },
+            ...(l.axis === 'x' ? { axis: 'x' } : {}),
+            ...(l.color ? { color: l.color } : {}),
+            ...(l.dashed ? { dashed: true } : {}),
+          }
+        })
+        .filter((l): l is NonNullable<typeof l> => !!l)
+    : []
+  const xAxis = f.axes === 'xy' || f.axes === 'xyRight' || f.axes === 'titles' ? chartAxisDef(c.xAxis, false) : f.axes === 'radar' && c.xAxis.title ? { title: c.xAxis.title } : undefined
+  const yAxis = f.axes === 'xy' || f.axes === 'xyRight' || f.axes === 'titles' ? chartAxisDef(c.yAxis, true) : undefined
+  const yAxisRight = f.axes === 'xyRight' ? chartAxisDef(c.yAxisRight, false) : undefined
+  const legend = {
+    ...(c.legend.show ? {} : { show: false }),
+    ...(c.legend.position !== 'top' ? { position: c.legend.position } : {}),
+  }
+  return {
+    chart: c.type,
+    ...omitEmpty({ title: c.title, subtitle: c.subtitle, footnote: c.footnote, height: c.height, emptyText: c.emptyText }),
+    ...(x ? { x: { field: x, ...xFormat } } : {}),
+    ...(c.type === 'heatmap' && o.yField ? { y: { field: o.yField } } : {}),
+    ...(c.type === 'heatmap' && o.valueField ? { value: { field: o.valueField } } : {}),
+    ...(f.splitBy && c.splitBy ? { splitBy: c.splitBy } : {}),
+    series,
+    ...(xAxis ? { xAxis } : {}),
+    ...(yAxis ? { yAxis } : {}),
+    ...(yAxisRight ? { yAxisRight } : {}),
+    ...(Object.keys(options).length ? { options } : {}),
+    ...(referenceLines.length ? { referenceLines } : {}),
+    ...(Object.keys(legend).length ? { legend } : {}),
+    ...(c.showDataLabels ? { showDataLabels: true } : {}),
+  }
+}
+
+/** The engine `ChartElement` (spec §4): the look plus the source (`api` or `items`) and the click-through. */
+function chartElement(
+  c: ChartConfig,
+  resolveEndpoint: ResolveEndpoint,
+  refs: ButtonRefMaps,
+): Record<string, unknown> {
+  const rows = itemBindingValue(c.rowsBinding, refs)
+  const apiName = rows ? undefined : resolveEndpoint(c.endpointId)
+  const paths = c.dataPath.split('.').map((s) => s.trim()).filter(Boolean)
+  const clickNavigate = c.clickNavigate ? navigateTarget(c.clickNavigate, refs) : undefined
+  const stateKey = c.clickState?.enabled ? chartStateKey(c.name, c.clickState) : undefined
+  return {
+    name: c.name,
+    ...chartElementLook(c),
+    ...(rows ? { items: rows } : {}),
+    ...(apiName
+      ? { api: { name: apiName, ...(paths.length ? { paths } : {}), ...requestMaps(c.requestMapping, refs.loadKey) } }
+      : {}),
+    ...(clickNavigate ? { clickNavigate } : {}),
+    ...(stateKey ? { clickState: { stateKey } } : {}),
+  }
+}
+
 function readApiRef(
   read: FormListCrudRef,
   pathsText: string,
@@ -2051,6 +2195,8 @@ function buildElement(
         : undefined
     case 'filecollection':
       return item.config ? fileCollectionElement(item.config as FileCollectionConfig, endpoints, resolveEndpoint, refs) : undefined
+    case 'chart':
+      return item.config ? chartElement(item.config as ChartConfig, resolveEndpoint, refs) : undefined
     case 'text':
       // Config-less fallback keeps the pre-config behavior (label as content).
       return item.config

@@ -28,6 +28,7 @@ import {
   createDefaultRadioConfig,
   createDefaultRepeaterConfig,
   createDefaultFileCollectionConfig,
+  createDefaultChartConfig,
   createDefaultReplaceProfileConfig,
   createDefaultSelectFieldConfig,
   createDefaultSwitchConfig,
@@ -171,6 +172,7 @@ const DEFAULT_CONFIGS: Record<ComponentType, { prefix?: string; create: (name: s
   formlist: { prefix: 'formList', create: (n) => createDefaultFormListConfig(n) },
   repeater: { prefix: 'repeater', create: (n) => createDefaultRepeaterConfig(n) },
   filecollection: { prefix: 'fileCollection', create: (n) => createDefaultFileCollectionConfig(n) },
+  chart: { prefix: 'chart', create: (n) => createDefaultChartConfig(n) },
   text: { create: () => createDefaultTextConfig() },
   typography: { create: () => createDefaultTypographyConfig() },
   avatar: { prefix: 'avatar', create: (n) => createDefaultAvatarConfig(n) },
@@ -212,7 +214,7 @@ export function defaultItemConfig(type: ComponentType, name = ''): ItemConfig | 
 // falls back to the standard 2.
 const FULL_BLEED = new Set<ComponentType>([
   'datatable', 'datatableeditable', 'formlist', 'repeater', 'divider', 'container', 'paper', 'card', 'html',
-  'custom', 'approvalline', 'switchprofile', 'replaceprofile', 'workfloweditor', 'tab',
+  'custom', 'approvalline', 'switchprofile', 'replaceprofile', 'workfloweditor', 'tab', 'chart',
 ])
 const UPLOADS = new Set<ComponentType>(['uploadimage', 'uploadfile'])
 // A file collection is a sidebar-shaped tree: a quarter of the row on desktop, half on a tablet.

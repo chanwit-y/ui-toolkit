@@ -1,4 +1,4 @@
-import type { ButtonItemConfig, DataTableConfig, FileCollectionConfig, GridItemData, RepeaterConfig } from './types'
+import type { ButtonItemConfig, ChartConfig, DataTableConfig, FileCollectionConfig, GridItemData, RepeaterConfig } from './types'
 
 /**
  * Deep-clone a canvas tree with fresh ids (the mockup's `instantiate`): every
@@ -37,6 +37,8 @@ export function cloneItems(items: GridItemData[]): GridItemData[] {
         ;(item.config as RepeaterConfig).itemNavigate = null
       } else if (item.type === 'filecollection' && item.config) {
         delete (item.config as FileCollectionConfig).selectNavigate
+      } else if (item.type === 'chart' && item.config) {
+        delete (item.config as ChartConfig).clickNavigate
       }
       item.childCanvases?.forEach((c) => remap(c.items))
     }

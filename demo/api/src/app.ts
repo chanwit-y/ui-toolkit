@@ -5,6 +5,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { HttpError } from './http.ts';
+import { analyticsRoutes } from './routes/analytics.ts';
 import { authorRoutes } from './routes/authors.ts';
 import { bookRoutes } from './routes/books.ts';
 import { customerRoutes } from './routes/customers.ts';
@@ -47,7 +48,7 @@ export function createApp(options: AppOptions = {}) {
   );
 
   app.get('/api/health', (c) => c.json({ ok: true }));
-  for (const routes of [genreRoutes, authorRoutes, bookRoutes, customerRoutes, orderRoutes, staffRoutes, settingsRoutes, summaryRoutes, imageRoutes]) {
+  for (const routes of [genreRoutes, authorRoutes, bookRoutes, customerRoutes, orderRoutes, staffRoutes, settingsRoutes, summaryRoutes, analyticsRoutes, imageRoutes]) {
     app.route('/api', routes(store));
   }
 

@@ -130,6 +130,42 @@ export type {
 export * from "./components/Repeater";
 export type { RepeaterElement, RepeaterProps, RepeaterItemSpan } from "./components/@types";
 export * from "./components/FileCollection";
+export * from "./components/Chart";
+export {
+	buildChartModel,
+	datumAt,
+	chartKind,
+	chartRows,
+	parseChartRaw,
+	resolveReferenceLines,
+	isCartesian,
+	supportsSplitBy,
+	singleSeries,
+	supportsReferenceLines,
+	needsXField,
+	CHART_TYPES,
+	DEFAULT_CHART_HEIGHT,
+	DEFAULT_CHART_EMPTY_TEXT,
+	OTHER_SERIES_LABEL,
+	type ChartModel,
+	type ChartModelInput,
+	type ChartModelSeries,
+	type ChartDatum,
+	type ChartKind,
+	type ChartRow,
+} from "./components/core/chartModel";
+export { CHART_PALETTE, CHART_HUES, CHART_HUE_NAMES, LOW_CONTRAST_HUES, MAX_SERIES, hueHex, seriesColor } from "./components/core/chartPalette";
+export type {
+	ChartElement,
+	ChartProps,
+	ChartType,
+	ChartSeriesDef,
+	ChartAxisDef,
+	ChartOptionsDef,
+	ChartGaugeBand,
+	ChartReferenceLine,
+	ChartLegendPosition,
+} from "./components/@types";
 export * from "./components/core/fileCollectionTree";
 export { FILE_COLLECTION_MUTATIONS } from "./components/core/fileCollection";
 export type {

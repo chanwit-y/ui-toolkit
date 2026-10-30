@@ -187,6 +187,23 @@ Summary = { bookCount, customerCount, ordersThisMonth, revenueThisMonth, revenue
 included). `lowStock` = books with stock ≤ `settings.lowStockThreshold`, lowest first, at most 8;
 `recentOrders` = the 8 newest orders.
 
+### Analytics (the Charts showcase)
+Read-only aggregates over the current records; every list answers `{ data: [...], total }` (plus the
+extras named below). Money also as `revenueText`.
+
+- `GET /api/analytics/sales?by=day|week|month` (default `week`) → rows
+  `{ period (YYYY-MM-DD, the day / Monday / first of the month), label, orders, items, revenue, revenueText }`
+  over the whole order history, zero periods included, **plus** `by` and
+  `target: { revenue, orders }` (10 % over the period mean — the reference-line-by-path case).
+- `GET /api/analytics/genres` → `{ genreId, genre, color, books, copies, revenue, revenueText, avgRating, avgPrice, stock }` per genre.
+- `GET /api/analytics/statuses` → `{ status, label, orders, revenue, revenueText }` in pipeline order.
+- `GET /api/analytics/authors?limit=` (default 8, max 30) → `{ authorId, author, books, copies, revenue, revenueText }`, best sellers first.
+- `GET /api/analytics/cities` → `{ city, customers, orders, revenue, revenueText }`.
+- `GET /api/analytics/order-heat` → `{ weekday (Mon…Sun), hour ("09:00"), orders, revenue }`, one row per weekday × order hour.
+- `GET /api/analytics/kpis?key=` → `{ key, label, value, min, max, target, unit }` for `fulfilment`, `refunds`, `inStock`, `rating`; `key` picks one.
+- `GET /api/analytics/funnel` → `{ stage, orders }`: Placed → Paid → Shipped → Delivered (orders that reached the stage).
+- `GET /api/analytics/genre-scores` → `{ genre, metric, score }`, a 0–100 score per genre for Rating / In stock / Sales / Price / Reviews.
+
 ### Images
 - `GET /api/covers/:bookId.svg` — a drawn cover (`image/svg+xml`): the title and author on the
   genre's colour, 300×450. Text is XML-escaped. 404 unknown.

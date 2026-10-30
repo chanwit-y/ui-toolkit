@@ -24,6 +24,7 @@ export const SCHEMA_ROOTS: { file: string; types: string[] }[] = [
       'FormListConfig',
       'RepeaterConfig',
       'FileCollectionConfig',
+      'ChartConfig',
       'TextConfig',
       'TypographyConfig',
       'AvatarConfig',

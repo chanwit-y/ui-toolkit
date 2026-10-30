@@ -207,7 +207,7 @@ function defaultRequestSource(type: string, seedKey: string): RequestSource {
 }
 
 /** Seed one mapping row per `:param` of the endpoint URL (kept rows untouched). */
-export function seedRequestParams(rows: RequestMapRow[], endpoint: EndpointDef | undefined): RequestMapRow[] {
+export function seedRequestParams(rows: RequestMapRow[], endpoint: EndpointDef | undefined, seedSource: 'filter' | 'value' = 'filter'): RequestMapRow[] {
   const wanted = endpoint ? urlParams(endpoint.url) : []
   const kept = rows.filter((row) => row.slot !== 'params' || wanted.includes(row.key))
   const missing = wanted.filter((key) => !kept.some((row) => row.slot === 'params' && row.key === key))
@@ -217,7 +217,7 @@ export function seedRequestParams(rows: RequestMapRow[], endpoint: EndpointDef |
       id: crypto.randomUUID(),
       slot: 'params',
       key,
-      source: { type: 'filter', key: '', fallback: '' },
+      source: defaultRequestSource(seedSource, key),
     })),
   ]
 }
@@ -231,19 +231,30 @@ export function RequestMappingSection({
   itemId,
   config,
   set,
+  rows: rowsProp,
+  onRows,
   endpoint,
   models,
+  allowFilter = true,
 }: {
   itemId: string
-  config: DataTableConfig
-  set: SetConfig
+  /** The data table's config (its `requestMapping`) — or pass `rows` + `onRows` for another item type. */
+  config?: DataTableConfig
+  set?: SetConfig
+  rows?: RequestMapRow[]
+  onRows?: (rows: RequestMapRow[]) => void
   endpoint: EndpointDef | undefined
   models: ModelDef[]
+  /** The "Filter field" source needs the item's own filter form (a data table's); off for a chart. */
+  allowFilter?: boolean
 }) {
   const filterFields = useFilterFields(itemId)
-  const rows = config.requestMapping
+  const rows = rowsProp ?? config?.requestMapping ?? []
+  const setRows = (next: RequestMapRow[]) => (onRows ? onRows(next) : set?.('requestMapping', next))
+  const sourceOptions = allowFilter ? SOURCE_OPTIONS : SOURCE_OPTIONS.filter((o) => o.value !== 'filter')
+  const newSource = (key: string): RequestSource => (allowFilter ? { type: 'filter', key: '', fallback: '' } : defaultRequestSource('value', key))
   const patch = (index: number, next: Partial<RequestMapRow>) =>
-    set('requestMapping', rows.map((row, i) => (i === index ? { ...row, ...next } : row)))
+    setRows(rows.map((row, i) => (i === index ? { ...row, ...next } : row)))
   const keyFields = (slot: RequestMapRow['slot']): RowFields =>
     slot === 'params'
       ? endpoint
@@ -281,7 +292,7 @@ export function RequestMappingSection({
                   aria-label="Request key"
                 />
               </div>
-              <IconButton label="Remove mapping" onClick={() => set('requestMapping', rows.filter((_, i) => i !== index))}>
+              <IconButton label="Remove mapping" onClick={() => setRows(rows.filter((_, i) => i !== index))}>
                 <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
               </IconButton>
             </div>
@@ -289,7 +300,7 @@ export function RequestMappingSection({
               <div className="w-28 shrink-0">
                 <Select
                   aria-label="Value source"
-                  options={SOURCE_OPTIONS}
+                  options={sourceOptions}
                   value={src.type}
                   onChange={(type) => patch(index, { source: defaultRequestSource(type, row.key) })}
                 />
@@ -375,10 +386,7 @@ export function RequestMappingSection({
       })}
       <AddRow
         onClick={() =>
-          set('requestMapping', [
-            ...rows,
-            { id: crypto.randomUUID(), slot: defaultSlot, key: '', source: { type: 'filter', key: '', fallback: '' } },
-          ])
+          setRows([...rows, { id: crypto.randomUUID(), slot: defaultSlot, key: '', source: newSource('') }])
         }
       >
         Add request key

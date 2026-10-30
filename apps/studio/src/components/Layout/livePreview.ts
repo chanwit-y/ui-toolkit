@@ -113,6 +113,9 @@ function toPreviewBin(bin: ParsedBin, wiring: LivePreviewWiring): ParsedBin {
     const list = (el?.api as { list?: Record<string, unknown> } | undefined)?.list
     const gap = wiringGap(list?.name, wiring)
     if (gap) return placeholderBin(bin, `[ ${label} "${displayName}" — ${gap} ]`)
+  } else if (type === 'chart' && !el?.items) {
+    const gap = wiringGap((el?.api as Record<string, unknown> | undefined)?.name, wiring)
+    if (gap) return placeholderBin(bin, `[ ${label} "${displayName}" — ${gap} ]`)
   } else if (type === 'workfloweditor') {
     const api = (el?.users as { api?: Record<string, unknown> } | undefined)?.api
     const gap = wiringGap(api?.name, wiring)

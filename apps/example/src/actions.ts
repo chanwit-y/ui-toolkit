@@ -17,6 +17,13 @@ import type { TActionMaster } from "@gummy-ui/ui";
  * skipped. Exercised on the Custom actions page (config/country/customActionsDemo.ts).
  */
 export const actions: TActionMaster = {
+  /**
+   * The Charts page's grouped / stacked switch: bin `condition`s can read a
+   * page-data slice (`source: "state"`) but not a form field, so two buttons
+   * write `chartMode` and the two bar charts show by it.
+   */
+  barGrouped: ({ state }) => state.set("chartMode", "grouped"),
+  barStacked: ({ state }) => state.set("chartMode", "stacked"),
   /** Bump the `count` field of the enclosing form. */
   increase: ({ form }) => {
     form.setValue("count", Number(form.getValues().count ?? 0) + 1);

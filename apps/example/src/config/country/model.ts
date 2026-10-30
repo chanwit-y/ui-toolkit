@@ -369,6 +369,59 @@ export const model: TModelMaster = {
   workflowParam: { id: "string" },
   // File collection demo page (`/file-collection`): the nested tree and the
   // fixed mutation bodies (see spec/gummy-file-collection-spec.md §2.3).
+  // Charts demo page (`config/country/chartsDemo.ts`) — the `/collection/analytics/*` rows.
+  yearQuery: { year: "string" },
+  kpiQuery: { name: "string" },
+  productionReportRes: {
+    data: { type: "array", collection: { month: "string", site: "string", tonnes: "number", cost: "number" } },
+    crossline: { type: "array", collection: { label: "string", value: "number" } },
+    targets: { type: "array", collection: { label: "string", value: "number" } },
+    status: "number",
+    success: "boolean",
+    message: "string",
+  },
+  salesRes: {
+    data: { type: "array", collection: { month: "string", revenue: "number", orders: "number", margin: "number" } },
+    status: "number",
+    success: "boolean",
+    message: "string",
+  },
+  shareRes: {
+    data: { type: "array", collection: { channel: "string", amount: "number" } },
+    status: "number",
+    success: "boolean",
+    message: "string",
+  },
+  kpiRes: {
+    data: { type: "array", collection: { name: "string", label: "string", value: "number", min: "number", max: "number" } },
+    status: "number",
+    success: "boolean",
+    message: "string",
+  },
+  activityRes: {
+    data: { type: "array", collection: { day: "string", hour: "string", count: "number" } },
+    status: "number",
+    success: "boolean",
+    message: "string",
+  },
+  funnelRes: {
+    data: { type: "array", collection: { stage: "string", count: "number" } },
+    status: "number",
+    success: "boolean",
+    message: "string",
+  },
+  siteStatsRes: {
+    data: { type: "array", collection: { site: "string", region: "string", output: "number", cost: "number", headcount: "number" } },
+    status: "number",
+    success: "boolean",
+    message: "string",
+  },
+  scoresRes: {
+    data: { type: "array", collection: { metric: "string", site: "string", score: "number" } },
+    status: "number",
+    success: "boolean",
+    message: "string",
+  },
   fileCollectionRes: {
     data: {
       type: "array",

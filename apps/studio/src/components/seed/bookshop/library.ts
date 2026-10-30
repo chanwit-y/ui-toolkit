@@ -159,6 +159,19 @@ export const M = {
   bookItemParam: 'bs-model-book-item-param',
   authorIdParam: 'bs-model-author-id-param',
   authorItemParam: 'bs-model-author-item-param',
+  // Analytics (the Charts showcase)
+  salesSeries: 'bs-model-sales-series',
+  salesQuery: 'bs-model-sales-query',
+  genreStats: 'bs-model-genre-stats',
+  statusStats: 'bs-model-status-stats',
+  authorStats: 'bs-model-author-stats',
+  limitQuery: 'bs-model-limit-query',
+  cityStats: 'bs-model-city-stats',
+  orderHeat: 'bs-model-order-heat',
+  kpiList: 'bs-model-kpi-list',
+  kpiQuery: 'bs-model-kpi-query',
+  orderFunnel: 'bs-model-order-funnel',
+  genreScores: 'bs-model-genre-scores',
 } as const
 
 const listOf = (rows: () => ModelField[]) => [list('data', rows()), num('total')]
@@ -237,6 +250,24 @@ export function bookshopModels(): ModelDef[] {
     model(M.bookItemParam, 'bookItemParam', [field('bookId'), field('id')]),
     model(M.authorIdParam, 'authorIdParam', [field('authorId')]),
     model(M.authorItemParam, 'authorItemParam', [field('authorId'), field('id')]),
+    // Analytics (the Charts showcase)
+    model(M.salesSeries, 'salesSeriesRes', [
+      list('data', [field('period'), field('label'), num('orders'), num('items'), num('revenue'), field('revenueText')]),
+      num('total'),
+      field('by'),
+      object('target', [num('revenue'), num('orders')]),
+    ]),
+    model(M.salesQuery, 'salesQuery', [field('by')]),
+    model(M.genreStats, 'genreStatsRes', listOf(() => [field('genreId'), field('genre'), field('color'), num('books'), num('copies'), num('revenue'), field('revenueText'), num('avgRating'), num('avgPrice'), num('stock')])),
+    model(M.statusStats, 'statusStatsRes', listOf(() => [field('status'), field('label'), num('orders'), num('revenue'), field('revenueText')])),
+    model(M.authorStats, 'authorStatsRes', listOf(() => [field('authorId'), field('author'), num('books'), num('copies'), num('revenue'), field('revenueText')])),
+    model(M.limitQuery, 'limitQuery', [num('limit')]),
+    model(M.cityStats, 'cityStatsRes', listOf(() => [field('city'), num('customers'), num('orders'), num('revenue'), field('revenueText')])),
+    model(M.orderHeat, 'orderHeatRes', listOf(() => [field('weekday'), field('hour'), num('orders'), num('revenue')])),
+    model(M.kpiList, 'kpiListRes', listOf(() => [field('key'), field('label'), num('value'), num('min'), num('max'), num('target'), field('unit')])),
+    model(M.kpiQuery, 'kpiQuery', [field('key')]),
+    model(M.orderFunnel, 'orderFunnelRes', listOf(() => [field('stage'), num('orders')])),
+    model(M.genreScores, 'genreScoresRes', listOf(() => [field('genre'), field('metric'), num('score')])),
   ]
 }
 
@@ -272,6 +303,16 @@ export const E = {
   getSettings: 'bs-endpoint-get-settings',
   updateSettings: 'bs-endpoint-update-settings',
   getSummary: 'bs-endpoint-get-summary',
+  // Analytics (the Charts showcase)
+  salesSeries: 'bs-endpoint-sales-series',
+  genreStats: 'bs-endpoint-genre-stats',
+  statusStats: 'bs-endpoint-status-stats',
+  authorStats: 'bs-endpoint-author-stats',
+  cityStats: 'bs-endpoint-city-stats',
+  orderHeat: 'bs-endpoint-order-heat',
+  kpis: 'bs-endpoint-kpis',
+  orderFunnel: 'bs-endpoint-order-funnel',
+  genreScores: 'bs-endpoint-genre-scores',
 } as const
 
 type Refs = Partial<Pick<EndpointDef, 'response' | 'query' | 'parameter' | 'body'>>
@@ -368,5 +409,15 @@ export function bookshopEndpoints(): EndpointDef[] {
     endpoint(E.getSettings, 'getSettings', 'GET', '/api/settings', 'The shop settings', { response: M.settings }),
     endpoint(E.updateSettings, 'updateSettings', 'PATCH', '/api/settings', 'Change the shop settings', { response: M.settings, body: M.settingsBody }),
     endpoint(E.getSummary, 'getSummary', 'GET', '/api/summary', 'The dashboard numbers', { response: M.summary }),
+    // Analytics (the Charts showcase)
+    endpoint(E.salesSeries, 'salesSeries', 'GET', '/api/analytics/sales', 'Sales by day / week / month, with a target', { response: M.salesSeries, query: M.salesQuery }),
+    endpoint(E.genreStats, 'genreStats', 'GET', '/api/analytics/genres', 'Books, copies, revenue, rating and stock per genre', { response: M.genreStats }),
+    endpoint(E.statusStats, 'statusStats', 'GET', '/api/analytics/statuses', 'Orders and revenue per status', { response: M.statusStats }),
+    endpoint(E.authorStats, 'authorStats', 'GET', '/api/analytics/authors', 'The best-selling authors', { response: M.authorStats, query: M.limitQuery }),
+    endpoint(E.cityStats, 'cityStats', 'GET', '/api/analytics/cities', 'Customers, orders and revenue per city', { response: M.cityStats }),
+    endpoint(E.orderHeat, 'orderHeat', 'GET', '/api/analytics/order-heat', 'Orders per weekday and hour', { response: M.orderHeat }),
+    endpoint(E.kpis, 'kpis', 'GET', '/api/analytics/kpis', "The shop's KPIs (?key picks one)", { response: M.kpiList, query: M.kpiQuery }),
+    endpoint(E.orderFunnel, 'orderFunnel', 'GET', '/api/analytics/funnel', 'The order pipeline, placed to delivered', { response: M.orderFunnel }),
+    endpoint(E.genreScores, 'genreScores', 'GET', '/api/analytics/genre-scores', 'A 0–100 score per genre and metric', { response: M.genreScores }),
   ]
 }

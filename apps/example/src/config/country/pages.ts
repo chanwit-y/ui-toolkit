@@ -16,6 +16,7 @@ import { containerCellTooltipDemo } from "./cellTooltipDemo";
 import { containerTableLayoutDemo } from "./tableLayoutDemo";
 import { containerFormatsDemo } from "./formatsDemo";
 import { containerDataGridDemo } from "./dataGridDemo";
+import { containerChartsDemo } from "./chartsDemo";
 import { containerCardDemo } from "./cardDemo";
 import { containerHtmlContentDemo } from "./htmlContentDemo";
 import { containerDrawerDemo } from "./drawerDemo";
@@ -154,6 +155,15 @@ export const pages = {
     parent: "countryList",
     title: "Data grid",
     containers: containerDataGridDemo,
+  },
+  chartsDemo: {
+    // The `chart` element: the ten types over `/collection/analytics/*`,
+    // a reference line read off the response, click → page data
+    // (see ./chartsDemo.ts).
+    path: "/charts",
+    parent: "countryList",
+    title: "Charts",
+    containers: containerChartsDemo,
   },
   formatsDemo: {
     // `ColumnDef.format`: number / currency / percent / date / datetime /

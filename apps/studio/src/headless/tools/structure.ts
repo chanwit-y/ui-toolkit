@@ -317,7 +317,7 @@ export const structureTools: Tool[] = [
   {
     name: 'update_item',
     description:
-      'Edit an item: label, a deep-merge config patch (checked against the type’s schema; references may be names), layout, showWhen, dataWhen, initialValue. Send whole arrays (columns, options, actions) — arrays replace.',
+      'Edit an item: label, a deep-merge config patch (checked against the type’s schema; references may be names), layout, showWhen, dataWhen, initialValue. Send whole arrays (columns, series, options, actions) — arrays replace.',
     inputSchema: writeInput({ project: PROJECT, page: PAGE, item: ITEM, ...ITEM_FIELDS }, ['project', 'page', 'item']),
     write: true,
     run: (s, i) => {

@@ -7,6 +7,7 @@ import conceptsNavigation from './guides/concepts/navigation.md' with { type: 't
 import conceptsPageData from './guides/concepts/page-data.md' with { type: 'text' }
 import conceptsShellTheme from './guides/concepts/shell-theme.md' with { type: 'text' }
 import conceptsSignIn from './guides/concepts/sign-in.md' with { type: 'text' }
+import chart from './guides/chart.md' with { type: 'text' }
 import container from './guides/container.md' with { type: 'text' }
 import custom from './guides/custom.md' with { type: 'text' }
 import datatable from './guides/datatable.md' with { type: 'text' }
@@ -48,6 +49,7 @@ export const GUIDES: Record<string, string> = {
   'concepts/page-data': conceptsPageData,
   'concepts/shell-theme': conceptsShellTheme,
   'concepts/sign-in': conceptsSignIn,
+  chart,
   container,
   custom,
   datatable,

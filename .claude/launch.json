@@ -136,6 +136,17 @@
       ],
       "port": 3404,
       "autoPort": false
+    },
+    {
+      "name": "demo-charts",
+      "comment": "The demo app rendering the Charts showcase project (the chart's ten types over the Book shop API's analytics \u2014 needs demo-api), port 3405.",
+      "runtimeExecutable": "/bin/bash",
+      "runtimeArgs": [
+        "-c",
+        "cd demo && PATH=/opt/homebrew/bin:$PATH exec bun run app:charts"
+      ],
+      "port": 3405,
+      "autoPort": false
     }
   ]
 }
