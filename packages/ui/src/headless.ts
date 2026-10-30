@@ -42,4 +42,18 @@ export {
   type ChartModelInput,
 } from "./components/core/chartModel";
 export { CHART_PALETTE, CHART_HUES, CHART_HUE_NAMES, LOW_CONTRAST_HUES, MAX_SERIES, hueHex, seriesColor } from "./components/core/chartPalette";
+export {
+  evaluateCondition,
+  evaluateFormula,
+  evaluateRule,
+  formatResult,
+  formulaOf,
+  isLegacyCondition,
+  libraryCycles,
+  logicDeps,
+  LogicError,
+  type FormulaResult,
+  type LogicDeps,
+  type LogicScope,
+} from "./components/core/formula";
 export type * from "./components/@types";

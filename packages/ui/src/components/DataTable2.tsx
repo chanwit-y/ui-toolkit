@@ -10,10 +10,13 @@ import { ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, ListFilter, Pin, 
 import { ChevronRight as GroupChevron } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { dtHeaderBgClass, dtHeaderTextClass, dtHeaderFontSizeClass, dtHeaderFontWeightClass, dtHeaderHoverClass, dtPaginationBgClass, dtPaginationHoverClass, dtRingClass, dtRowHoverClass } from "../util/constant"
-import type { ButtonAction, DataTableProps } from "./@types"
+import type { ButtonAction, DataTableProps, DataValue, LogicLibrary } from "./@types"
 import { actionSizeSpec } from "./dataTableActions"
 import { ButtonBase } from "./Button"
 import { useLocale } from "./core/locale"
+import { useLogicLibrary } from "./core/logic"
+import { evaluateFormula, formulaOf } from "./core/formula"
+import { readSlice } from "./core/stateStore"
 import { formatCell } from "../util/format"
 import { csvFileName, downloadCsv, toCsv } from "../util/csv"
 import { renderHtmlCell } from "./HtmlCell"
@@ -156,6 +159,7 @@ export const DataTable2 = <T extends Record<string, any>>({
 	apiSegments,
 	pinnedColumns,
 	columns = [],
+	computedColumns,
 	canSearchAllColumns = false,
 	modalContainer,
 	modalMaxWidth,
@@ -220,6 +224,7 @@ export const DataTable2 = <T extends Record<string, any>>({
 	const [total, setTotal] = useState(0)
 	const [globalFilter, setGlobalFilter] = useState('')
 	const locale = useLocale()
+	const logicLibrary = useLogicLibrary() ?? undefined
 	// The search box matches the raw value *and* its formatted text (`meta.format`), so
 	// typing "1,250" or "Jan 2025" finds the row the way it reads on screen.
 	const tableRef = useRef<Table<any> | null>(null)
@@ -526,8 +531,12 @@ export const DataTable2 = <T extends Record<string, any>>({
 		layout.sizing,
 	)
 
+	// Computed columns (`ColumnDef.value`): the raw result lands on the row
+	// under the column's accessor, so sort / filter / search / export see it.
+	const rows = useMemo(() => withComputedColumns(data, computedColumns, logicLibrary), [data, computedColumns, logicLibrary])
+
 	const table = useReactTable({
-		data,
+		data: rows,
 		columns: enhancedColumns,
 		...resize.tableOptions,
 		state: {
@@ -862,7 +871,7 @@ export const DataTable2 = <T extends Record<string, any>>({
 	}
 
 	const leafRow = (row: Row<T>, index: number) => {
-		const rowLook = resolveStyles(rowStyles, { row: row.original, index })
+		const rowLook = resolveStyles(rowStyles, { row: row.original, index }, logicLibrary)
 		return (
 			<tr key={row.id} data-index={virtualize ? index : undefined} ref={virtualize ? virtualizer.measureElement : undefined}
 				className={`datatable-body-row ${rowNavigate ? 'cursor-pointer' : ''} ${row.getIsSelected() ? 'is-selected' : ''}
@@ -877,7 +886,7 @@ export const DataTable2 = <T extends Record<string, any>>({
 					const surface = !cell.column.getIsPinned() && !meta.rowHeader && !(span && span.rowSpan > 1)
 					const look = FIXED_COLUMN_IDS.has(cell.column.id)
 						? { className: '', tone: undefined }
-						: cellLook(resolveStyles(meta.styles, { value: cell.getValue(), row: row.original, index }), rowLook, surface)
+						: cellLook(resolveStyles(meta.styles, { value: cell.getValue(), row: row.original, index }, logicLibrary), rowLook, surface)
 					return (
 						<Cell
 							key={cell.id}
@@ -1451,4 +1460,20 @@ export const DataTable2 = <T extends Record<string, any>>({
 			description={apiDeleteInfo?.confirmBox?.description ?? "This action cannot be undone. Are you sure you want to continue?"}
 		/>
 	</div></Tooltip.Provider>)
+}
+/** Each row with every computed column's raw result under its accessor (rows untouched without any). */
+function withComputedColumns<T extends Record<string, any>>(
+	rows: T[],
+	computed: { accessor: string; value: DataValue }[] | undefined,
+	library: LogicLibrary | undefined,
+): T[] {
+	const defs = (computed ?? [])
+		.map((c) => ({ accessor: c.accessor, def: formulaOf(c.value, library) }))
+		.filter((c): c is { accessor: string; def: NonNullable<typeof c.def> } => !!c.def)
+	if (!defs.length) return rows
+	return rows.map((row, index) => {
+		const out: Record<string, unknown> = { ...row }
+		for (const c of defs) out[c.accessor] = evaluateFormula(c.def, { row, index, library, state: readSlice }).value
+		return out as T
+	})
 }

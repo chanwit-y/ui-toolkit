@@ -4,7 +4,7 @@ import { useState, type CSSProperties, type KeyboardEvent, type MouseEvent, type
 import type { DataValue, NavigateTarget } from "./@types";
 import { imageSrc } from "./core/bound";
 import { useNavigateTo } from "./core/pages";
-import { displayText, useDataValue, useSkeleton } from "./core/rowScope";
+import { useDataValue, useDisplayValue, useSkeleton } from "./core/rowScope";
 import { Skeleton } from "./Skeleton";
 import { Paper, type PaperProps } from "./Paper";
 
@@ -251,8 +251,8 @@ export function CardView({
   className,
   style,
 }: CardViewProps) {
-  const boundTitle = displayText(useDataValue(titleValue));
-  const boundSubheader = displayText(useDataValue(subheaderValue));
+  const boundTitle = useDisplayValue(titleValue).text;
+  const boundSubheader = useDisplayValue(subheaderValue).text;
   const boundMedia = imageSrc(useDataValue(media?.srcValue));
   // Slots bound to a page load in `skeleton` mode shimmer until it lands.
   const headerPending = useSkeleton(titleValue, subheaderValue);

@@ -5,6 +5,7 @@ import { createElement, type JSX } from "react";
 import { RadioButtonF2 } from "../form/RadioButton";
 import type { TApiMaster } from "../../api/APIMaster";
 import type { TModelMaster } from "../../model/master";
+import { legacyCondition } from "./formula";
 
 export class Radio<M extends TModelMaster, A extends TApiMaster<M>>
   implements IElement
@@ -33,7 +34,7 @@ export class Radio<M extends TModelMaster, A extends TApiMaster<M>>
       // reactivity
       canObserve: props.canObserve,
       observeTo: props.observeTo,
-      enabledWhen: props.enabledWhen,
+      enabledWhen: legacyCondition(props.enabledWhen),
     });
   }
 }

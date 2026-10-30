@@ -31,7 +31,7 @@ export class DataTable<
   // A numeric format aligns to the end unless the column says otherwise.
   private align(columns: ColumnDef[]) {
     return columns.reduce<Record<string, "start" | "center" | "end">>((acc, current) => {
-      const format = columnFormat(current)
+      const format = cellFormatOf(current)
       return { ...acc, [current.accessor]: current.align ?? (format && NUMERIC_FORMATS.has(format.type) ? 'end' : 'center') }
     }, {})
   }
@@ -60,7 +60,7 @@ export class DataTable<
         cell: (props) => {
           const value = props.row.original[column.accessor as keyof T]
           return column.html
-            ? createElement(FormattedHtmlCell, { template: column.html, row: props.row.original, value, format: columnFormat(column) })
+            ? createElement(FormattedHtmlCell, { template: column.html, row: props.row.original, value, format: cellFormatOf(column) })
             : createElement("div", {}, value)
         },
         filterFn: (row, columnId, value) => {
@@ -117,6 +117,9 @@ export class DataTable<
       urlParams: urlParamNames(read?.url),
       sortFields,
       items: props.items,
+      computedColumns: (props.columns ?? [])
+        .filter((c) => c.value?.type === "formula")
+        .map((c) => ({ accessor: c.accessor, value: c.value! })),
       filterContainer: bound ? undefined : props.filterContainer,
       renderFilterBins: !bound && props.filterContainer && this._context.apis ? renderFilterBins : undefined,
       filterDefaults: props.filterDefaults,
@@ -164,8 +167,13 @@ export class DataTable<
 }
 
 /** The TanStack column `meta` for a config column (only the keys that are set). */
+/** The column's format; a computed column without one takes its inline formula's. */
+function cellFormatOf(column: ColumnDef) {
+  return columnFormat(column) ?? (column.value?.type === "formula" ? column.value.format : undefined);
+}
+
 export function columnLayoutMeta(column: ColumnDef): ColumnLayoutMeta | undefined {
-  const format = columnFormat(column);
+  const format = cellFormatOf(column);
   const meta: ColumnLayoutMeta = {
     ...(column.html ? { html: true, template: column.html } : {}),
     ...(format ? { format } : {}),

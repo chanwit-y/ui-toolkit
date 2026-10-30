@@ -146,6 +146,22 @@ export const model: TModelMaster = {
     success: "boolean",
     message: "string",
   },
+  logicOrderBody: {
+    qty: "number",
+    unitPrice: "number",
+    subtotal: "number",
+    total: "number",
+    customerType: "string",
+    company: "string",
+    discountCode: "string",
+    accept: "boolean",
+  },
+  logicOrderRes: {
+    data: "any",
+    status: "number",
+    success: "boolean",
+    message: "string",
+  },
   contactBody: {
     name: "string",
     email: "string",

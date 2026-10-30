@@ -1,10 +1,10 @@
-import { createElement, useMemo, type ComponentType } from "react";
+import { createElement, useMemo, type ComponentType, type ReactNode } from "react";
 import type { AvatarElement, DataValue, TextElement, TypographyElement } from "../@types";
 import { Avatar } from "../Avatar";
 import { Text } from "../Text";
 import { Typography } from "../Typography";
 import { Skeleton } from "../Skeleton";
-import { displayText, useDataValue, useSkeleton } from "./rowScope";
+import { displayText, useDataValue, useDisplayValue, useSkeleton } from "./rowScope";
 
 /** What a text placeholder is sized from while its slice loads. */
 const TEXT_PLACEHOLDER = "Loading placeholder text";
@@ -17,17 +17,23 @@ const TEXT_PLACEHOLDER = "Loading placeholder text";
  */
 
 export function BoundText({ value, text, ...props }: TextElement) {
-  const bound = displayText(useDataValue(value));
+  const { text: bound, error } = useDisplayValue(value);
   const pending = useSkeleton(value);
   if (pending) return <Skeleton inline><Text {...props} text={text || TEXT_PLACEHOLDER} /></Skeleton>;
-  return <Text {...props} text={bound ?? text} />;
+  return <LogicError error={error}><Text {...props} text={bound ?? text} /></LogicError>;
 }
 
 export function BoundTypography({ value, text, ...props }: TypographyElement) {
-  const bound = displayText(useDataValue(value));
+  const { text: bound, error } = useDisplayValue(value);
   const pending = useSkeleton(value);
   if (pending) return <Skeleton inline><Typography {...props} text={text || TEXT_PLACEHOLDER} /></Skeleton>;
-  return <Typography {...props} text={bound ?? text} />;
+  return <LogicError error={error}><Typography {...props} text={bound ?? text} /></LogicError>;
+}
+
+/** A failed formula's display (`—`) carries its reason as a tooltip. */
+export function LogicError({ error, children }: { error?: string; children: ReactNode }) {
+  if (!error) return <>{children}</>;
+  return <span className="gummy-logic-error" title={error}>{children}</span>;
 }
 
 /** An image URL out of a bound value: the string itself, or an object's `src` / `url`. */

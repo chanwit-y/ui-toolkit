@@ -8,6 +8,7 @@ import { SurfaceBackdrop } from "./SurfaceBackdrop";
 import { DataProvider, ThemeProvider } from "./context";
 import { ActionsProvider } from "./core/actions";
 import { ComponentsProvider } from "./core/components";
+import { FormulasProvider } from "./core/logic";
 import { LocaleProvider } from "./core/locale";
 import { GlobalLoads } from "./core/GlobalLoads";
 import { PageRouter } from "./core/PageRouter";
@@ -215,6 +216,7 @@ export function GummyApp({
         <LocaleProvider locale={locale ?? project.locale}>
         <ActionsProvider actions={actions ?? {}}>
           <ComponentsProvider components={components ?? {}}>
+          <FormulasProvider formulas={project.formulas} rules={project.rules}>
             {authConfig ? (
               <AzureAuth
                 config={authConfig}
@@ -231,6 +233,7 @@ export function GummyApp({
             ) : (
               app
             )}
+          </FormulasProvider>
           </ComponentsProvider>
         </ActionsProvider>
         </LocaleProvider>

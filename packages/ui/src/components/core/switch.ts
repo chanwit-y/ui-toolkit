@@ -4,6 +4,7 @@ import type { TModelMaster } from "../../model/master";
 import type { ElementContext } from "./elementBuilder";
 import { Switch as SwitchComponent } from "../form/Switch";
 import type { IElement, SwitchElement } from "../@types";
+import { legacyCondition } from "./formula";
 
 /**
  * Builds a form-bound Switch. `defaultChecked` seeds the form value through
@@ -28,7 +29,7 @@ export class Switch<M extends TModelMaster, A extends TApiMaster<M>>
 			variant: props.variant,
 			disabled: props.disabled,
 			canObserve: props.canObserve,
-			enabledWhen: props.enabledWhen,
+			enabledWhen: legacyCondition(props.enabledWhen),
 		});
 	}
 }

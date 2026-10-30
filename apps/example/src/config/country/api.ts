@@ -118,6 +118,15 @@ export const api = {
     response: "contactRes",
     withOptions: false,
   },
+  // The Logic demo's order: echoes what the form submitted.
+  createLogicOrder: {
+    url: "/collection/logic/orders",
+    description: "Save a Logic demo order (echoes the payload)",
+    methods: "POST" as const,
+    response: "logicOrderRes",
+    body: "logicOrderBody",
+    withOptions: false,
+  },
   createContact: {
     url: "/collection/contacts",
     description: "Create a contact",

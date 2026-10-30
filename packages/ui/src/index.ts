@@ -46,6 +46,37 @@ export { GlobalLoads } from "./components/core/GlobalLoads";
 // inline in a button's action chain as "fn:<name>" (see core/actions.tsx).
 export { ActionsProvider, useActions, isCustomAction, customActionName, customAction, resolveCustomAction, CUSTOM_ACTION_PREFIX } from "./components/core/actions";
 export type { ActionsProviderProps } from "./components/core/actions";
+export { FormulasProvider, useLogicLibrary, useFormula, useCondition } from "./components/core/logic";
+export type { FormulasProviderProps, FormulaValue } from "./components/core/logic";
+export type {
+  AnyCondition,
+  Cond,
+  CondOperator,
+  CondExpression,
+  Expr,
+  ExprFunction,
+  ExprRefSource,
+  FieldLogic,
+  FieldValueMode,
+  FormulaBlankPolicy,
+  FormulaDef,
+  LogicLibrary,
+  LogicResultType,
+  Rule,
+  RuleDef,
+} from "./components/@types";
+export {
+  evaluateFormula,
+  evaluateCondition,
+  evaluateRule,
+  formulaOf,
+  formatResult,
+  isLegacyCondition,
+  logicDeps,
+  libraryCycles,
+  LogicError,
+} from "./components/core/formula";
+export type { LogicScope, LogicDeps, FormulaResult } from "./components/core/formula";
 // Custom components: the consumer's registry of coded React components, placed
 // by a `custom` Bin's `element.component` (see core/components.tsx).
 export { ComponentsProvider, useComponents, resolveCustomComponent } from "./components/core/components";
@@ -198,7 +229,7 @@ export type {
   // The engine's column config (not TanStack's `ColumnDef`, hence the prefix).
   ColumnDef as DataTableColumnDef,
 } from "./components/@types";
-export { RowScopeProvider, useRowScope, useDataValue } from "./components/core/rowScope";
+export { RowScopeProvider, useRowScope, useDataValue, useDisplayValue } from "./components/core/rowScope";
 export type { RowScope } from "./components/core/rowScope";
 export * from "./components/Icon";
 // export * from "./components/Icon.example";

@@ -1,28 +1,12 @@
-import { createContext, useCallback, useContext, useMemo, useSyncExternalStore, type ReactNode } from "react";
+import { useCallback, useMemo, useSyncExternalStore } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import type { DataValue } from "../@types";
 import { resolveDataValue } from "./dataValue";
+import { useRowScope } from "./rowScopeContext";
+import { useFormula } from "./logic";
 import { getStateStore, loadingModeOf, skeletonBindingKeys, skeletonPending } from "./stateStore";
 
-/** The item a `repeater` is rendering, and its position in the array. */
-export type RowScope = { row: unknown; index: number };
-
-const RowScopeContext = createContext<RowScope | null>(null);
-
-/**
- * Puts one item in scope for everything beneath it: `type:"row"`
- * {@link DataValue}s (display bindings, `Navigate` params) resolve against it.
- * A nested provider replaces the outer one — bindings read the nearest item.
- */
-export function RowScopeProvider({ row, index, children }: RowScope & { children: ReactNode }) {
-  const value = useMemo(() => ({ row, index }), [row, index]);
-  return <RowScopeContext.Provider value={value}>{children}</RowScopeContext.Provider>;
-}
-
-/** The nearest enclosing item, or `null` outside a repeater. */
-export function useRowScope(): RowScope | null {
-  return useContext(RowScopeContext);
-}
+export { RowScopeProvider, useRowScope, type RowScope } from "./rowScopeContext";
 
 /**
  * A {@link DataValue} resolved at render time against the URL, global state
@@ -41,7 +25,10 @@ export function useDataValue(dv: DataValue | undefined): unknown {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [JSON.stringify(dv), JSON.stringify(params), searchParams.toString(), scope?.row]
   );
-  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  const resolved = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  // A formula's raw result (its formatted text is `useDisplayValue`'s).
+  const formula = useFormula(dv);
+  return formula.active ? formula.value : resolved;
 }
 
 /**
@@ -75,4 +62,15 @@ export function displayText(value: unknown): string | undefined {
   if (value === undefined || value === null || value === "") return undefined;
   if (typeof value === "object") return undefined;
   return String(value);
+}
+
+/**
+ * A bound value as display text: a formula through its `format` (`—` with
+ * the reason in `error` when it fails), anything else via `displayText`.
+ */
+export function useDisplayValue(dv: DataValue | undefined): { text?: string; error?: string } {
+  const formula = useFormula(dv);
+  const raw = useDataValue(formula.active ? undefined : dv);
+  if (formula.active) return formula.error ? { text: "—", error: formula.error } : { text: formula.text || undefined };
+  return { text: displayText(raw) };
 }
