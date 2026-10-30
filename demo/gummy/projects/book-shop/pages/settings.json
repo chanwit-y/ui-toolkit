@@ -42,14 +42,14 @@
           "justifySelf": "stretch",
           "alignSelf": "stretch",
           "condition": {
+            "cmp": "eq",
             "left": {
-              "source": "state",
+              "ref": "state",
               "key": "me",
               "path": "role"
             },
-            "operator": "eq",
             "right": {
-              "val": "clerk"
+              "lit": "clerk"
             }
           },
           "element": {
@@ -278,14 +278,14 @@
           "justifySelf": "start",
           "alignSelf": "stretch",
           "condition": {
+            "cmp": "eq",
             "left": {
-              "source": "state",
+              "ref": "state",
               "key": "me",
               "path": "role"
             },
-            "operator": "eq",
             "right": {
-              "val": "manager"
+              "lit": "manager"
             }
           },
           "element": {

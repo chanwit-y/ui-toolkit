@@ -575,12 +575,12 @@
                   "justifySelf": "start",
                   "alignSelf": "stretch",
                   "condition": {
-                    "right": {
+                    "cmp": "empty",
+                    "left": {
+                      "ref": "row",
                       "key": "books",
                       "path": "_id"
-                    },
-                    "operator": "eq",
-                    "left": {}
+                    }
                   },
                   "element": {
                     "label": "Create",
@@ -619,12 +619,12 @@
                   "justifySelf": "start",
                   "alignSelf": "stretch",
                   "condition": {
-                    "right": {
+                    "cmp": "notEmpty",
+                    "left": {
+                      "ref": "row",
                       "key": "books",
                       "path": "_id"
-                    },
-                    "operator": "neq",
-                    "left": {}
+                    }
                   },
                   "element": {
                     "label": "Save",
@@ -663,26 +663,27 @@
                   "justifySelf": "start",
                   "alignSelf": "stretch",
                   "condition": {
-                    "left": {
-                      "right": {
-                        "key": "books",
-                        "path": "_id"
+                    "all": [
+                      {
+                        "cmp": "notEmpty",
+                        "left": {
+                          "ref": "row",
+                          "key": "books",
+                          "path": "_id"
+                        }
                       },
-                      "operator": "neq",
-                      "left": {}
-                    },
-                    "operator": "and",
-                    "right": {
-                      "left": {
-                        "source": "state",
-                        "key": "me",
-                        "path": "role"
-                      },
-                      "operator": "eq",
-                      "right": {
-                        "val": "manager"
+                      {
+                        "cmp": "eq",
+                        "left": {
+                          "ref": "state",
+                          "key": "me",
+                          "path": "role"
+                        },
+                        "right": {
+                          "lit": "manager"
+                        }
                       }
-                    }
+                    ]
                   },
                   "element": {
                     "label": "Delete",

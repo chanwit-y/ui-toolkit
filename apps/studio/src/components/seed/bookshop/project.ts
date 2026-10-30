@@ -9,7 +9,7 @@ import { defaultShell } from '../../Workspace/snapshots'
 import type { LibraryData, MenuItemDef, ProjectDef, ShellSettings, TemplateDef, WorkspaceData } from '../../Workspace/types'
 import { builtinTemplates } from '../templates'
 import { bookshopEndpoints, bookshopModels, E } from './library'
-import { bookshopPages, P, PRINT_ORDER_ACTION_ID, SALES_CHART_COMPONENT_ID } from './pages'
+import { bookshopLogic, bookshopPages, P, PRINT_ORDER_ACTION_ID, SALES_CHART_COMPONENT_ID } from './pages'
 import { navigate } from './ui'
 import { portalProject } from '../portal/project'
 import { glassProject } from '../glass/project'
@@ -180,6 +180,7 @@ export function bookshopProject(library: LibraryData = bookshopLibrary()): Proje
       customActions: bookshopCustomActions(),
       customComponents: bookshopCustomComponents(),
       authId: auth.id,
+      ...bookshopLogic(),
     },
   }
 }

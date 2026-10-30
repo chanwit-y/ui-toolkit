@@ -539,12 +539,12 @@
                   "justifySelf": "start",
                   "alignSelf": "stretch",
                   "condition": {
-                    "right": {
+                    "cmp": "empty",
+                    "left": {
+                      "ref": "row",
                       "key": "books",
                       "path": "_id"
-                    },
-                    "operator": "eq",
-                    "left": {}
+                    }
                   },
                   "element": {
                     "label": "Create",
@@ -575,12 +575,12 @@
                   "justifySelf": "start",
                   "alignSelf": "stretch",
                   "condition": {
-                    "right": {
+                    "cmp": "notEmpty",
+                    "left": {
+                      "ref": "row",
                       "key": "books",
                       "path": "_id"
-                    },
-                    "operator": "neq",
-                    "left": {}
+                    }
                   },
                   "element": {
                     "label": "Save",

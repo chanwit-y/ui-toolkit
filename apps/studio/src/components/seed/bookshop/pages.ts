@@ -1,3 +1,5 @@
+import type { Cond, Expr } from '@gummy-ui/ui'
+import type { FormulaLibDef, RuleLibDef } from '../../Workspace/logic'
 import type { PageLoadDef } from '../../Workspace/pageLoads'
 import type { PageDef } from '../../Workspace/types'
 import {
@@ -98,6 +100,8 @@ export const L = {
 /** The custom code the project names (declared in `project.ts`). */
 export const SALES_CHART_COMPONENT_ID = 'component-bs-sales-chart'
 export const PRINT_ORDER_ACTION_ID = 'action-bs-print-order'
+export const ORDER_DAYS_FORMULA_ID = 'formula-bs-order-days'
+export const ORDER_HEALTH_RULE_ID = 'rule-bs-order-health'
 
 /** Where uploads go. Absolute: the engine posts with a plain `fetch`, and the studio's Live Preview runs on another origin. */
 export const UPLOAD_URL = 'http://localhost:9100/api/upload'
@@ -702,6 +706,52 @@ function ordersPage(): PageDef {
   ])
 }
 
+/* -------------------------------------------------------------------- logic */
+
+const orderField = (path: string): Expr => ({ ref: 'state', key: L.order, path })
+const statusIs = (...values: string[]): Cond =>
+  values.length === 1 ? { cmp: 'eq', left: orderField('status'), right: { lit: values[0] } } : { cmp: 'in', left: orderField('status'), right: values.map((v) => ({ lit: v })) }
+
+/**
+ * The order detail's logic (spec §9): *Days since placed* computed from the
+ * order's `placedAt`, and an *Order health* badge picked by a rule over the
+ * status and that formula — what the API's `*Text` fields can't say.
+ */
+export function bookshopLogic(): { formulas: FormulaLibDef[]; rules: RuleLibDef[] } {
+  return {
+    formulas: [
+      {
+        id: ORDER_DAYS_FORMULA_ID,
+        name: 'Days since placed',
+        description: 'Whole days from the order being placed to today',
+        expr: { fn: 'DAYS', args: [orderField('placedAt'), { fn: 'TODAY', args: [] }] },
+        format: { ...defaultColumnFormat(), type: 'number', decimals: 0 },
+        onEmpty: 'empty',
+        onDivideByZero: 'empty',
+      },
+    ],
+    rules: [
+      {
+        id: ORDER_HEALTH_RULE_ID,
+        name: 'Order health',
+        description: 'What the order needs next',
+        resultType: 'text',
+        rule: {
+          branches: [
+            { when: statusIs('refund_requested'), then: { lit: 'Needs a manager' } },
+            { when: { all: [statusIs('pending'), { cmp: 'gte', left: { formula: ORDER_DAYS_FORMULA_ID }, right: { lit: 1 } }] }, then: { lit: 'Chase payment' } },
+            { when: statusIs('delivered', 'refunded', 'cancelled'), then: { lit: 'Closed' } },
+          ],
+          else: { lit: 'On track' },
+        },
+        format: defaultColumnFormat(),
+      },
+    ],
+  }
+}
+
+const formulaBinding = (formulaId: string) => ({ key: '', path: '', source: 'formula' as const, formula: { formulaId } })
+
 function orderDetailPage(): PageDef {
   const order = (path: string) => state(L.order, path)
   return page(
@@ -713,6 +763,8 @@ function orderDetailPage(): PageDef {
       back('bs-item-order-back', 'Back to orders', P.orders),
       html('bs-item-order-head', 'orderHead', '<h2>{{number}}</h2><p><span class="dt-badge">{{statusLabel}}</span> · placed {{placedAtText}} · paid by {{paymentMethod}} · handled by {{handledBy}}</p>', order(''), TWO_THIRDS),
       button('bs-item-order-print', { label: 'Print', icon: 'printer', variant: 'outlined', actions: [`fn:${PRINT_ORDER_ACTION_ID}`] }, BUTTON),
+      html('bs-item-order-health', 'orderHealth', '<p>Next step <span class="dt-badge">{{value}}</span></p>', formulaBinding(ORDER_HEALTH_RULE_ID), THIRD),
+      html('bs-item-order-age', 'orderAge', '<p class="dt-muted"><strong class="dt-strong">{{value}}</strong> days since it was placed</p>', formulaBinding(ORDER_DAYS_FORMULA_ID), TWO_THIRDS),
       card(
         'bs-item-order-customer',
         'orderCustomer',

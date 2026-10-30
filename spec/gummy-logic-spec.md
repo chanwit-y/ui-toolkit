@@ -372,3 +372,7 @@ Deferred: a decision-table view for large rules; persisting samples; drag-and-dr
 5. **Insert** starts open for formulas on screens ≥ 1100px (dialog) / ≥ 1360px (Logic tab), closed otherwise and for conditions in Visual mode; Code mode opens it.
 6. **Try it** samples live in a module-level session map keyed by the operand's code label (`[qty]`, `$country.name`); a page reload clears them.
 
+## 15. As built (PR 4, Book shop — 2026-10-30)
+
+The order detail page (`/orders/:id`) gains a row under its heading: **Next step** — an HTML badge bound to the text rule *Order health* (refund requested → *Needs a manager*; pending for a day or more → *Chase payment*; delivered / refunded / cancelled → *Closed*; else *On track*) — and *N days since it was placed* from the formula *Days since placed* = `DAYS($order.placedAt, TODAY())` (Number, 0 dp). Both read the page load, not a form field, since the page has no form (§9 said `[placedAt]`). `bookshopLogic()` in `seed/bookshop/pages.ts`; `demo/gummy` is regenerated with `bookshop.ts --force` at v61, which also carries the v60 condition conversion into every exported page.
+

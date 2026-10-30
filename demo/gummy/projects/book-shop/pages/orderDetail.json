@@ -64,6 +64,42 @@
           "md": "6",
           "lg": "4",
           "xl": "4",
+          "type": "html",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "orderHealth",
+            "html": "<p>Next step <span class=\"dt-badge\">{{value}}</span></p>",
+            "value": {
+              "type": "formula",
+              "key": "none",
+              "formula": "Order health"
+            }
+          }
+        },
+        {
+          "sm": "12",
+          "md": "12",
+          "lg": "8",
+          "xl": "8",
+          "type": "html",
+          "justifySelf": "stretch",
+          "alignSelf": "stretch",
+          "element": {
+            "name": "orderAge",
+            "html": "<p class=\"dt-muted\"><strong class=\"dt-strong\">{{value}}</strong> days since it was placed</p>",
+            "value": {
+              "type": "formula",
+              "key": "none",
+              "formula": "Days since placed"
+            }
+          }
+        },
+        {
+          "sm": "12",
+          "md": "6",
+          "lg": "4",
+          "xl": "4",
           "type": "card",
           "justifySelf": "stretch",
           "alignSelf": "stretch",
@@ -222,14 +258,14 @@
           "justifySelf": "stretch",
           "alignSelf": "stretch",
           "condition": {
+            "cmp": "eq",
             "left": {
-              "source": "state",
+              "ref": "state",
               "key": "order",
               "path": "status"
             },
-            "operator": "eq",
             "right": {
-              "val": "refund_requested"
+              "lit": "refund_requested"
             }
           },
           "container": {
@@ -304,14 +340,14 @@
                 "justifySelf": "stretch",
                 "alignSelf": "stretch",
                 "condition": {
+                  "cmp": "eq",
                   "left": {
-                    "source": "state",
+                    "ref": "state",
                     "key": "me",
                     "path": "role"
                   },
-                  "operator": "eq",
                   "right": {
-                    "val": "clerk"
+                    "lit": "clerk"
                   }
                 },
                 "element": {
@@ -329,14 +365,14 @@
                 "justifySelf": "stretch",
                 "alignSelf": "stretch",
                 "condition": {
+                  "cmp": "eq",
                   "left": {
-                    "source": "state",
+                    "ref": "state",
                     "key": "me",
                     "path": "role"
                   },
-                  "operator": "eq",
                   "right": {
-                    "val": "manager"
+                    "lit": "manager"
                   }
                 },
                 "container": {
@@ -449,14 +485,14 @@
           "justifySelf": "stretch",
           "alignSelf": "stretch",
           "condition": {
+            "cmp": "eq",
             "left": {
-              "source": "state",
+              "ref": "state",
               "key": "order",
               "path": "status"
             },
-            "operator": "eq",
             "right": {
-              "val": "refunded"
+              "lit": "refunded"
             }
           },
           "container": {
