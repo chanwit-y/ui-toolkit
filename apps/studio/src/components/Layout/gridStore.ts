@@ -19,6 +19,8 @@ import {
   setItemLabel,
   setItemLayout,
   setItemPageData,
+  setItemLogic,
+  type ItemLogicPatch,
   setItemShowWhen,
   updateCanvasAtPath,
   type PathSeg,
@@ -143,6 +145,8 @@ type GridState = {
     id: string,
     patch: { dataWhen?: DataCondition | null; initialValue?: ItemBinding },
   ) => void
+  /** The item's own logic: Show when, Enabled when, value formula + mode (`null` clears). */
+  updateItemLogic: (id: string, patch: ItemLogicPatch) => void
   updateItemConfig: (
     id: string,
     patch: Partial<
@@ -503,6 +507,8 @@ export const useGridStore = create<GridState>((set, get) => {
 
     updateItemPageData: (id, patch) => setActiveCanvas((canvas) => setItemPageData(canvas, id, patch)),
 
+    updateItemLogic: (id, patch) => setActiveCanvas((canvas) => setItemLogic(canvas, id, patch)),
+
     // Config edits change the cell's preview but never the grid layout, so they
     // skip the FLIP animation. No-op for items without a config (non-textfield).
     updateItemConfig: (id, patch) => setActiveCanvas((canvas) => mergeItemConfig(canvas, id, patch)),
@@ -746,4 +752,27 @@ export function useActiveItem(): GridItemData | null {
         ? selectActiveItems(s).find((item) => item.id === s.activeId) ?? null
         : null),
   )
+}
+
+/**
+ * Selects an item anywhere on the hydrated page: drills into the child
+ * canvases on the way (from the root), then selects it. No-op when absent.
+ */
+export function focusGridItem(itemId: string): void {
+  const find = (items: GridItemData[], path: { itemId: string; canvasIndex: number }[]): { itemId: string; canvasIndex: number }[] | null => {
+    for (const item of items) {
+      if (item.id === itemId) return path
+      for (const [i, c] of (item.childCanvases ?? []).entries()) {
+        const hit = find(c.items, [...path, { itemId: item.id, canvasIndex: i }])
+        if (hit) return hit
+      }
+    }
+    return null
+  }
+  const store = useGridStore.getState()
+  const path = find(store.items, [])
+  if (!path) return
+  store.exitToDepth(0)
+  for (const step of path) useGridStore.getState().enterCanvas(step.itemId, step.canvasIndex)
+  useGridStore.getState().selectItem(itemId)
 }

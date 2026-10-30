@@ -18,7 +18,8 @@ reloads by itself, so the user watches you build.
   sends `/` to the first page), a **canvas** of items.
 - **Item** → `type` (see `list_item_types`), `label` (editor name), `config`
   (per-type, see `describe_item_type`), `settings` (grid layout) and optional
-  `showWhen` / `dataWhen` / `initialValue`.
+  `condition` (Show when) / `enabledWhen` / `valueFormula` / `initialValue`
+  (gummy://guide/concepts/logic).
 - **Canvas** → a 12-column responsive grid. Container-hosting items own **child
   canvases** (`get_page` labels each: a modal's content, a data table's edit
   modal and filter form, a repeater's item template, one per tab…). Address one
@@ -78,7 +79,8 @@ several things):
 
 - A form's submit fills a URL `:id` from the form's own `_id` / `id` value, so
   an edit form needs a `hidden` field named `_id`.
-- Bin conditions on a data table's modal: `showWhen: "adding" | "editing"`.
+- Bin conditions on a data table's modal: `condition: "adding" | "editing"`
+  (any condition / formula: gummy://guide/concepts/logic).
 - `SubmitFormToDeleteAPI` does nothing — delete through a POST endpoint or the
   table's own delete (`canDelete` + `deleteEndpointId`).
 

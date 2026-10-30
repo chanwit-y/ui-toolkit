@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { FormProvider, useForm, type FieldValues, type UseFormReturn } from "react-hook-form";
+import { FormProvider, useForm, type FieldValues, type Resolver, type UseFormReturn } from "react-hook-form";
 import { createContext, useEffect } from "react";
 
 
@@ -8,11 +8,14 @@ export class Form<T extends FieldValues = FieldValues> {
 
   private _schema: any;
   private _defaultValues?: any;
+  private _resolver?: Resolver<any>;
   public _form: UseFormReturn<any, unknown, any> | undefined;
 
-  constructor(schema: any, defaultValues?: any) {
+  /** `resolver` replaces the plain `zodResolver(schema)` (the engine narrows the schema per submit, see `formLogic.ts`). */
+  constructor(schema: any, defaultValues?: any, resolver?: Resolver<any>) {
     this._schema = schema;
     this._defaultValues = defaultValues;
+    this._resolver = resolver;
   }
 
 
@@ -43,7 +46,7 @@ export class Form<T extends FieldValues = FieldValues> {
       // ) => { 
       //   this._form = useForm({
       //     mode: "all",
-      //     resolver: zodResolver(this._schema),
+      //     resolver: this._resolver ?? zodResolver(this._schema),
       //     defaultValues: this._defaultValues,
       //   })
 
@@ -58,7 +61,7 @@ export class Form<T extends FieldValues = FieldValues> {
         const { children } = props
         this._form = useForm({
           mode: "all",
-          resolver: zodResolver(this._schema),
+          resolver: this._resolver ?? zodResolver(this._schema),
           defaultValues: this._defaultValues,
         })
 
@@ -76,7 +79,7 @@ export class Form<T extends FieldValues = FieldValues> {
         const { children } = props
         this._form = useForm({
           mode: "all",
-          resolver: zodResolver(this._schema),
+          resolver: this._resolver ?? zodResolver(this._schema),
           defaultValues: this._defaultValues,
         })
         return (<FormProvider {...this._form}>
@@ -109,7 +112,7 @@ export class Form<T extends FieldValues = FieldValues> {
 //       const { children } = props
 //       const form = useForm({
 //         mode: "all",
-//         resolver: zodResolver(this._schema),
+//         resolver: this._resolver ?? zodResolver(this._schema),
 //         defaultValues: this._defaultValues,
 //       })
 //       return (<FormProvider {...form}>

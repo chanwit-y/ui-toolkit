@@ -1,0 +1,22 @@
+/*
+ * Logic (spec/gummy-logic-spec.md). A grid cell disabled by its `enabledWhen`
+ * — or a computed field, which is locked — wraps its element in a fieldset:
+ * `disabled` disables every native control inside (Radix inputs, selects,
+ * switches and buttons take their own disabled look); the dimming and
+ * `pointer-events` cover the custom pickers built from divs.
+ */
+.gummy-gate {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.gummy-gate[disabled] {
+  opacity: 0.65;
+  pointer-events: none;
+}
+
+/* A failed formula's `—`: the wrapper only carries the reason as a tooltip. */
+.gummy-logic-error {
+  display: contents;
+}

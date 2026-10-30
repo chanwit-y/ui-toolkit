@@ -5,6 +5,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { ApiEditor, EnvEditor, Grid, MenuEditor, ModelEditor, ThemeEditor } from './components'
 import { toThemeObjects, useThemeStore } from './components/Theme'
 import { AuthPage, LibraryPage, LibrarySync, TemplateShell, TemplatesPage } from './components/Library'
+import { LogicPage } from './components/Logic/LogicPage'
 import {
   ActivityPage,
   PortalLayout,
@@ -67,6 +68,7 @@ function App() {
               <Route path="env" element={<EnvEditor />} />
               <Route path="theme" element={<ThemeEditor />} />
               <Route path="menu" element={<MenuEditor />} />
+              <Route path="logic" element={<LogicPage />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

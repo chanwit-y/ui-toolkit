@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import type { DataValue } from "./@types";
 import { useDataValue, useSkeleton } from "./core/rowScope";
+import { useFormula } from "./core/logic";
 import { SkeletonText } from "./Skeleton";
 import { HtmlCell } from "./HtmlCell";
 
@@ -25,7 +26,10 @@ export type HtmlContentProps = {
  * (`styles/htmlContent.css`: Radix-var colours, so it follows the appearance).
  */
 export function HtmlContent({ html, value, prose = true, className, style }: HtmlContentProps) {
-  const data = useDataValue(value);
+  const raw = useDataValue(value);
+  // A formula's `{{value}}` is its formatted text.
+  const formula = useFormula(value);
+  const data = formula.active ? (formula.error ? "—" : formula.text) : raw;
   const pending = useSkeleton(value);
   return (
     <div className={`gummy-html-content ${className ?? ""}`} style={style}>

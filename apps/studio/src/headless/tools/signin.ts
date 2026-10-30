@@ -1,4 +1,5 @@
 import { createAuthDef, normalizeAuthDef, type AuthDef } from '../../components/Workspace/auth'
+import { makeLogicNames } from '../../components/Workspace/logic'
 import { ToolError } from '../errors'
 import { resolveRefs, type RefScope } from '../refs'
 import { assertMatches } from '../schemas'
@@ -17,6 +18,9 @@ function libraryScope(endpoints: { id: string; name: string }[]): RefScope {
     loads: [],
     actions: [],
     components: [],
+    formulas: [],
+    rules: [],
+    logic: makeLogicNames(),
     items: [],
     usedEndpoints: new Set(),
   }

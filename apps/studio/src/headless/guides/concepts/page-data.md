@@ -25,8 +25,8 @@ by the load's `key`.
   `source: "state"` + `stateBinding`;
 - a form field's prefill — `initialValue`;
 - a request source — `{ type: "state", key: "book", path: "_id" }`;
-- **Show when** — `dataWhen: { loadId: "book", test: "loaded" | "loading" |
-  "failed" | "compare", path, op, value }`.
+- **Show when** — `condition: "$book.$status = 'success'"`, or a field
+  compared: `condition: "$book.stock > 0"` (gummy://guide/concepts/logic).
 - `path: "$status"` reads the load's status (`idle | held | loading |
   success | error`) — for a status line.
 

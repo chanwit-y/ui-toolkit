@@ -1,4 +1,5 @@
 import type { EnvVarDef } from '../../Env/types'
+import { migrateItemConditions } from '../../Workspace/logic'
 import { createDefaultBackdrop, type StudioThemeConfig } from '../../Theme/types'
 import { createAuthDef, type AuthDef } from '../../Workspace/auth'
 import type { CustomActionDef } from '../../Workspace/customActions'
@@ -8,7 +9,7 @@ import { defaultShell } from '../../Workspace/snapshots'
 import type { LibraryData, MenuItemDef, ProjectDef, ShellSettings, TemplateDef, WorkspaceData } from '../../Workspace/types'
 import { builtinTemplates } from '../templates'
 import { bookshopEndpoints, bookshopModels, E } from './library'
-import { bookshopPages, P, PRINT_ORDER_ACTION_ID, SALES_CHART_COMPONENT_ID } from './pages'
+import { bookshopLogic, bookshopPages, P, PRINT_ORDER_ACTION_ID, SALES_CHART_COMPONENT_ID } from './pages'
 import { navigate } from './ui'
 import { portalProject } from '../portal/project'
 import { glassProject } from '../glass/project'
@@ -179,6 +180,7 @@ export function bookshopProject(library: LibraryData = bookshopLibrary()): Proje
       customActions: bookshopCustomActions(),
       customComponents: bookshopCustomComponents(),
       authId: auth.id,
+      ...bookshopLogic(),
     },
   }
 }
@@ -186,11 +188,14 @@ export function bookshopProject(library: LibraryData = bookshopLibrary()): Proje
 /** The persisted studio state, at the current workspace version. */
 export function bookshopWorkspace(): WorkspaceData {
   const library = bookshopLibrary()
+  const projects = [bookshopProject(library), portalProject(), glassProject(), gridProject(), chartsProject()]
+  // The page builders speak the pre-v60 show-when helpers (`whenRole`, …): one condition each.
+  for (const p of projects) for (const pg of p.snapshot.pages) migrateItemConditions(pg.grid.items)
   return {
-    version: 59,
+    version: 61,
     appearance: 'light',
     user: 'Chanwit Yimneam',
-    projects: [bookshopProject(library), portalProject(), glassProject(), gridProject(), chartsProject()],
+    projects,
     library,
     activity: [],
   }

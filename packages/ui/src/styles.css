@@ -22,6 +22,7 @@
 @import "./styles/auth.css";
 @import "./styles/sidebar.css";
 @import "./styles/surface.css";
+@import "./styles/logic.css";
 
 @tailwind base;
 @tailwind components;

@@ -116,13 +116,13 @@
                           "justifySelf": "stretch",
                           "alignSelf": "stretch",
                           "condition": {
+                            "cmp": "eq",
                             "left": {
-                              "key": "row",
-                              "path": "featured"
+                              "ref": "row",
+                              "key": "featured"
                             },
-                            "operator": "eq",
                             "right": {
-                              "val": true
+                              "lit": true
                             }
                           },
                           "element": {

@@ -4,6 +4,7 @@ import card from './guides/card.md' with { type: 'text' }
 import checkbox from './guides/checkbox.md' with { type: 'text' }
 import conceptsCustomCode from './guides/concepts/custom-code.md' with { type: 'text' }
 import conceptsNavigation from './guides/concepts/navigation.md' with { type: 'text' }
+import conceptsLogic from './guides/concepts/logic.md' with { type: 'text' }
 import conceptsPageData from './guides/concepts/page-data.md' with { type: 'text' }
 import conceptsShellTheme from './guides/concepts/shell-theme.md' with { type: 'text' }
 import conceptsSignIn from './guides/concepts/sign-in.md' with { type: 'text' }
@@ -46,6 +47,7 @@ export const GUIDES: Record<string, string> = {
   checkbox,
   'concepts/custom-code': conceptsCustomCode,
   'concepts/navigation': conceptsNavigation,
+  'concepts/logic': conceptsLogic,
   'concepts/page-data': conceptsPageData,
   'concepts/shell-theme': conceptsShellTheme,
   'concepts/sign-in': conceptsSignIn,

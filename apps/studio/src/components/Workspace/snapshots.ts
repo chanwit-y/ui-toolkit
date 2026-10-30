@@ -89,6 +89,8 @@ import {
   azureSeedAuth,
 } from '../seed/country'
 import { builtinTemplates } from '../seed/templates'
+import { LOGIC_PAGE_ID, logicDemoSeedItems, logicSeedFormulas, logicSeedRules } from '../seed/logic'
+import { migrateItemConditions } from './logic'
 import { createDefaultBackdrop, type StudioThemeConfig } from '../Theme/types'
 import type { LibraryData, MenuItemDef, PageDef, PageGrid, ProjectSnapshot, AppBarSettings, ShellSettings, SidebarSettings } from './types'
 import { defaultMenu } from './menu'
@@ -552,6 +554,27 @@ export function dataGridDemoPage(): PageDef {
  * seeded project by `migrateV57`.
  */
 /**
+ * The "Logic" demo page of the seeded project (the example app's `/logic`,
+ * see `spec/gummy-logic-spec.md`): formulas, rules, show / enable conditions,
+ * a computed column. Used by the fresh seed and appended to an existing
+ * seeded project by `migrateV60`, with the saved items it uses.
+ */
+export function logicDemoPage(): PageDef {
+  return {
+    id: LOGIC_PAGE_ID,
+    key: 'logic',
+    name: 'Logic',
+    path: '/logic',
+    grid: {
+      items: logicDemoSeedItems(),
+      containerSettings: defaultContainerSettings,
+      fieldSeq: 0,
+    },
+    parentId: 'seed-page-countries',
+  }
+}
+
+/**
  * The "Charts" demo page of the seeded project (the example app's `/charts`,
  * see `spec/gummy-chart-spec.md`). Used by the fresh seed and appended to an
  * existing seeded project by `migrateV58`.
@@ -891,6 +914,7 @@ export const OPTION_DEMO_MENU_ICONS: Record<string, string> = {
   [DATA_GRID_PAGE_ID]: 'table',
   [FILE_COLLECTION_PAGE_ID]: 'folder',
   [CHART_PAGE_ID]: 'chartBar',
+  [LOGIC_PAGE_ID]: 'sigma',
   [CARD_PAGE_ID]: 'creditCard',
   [HTML_CONTENT_PAGE_ID]: 'code',
   [DRAWER_PAGE_ID]: 'panelRight',
@@ -938,6 +962,7 @@ export function countryProjectSnapshot(library: LibraryData): ProjectSnapshot {
       formListDemoPage(),
       fileCollectionDemoPage(),
       chartDemoPage(),
+      logicDemoPage(),
       repeaterDemoPage(),
       paginationDemoPage(),
       dataTableDemoPage(),
@@ -965,6 +990,8 @@ export function countryProjectSnapshot(library: LibraryData): ProjectSnapshot {
   ]
   // Every data table carries its two canvases (edit modal + filter form).
   for (const page of pages) ensureDataTableCanvases(page.grid.items)
+  // The seed builders still speak the pre-v60 show-when helpers: one condition each.
+  for (const page of pages) migrateItemConditions(page.grid.items)
   const menu = defaultMenu(pages)
   if (menu[0]?.kind === 'page') menu[0].icon = 'globe'
   for (const item of menu) {
@@ -986,6 +1013,8 @@ export function countryProjectSnapshot(library: LibraryData): ProjectSnapshot {
     endpointIds: countryEndpointIds(library),
     customActions: customActionsSeedDefs(),
     customComponents: customComponentsSeedDefs(),
+    formulas: logicSeedFormulas(),
+    rules: logicSeedRules(),
     authId: AZURE_AUTH_ID,
   }
 }

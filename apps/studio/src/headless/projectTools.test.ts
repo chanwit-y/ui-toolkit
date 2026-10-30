@@ -150,3 +150,54 @@ describe('project settings through the tools', () => {
     expect(readWorkspace(writeWorkspace(t.ws))).toEqual(t.ws)
   })
 })
+
+describe('logic through the tools', () => {
+  const t = make(newWorkspace('Orders'))
+  const P = { project: 'orders' }
+  const result = async (name: string, args: Record<string, unknown>) => (await t.call(name, args)).result
+
+  test('saved formulas and rules from Code-mode text, used by items, exported by name', async () => {
+    await t.call('add_page', { ...P, name: 'Order', path: '/order' })
+    const sub = (await result('upsert_formula', { ...P, name: 'Subtotal', expr: '[qty] * [unitPrice]' })) as unknown as { id: string; expr: unknown }
+    expect(sub.expr).toEqual({ op: '*', args: [{ ref: 'field', key: 'qty' }, { ref: 'field', key: 'unitPrice' }] })
+    await t.call('upsert_rule', {
+      ...P,
+      name: 'Discount rate',
+      resultType: 'number',
+      format: { type: 'percent', decimals: 0 },
+      rule: { branches: [{ when: '((Subtotal)) >= 10000', then: '10%' }, { when: '((Subtotal)) >= 5000', then: '5%' }], else: '0' },
+    })
+    await t.call('upsert_rule', { ...P, name: 'Is business', resultType: 'boolean', rule: { branches: [{ when: "[type] = 'Business'", then: 'TRUE' }], else: 'FALSE' } })
+    await t.call('upsert_formula', { ...P, name: 'Total', expr: '((Subtotal)) * (1 - IF((Discount rate))) * 1.07', format: 'currency' })
+
+    const field = (name: string, extra: Record<string, unknown> = {}) => t.call('add_item', { ...P, page: 'order', type: 'textfield', config: { name, label: name }, ...extra })
+    await field('qty')
+    await field('unitPrice')
+    await field('subtotal', { valueFormula: '((Subtotal))', valueMode: 'computed' })
+    await field('company', { condition: 'IF((Is business))' })
+    await field('code', { enabledWhen: '((Subtotal)) >= 5000' })
+    const bad = await t.call('add_item', { ...P, page: 'order', type: 'textfield', config: { name: 'x' }, condition: '[a] = ((Nope))' }).catch((e) => e)
+    expect(String((bad as Error).message)).toContain('Nope')
+
+    const report = (await t.call('validate_project', P)) as unknown as { ok: boolean; errors: string[] }
+    expect(report.errors).toEqual([])
+    const doc = (await t.call('export_project', P)) as unknown as { formulas: Record<string, unknown>; rules: Record<string, { rule: { branches: { then: unknown }[] } }>; pages: Record<string, { containers: { bins: { condition?: unknown; element?: Record<string, unknown> }[] }[] }> }
+    expect(Object.keys(doc.formulas)).toEqual(['Subtotal', 'Total'])
+    expect(doc.rules['Discount rate'].rule.branches[1].then).toEqual({ lit: 0.05 })
+    const bins = doc.pages.order.containers[0].bins
+    expect(bins[2].element?.value).toEqual({ type: 'formula', key: 'none', formula: 'Subtotal' })
+    expect(bins[3].condition).toEqual({ rule: 'Is business' })
+    expect(bins[4].element?.enabledWhen).toEqual({ cmp: 'gte', left: { formula: 'Subtotal' }, right: { lit: 5000 } })
+  })
+
+  test('a used item reports its users before delete; a number rule is no condition', async () => {
+    const pending = (await result('delete_formula', { ...P, formula: 'Subtotal' })) as unknown as { confirmRequired: boolean; stillUsedBy: string[] }
+    expect(pending.confirmRequired).toBe(true)
+    expect(pending.stillUsedBy).toContain('page Order')
+    expect(pending.stillUsedBy).toContain('rule Discount rate')
+    const item = t.ws.projects[0].snapshot.pages.find((p) => p.key === 'order')!.grid.items[3]
+    await t.call('update_item', { ...P, page: 'order', item: item.id, condition: 'IF((Discount rate))' })
+    const report = (await t.call('validate_project', P)) as unknown as { errors: string[] }
+    expect(report.errors.join(' ')).toContain('gives number, not true / false')
+  })
+})

@@ -5,6 +5,7 @@ import {
   AuthUserMenu,
   AzureAuth,
   ComponentsProvider,
+  FormulasProvider,
   AppShell,
   DataProvider,
   GlobalLoads,
@@ -26,6 +27,7 @@ import { auth, MOCK_EMAIL } from "./config/country/auth";
 import { actions } from "./actions";
 import { components as customComponents } from "./customComponents";
 import { theme, components } from "./config/theme";
+import { logicLibrary } from "./config/country/logic";
 
 // The token getter is the signed-in user's (`getAccessToken` reads the
 // mounted <AzureAuth>); in mock mode it is "".
@@ -169,11 +171,15 @@ export function App() {
           {/* Custom components: the app's coded React components
               (src/customComponents.ts), placed by `custom` Bins by name. */}
           <ComponentsProvider components={customComponents}>
+          {/* Saved formulas and rules (config/country/logic.ts), referenced
+              by name from configs: `{ formula: "subtotal" }`, `{ rule: "isBusiness" }`. */}
+          <FormulasProvider {...logicLibrary}>
             {/* Azure SSO (config/country/auth.ts): landing / loading / denied
                 screens around the shell, the `auth` + `me` slices, the token. */}
             <AzureAuth config={auth} env={authEnv} mock={authMock} http={http as any} model={model} api={api} appBar={appBar}>
               <AppContent />
             </AzureAuth>
+          </FormulasProvider>
           </ComponentsProvider>
         </ActionsProvider>
       </ThemeProvider>

@@ -35,8 +35,7 @@ import { useBreadcrumb, useGridStore, useSelectedItem, type SidebarView } from '
 import { RadioConfigPanel } from './RadioConfigPanel'
 import { SelectFieldConfigPanel } from './SelectFieldConfigPanel'
 import { ContainerSettingsPanel, ItemSettingsPanel } from './SettingsPanel'
-import { ShowWhenPanel } from './ShowWhenPanel'
-import { PageDataPanel } from './PageDataPanel'
+import { LogicPanel } from '../Logic/LogicPanel'
 import { TextareaConfigPanel } from './TextareaConfigPanel'
 import { UploadFileConfigPanel, UploadImageConfigPanel } from './UploadConfigPanel'
 import type {
@@ -154,8 +153,7 @@ export function Sidebar({ gridConfigJson, fullGridCss }: SidebarProps) {
 
       <div className={cn('min-h-0 flex-1 overflow-y-auto p-3', sidebarView === 'code' && 'p-2')}>
         {sidebarView !== 'code' && selectedItem && <PathCrumb label={selectedItem.label} />}
-        {sidebarView === 'inspector' && selectedItem && <ShowWhenPanel item={selectedItem} />}
-        {sidebarView === 'inspector' && selectedItem && <PageDataPanel item={selectedItem} />}
+        {sidebarView === 'inspector' && selectedItem && <LogicPanel item={selectedItem} />}
         {sidebarView === 'code' ? (
           <CodeViewer
             maxHeightClassName="max-h-[calc(100vh-9rem)]"

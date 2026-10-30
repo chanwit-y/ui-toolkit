@@ -69,14 +69,14 @@ describe('building a CRUD page through the tools', () => {
         {
           tool: 'add_item',
           input: {
-            project: 'book-store', page: 'books', type: 'button', parent: { item: 'books', canvas: 0 }, showWhen: 'adding',
+            project: 'book-store', page: 'books', type: 'button', parent: { item: 'books', canvas: 0 }, condition: 'adding',
             config: { label: 'Create', actions: ['StartLoading', 'SubmitFormToPostAPI', 'StopLoading', 'CloseModal'], endpointId: 'createBook', reloadTableItemId: 'books' },
           },
         },
         {
           tool: 'add_item',
           input: {
-            project: 'book-store', page: 'books', type: 'button', parent: { item: 'books', canvas: 0 }, showWhen: 'editing',
+            project: 'book-store', page: 'books', type: 'button', parent: { item: 'books', canvas: 0 }, condition: 'editing',
             config: { label: 'Save', actions: ['StartLoading', 'SubmitFormToPatchAPI', 'StopLoading', 'CloseModal'], endpointId: 'updateBook', reloadTableItemId: 'books' },
           },
         },
@@ -86,11 +86,13 @@ describe('building a CRUD page through the tools', () => {
     expect(out.notes).toBeDefined()
     expect(t.ws.projects[0].snapshot.endpointIds.length).toBe(3)
 
-    const page = await t.call('get_page', { project: 'book-store', page: '/books' }) as unknown as { items: { type: string; canvases: { items: { type: string; showWhen?: string }[] }[] }[] }
+    const page = await t.call('get_page', { project: 'book-store', page: '/books' }) as unknown as { items: { type: string; canvases: { items: { type: string; condition?: true }[] }[] }[] }
     const table = page.items[0]
     expect(table.type).toBe('datatable')
     expect(table.canvases[0].items.map((i) => i.type)).toEqual(['hidden', 'textfield', 'button', 'button'])
-    expect(table.canvases[0].items.map((i) => i.showWhen ?? '')).toEqual(['', '', 'adding', 'editing'])
+    expect(table.canvases[0].items.map((i) => !!i.condition)).toEqual([false, false, true, true])
+    const create = await t.call('get_item', { project: 'book-store', page: 'books', item: t.ws.projects[0].snapshot.pages[1].grid.items[0].childCanvases![0].items[2].id }) as { logic?: { condition: string } }
+    expect(create.logic?.condition).toBe('row.$table._id IS EMPTY')
 
     // Names were stored as ids.
     const save = t.ws.projects[0].snapshot.pages[1].grid.items[0].childCanvases![0].items[3].config as { endpointId: string; reloadTableItemId: string }

@@ -409,7 +409,9 @@ export function Layout({ templateMode = false }: { templateMode?: boolean } = {}
     const onPointerDown = (e: PointerEvent) => {
       const target = e.target as HTMLElement | null
       if (!target) return
-      if (target.closest('[data-grid-item]') || target.closest('aside')) return
+      // A dialog opened from the inspector (the logic editor) is portaled
+      // outside the aside; clicking into it is still editing the item.
+      if (target.closest('[data-grid-item]') || target.closest('aside') || target.closest('[role="dialog"], [role="alertdialog"]')) return
       clearSelection()
     }
     document.addEventListener('pointerdown', onPointerDown, true)
@@ -455,10 +457,13 @@ export function Layout({ templateMode = false }: { templateMode?: boolean } = {}
   // A button's custom action id → its declared name.
   const customActions = useActiveProject()?.snapshot.customActions ?? EMPTY_ACTIONS
   const customComponents = useActiveProject()?.snapshot.customComponents ?? EMPTY_COMPONENTS
+  // Saved formula / rule ids → their names.
+  const formulas = useActiveProject()?.snapshot.formulas
+  const rules = useActiveProject()?.snapshot.rules
 
   const gridConfigJson = useMemo(
-    () => (computeCode ? gridConfigToJson(rootSettings, rootItems, endpoints, pages, loads, customActions, customComponents) : ''),
-    [computeCode, rootSettings, rootItems, endpoints, pages, loads, customActions, customComponents],
+    () => (computeCode ? gridConfigToJson(rootSettings, rootItems, endpoints, pages, loads, customActions, customComponents, { formulas, rules }) : ''),
+    [computeCode, rootSettings, rootItems, endpoints, pages, loads, customActions, customComponents, formulas, rules],
   )
 
   const fullGridCss = useMemo(

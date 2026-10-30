@@ -1,9 +1,9 @@
 import { useEffect, useMemo } from 'react'
-import { Navigate, Outlet, useParams } from 'react-router-dom'
+import { Navigate, Outlet, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { AppearanceSync } from '../AppearanceSync'
 import { AppShell } from '../AppShell'
 import { useEnvStore } from '../Env/envStore'
-import { useGridStore } from '../Layout/gridStore'
+import { focusGridItem, useGridStore } from '../Layout/gridStore'
 import { LibraryScopeContext } from '../Library/scope'
 import { chromeThemeStyle } from '../Theme/designTheme'
 import { useThemeStore } from '../Theme/themeStore'
@@ -74,6 +74,17 @@ export function ProjectShell() {
     setActivePageId(pageId)
     applyPageGrid(page.grid)
   }, [projectId, pageId, setActivePageId])
+
+  // "Used by" on the Logic tab opens a page with one item selected
+  // (`state.selectItem`): drill into its canvas, select it, drop the state.
+  const location = useLocation()
+  const navigate = useNavigate()
+  const selectItem = (location.state as { selectItem?: string } | null)?.selectItem
+  useEffect(() => {
+    if (!selectItem || !pageId) return
+    focusGridItem(selectItem)
+    navigate(location.pathname, { replace: true, state: null })
+  }, [selectItem, pageId, navigate, location.pathname])
 
   // Autosave: any change to the project-owned stores (that isn't a hydration)
   // schedules a debounced write into this project + page. The library stores

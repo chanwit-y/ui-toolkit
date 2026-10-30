@@ -9,6 +9,7 @@ import type { TModelMaster } from "../../model/master";
 import { ElementContext } from "./elementBuilder";
 import { BoundOptions } from "./bound";
 import { resolveApiRef } from "./readApi";
+import { legacyCondition } from "./formula";
 
 /** The field as is, or behind {@link BoundOptions} when `optionsValue` is set. */
 function withBoundOptions(props: AutocompleteElement, component: any, fieldProps: Record<string, unknown>): JSX.Element {
@@ -42,7 +43,7 @@ export class Autocomplete<M extends TModelMaster, A extends TApiMaster<M>>
       apiInfo: props.api,
       apiSegments: resolveApiRef(this._context, props.api?.name)?.segments,
 
-      enabledWhen: props.enabledWhen,
+      enabledWhen: legacyCondition(props.enabledWhen),
 
       // defaultData: props.defaultData ?? {},
       options: props.options ?? [], // Add required options property
@@ -79,7 +80,7 @@ export class MultiAutocomplete<M extends TModelMaster, A extends TApiMaster<M>>
       apiInfo: props.api,
       apiSegments: resolveApiRef(this._context, props.api?.name)?.segments,
 
-      enabledWhen: props.enabledWhen,
+      enabledWhen: legacyCondition(props.enabledWhen),
 
       // defaultData: props.defaultData ?? {},
       options: props.options ?? [],

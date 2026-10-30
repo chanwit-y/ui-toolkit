@@ -71,6 +71,7 @@ export function TextConfigPanel({ itemId, config }: { itemId: string; config: Te
         <Input value={config.text} onChange={(e) => set('text', e.target.value)} />
       </Field>
       <ItemBindingField
+        allowFormula
         label="Text"
         binding={config.binding ?? null}
         onChange={(b) => set('binding', b)}
@@ -151,6 +152,7 @@ export function TypographyConfigPanel({
         <Input value={config.text} onChange={(e) => set('text', e.target.value)} />
       </Field>
       <ItemBindingField
+        allowFormula
         label="Text"
         binding={config.binding ?? null}
         onChange={(b) => set('binding', b)}

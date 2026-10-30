@@ -1,5 +1,6 @@
 import type { NavigateTarget } from '@gummy-ui/ui'
 import { urlParams } from '../Api/warnings'
+import { formulaToDataValue, logicToEngine, makeLogicNames, type FormulaLibDef, type LogicNames, type RuleLibDef, type StudioCondition } from '../Workspace/logic'
 import { MAX_GRID_COLUMNS } from './breakpoints'
 import { MISSING_OBSERVE_TARGET, observeContext, type ObserveContext } from './observe'
 import {
@@ -174,7 +175,12 @@ type ButtonRefMaps = {
   componentName: (id: string) => string
   /** The declarations themselves, for the props' kinds. */
   componentDefs: CustomComponentDef[]
+  /** Saved formula / rule ids → names and load ids → keys, for logic nodes (`logicToEngine`). */
+  logic: LogicNames
 }
+
+/** The project's saved formulas and rules, threaded into the export. */
+export type LogicLibraryRef = { formulas?: FormulaLibDef[]; rules?: RuleLibDef[] }
 
 function makeButtonRefMaps(
   rootItems: GridItemData[],
@@ -182,6 +188,7 @@ function makeButtonRefMaps(
   loads: Pick<PageLoadDef, 'id' | 'key'>[] = [],
   customActions: CustomActionRef[] = [],
   customComponents: CustomComponentDef[] = [],
+  logicLibrary: LogicLibraryRef = {},
 ): ButtonRefMaps {
   const targets = collectButtonTargets(rootItems)
   return {
@@ -192,6 +199,7 @@ function makeButtonRefMaps(
     actionKey: makeActionKeyResolver(customActions),
     componentName: makeComponentNameResolver(customComponents),
     componentDefs: customComponents,
+    logic: makeLogicNames(logicLibrary.formulas, logicLibrary.rules, loads),
   }
 }
 
@@ -779,11 +787,13 @@ function dataTableElement(
       ...(col.group.trim() ? { group: col.group.trim() } : {}),
       ...(col.hide ? { hide: true } : {}),
       ...(col.lockVisible ? { lockVisible: true } : {}),
-      ...(styleRulesToEngine(col.cellStyles) ? { cellStyles: styleRulesToEngine(col.cellStyles) } : {}),
+      ...(styleRulesToEngine(col.cellStyles, styleCondition(refs.logic)) ? { cellStyles: styleRulesToEngine(col.cellStyles, styleCondition(refs.logic)) } : {}),
       ...(col.aggregate ? { aggregate: col.aggregate } : {}),
+      // A computed column: each row's value from the formula.
+      ...(col.value ? { value: formulaToDataValue(col.value, refs.logic) } : {}),
       ...columnSizing(col),
     })),
-    ...dataTableGridFeatures(c),
+    ...dataTableGridFeatures(c, refs.logic),
     ...(rows ? { items: rows } : {}),
     ...(apiName
       ? {
@@ -882,7 +892,12 @@ function columnSizing(col: ColumnSizingConfig): Record<string, unknown> {
  * `requiredMessage` (when required) — everything else is carried in studio but
  * dropped here. The `validate` fn and `defaultValue` aren't authorable.
  */
-function editableTableColumn(col: DataTableEditableColumnConfig): Record<string, unknown> {
+/** A style rule's custom condition → the engine's names. */
+function styleCondition(logic: LogicNames) {
+  return (c: StudioCondition) => logicToEngine(c, logic)
+}
+
+function editableTableColumn(col: DataTableEditableColumnConfig, logic?: LogicNames): Record<string, unknown> {
   const validation: Record<string, unknown> = {}
   if (col.isRequired && col.requiredMessage) validation.requiredMessage = col.requiredMessage
   if (col.editor === 'number') {
@@ -908,7 +923,9 @@ function editableTableColumn(col: DataTableEditableColumnConfig): Record<string,
     enableColumnFilter: col.enableColumnFilter,
     align: col.align,
     ...columnFormatExport(col.format),
-    ...(styleRulesToEngine(col.cellStyles) ? { cellStyles: styleRulesToEngine(col.cellStyles) } : {}),
+    ...(styleRulesToEngine(col.cellStyles, logic ? styleCondition(logic) : undefined)
+      ? { cellStyles: styleRulesToEngine(col.cellStyles, logic ? styleCondition(logic) : undefined) }
+      : {}),
     ...(col.rowHeader ? { rowHeader: true } : {}),
     ...(col.group.trim() ? { group: col.group.trim() } : {}),
     ...columnSizing(col),
@@ -928,6 +945,7 @@ function editableTableColumn(col: DataTableEditableColumnConfig): Record<string,
 function dataTableEditableElement(
   c: DataTableEditableConfig,
   resolveEndpoint: ResolveEndpoint,
+  logic?: LogicNames,
 ): Record<string, unknown> {
   const ref = (id: string | null) => ({ name: resolveEndpoint(id) ?? '' })
   return {
@@ -936,7 +954,7 @@ function dataTableEditableElement(
     idKey: c.idKey,
     ...(c.canResizeColumns ? {} : { canResizeColumns: false }),
     ...(c.actionSize ? { actionSize: c.actionSize } : {}),
-    columns: c.columns.map(editableTableColumn),
+    columns: c.columns.map((col) => editableTableColumn(col, logic)),
     apiCrud: {
       read: ref(c.readEndpointId),
       ...(c.canCreate ? { create: ref(c.createEndpointId) } : {}),
@@ -1153,8 +1171,9 @@ function fileCollectionElement(
  */
 function itemBindingValue(
   binding: ItemBinding | undefined,
-  refs: Pick<ButtonRefMaps, 'loadKey'>,
+  refs: Pick<ButtonRefMaps, 'loadKey' | 'logic'>,
 ): Record<string, unknown> | undefined {
+  if (binding?.source === 'formula') return binding.formula ? (formulaToDataValue(binding.formula, refs.logic) as Record<string, unknown>) : undefined
   if (!binding || !binding.key) return undefined
   const path = binding.path ? { path: binding.path } : {}
   if (binding.source === 'state') return { type: 'state', key: refs.loadKey(binding.key), ...path }
@@ -1840,7 +1859,7 @@ function toolbarButton(b: ButtonConfig | undefined, fallback: ButtonConfig): Rec
  * The AG Grid-style keys of a data table (see the grilled design
  * `datatable-ag-grid-features`): only what differs from the engine defaults.
  */
-export function dataTableGridFeatures(c: DataTableConfig): Record<string, unknown> {
+export function dataTableGridFeatures(c: DataTableConfig, logic?: LogicNames): Record<string, unknown> {
   const columnsButton = c.canChooseColumns !== false ? toolbarButton(c.columnsButton, DEFAULT_COLUMNS_BUTTON) : null
   const exportButton = c.canExport ? toolbarButton(c.exportButton, DEFAULT_EXPORT_BUTTON) : null
   const sel = c.selection
@@ -1854,7 +1873,7 @@ export function dataTableGridFeatures(c: DataTableConfig): Record<string, unknow
         ...(exp.rows !== 'all' ? { rows: exp.rows } : {}),
       }
     : {}
-  const rowStyles = styleRulesToEngine(c.rowStyles)
+  const rowStyles = styleRulesToEngine(c.rowStyles, logic ? styleCondition(logic) : undefined)
   return {
     ...(c.canChooseColumns === false ? { canChooseColumns: false } : {}),
     ...(columnsButton ? { columnsButton } : {}),
@@ -2183,7 +2202,7 @@ function buildElement(
         : undefined
     case 'datatableeditable':
       return item.config
-        ? dataTableEditableElement(item.config as DataTableEditableConfig, resolveEndpoint)
+        ? dataTableEditableElement(item.config as DataTableEditableConfig, resolveEndpoint, refs.logic)
         : undefined
     case 'formlist':
       return item.config
@@ -2276,17 +2295,31 @@ export function buildBins(
   customActions: CustomActionRef[] = [],
   /** The project's declared custom components, so a `custom` item's declaration id exports as its name (top-level call only). */
   customComponents: CustomComponentDef[] = [],
+  /** The project's saved formulas and rules, so logic nodes export by name (top-level call only). */
+  logicLibrary: LogicLibraryRef = {},
 ): Record<string, unknown>[] {
   const cols = container.columns
   const resolveEndpoint = makeEndpointResolver(endpoints)
-  const buttonRefs = refs ?? makeButtonRefMaps(items, pages, loads, customActions, customComponents)
+  const buttonRefs = refs ?? makeButtonRefMaps(items, pages, loads, customActions, customComponents, logicLibrary)
   return items.map((item) => {
     const span = item.settings.colSpan
     const lg = toBoxRange(span.lg, cols.lg)
     const built = buildElement(item, items, endpoints, resolveEndpoint, buttonRefs)
     // A form field's initial value from a page load (engine `element.value`).
-    const initial = isBlockedInRepeater(item.type) ? itemBindingValue(item.initialValue, buttonRefs) : undefined
-    const element = built && initial ? { ...built, value: initial } : built
+    const isField = isBlockedInRepeater(item.type)
+    // A form field's value: a formula (live with `valueMode: "computed"`), else
+    // its initial value from a page load (engine `element.value`).
+    const formula = isField && item.valueFormula ? formulaToDataValue(item.valueFormula, buttonRefs.logic, { tableName: scope?.tableName }) : undefined
+    const initial = isField && !formula ? itemBindingValue(item.initialValue, buttonRefs) : undefined
+    const enabledWhen = item.enabledWhen ? logicToEngine(item.enabledWhen, buttonRefs.logic, { tableName: scope?.tableName }) : undefined
+    const element = built
+      ? {
+          ...built,
+          ...(formula ? { value: formula, ...(item.valueMode === 'computed' ? { valueMode: 'computed' } : {}) } : {}),
+          ...(initial ? { value: initial } : {}),
+          ...(enabledWhen ? { enabledWhen } : {}),
+        }
+      : built
     // Adding / editing visibility inside a data table's modal: the engine
     // condition the example's country form uses (`<table>._id` undefined ⇒
     // the Add button opened it). `val: undefined` is dropped by JSON, which
@@ -2301,8 +2334,10 @@ export function buildBins(
         : undefined
     // Page-data visibility, combined with the modal's adding / editing one.
     const dataCondition = item.dataWhen ? dataConditionValue(item.dataWhen, buttonRefs) : undefined
-    const condition =
-      modalCondition && dataCondition
+    // The logic editor's Show when (v60+) replaces both.
+    const condition = item.condition
+      ? logicToEngine(item.condition, buttonRefs.logic, { tableName: scope?.tableName })
+      : modalCondition && dataCondition
         ? { left: modalCondition, operator: 'and', right: dataCondition }
         : (modalCondition ?? dataCondition)
     // A plain `container` Bin nests via the Bin-level `container` key (not an
@@ -2345,8 +2380,9 @@ export function gridConfigToJson(
   loads: Pick<PageLoadDef, 'id' | 'key'>[] = [],
   customActions: CustomActionRef[] = [],
   customComponents: CustomComponentDef[] = [],
+  logicLibrary: LogicLibraryRef = {},
 ): string {
-  return JSON.stringify(buildBins(container, items, endpoints, pages, undefined, undefined, loads, customActions, customComponents), null, 2)
+  return JSON.stringify(buildBins(container, items, endpoints, pages, undefined, undefined, loads, customActions, customComponents, logicLibrary), null, 2)
 }
 
 /**

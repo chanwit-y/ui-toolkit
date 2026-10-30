@@ -478,6 +478,8 @@ export type DataTableProps = {
   apiInfo?: DataTableApi;
   /** Rows from a DataValue instead of the API (see {@link DataTableElement.items}). */
   items?: DataValue;
+  /** Computed columns (`ColumnDef.value`): each row gets `accessor` = the formula's raw result. */
+  computedColumns?: { accessor: string; value: DataValue }[];
   /**
    * The read endpoint's declared segments, so `query`/`body` maps and the
    * pagination keys land in the caller's positional (query, param, body)
@@ -1187,7 +1189,7 @@ export type DataValue = {
    * meaningful in a data table's `api.params` / `api.query` / `api.body`: it
    * reads the field named `key` of the table's applied `filterContainer` form.
    */
-  type: "variable" | "state" | "observe" | "value" | "selectedRow" | "url" | "row" | "filter";
+  type: "variable" | "state" | "observe" | "value" | "selectedRow" | "url" | "row" | "filter" | "formula";
   key: "none" | string;
   /**
    * The literal for `type:"value"`. For `type:"filter"` it is the fallback sent
@@ -1205,6 +1207,17 @@ export type DataValue = {
    * (default) or from the query string. `key` is the param/query name.
    */
   source?: "param" | "query";
+  /**
+   * `type:"formula"` only: a saved formula by name (`project.formulas`), or an
+   * inline one in `expr` (with its own `format` / policies). Resolved by the
+   * display bindings, a form field's `value` and a computed column — not by
+   * request mapping (see `spec/gummy-logic-spec.md`).
+   */
+  formula?: string;
+  expr?: Expr;
+  format?: CellFormat;
+  onEmpty?: FormulaBlankPolicy;
+  onDivideByZero?: FormulaBlankPolicy;
 };
 
 export type API = {
@@ -1342,7 +1355,7 @@ export type CheckboxElement = {
   errorMessage: string;
   /** Read-only initial value bound from a global-state slice. */
   value?: DataValue;
-} & CheckboxProps;
+} & CheckboxProps & FieldLogic;
 
 /** Where a switch's label sits relative to the thumb. */
 export type SwitchLabelPosition = "start" | "end";
@@ -1384,7 +1397,7 @@ export type SwitchElement = {
   defaultChecked?: boolean;
   /** Read-only initial value bound from a global-state slice. */
   value?: DataValue;
-} & Omit<SwitchProps, "value" | "defaultChecked">;
+} & Omit<SwitchProps, "value" | "defaultChecked" | "enabledWhen"> & FieldLogic;
 
 export type APIDelete = {
   name: string;
@@ -1404,8 +1417,9 @@ export type AutocompleteElement = {
   helperText?: string;
   canObserve: boolean;
   observeTo: string;
-  // enabledWhen: ConditionTerm;
-  enabledWhen: CondExpression;
+  /** Enabled while it holds: the observe form (`{ key, type: "observe" }`) or a `Cond` / `{ rule }`. */
+  enabledWhen?: AnyCondition;
+  valueMode?: FieldValueMode;
   isRequired: boolean;
   isSingleLoad: boolean;
   errorMessage: string;
@@ -1442,6 +1456,12 @@ export type AutocompleteElement = {
 export type ColumnDef = {
   accessor: string;
   header: string;
+  /**
+   * A computed column: a `type:"formula"` value evaluated per row (`row`
+   * refs read the row). The cell shows the formatted result; sort, filter
+   * and search use the raw one.
+   */
+  value?: DataValue;
   enableSorting: boolean;
   /** Field name sent to the API by `api.sort` when it differs from `accessor`. */
   sortField?: string;
@@ -1535,7 +1555,7 @@ export type ColumnDef = {
  * tone only.
  */
 export type DataTableStyleRule = {
-  when: CondExpression;
+  when: AnyCondition;
   tone?: ThemeProps["accentColor"];
   fill?: boolean;
   weight?: "bold";
@@ -1763,7 +1783,7 @@ export type TextFieldElement = {
   errorMessage: string;
   /** Read-only initial value bound from a global-state slice. */
   value?: DataValue;
-} & TextFieldProps;
+} & TextFieldProps & FieldLogic;
 
 export type TextareaElement = {
   name: string;
@@ -1772,7 +1792,7 @@ export type TextareaElement = {
   errorMessage: string;
   /** Read-only initial value bound from a global-state slice. */
   value?: DataValue;
-} & TextareaProps;
+} & TextareaProps & FieldLogic;
 
 export type HiddenElement = {
   name: string;
@@ -1786,7 +1806,7 @@ export type DatePickerElement = {
   errorMessage?: string;
   /** Read-only initial value bound from a global-state slice. */
   value?: DataValue;
-} & DatePickerProps;
+} & DatePickerProps & FieldLogic;
 
 export type DateRange = {
   start: string | null;
@@ -1843,7 +1863,7 @@ export type DateRangePickerElement = {
   dataType: string;
   isRequired?: boolean;
   errorMessage?: string;
-} & DateRangePickerProps;
+} & DateRangePickerProps & FieldLogic;
 
 export type DateTimePickerProps = BaseComponentProps<
   "button",
@@ -1903,7 +1923,7 @@ export type DateTimePickerElement = {
   dataType: string;
   isRequired?: boolean;
   errorMessage?: string;
-} & DateTimePickerProps;
+} & DateTimePickerProps & FieldLogic;
 
 export type TextElement = BaseComponentProps<
   typeof RadixText,
@@ -2015,7 +2035,7 @@ export type UploadImageElement = {
   dataType: string;
   isRequired?: boolean;
   errorMessage?: string;
-} & UploadImageProps;
+} & UploadImageProps & FieldLogic;
 
 export type UploadedFile = {
   name: string;
@@ -2084,7 +2104,7 @@ export type UploadFileElement = {
   dataType: string;
   isRequired?: boolean;
   errorMessage?: string;
-} & UploadFileProps;
+} & UploadFileProps & FieldLogic;
 
 /**
  * Declarative radio config. Like AutocompleteElement: options can be static
@@ -2122,7 +2142,8 @@ export type RadioElement = {
   /** Observe another field's value to feed this radio's API params. */
   observeTo?: string;
   /** Conditionally disable the group based on another field. */
-  enabledWhen?: CondExpression;
+  enabledWhen?: AnyCondition;
+  valueMode?: FieldValueMode;
 };
 
 export type TElement =
@@ -2323,7 +2344,8 @@ export type Bin = {
   lg: BoxRange;
   xl: BoxRange;
   type: BinType;
-  condition?: CondExpression;
+  /** Shown while it holds. A hidden field is out of the form: not validated, not submitted. */
+  condition?: AnyCondition;
   element?: TElement;
   container?: Container;
   align?: "start" | "center" | "end";
@@ -2725,6 +2747,8 @@ export type ButtonElement = {
   snackbarError?: SnackbarElement | "$exception";
   /** Target of the `"Navigate"` action. */
   navigate?: NavigateTarget;
+  /** Clickable only while it holds (fails closed). */
+  enabledWhen?: AnyCondition;
 };
 
 export type ModalElement = {
@@ -3125,7 +3149,7 @@ export type WorkflowEditorElement = {
   disabled?: boolean;
   /** Read-only initial value bound from a global-state slice. */
   value?: DataValue;
-};
+} & FieldLogic;
 
 export type HtmlContentElement = {
   name?: string;
@@ -3244,6 +3268,105 @@ export type CondExpression = {
   right: CondValue | CondExpression;
   left: CondValue | CondExpression;
   operator: ExpressionOperator;
+};
+
+// Logic: formulas and rules (spec/gummy-logic-spec.md)
+
+/**
+ * Where an `Expr` reference reads: the nearest form's field `key`, the
+ * global-state slice `key`, the nearest item (`row`: a repeater item, a
+ * table's edit record by table name, the row of a style rule / computed
+ * column — `key: "none"` the row itself, `"value"` the cell value, `"index"`
+ * its position) or a URL param / query.
+ */
+export type ExprRefSource = "field" | "state" | "row" | "url";
+
+export type ExprFunction =
+  | "ROUND"
+  | "MIN"
+  | "MAX"
+  | "ABS"
+  | "LEN"
+  | "TODAY"
+  | "DAYS"
+  | "COUNT"
+  | "SUM";
+
+/** A formula: a literal, a reference, an operation, a function call or a library reference. */
+export type Expr =
+  | { lit: number | string | boolean | null }
+  | { ref: ExprRefSource; key: string; path?: string; source?: "param" | "query" }
+  | { op: "+" | "-" | "*" | "/" | "&"; args: [Expr, Expr] }
+  | { fn: ExprFunction; args: Expr[] }
+  | { formula: string }
+  | { rule: string };
+
+export type CondOperator =
+  | "eq"
+  | "neq"
+  | "gt"
+  | "gte"
+  | "lt"
+  | "lte"
+  | "empty"
+  | "notEmpty"
+  | "contains"
+  | "in"
+  | "between";
+
+/**
+ * A condition: AND (`all`) / OR (`any`) groups of comparisons. `right` is
+ * absent for `empty` / `notEmpty`, a list for `in` and `[low, high]` for
+ * `between`.
+ */
+export type Cond =
+  | { all: Cond[] }
+  | { any: Cond[] }
+  | { cmp: CondOperator; left: Expr; right?: Expr | Expr[] };
+
+export type LogicResultType = "number" | "text" | "boolean" | "date";
+
+/** IF / ELSE IF / ELSE: the first branch whose `when` holds gives the result, else `else`. */
+export type Rule = {
+  branches: { when: Cond; then: Expr | Rule }[];
+  else: Expr;
+};
+
+/** What a formula gives for a blank input / a division by zero. Default `"empty"`. */
+export type FormulaBlankPolicy = "empty" | "zero" | "error";
+
+export type FormulaDef = {
+  expr: Expr;
+  /** Applied only where the result is displayed. */
+  format?: CellFormat;
+  onEmpty?: FormulaBlankPolicy;
+  onDivideByZero?: FormulaBlankPolicy;
+};
+
+export type RuleDef = {
+  resultType: LogicResultType;
+  rule: Rule;
+  format?: CellFormat;
+};
+
+/** The saved formulas and rules of a project, by name. */
+export type LogicLibrary = {
+  formulas?: Record<string, FormulaDef>;
+  rules?: Record<string, RuleDef>;
+};
+
+/** Anything a condition slot takes: the old expression, a `Cond`, or a saved boolean rule. */
+export type AnyCondition = CondExpression | Cond | { rule: string };
+
+/** `initial`: the value seeds the field once; `computed`: locked, recalculated live, still submitted. */
+export type FieldValueMode = "initial" | "computed";
+
+/** The logic keys every input takes (evaluated by the grid cell, not the component). */
+export type FieldLogic = {
+  /** Enabled while it holds; a disabled field is not validated but is submitted. */
+  enabledWhen?: AnyCondition;
+  /** How a `value` formula feeds the field (default `initial`). */
+  valueMode?: FieldValueMode;
 };
 
 export type ThemeComponents = {

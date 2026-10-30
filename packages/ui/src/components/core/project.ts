@@ -1,6 +1,6 @@
 import type { TApiMaster } from "../../api/APIMaster";
 import type { TModelMaster } from "../../model/master";
-import type { AppBarConfig, GummyPageBody, GummyThemeProps, SidebarConfig, PageLoad, PageTransition, ThemeComponents, TMenu, TPageEntries } from "../@types";
+import type { AppBarConfig, FormulaDef, GummyPageBody, GummyThemeProps, RuleDef, SidebarConfig, PageLoad, PageTransition, ThemeComponents, TMenu, TPageEntries } from "../@types";
 import type { AzureAuthConfig } from "../../auth/azure/config";
 
 /**
@@ -87,6 +87,10 @@ export type GummyProject = {
   customComponents?: GummyProjectCustomComponent[];
   /** Sign-in; absent = no gate, no token. */
   auth?: GummyProjectAuth;
+  /** Saved formulas, by name: configs reference them as `{ formula: name }`. */
+  formulas?: Record<string, FormulaDef>;
+  /** Saved rules, by name: `{ rule: name }` as a value or (boolean ones) a condition. */
+  rules?: Record<string, RuleDef>;
 };
 
 export class GummyProjectError extends Error {
@@ -165,7 +169,43 @@ export function assertGummyProject(value: unknown): GummyProject {
         throw new GummyProjectError(`auth.profile.api.name refers to endpoint ${JSON.stringify(p.api.name)}, which is not in \`api\`.`);
     }
   }
+  assertLogic(value);
   return value as unknown as GummyProject;
+}
+
+/** Every `{ formula }` / `{ rule }` reference inside `node` (not descending into inline DataValues' names). */
+function logicRefs(node: unknown, out: { formulas: string[]; rules: string[] } = { formulas: [], rules: [] }) {
+  if (!node || typeof node !== "object") return out;
+  if (Array.isArray(node)) {
+    node.forEach((n) => logicRefs(n, out));
+    return out;
+  }
+  const o = node as Record<string, unknown>;
+  if (typeof o.formula === "string" && o.type === undefined) out.formulas.push(o.formula);
+  else if (typeof o.rule === "string") out.rules.push(o.rule);
+  else Object.values(o).forEach((v) => logicRefs(v, out));
+  return out;
+}
+
+/** The library's shape and references: rules have branches and an `else`, every saved name resolves. */
+function assertLogic(value: Record<string, unknown>) {
+  const formulas = value.formulas;
+  const rules = value.rules;
+  if (formulas !== undefined && !isRecord(formulas)) throw new GummyProjectError("`formulas` must be an object of formula names.");
+  if (rules !== undefined && !isRecord(rules)) throw new GummyProjectError("`rules` must be an object of rule names.");
+  for (const [name, f] of Object.entries(formulas ?? {}))
+    if (!isRecord(f) || !isRecord(f.expr)) throw new GummyProjectError(`formulas.${name} needs an \`expr\`.`);
+  for (const [name, r] of Object.entries(rules ?? {})) {
+    if (!isRecord(r) || !isRecord(r.rule)) throw new GummyProjectError(`rules.${name} needs a \`rule\`.`);
+    if (!Array.isArray(r.rule.branches) || r.rule.branches.length === 0)
+      throw new GummyProjectError(`rules.${name} needs at least one branch.`);
+    if (!isRecord(r.rule.else)) throw new GummyProjectError(`rules.${name} needs an \`else\`.`);
+  }
+  const refs = logicRefs([formulas, rules]);
+  for (const n of refs.formulas)
+    if (!formulas || !(n in formulas)) throw new GummyProjectError(`a saved formula refers to formula ${JSON.stringify(n)}, which is not in \`formulas\`.`);
+  for (const n of refs.rules)
+    if (!rules || !(n in rules)) throw new GummyProjectError(`a saved formula or rule refers to rule ${JSON.stringify(n)}, which is not in \`rules\`.`);
 }
 
 /** Fills the engine-required `description` / `withOptions` on every endpoint. */

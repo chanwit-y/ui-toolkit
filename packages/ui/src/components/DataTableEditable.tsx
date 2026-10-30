@@ -9,6 +9,7 @@ import type { CrudMutationApi, DataTableEditableColumn, DataTableEditableProps, 
 import { actionSizeSpec } from "./dataTableActions"
 import { FormattedCell } from "./FormattedCell"
 import { cellLook, resolveStyles } from "./dataTableStyles"
+import { useLogicLibrary } from "./core/logic"
 import { ConfirmBox } from "./ConfirmBox"
 import Icon from "./Icon"
 import { useSnackbar, type SnackbarVariant } from "./Snackbar"
@@ -90,6 +91,7 @@ export const DataTableEditable = <T extends Record<string, any>>({
 	}, [columns, data])
 
 	const theme = useTheme()
+	const logicLibrary = useLogicLibrary() ?? undefined
 
 	const updateFnCtxs = useStord((state) => state.updateFnCtxs)
 
@@ -729,7 +731,7 @@ export const DataTableEditable = <T extends Record<string, any>>({
 									const Cell = isRowHeader ? 'th' : 'td'
 									// Conditional look in read mode (`cellStyles`); the editing row keeps its highlight.
 									const look = col?.cellStyles?.length && editingRowId !== row.id
-										? cellLook(resolveStyles(col.cellStyles, { value: cell.getValue(), row: row.original, index: row.index }), { fill: false, classes: [] }, !isRowHeader)
+										? cellLook(resolveStyles(col.cellStyles, { value: cell.getValue(), row: row.original, index: row.index }, logicLibrary), { fill: false, classes: [] }, !isRowHeader)
 										: { className: '', tone: undefined }
 									return (
 										<Cell key={cell.id} scope={isRowHeader ? 'row' : undefined} data-accent-color={look.tone} className={`datatable-body-cell px-4 py-1 ${isRowHeader ? 'datatable-row-header' : ''} ${look.className}`} style={{ ...sizeStyle(cell.column), textAlign: cellAlign(cell.column.id) }}>

@@ -28,6 +28,7 @@ export const IconData = {
 	panelBottom: i.PanelBottom,
 	toggleLeft: i.ToggleLeft,
 	toggleRight: i.ToggleRight,
+	sigma: i.Sigma,
 	settings: i.Settings,
 	user: i.User,
 	users: i.Users,

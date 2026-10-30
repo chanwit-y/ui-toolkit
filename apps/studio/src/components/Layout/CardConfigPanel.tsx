@@ -138,11 +138,11 @@ export function CardConfigPanel({ itemId, config }: { itemId: string; config: Ca
       <Field label={h.titleBinding ? 'Title (fallback)' : 'Title'}>
         <Input value={h.title} onChange={(e) => setHeader('title', e.target.value)} />
       </Field>
-      <ItemBindingField label="Title" binding={h.titleBinding} onChange={(b) => setHeader('titleBinding', b)} scope={scope} kinds={TEXT_KINDS} />
+      <ItemBindingField allowFormula label="Title" binding={h.titleBinding} onChange={(b) => setHeader('titleBinding', b)} scope={scope} kinds={TEXT_KINDS} />
       <Field label={h.subheaderBinding ? 'Subheader (fallback)' : 'Subheader'}>
         <Input value={h.subheader} onChange={(e) => setHeader('subheader', e.target.value)} />
       </Field>
-      <ItemBindingField label="Subheader" binding={h.subheaderBinding} onChange={(b) => setHeader('subheaderBinding', b)} scope={scope} kinds={TEXT_KINDS} />
+      <ItemBindingField allowFormula label="Subheader" binding={h.subheaderBinding} onChange={(b) => setHeader('subheaderBinding', b)} scope={scope} kinds={TEXT_KINDS} />
 
       <Toggle label="Avatar" checked={h.avatarEnabled} onChange={(v) => setHeader('avatarEnabled', v)} />
       {h.avatarEnabled && (

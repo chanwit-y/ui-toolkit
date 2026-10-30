@@ -5,12 +5,14 @@ import { Form } from "../form";
 import { Schema } from "./schema";
 import { Provider } from "./context";
 import { ElementContext } from "./elementBuilder";
-import { useMemo, useEffect, useId, useReducer, type ReactNode } from "react";
+import { useMemo, useEffect, useId, useReducer, useRef, type ReactNode } from "react";
+import { useFormContext, type Resolver } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { get } from "lodash";
 import { ConditionExpression } from "./expression";
 import { useTheme } from "../context";
 import { useData } from "../context/DataProvider";
-import { getStateStore, setLoadingMode } from "./stateStore";
+import { getStateStore, readSlice, setLoadingMode } from "./stateStore";
 import { loadingMode } from "./pageLoads";
 import { useSkeleton } from "./rowScope";
 import { binSkeleton, binSkeletonValue } from "./skeletons";
@@ -20,6 +22,11 @@ import { conditionStateKeys } from "./expression";
 import { useStateVersion } from "./readApi";
 import { getBinGridItemStyle, getContainerGridStyle } from "./containerGrid";
 import { getContainerSurface } from "./containerSurface";
+import { isBlank, isLegacyCondition, type LogicScope } from "./formula";
+import { FormLogicProvider, useCondition, useFormLogic, useFormula, useLogicLibrary } from "./logic";
+import { useRowScope } from "./rowScopeContext";
+import { useRouteScope } from "./readApi";
+import { collectFieldGates, computedCycles, gateDecisions, narrowSchema } from "./formLogic";
 
 type StateBinding = { name: string; key: string; path?: string };
 
@@ -97,12 +104,17 @@ type ContainerGridProps = {
  */
 export function ContainerGrid({ container: c, builder, form, theme, ctx }: ContainerGridProps) {
 	// Conditions reading a state slice (`source: "state"`) re-evaluate when it changes.
-	const condKeys = useMemo(() => conditionStateKeys(c.bins.map((b) => b.condition)), [c.bins]);
+	const condKeys = useMemo(
+		() => conditionStateKeys(c.bins.map((b) => (isLegacyCondition(b.condition) ? b.condition : undefined))),
+		[c.bins],
+	);
 	useStateVersion(condKeys);
 	return (
 		<div className="grid grid-cols-12" style={getContainerGridStyle(c)}>
 			{c.bins.map((b, binIndex) => {
-				if (b.condition)
+				// The old expression reads the container context here; a `Cond` /
+				// `{ rule }` is evaluated by the cell, which subscribes to what it reads.
+				if (isLegacyCondition(b.condition))
 					if (!(new ConditionExpression(ctx ?? {}).expression(b.condition))) return null;
 
 				const api = b.element && 'api' in b.element && b.element.api && 'name' in b.element.api ? builder.apis.api[b.element.api.name] as APIFunction : undefined;
@@ -117,8 +129,8 @@ export function ContainerGrid({ container: c, builder, form, theme, ctx }: Conta
 								: "";
 
 				return (
-					<BinCell key={`${c.id}-bin-${binIndex}`} bin={b} className={`${colClasses} ${alignClass}`}>
-						{builder.renderElement(b, form, api, theme)}
+					<BinCell key={`${c.id}-bin-${binIndex}`} bin={b} ctx={ctx} className={`${colClasses} ${alignClass}`}>
+						{builder.renderElement(withoutLogic(b), form, api, theme)}
 					</BinCell>
 				);
 			})}
@@ -132,13 +144,92 @@ export function ContainerGrid({ container: c, builder, form, theme, ctx }: Conta
  * until the slice lands (display elements with their own bindings handle
  * theirs — see `skeletons.tsx`).
  */
-function BinCell({ bin, className, children }: { bin: Bin; className: string; children: ReactNode }) {
+function BinCell({ bin, ctx, className, children }: { bin: Bin; ctx: Record<string, any> | undefined; className: string; children: ReactNode }) {
 	const pending = useSkeleton(binSkeletonValue(bin));
+	const el = bin.element as FieldLogicLike | undefined;
+	const shown = useCondition(isLegacyCondition(bin.condition) ? undefined : bin.condition, ctx);
+	const enabled = useCondition(isLegacyCondition(el?.enabledWhen) ? undefined : el?.enabledWhen, ctx);
+	const computed = el?.valueMode === "computed" && el.value?.type === "formula";
+	if (!shown) return null;
+	const content = pending ? binSkeleton(bin, children) : children;
 	return (
 		<div className={className} style={getBinGridItemStyle(bin)}>
-			{pending ? binSkeleton(bin, children) : children}
+			{el?.name && el.value?.type === "formula" && (
+				<FieldValueSync name={el.name} dataType={el.dataType} value={el.value} mode={computed ? "computed" : "initial"} ctx={ctx} />
+			)}
+			{/* A disabled (or computed, so locked) cell: the fieldset disables every control in it. */}
+			{!enabled || computed ? (
+				<fieldset className="gummy-gate" disabled aria-disabled="true">
+					{content}
+				</fieldset>
+			) : (
+				content
+			)}
 		</div>
 	);
+}
+
+type FieldLogicLike = {
+	name?: string;
+	dataType?: string;
+	enabledWhen?: Bin["condition"];
+	valueMode?: string;
+	value?: DataValue;
+};
+
+/**
+ * The element as its builder sees it: a `Cond` / `{ rule }` `enabledWhen` is
+ * the cell's (a fieldset), never the component's — those that take one only
+ * understand the observe form.
+ */
+function withoutLogic(b: Bin): Bin {
+	const el = b.element as FieldLogicLike | undefined;
+	if (!el?.enabledWhen || isLegacyCondition(el.enabledWhen)) return b;
+	return { ...b, element: { ...(b.element as object), enabledWhen: undefined } as Bin["element"] };
+}
+
+/** Same value for a field: equal primitives, or dates at the same instant. */
+function sameValue(a: unknown, b: unknown): boolean {
+	if (a instanceof Date && b instanceof Date) return a.getTime() === b.getTime();
+	if (isBlank(a) && isBlank(b)) return true;
+	return Object.is(a, b);
+}
+
+/** A result as the field holds it: a number field keeps numbers (blank `null`), a text field text. */
+function fieldValue(value: unknown, dataType: string | undefined): unknown {
+	const t = dataType?.toLowerCase();
+	if (t === "number") return isBlank(value) ? null : value;
+	if (t === "string" || t === "email" || t === "url") return isBlank(value) ? "" : value instanceof Date ? value.toISOString() : String(value);
+	return isBlank(value) ? undefined : value;
+}
+
+/**
+ * Feeds a form field from its `value` formula: `computed` recalculates on
+ * every change of what it reads (writing only a changed result, so it can't
+ * loop); `initial` writes the first non-blank result into a field the user
+ * hasn't touched, then lets go.
+ */
+function FieldValueSync({ name, dataType, value, mode, ctx }: { name: string; dataType?: string; value: DataValue; mode: "computed" | "initial"; ctx: Record<string, any> | undefined }) {
+	const form = useFormContext();
+	const { cyclic } = useFormLogic();
+	const formula = useFormula(value, ctx);
+	const seeded = useRef(false);
+	const skip = cyclic.has(name);
+	useEffect(() => {
+		if (skip) console.warn(`[gummy-ui] Computed field "${name}" reads itself through other computed fields — skipped.`);
+	}, [skip, name]);
+	useEffect(() => {
+		if (!form || skip || !formula.active) return;
+		const next = fieldValue(formula.error ? null : formula.value, dataType);
+		if (mode === "computed") {
+			if (!sameValue(form.getValues(name), next)) form.setValue(name, next, { shouldValidate: true });
+			return;
+		}
+		if (seeded.current || isBlank(next)) return;
+		seeded.current = true;
+		if (!form.getFieldState(name).isDirty && isBlank(form.getValues(name))) form.setValue(name, next, { shouldValidate: true });
+	}, [form, skip, formula.active, formula.value, formula.error, mode, name, dataType]);
+	return null;
 }
 
 /** A container's grid inside its optional themed surface. */
@@ -181,10 +272,43 @@ const ContainerRenderer = ({ builder, isRoot }: ContainerRendererProps) => {
 		return { ...ctxDefaults, ...stateDefaults };
 	}, [ctx, containers, stateDefaults]);
 
+	// What the logic does at submit (spec §7): the resolver narrows the schema
+	// to the fields shown and enabled right now, reading the latest scope.
+	const library = useLogicLibrary();
+	const route = useRouteScope();
+	const rowScope = useRowScope();
+	const gates = useMemo(() => collectFieldGates(containers), [containers]);
+	const formLogic = useMemo(
+		() => ({
+			fieldTypes: Object.fromEntries(gates.map((g) => [g.name, g.dataType ?? ""])),
+			cyclic: computedCycles(gates, library ?? undefined),
+		}),
+		[gates, library],
+	);
+	const scopeRef = useRef<Omit<LogicScope, "field"> & { ctx: Record<string, any> }>({ ctx: {} });
+	scopeRef.current = {
+		ctx: ctx ?? {},
+		row: rowScope ? rowScope.row : ctx,
+		index: rowScope?.index,
+		params: route.params,
+		searchParams: route.searchParams,
+		library: library ?? undefined,
+		fieldType: (n) => formLogic.fieldTypes[n],
+		state: readSlice,
+	};
+
 	// Keep the form component identity stable across re-renders; defaultValue
 	// changes are applied through reset() below instead of remounting the form.
 	// eslint-disable-next-line react-hooks/exhaustive-deps
-	const F = useMemo(() => new Form(builder.getSchema(), defaultValues).setup().create(), [builder]);
+	const F = useMemo(() => {
+		const schema = builder.getSchema();
+		const resolver: Resolver<any> = (values, context, options) => {
+			const { ctx: legacyCtx, ...scope } = scopeRef.current;
+			const decisions = gateDecisions(gates, { ...scope, field: (n) => get(values, n) }, legacyCtx);
+			return zodResolver(narrowSchema(schema, decisions))(values, context, options);
+		};
+		return new Form(schema, defaultValues, resolver).setup().create();
+	}, [builder]);
 
 	// Debug-mirror key: container name for readability, mount id for uniqueness
 	// (the same config can render in several places, e.g. app + preview). The
@@ -208,6 +332,7 @@ const ContainerRenderer = ({ builder, isRoot }: ContainerRendererProps) => {
 			}, [f, debugKey]);
 
 			return (
+				<FormLogicProvider value={formLogic}>
 				<Provider isRoot={isRoot}>
 					{isRoot && builder.loads.map((l) => (
 							<StateLoader
@@ -234,6 +359,7 @@ const ContainerRenderer = ({ builder, isRoot }: ContainerRendererProps) => {
 							/>
 						))}
 				</Provider>
+				</FormLogicProvider>
 			);
 		}}
 	</F.Fn>;

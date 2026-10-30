@@ -5,6 +5,7 @@ import { countryRoutes } from './routes/countries.js';
 import { uploadRoutes } from './routes/upload.js';
 import { languageRoutes } from './routes/languages.js';
 import { formListDemoRoutes } from './routes/formListDemo.js';
+import { logicRoutes } from './routes/logic.js';
 import { regionRoutes } from './routes/regions.js';
 import { approvalRoutes } from './routes/approvals.js';
 import { workflowRoutes } from './routes/workflows.js';
@@ -38,6 +39,7 @@ app.route('/', workflowRoutes);
 app.route('/', userProfileRoutes);
 app.route('/', fileCollectionRoutes);
 app.route('/', analyticsRoutes);
+app.route('/', logicRoutes);
 
 // Health check
 app.get('/health', (c) => {

@@ -4,6 +4,7 @@ import { authProfileLoad } from '../components/Workspace/auth'
 import { selectionLoads } from '../components/Workspace/selectionLoads'
 import { pickedAuth } from '../components/Workspace/runtimeProject'
 import type { LibraryData, ProjectDef } from '../components/Workspace/types'
+import { inlineFormula, makeLogicNames, parseCondition, parseExpr, type LogicNames } from '../components/Workspace/logic'
 import { ToolError } from './errors'
 
 /*
@@ -23,6 +24,11 @@ export type RefScope = {
   loads: Named[]
   actions: Named[]
   components: Named[]
+  /** Saved formulas / rules (logic nodes name them `{ formula }` / `{ rule }` / `formulaId`). */
+  formulas: Named[]
+  rules: Named[]
+  /** What Code-mode text parses against (saved names, load keys). */
+  logic: LogicNames
   /** Items of the page being edited (any canvas): id ↔ binding name / modal id / label. */
   items: Named[]
   /** Endpoint ids a resolved reference pointed at — the caller attaches the library ones the project lacks. */
@@ -66,6 +72,13 @@ export function refScope(
     loads,
     actions: (snapshot.customActions ?? []).map((a) => ({ id: a.id, names: [a.name] })),
     components: (snapshot.customComponents ?? []).map((c) => ({ id: c.id, names: [c.name] })),
+    formulas: (snapshot.formulas ?? []).map((f) => ({ id: f.id, names: [f.name] })),
+    rules: (snapshot.rules ?? []).map((r) => ({ id: r.id, names: [r.name] })),
+    logic: makeLogicNames(snapshot.formulas, snapshot.rules, [
+      ...loads.map((l) => ({ id: l.id, key: l.names[0] })),
+      // A saved item may read any page's loads.
+      ...snapshot.pages.flatMap((p) => p.loads ?? []).map((l) => ({ id: l.id, key: l.key })),
+    ]),
     items: page ? allItems({ items: page.grid.items, settings: page.grid.containerSettings }).map((i) => ({ id: i.id, names: itemNames(i) })) : [],
     usedEndpoints: new Set(),
   }
@@ -97,11 +110,19 @@ export function resolveRefs(patch: unknown, scope: RefScope, path = 'config'): u
   if (!patch || typeof patch !== 'object') return patch
   const out: Record<string, unknown> = {}
   const obj = patch as Record<string, unknown>
-  // A `state` source (an ItemBinding / NavParamSource / RequestSource) keys a page load.
-  const isStateSource = (obj.source === 'state' || obj.type === 'state') && typeof obj.key === 'string'
+  // A saved formula / rule in a logic node: `{ formula: "Subtotal" }`, `{ rule: "Is business" }`.
+  const keys = Object.keys(obj)
+  if (keys.length === 1 && typeof obj.formula === 'string') return { formula: resolveOne(scope.formulas, obj.formula, 'saved formula', `${path}.formula`) }
+  if (keys.length === 1 && typeof obj.rule === 'string') return { rule: resolveOne(scope.rules, obj.rule, 'saved rule', `${path}.rule`) }
+  // A `state` source (an ItemBinding / NavParamSource / RequestSource, a logic `{ ref: "state" }`) keys a page load.
+  const isStateSource = (obj.source === 'state' || obj.type === 'state' || obj.ref === 'state') && typeof obj.key === 'string'
   for (const [key, value] of Object.entries(obj)) {
     const at = `${path}.${key}`
-    if (key === 'pageId') out[key] = resolveOne(scope.pages, value, 'page', at)
+    if (key === 'condition' && typeof value === 'string') out[key] = logicCondition(value, scope, at)
+    else if (key === 'expr' && typeof value === 'string') out[key] = logicExpr(value, scope, at)
+    else if (key === 'formula' && typeof value === 'string' && obj.source === 'formula') out[key] = logicFormula(value, scope, at)
+    else if (key === 'formulaId') out[key] = resolveSavedValue(scope, value, at)
+    else if (key === 'pageId') out[key] = resolveOne(scope.pages, value, 'page', at)
     else if (ENDPOINT_KEYS.has(key)) {
       const id = resolveOne(scope.endpoints, value, 'endpoint', at)
       if (typeof id === 'string' && id) scope.usedEndpoints.add(id)
@@ -124,4 +145,42 @@ export function resolveRefs(patch: unknown, scope: RefScope, path = 'config'): u
     else out[key] = resolveRefs(value, scope, at)
   }
   return out
+}
+
+/** A saved formula or a saved rule (a value slot may show either) → its id. */
+function resolveSavedValue(scope: RefScope, value: unknown, at: string): unknown {
+  try {
+    return resolveOne(scope.formulas, value, 'saved formula', at)
+  } catch {
+    return resolveOne(scope.rules, value, 'saved formula or rule', at)
+  }
+}
+
+/** Code-mode text → a condition (names → ids), or a ToolError naming the problem and its column. */
+export function logicCondition(text: string, scope: RefScope, at: string): unknown {
+  const r = parseCondition(text, scope.logic)
+  if (r.value === undefined) throw new ToolError(`${r.error} (at column ${r.at + 1} of ${JSON.stringify(text)})`, at)
+  return r.value
+}
+
+export function logicExpr(text: string, scope: RefScope, at: string): unknown {
+  const r = parseExpr(text, scope.logic)
+  if (r.value === undefined) throw new ToolError(`${r.error} (at column ${r.at + 1} of ${JSON.stringify(text)})`, at)
+  return r.value
+}
+
+/**
+ * A formula slot's input → a `StudioFormula`: a saved name (`"((Subtotal))"`
+ * or `"Subtotal"` when it names one) → `{ formulaId }`; other text → an inline
+ * formula; an object → its references resolved (`expr` may be text).
+ */
+export function logicFormula(input: unknown, scope: RefScope, at: string): unknown {
+  if (typeof input === 'string') {
+    const saved = /^\(\((.+)\)\)$/.exec(input.trim())?.[1] ?? input.trim()
+    if (scope.formulas.some((f) => f.names.includes(saved)) || scope.rules.some((r) => r.names.includes(saved)))
+      return { formulaId: resolveSavedValue(scope, saved, at) }
+    return inlineFormula(logicExpr(input, scope, at) as never)
+  }
+  if (input && typeof input === 'object' && 'expr' in input) return { ...inlineFormula(), ...(resolveRefs(input, scope, at) as object) }
+  return resolveRefs(input, scope, at)
 }

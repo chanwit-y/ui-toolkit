@@ -1,10 +1,13 @@
-import type { DataTableStyleRule } from "./@types"
+import type { DataTableStyleRule, LogicLibrary } from "./@types"
 import { ConditionExpression } from "./core/expression"
+import { evaluateCondition, isLegacyCondition } from "./core/formula"
+import { readSlice } from "./core/stateStore"
 
 /**
  * Conditional styling for the data tables (`ColumnDef.cellStyles`,
- * `DataTableElement.rowStyles`): rules are `CondExpression`s evaluated over
- * `{ value, row, index }`, and what they paint is a Radix **tone** — the cell
+ * `DataTableElement.rowStyles`): rules are conditions evaluated over
+ * `{ value, row, index }` — the old `CondExpression` reads those keys, a
+ * `Cond` reads `{ ref: "row", key }` off the row, `$value` / `$index` —, and what they paint is a Radix **tone** — the cell
  * gets `data-accent-color="<tone>"`, so `--accent-*` re-scope to that scale
  * and the `.datatable-tone` classes read step 11 (text) / step 3 (fill).
  */
@@ -17,8 +20,10 @@ export type ResolvedStyle = {
 const EMPTY: ResolvedStyle = { fill: false, classes: [] }
 
 /** Whether `rule.when` holds for the context. A broken rule is false, never a throw mid-render. */
-export function ruleMatches(rule: DataTableStyleRule, ctx: Record<string, unknown>): boolean {
+export function ruleMatches(rule: DataTableStyleRule, ctx: Record<string, unknown>, library?: LogicLibrary): boolean {
 	try {
+		if (rule.when && !isLegacyCondition(rule.when))
+			return evaluateCondition(rule.when, { row: ctx.row, value: ctx.value, index: ctx.index as number | undefined, library, state: readSlice })
 		return !!new ConditionExpression(ctx).expression(rule.when)
 	} catch {
 		return false
@@ -29,13 +34,13 @@ export function ruleMatches(rule: DataTableStyleRule, ctx: Record<string, unknow
  * The look of one cell or row: the first matching rule's tone (and its
  * fill), every matching rule's weight / italic / strike / class.
  */
-export function resolveStyles(rules: DataTableStyleRule[] | undefined, ctx: Record<string, unknown>): ResolvedStyle {
+export function resolveStyles(rules: DataTableStyleRule[] | undefined, ctx: Record<string, unknown>, library?: LogicLibrary): ResolvedStyle {
 	if (!rules?.length) return EMPTY
 	let tone: string | undefined
 	let fill = false
 	const classes: string[] = []
 	for (const rule of rules) {
-		if (!ruleMatches(rule, ctx)) continue
+		if (!ruleMatches(rule, ctx, library)) continue
 		if (tone === undefined && rule.tone) {
 			tone = rule.tone
 			fill = !!rule.fill

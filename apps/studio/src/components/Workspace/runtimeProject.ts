@@ -6,6 +6,7 @@ import { serializeModels } from '../Model/serialize'
 import type { ModelDef } from '../Model/types'
 import { toThemeObjects } from '../Theme/serialize'
 import { isValidActionName as isValidIdentifier } from './customActions'
+import { logicLibraryToEngine } from './logic'
 import { menuToEngine, shellToEngine } from './menu'
 import { enginePageMeta } from './pageMeta'
 import { attachedEndpoints, referencedModels } from './snapshots'
@@ -88,6 +89,7 @@ export function runtimeDocument(source: RuntimeSource, endpoints: EndpointDef[],
                 [...(pg.loads ?? []), ...readable],
                 customActions,
                 customComponents,
+                { formulas: snapshot.formulas, rules: snapshot.rules },
               ),
             ),
           ],
@@ -116,6 +118,8 @@ export function runtimeDocument(source: RuntimeSource, endpoints: EndpointDef[],
     theme: { theme, components },
     globalLoads: engineGlobalLoads,
     ...(auth ? { auth } : {}),
+    // Saved formulas / rules by name (load ids in them resolve to slice keys).
+    ...logicLibraryToEngine(snapshot.formulas, snapshot.rules, [...pages.flatMap((pg) => pg.loads ?? []), ...readable]),
     customActions: customActions.map((a) => a.name.trim()).filter(isValidIdentifier),
     customComponents: customComponents
       .filter((c) => isValidIdentifier(c.name.trim()))

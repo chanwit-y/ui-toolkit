@@ -1242,6 +1242,109 @@
       }
     }
   },
+  "formulas": {
+    "Days since placed": {
+      "expr": {
+        "fn": "DAYS",
+        "args": [
+          {
+            "ref": "state",
+            "key": "order",
+            "path": "placedAt"
+          },
+          {
+            "fn": "TODAY",
+            "args": []
+          }
+        ]
+      },
+      "format": {
+        "type": "number",
+        "decimals": 0
+      }
+    }
+  },
+  "rules": {
+    "Order health": {
+      "resultType": "text",
+      "rule": {
+        "branches": [
+          {
+            "when": {
+              "cmp": "eq",
+              "left": {
+                "ref": "state",
+                "key": "order",
+                "path": "status"
+              },
+              "right": {
+                "lit": "refund_requested"
+              }
+            },
+            "then": {
+              "lit": "Needs a manager"
+            }
+          },
+          {
+            "when": {
+              "all": [
+                {
+                  "cmp": "eq",
+                  "left": {
+                    "ref": "state",
+                    "key": "order",
+                    "path": "status"
+                  },
+                  "right": {
+                    "lit": "pending"
+                  }
+                },
+                {
+                  "cmp": "gte",
+                  "left": {
+                    "formula": "Days since placed"
+                  },
+                  "right": {
+                    "lit": 1
+                  }
+                }
+              ]
+            },
+            "then": {
+              "lit": "Chase payment"
+            }
+          },
+          {
+            "when": {
+              "cmp": "in",
+              "left": {
+                "ref": "state",
+                "key": "order",
+                "path": "status"
+              },
+              "right": [
+                {
+                  "lit": "delivered"
+                },
+                {
+                  "lit": "refunded"
+                },
+                {
+                  "lit": "cancelled"
+                }
+              ]
+            },
+            "then": {
+              "lit": "Closed"
+            }
+          }
+        ],
+        "else": {
+          "lit": "On track"
+        }
+      }
+    }
+  },
   "customActions": [
     "printOrder"
   ],

@@ -116,3 +116,25 @@ describe("split pages", () => {
     expect(doc.pages.home.containers).toHaveLength(1);
   });
 });
+
+describe("assertGummyProject: formulas and rules", () => {
+  const lit = (v: number) => ({ lit: v });
+  test("accepts a library whose references resolve", () => {
+    const p = {
+      ...valid(),
+      formulas: { total: { expr: { op: "*", args: [{ ref: "field", key: "qty" }, { formula: "price" }] } }, price: { expr: lit(5) } },
+      rules: { tier: { resultType: "number", rule: { branches: [{ when: { all: [] }, then: { formula: "total" } }], else: lit(0) } } },
+    };
+    expect(assertGummyProject(p).formulas?.total).toBeDefined();
+  });
+
+  test("names an unknown saved formula or rule", () => {
+    expect(() => assertGummyProject({ ...valid(), formulas: { a: { expr: { formula: "gone" } } } })).toThrow(/formula "gone"/);
+    expect(() => assertGummyProject({ ...valid(), formulas: { a: { expr: { rule: "gone" } } } })).toThrow(/rule "gone"/);
+  });
+
+  test("a rule needs branches and an else", () => {
+    expect(() => assertGummyProject({ ...valid(), rules: { r: { resultType: "boolean", rule: { branches: [], else: lit(0) } } } })).toThrow(/at least one branch/);
+    expect(() => assertGummyProject({ ...valid(), rules: { r: { resultType: "boolean", rule: { branches: [{ when: { all: [] }, then: lit(1) }] } } } })).toThrow(/needs an `else`/);
+  });
+});

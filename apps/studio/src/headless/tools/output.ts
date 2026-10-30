@@ -1,4 +1,5 @@
 import { assertGummyProject, type GummyProject } from '@gummy-ui/ui/headless'
+import { conditionIssues, libraryIssues } from '../../components/Workspace/logic'
 import { urlParams } from '../../components/Api/warnings'
 import { walkItems } from '../../components/Layout/pageLinks'
 import {
@@ -143,8 +144,19 @@ export function validateProject(ws: WorkspaceData, projectId: string): Validatio
   }
   const charts = chartChecks(project, ws.library)
   errors.push(...charts.errors)
+  // Logic: the saved items' own problems, and conditions naming a deleted / non-boolean rule.
+  const formulas = project.snapshot.formulas ?? []
+  const rules = project.snapshot.rules ?? []
+  const logic = libraryIssues(formulas, rules)
+  for (const pg of project.snapshot.pages)
+    walkItems(pg.grid.items, (item) => {
+      for (const key of ['condition', 'enabledWhen'] as const)
+        logic.push(...conditionIssues(item[key], rules, formulas, `page ${pg.name} › ${item.label} › ${key === 'condition' ? 'Show when' : 'Enabled when'}`))
+    })
+  for (const issue of logic) (issue.level === 'error' ? errors : []).push(`${issue.where}: ${issue.message}`)
   const warnings = missingRefs(document).map((w) => `reference to nothing at ${w}`)
   warnings.push(...fileCollectionWarnings(project, ws.library), ...charts.warnings)
+  warnings.push(...logic.filter((x) => x.level === 'warning').map((x) => `${x.where}: ${x.message}`))
   for (const id of project.snapshot.endpointIds) {
     if (!ws.library.endpoints.some((e) => e.id === id)) warnings.push(`attached endpoint ${id} is not in the library`)
   }

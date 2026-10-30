@@ -21,6 +21,7 @@ import { containerCardDemo } from "./cardDemo";
 import { containerHtmlContentDemo } from "./htmlContentDemo";
 import { containerDrawerDemo } from "./drawerDemo";
 import { containerSwitchDemo } from "./switchDemo";
+import { containerLogicDemo } from "./logicDemo";
 import { containerCustomActionsDemo } from "./customActionsDemo";
 import { containerCustomComponentsDemo, customComponentsLoads } from "./customComponentsDemo";
 import { containerUploadDemo } from "./uploadDemo";
@@ -206,6 +207,15 @@ export const pages = {
     parent: "countryList",
     title: "Switch",
     containers: containerSwitchDemo,
+  },
+  logicDemo: {
+    // Formulas and rules (`spec/gummy-logic-spec.md`; saved items in
+    // ./logic.ts, mounted through `<FormulasProvider>` in App.tsx): computed
+    // fields, show / enable conditions, a computed column, a row tone.
+    path: "/logic",
+    parent: "countryList",
+    title: "Logic",
+    containers: containerLogicDemo,
   },
   customActionsDemo: {
     // Consumer-coded button actions (`src/actions.ts`, mounted through

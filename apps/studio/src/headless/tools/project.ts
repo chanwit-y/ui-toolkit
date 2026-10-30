@@ -6,7 +6,10 @@ import { createCustomComponentDef, isValidComponentName, type CustomComponentDef
 import { createPageLoad, type PageLoadDef } from '../../components/Workspace/pageLoads'
 import type { MenuItemDef, ProjectDef } from '../../components/Workspace/types'
 import { ToolError } from '../errors'
-import { refScope, resolveRefs, type RefScope } from '../refs'
+import { logicCondition, logicExpr, refScope, resolveRefs, type RefScope } from '../refs'
+import { createFormulaDef, createRuleDef, logicRefIds, type FormulaLibDef, type RuleLibDef } from '../../components/Workspace/logic'
+import { defaultColumnFormat, type ColumnFormatConfig } from '../../components/Layout/types'
+import type { Expr, Rule } from '@gummy-ui/ui'
 import { assertMatches } from '../schemas'
 import type { Session } from '../session'
 import { CONFIRM, deepMerge, obj, optionalObject, PAGE, PROJECT, str, writeInput, type JsonSchema, type Tool } from './shared'
@@ -106,6 +109,157 @@ function upsertNamed<T extends { id: string; name: string }>(list: T[], name: st
 function dangling(project: ProjectDef, needle: string): boolean {
   return JSON.stringify(project.snapshot.pages).includes(needle) || JSON.stringify(project.snapshot.menu).includes(needle)
 }
+
+// ----------------------------------------------------------------- logic
+
+/** A rule input → a `Rule`: `when` may be Code-mode text, `then` / `else` formula text or a nested rule. */
+function ruleInput(value: unknown, scope: RefScope, at: string): Rule {
+  if (!value || typeof value !== 'object') throw new ToolError('must be { branches: [{ when, then }], else }', at)
+  const r = value as { branches?: unknown; else?: unknown }
+  if (!Array.isArray(r.branches) || !r.branches.length) throw new ToolError('needs at least one branch', `${at}.branches`)
+  if (r.else === undefined) throw new ToolError('needs an else', `${at}.else`)
+  const expr = (v: unknown, p: string): Expr | Rule =>
+    typeof v === 'string' ? (logicExpr(v, scope, p) as Expr) : v && typeof v === 'object' && 'branches' in v ? ruleInput(v, scope, p) : (resolveRefs(v, scope, p) as Expr)
+  return {
+    branches: r.branches.map((b, k) => {
+      const branch = b as { when?: unknown; then?: unknown }
+      let when = typeof branch.when === 'string' ? logicCondition(branch.when, scope, `${at}.branches[${k}].when`) : resolveRefs(branch.when ?? { all: [] }, scope, `${at}.branches[${k}].when`)
+      // A saved rule alone is `{ rule }` in a slot; inside a branch it is a comparison.
+      if (when && typeof when === 'object' && 'rule' in when) when = { cmp: 'eq', left: when, right: { lit: true } }
+      return { when: when as Rule['branches'][number]['when'], then: expr(branch.then, `${at}.branches[${k}].then`) }
+    }),
+    else: expr(r.else, `${at}.else`) as Expr,
+  }
+}
+
+function formatInput(value: unknown, base: ColumnFormatConfig, at: string): ColumnFormatConfig {
+  if (value === undefined) return base
+  if (value === null) return defaultColumnFormat()
+  if (typeof value === 'string') return { ...defaultColumnFormat(), type: value as ColumnFormatConfig['type'] }
+  if (typeof value !== 'object') throw new ToolError('must be a format object or a type name', at)
+  return { ...base, ...(value as object) }
+}
+
+/** Where a saved item is used (pages, menu, the other saved items). */
+function logicUses(project: ProjectDef, id: string): string[] {
+  const out: string[] = []
+  for (const pg of project.snapshot.pages) {
+    const r = logicRefIds(pg.grid.items)
+    if (r.formulas.has(id) || r.rules.has(id)) out.push(`page ${pg.name}`)
+  }
+  for (const f of project.snapshot.formulas ?? []) {
+    const r = logicRefIds(f.expr)
+    if (r.formulas.has(id) || r.rules.has(id)) out.push(`formula ${f.name}`)
+  }
+  for (const x of project.snapshot.rules ?? []) {
+    const r = logicRefIds(x.rule)
+    if (r.formulas.has(id) || r.rules.has(id)) out.push(`rule ${x.name}`)
+  }
+  return out
+}
+
+const BLANK_POLICY = { type: 'string', enum: ['empty', 'zero', 'error'] } as const
+
+export const logicTools: Tool[] = [
+  {
+    name: 'upsert_formula',
+    description:
+      'Create or update a saved formula (gummy://guide/concepts/logic), referenced by name from any slot: `expr` is Code-mode text ("[qty] * [unitPrice]", "ROUND($country.population / row.area_km2, 1)", "((Subtotal)) * (1 - IF((Discount rate)))") or an Expr JSON; `format` a column-format object ({ type: number|currency|percent|date|…, decimals, currency, … }) or a type name; onEmpty / onDivideByZero: empty (default) | zero | error.',
+    inputSchema: writeInput(
+      {
+        project: PROJECT,
+        name: str('The formula’s name, e.g. Subtotal.'),
+        rename: str(''),
+        description: str(''),
+        expr: { description: 'Code-mode text or an Expr JSON.' },
+        format: { description: 'A column-format object or a type name; null clears.' },
+        onEmpty: BLANK_POLICY,
+        onDivideByZero: BLANK_POLICY,
+      },
+      ['project', 'name'],
+    ),
+    write: true,
+    run: (s, i) => {
+      const project = s.project(i.project)
+      const scope = refScope(project, s.ws.library, null)
+      const list = project.snapshot.formulas ?? []
+      const existing = list.find((x) => x.id === i.name || x.name === i.name)
+      const patch: Partial<FormulaLibDef> = {}
+      if (i.description !== undefined) patch.description = String(i.description)
+      if (i.expr !== undefined) patch.expr = (typeof i.expr === 'string' ? logicExpr(i.expr, scope, 'expr') : resolveRefs(i.expr, scope, 'expr')) as Expr
+      if (i.format !== undefined) patch.format = formatInput(i.format, existing?.format ?? defaultColumnFormat(), 'format')
+      if (i.onEmpty !== undefined) patch.onEmpty = i.onEmpty as FormulaLibDef['onEmpty']
+      if (i.onDivideByZero !== undefined) patch.onDivideByZero = i.onDivideByZero as FormulaLibDef['onDivideByZero']
+      const next = upsertNamed<FormulaLibDef>(list, String(i.name), i.rename as string | undefined, () => createFormulaDef(String(i.name)), patch, 'formula')
+      assertMatches('FormulaLibDef', next.item, 'formula')
+      setSnapshot(s, project, 'formulas', next.list)
+      return next.item
+    },
+  },
+  {
+    name: 'upsert_rule',
+    description:
+      'Create or update a saved rule — IF / ELSE IF / ELSE, the first branch whose `when` holds gives `then`, else `else` (gummy://guide/concepts/logic). resultType: boolean (usable as a condition) | number | text | date. rule: { branches: [{ when: "<condition text>", then: "<formula text>" | { nested rule } }], else: "<formula text>" } — or the same as JSON. `format` as for upsert_formula.',
+    inputSchema: writeInput(
+      {
+        project: PROJECT,
+        name: str('The rule’s name, e.g. Discount rate.'),
+        rename: str(''),
+        description: str(''),
+        resultType: { type: 'string', enum: ['boolean', 'number', 'text', 'date'] },
+        rule: obj('{ branches: [{ when, then }], else }'),
+        format: { description: 'A column-format object or a type name; null clears.' },
+      },
+      ['project', 'name'],
+    ),
+    write: true,
+    run: (s, i) => {
+      const project = s.project(i.project)
+      const scope = refScope(project, s.ws.library, null)
+      const list = project.snapshot.rules ?? []
+      const existing = list.find((x) => x.id === i.name || x.name === i.name)
+      const patch: Partial<RuleLibDef> = {}
+      if (i.description !== undefined) patch.description = String(i.description)
+      if (i.resultType !== undefined) patch.resultType = i.resultType as RuleLibDef['resultType']
+      if (i.rule !== undefined) patch.rule = ruleInput(i.rule, scope, 'rule')
+      if (i.format !== undefined) patch.format = formatInput(i.format, existing?.format ?? defaultColumnFormat(), 'format')
+      const next = upsertNamed<RuleLibDef>(list, String(i.name), i.rename as string | undefined, () => createRuleDef(String(i.name), (i.resultType as RuleLibDef['resultType']) ?? 'boolean'), patch, 'rule')
+      assertMatches('RuleLibDef', next.item, 'rule')
+      setSnapshot(s, project, 'rules', next.list)
+      return next.item
+    },
+  },
+  {
+    name: 'delete_formula',
+    description: 'Remove a saved formula. Needs confirm: true; the answer says what still uses it (those references export as MISSING_FORMULA).',
+    inputSchema: writeInput({ project: PROJECT, formula: str('Name or id.'), confirm: CONFIRM }, ['project', 'formula']),
+    write: true,
+    run: (s, i) => {
+      const project = s.project(i.project)
+      const list = project.snapshot.formulas ?? []
+      const def = list.find((f) => f.id === i.formula || f.name === i.formula)
+      if (!def) throw new ToolError(`no formula "${i.formula}"`, 'formula')
+      if (i.confirm !== true) return { confirmRequired: true, wouldRemove: def.name, stillUsedBy: logicUses(project, def.id) }
+      setSnapshot(s, project, 'formulas', list.filter((f) => f.id !== def.id))
+      return { deleted: def.name }
+    },
+  },
+  {
+    name: 'delete_rule',
+    description: 'Remove a saved rule. Needs confirm: true; the answer says what still uses it (those references export as MISSING_RULE).',
+    inputSchema: writeInput({ project: PROJECT, rule: str('Name or id.'), confirm: CONFIRM }, ['project', 'rule']),
+    write: true,
+    run: (s, i) => {
+      const project = s.project(i.project)
+      const list = project.snapshot.rules ?? []
+      const def = list.find((r) => r.id === i.rule || r.name === i.rule)
+      if (!def) throw new ToolError(`no rule "${i.rule}"`, 'rule')
+      if (i.confirm !== true) return { confirmRequired: true, wouldRemove: def.name, stillUsedBy: logicUses(project, def.id) }
+      setSnapshot(s, project, 'rules', list.filter((r) => r.id !== def.id))
+      return { deleted: def.name }
+    },
+  },
+]
 
 export const projectTools: Tool[] = [
   {

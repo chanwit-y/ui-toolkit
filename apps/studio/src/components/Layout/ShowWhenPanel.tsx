@@ -1,6 +1,5 @@
-import { SegmentedControl } from '../common'
-import { useGridStore, type PathSeg } from './gridStore'
-import type { DataTableConfig, GridItemData, ShowWhen } from './types'
+import type { PathSeg } from './gridStore'
+import type { GridItemData } from './types'
 
 /**
  * The innermost data table whose modal canvas `activePath` is inside, or
@@ -20,45 +19,4 @@ export function enclosingDataTable(rootItems: GridItemData[], activePath: PathSe
     items = child.items
   }
   return found
-}
-
-const SHOW_WHEN_OPTIONS: { value: ShowWhen; label: string }[] = [
-  { value: 'always', label: 'Always' },
-  { value: 'adding', label: 'Adding' },
-  { value: 'editing', label: 'Editing' },
-]
-
-/**
- * "Show when" for an item inside a data table's modal canvas: always, only
- * while adding (the table's Add opened the modal over an empty row) or only
- * while editing (a row was clicked). Exported as the engine `condition` on
- * `<table name>._id` — how one form carries both a Create and an Update
- * button. Renders nothing outside such a canvas.
- */
-export function ShowWhenPanel({ item }: { item: GridItemData }) {
-  const items = useGridStore((s) => s.items)
-  const activePath = useGridStore((s) => s.activePath)
-  const updateItemShowWhen = useGridStore((s) => s.updateItemShowWhen)
-  const table = enclosingDataTable(items, activePath)
-  if (!table) return null
-  const tableName = (table.config as DataTableConfig).name
-  const value = item.showWhen ?? 'always'
-  return (
-    <div className="mb-3 space-y-1 rounded-lg border border-line bg-panel p-2">
-      <span className="text-ui-sm font-medium text-ink-2">Show when</span>
-      <SegmentedControl
-        options={SHOW_WHEN_OPTIONS}
-        value={value}
-        onChange={(v) => updateItemShowWhen(item.id, v as ShowWhen)}
-        aria-label="Show when"
-      />
-      <p className="text-ui-xs leading-relaxed text-ink-3">
-        {value === 'always'
-          ? `Shown whether ${tableName}'s form was opened by Add or by a row's Edit.`
-          : value === 'adding'
-            ? `Only when ${tableName}'s Add opened the form (no ${tableName}._id).`
-            : `Only when a ${tableName} row is being edited (${tableName}._id set).`}
-      </p>
-    </div>
-  )
 }
