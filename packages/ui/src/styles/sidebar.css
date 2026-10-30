@@ -29,6 +29,12 @@ button.gummy-shell-desktop {
   }
 }
 
+/* The rail is exactly wide enough for its pills: a scrollbar would narrow them
+   and leave each icon off centre in its pill. The list still scrolls. */
+.gummy-sidebar[data-rail] .gummy-side-list {
+  scrollbar-width: none;
+}
+
 /* Collapsing clips the labels and fades them; the icon column never moves. */
 .gummy-side-label,
 .gummy-side-fade {
@@ -82,7 +88,7 @@ button.gummy-shell-desktop {
   text-align: left;
   text-decoration: none;
   cursor: pointer;
-  transition: background-color 150ms ease-out, color 150ms ease-out;
+  transition: background-color 150ms ease-out, color 150ms ease-out, margin-left 200ms ease-out, width 200ms ease-out;
 }
 .gummy-side-pill:hover {
   background: var(--accent-3);
@@ -113,7 +119,8 @@ button.gummy-shell-desktop {
 .gummy-side-pill[data-active] .gummy-side-icon {
   color: var(--gummy-menu-active-fg, var(--accent-11));
 }
-/* Room for the indicator: the active pill steps in from the edge. */
+/* Room for the indicator: the active pill steps in from the edge (off the rail,
+   where the icons would leave the centre line). */
 .gummy-side-pill[data-shift] {
   margin-left: 0.375rem;
   width: calc(100% - 0.375rem);
