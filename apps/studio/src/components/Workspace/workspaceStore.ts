@@ -4,6 +4,7 @@ import { studioStorage } from '../../cli/cliStorage'
 import type { ThemeAppearance } from '../Theme/types'
 import type { PageLoadDef } from './pageLoads'
 import type { CustomActionDef } from './customActions'
+import type { FormulaLibDef, RuleLibDef } from './logic'
 import type { CustomComponentDef } from './customComponents'
 import { createAuthDef, type AuthDef } from './auth'
 import { seedActivity } from '../seed/activity'
@@ -69,6 +70,8 @@ type WorkspaceStore = WorkspaceData & {
   updateProjectCustomActions: (id: string, actions: CustomActionDef[]) => void
   /** Replace the project's declared custom components (the Env page's section). */
   updateProjectCustomComponents: (id: string, components: CustomComponentDef[]) => void
+  /** The project's saved formulas and rules (the Logic tab). */
+  updateProjectLogic: (id: string, patch: { formulas?: FormulaLibDef[]; rules?: RuleLibDef[] }) => void
   /**
    * Pick the shared auth entry the project signs in with (null = none). Also
    * attaches the entry's profile endpoint; the Env rows are the caller's (they
@@ -197,7 +200,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
       const templateOf = (id: string) => get().library.templates.find((t) => t.id === id)
 
       return {
-      version: 59,
+      version: 61,
       appearance: 'light',
       user: MOCK_USERS[0].name,
       projects: seedProjects(initialLibrary),
@@ -248,6 +251,15 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
 
       updateProjectCustomComponents: (id, customComponents) => {
         set((s) => ({ projects: cmd.setSnapshotField(s.projects, id, 'customComponents', customComponents) }))
+      },
+
+      updateProjectLogic: (id, patch) => {
+        set((s) => {
+          let projects = s.projects
+          if (patch.formulas) projects = cmd.setSnapshotField(projects, id, 'formulas', patch.formulas)
+          if (patch.rules) projects = cmd.setSnapshotField(projects, id, 'rules', patch.rules)
+          return { projects }
+        })
       },
 
       setProjectAuth: (id, authId) => {
@@ -482,7 +494,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
       name: WORKSPACE_STORAGE_KEY,
       // localStorage, or the `gummy studio` CLI's file API — decided before this module loads.
       storage: createJSONStorage(() => studioStorage),
-      version: 59,
+      version: 61,
       partialize: (s) => ({
         version: s.version,
         appearance: s.appearance,

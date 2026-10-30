@@ -3,7 +3,7 @@ import { ToolError } from '../errors'
 import { Session } from '../session'
 import { libraryTools } from './library'
 import { outputTools, validateProject } from './output'
-import { projectTools } from './project'
+import { logicTools, projectTools } from './project'
 import { readTools } from './read'
 import { input, type JsonSchema, type Tool } from './shared'
 import { signinTools } from './signin'
@@ -25,6 +25,7 @@ const BASE_TOOLS: Tool[] = [
   ...readTools,
   ...structureTools,
   ...projectTools,
+  ...logicTools,
   ...libraryTools,
   ...signinTools,
   ...templateTools,

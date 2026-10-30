@@ -74,6 +74,7 @@ export function HtmlContentConfigPanel({ itemId, config }: { itemId: string; con
         prose={config.prose}
       />
       <ItemBindingField
+        allowFormula
         label="Placeholders read"
         binding={config.binding}
         onChange={(b) => set('binding', b ? { ...b, key: b.key || 'none' } : null)}

@@ -2067,6 +2067,17 @@
           "type": "string",
           "description": "Studio-only stable card identity; never exported."
         },
+        "value": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/StudioFormula"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "A computed column: each row's value from this formula (`row` refs read the row); `null` / absent = the accessor's value."
+        },
         "accessor": {
           "type": "string"
         },
@@ -3768,6 +3779,188 @@
       "additionalProperties": false,
       "description": "One CRUD call of a form list (see the grilled design). `endpointId` is the API page ref (`null` = unwired). `params` holds one source per `:param` of the endpoint URL (seeded on pick, pruned at export): a `row` source maps the param to a row field (engine `params`), any other source resolves from the route / state / a literal (engine `extraParams`, or `params` on the read call — `row` isn't offered there). `extra` is a free-form key → source map: the read call's `query`, a mutation's `extraBody`."
     },
+    "FormulaLibDef": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "expr": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "lit": {
+                  "type": [
+                    "number",
+                    "string",
+                    "boolean",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "lit"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "ref": {
+                  "type": "string",
+                  "enum": [
+                    "field",
+                    "state",
+                    "row",
+                    "url"
+                  ],
+                  "description": "Where an `Expr` reference reads: the nearest form's field `key`, the global-state slice `key`, the nearest item (`row`: a repeater item, a table's edit record by table name, the row of a style rule / computed column — `key: \"none\"` the row itself, `\"value\"` the cell value, `\"index\"` its position) or a URL param / query."
+                },
+                "key": {
+                  "type": "string"
+                },
+                "path": {
+                  "type": "string"
+                },
+                "source": {
+                  "type": "string",
+                  "enum": [
+                    "param",
+                    "query"
+                  ]
+                }
+              },
+              "required": [
+                "ref",
+                "key"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "op": {
+                  "type": "string",
+                  "enum": [
+                    "+",
+                    "-",
+                    "*",
+                    "/",
+                    "&"
+                  ]
+                },
+                "args": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/alias-1554117974-145072-145490-1554117974-0-1800451306129553"
+                  },
+                  "minItems": 2,
+                  "maxItems": 2
+                }
+              },
+              "required": [
+                "op",
+                "args"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "fn": {
+                  "type": "string",
+                  "enum": [
+                    "ROUND",
+                    "MIN",
+                    "MAX",
+                    "ABS",
+                    "LEN",
+                    "TODAY",
+                    "DAYS",
+                    "COUNT",
+                    "SUM"
+                  ]
+                },
+                "args": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/alias-1554117974-145072-145490-1554117974-0-1800451306129553"
+                  }
+                }
+              },
+              "required": [
+                "fn",
+                "args"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "formula": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "formula"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "rule": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "rule"
+              ],
+              "additionalProperties": false
+            }
+          ],
+          "description": "A formula: a literal, a reference, an operation, a function call or a library reference."
+        },
+        "format": {
+          "$ref": "#/definitions/ColumnFormatConfig"
+        },
+        "onEmpty": {
+          "type": "string",
+          "enum": [
+            "empty",
+            "zero",
+            "error"
+          ],
+          "description": "What a formula gives for a blank input / a division by zero. Default `\"empty\"`."
+        },
+        "onDivideByZero": {
+          "type": "string",
+          "enum": [
+            "empty",
+            "zero",
+            "error"
+          ],
+          "description": "What a formula gives for a blank input / a division by zero. Default `\"empty\"`."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description",
+        "expr",
+        "format",
+        "onEmpty",
+        "onDivideByZero"
+      ],
+      "additionalProperties": false
+    },
     "GridContainerSettings": {
       "type": "object",
       "properties": {
@@ -3947,8 +4140,12 @@
               "type": "string",
               "enum": [
                 "row",
-                "state"
+                "state",
+                "formula"
               ]
+            },
+            "formula": {
+              "$ref": "#/definitions/StudioFormula"
             }
           },
           "required": [
@@ -3961,7 +4158,7 @@
           "type": "null"
         }
       ],
-      "description": "A bound display value. `source` absent / `'row'`: `key` is a field of the enclosing repeater's item (`'none'` = the item itself). `'state'`: `key` is a page load's id (resolved to its key at export), `path` drills its data or reads `$status`."
+      "description": "Where a display / value slot reads: the enclosing repeater item's field (`row`, default), a page load (`state`: `key` = the load id) or a formula (`formula`: a saved one or inline — see `spec/gummy-logic-spec.md`)."
     },
     "LoadShape": {
       "anyOf": [
@@ -5159,6 +5356,825 @@
       ],
       "additionalProperties": false
     },
+    "RuleLibDef": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "resultType": {
+          "type": "string",
+          "enum": [
+            "number",
+            "text",
+            "boolean",
+            "date"
+          ]
+        },
+        "rule": {
+          "type": "object",
+          "properties": {
+            "branches": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "when": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "all": {
+                            "type": "array",
+                            "items": {
+                              "$ref": "#/definitions/alias-1554117974-145609-145909-1554117974-0-180045682715431"
+                            }
+                          }
+                        },
+                        "required": [
+                          "all"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "any": {
+                            "type": "array",
+                            "items": {
+                              "$ref": "#/definitions/alias-1554117974-145609-145909-1554117974-0-180045682715431"
+                            }
+                          }
+                        },
+                        "required": [
+                          "any"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "cmp": {
+                            "type": "string",
+                            "enum": [
+                              "eq",
+                              "neq",
+                              "gt",
+                              "gte",
+                              "lt",
+                              "lte",
+                              "empty",
+                              "notEmpty",
+                              "contains",
+                              "in",
+                              "between"
+                            ]
+                          },
+                          "left": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "lit": {
+                                    "type": [
+                                      "number",
+                                      "string",
+                                      "boolean",
+                                      "null"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "lit"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "ref": {
+                                    "type": "string",
+                                    "enum": [
+                                      "field",
+                                      "state",
+                                      "row",
+                                      "url"
+                                    ],
+                                    "description": "Where an `Expr` reference reads: the nearest form's field `key`, the global-state slice `key`, the nearest item (`row`: a repeater item, a table's edit record by table name, the row of a style rule / computed column — `key: \"none\"` the row itself, `\"value\"` the cell value, `\"index\"` its position) or a URL param / query."
+                                  },
+                                  "key": {
+                                    "type": "string"
+                                  },
+                                  "path": {
+                                    "type": "string"
+                                  },
+                                  "source": {
+                                    "type": "string",
+                                    "enum": [
+                                      "param",
+                                      "query"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "ref",
+                                  "key"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "op": {
+                                    "type": "string",
+                                    "enum": [
+                                      "+",
+                                      "-",
+                                      "*",
+                                      "/",
+                                      "&"
+                                    ]
+                                  },
+                                  "args": {
+                                    "type": "array",
+                                    "items": {
+                                      "$ref": "#/definitions/alias-1554117974-145072-145490-1554117974-0-1800451306129553"
+                                    },
+                                    "minItems": 2,
+                                    "maxItems": 2
+                                  }
+                                },
+                                "required": [
+                                  "op",
+                                  "args"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "fn": {
+                                    "type": "string",
+                                    "enum": [
+                                      "ROUND",
+                                      "MIN",
+                                      "MAX",
+                                      "ABS",
+                                      "LEN",
+                                      "TODAY",
+                                      "DAYS",
+                                      "COUNT",
+                                      "SUM"
+                                    ]
+                                  },
+                                  "args": {
+                                    "type": "array",
+                                    "items": {
+                                      "$ref": "#/definitions/alias-1554117974-145072-145490-1554117974-0-1800451306129553"
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "fn",
+                                  "args"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "formula": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "formula"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "rule": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "rule"
+                                ],
+                                "additionalProperties": false
+                              }
+                            ],
+                            "description": "A formula: a literal, a reference, an operation, a function call or a library reference."
+                          },
+                          "right": {
+                            "anyOf": [
+                              {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "lit": {
+                                        "type": [
+                                          "number",
+                                          "string",
+                                          "boolean",
+                                          "null"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "lit"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "ref": {
+                                        "type": "string",
+                                        "enum": [
+                                          "field",
+                                          "state",
+                                          "row",
+                                          "url"
+                                        ],
+                                        "description": "Where an `Expr` reference reads: the nearest form's field `key`, the global-state slice `key`, the nearest item (`row`: a repeater item, a table's edit record by table name, the row of a style rule / computed column — `key: \"none\"` the row itself, `\"value\"` the cell value, `\"index\"` its position) or a URL param / query."
+                                      },
+                                      "key": {
+                                        "type": "string"
+                                      },
+                                      "path": {
+                                        "type": "string"
+                                      },
+                                      "source": {
+                                        "type": "string",
+                                        "enum": [
+                                          "param",
+                                          "query"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "ref",
+                                      "key"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "op": {
+                                        "type": "string",
+                                        "enum": [
+                                          "+",
+                                          "-",
+                                          "*",
+                                          "/",
+                                          "&"
+                                        ]
+                                      },
+                                      "args": {
+                                        "type": "array",
+                                        "items": {
+                                          "$ref": "#/definitions/alias-1554117974-145072-145490-1554117974-0-1800451306129553"
+                                        },
+                                        "minItems": 2,
+                                        "maxItems": 2
+                                      }
+                                    },
+                                    "required": [
+                                      "op",
+                                      "args"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "fn": {
+                                        "type": "string",
+                                        "enum": [
+                                          "ROUND",
+                                          "MIN",
+                                          "MAX",
+                                          "ABS",
+                                          "LEN",
+                                          "TODAY",
+                                          "DAYS",
+                                          "COUNT",
+                                          "SUM"
+                                        ]
+                                      },
+                                      "args": {
+                                        "type": "array",
+                                        "items": {
+                                          "$ref": "#/definitions/alias-1554117974-145072-145490-1554117974-0-1800451306129553"
+                                        }
+                                      }
+                                    },
+                                    "required": [
+                                      "fn",
+                                      "args"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "formula": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "formula"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "rule": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "rule"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                ],
+                                "description": "A formula: a literal, a reference, an operation, a function call or a library reference."
+                              },
+                              {
+                                "type": "array",
+                                "items": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "lit": {
+                                          "type": [
+                                            "number",
+                                            "string",
+                                            "boolean",
+                                            "null"
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "lit"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "ref": {
+                                          "type": "string",
+                                          "enum": [
+                                            "field",
+                                            "state",
+                                            "row",
+                                            "url"
+                                          ],
+                                          "description": "Where an `Expr` reference reads: the nearest form's field `key`, the global-state slice `key`, the nearest item (`row`: a repeater item, a table's edit record by table name, the row of a style rule / computed column — `key: \"none\"` the row itself, `\"value\"` the cell value, `\"index\"` its position) or a URL param / query."
+                                        },
+                                        "key": {
+                                          "type": "string"
+                                        },
+                                        "path": {
+                                          "type": "string"
+                                        },
+                                        "source": {
+                                          "type": "string",
+                                          "enum": [
+                                            "param",
+                                            "query"
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "ref",
+                                        "key"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "op": {
+                                          "type": "string",
+                                          "enum": [
+                                            "+",
+                                            "-",
+                                            "*",
+                                            "/",
+                                            "&"
+                                          ]
+                                        },
+                                        "args": {
+                                          "type": "array",
+                                          "items": {
+                                            "$ref": "#/definitions/alias-1554117974-145072-145490-1554117974-0-1800451306129553"
+                                          },
+                                          "minItems": 2,
+                                          "maxItems": 2
+                                        }
+                                      },
+                                      "required": [
+                                        "op",
+                                        "args"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "fn": {
+                                          "type": "string",
+                                          "enum": [
+                                            "ROUND",
+                                            "MIN",
+                                            "MAX",
+                                            "ABS",
+                                            "LEN",
+                                            "TODAY",
+                                            "DAYS",
+                                            "COUNT",
+                                            "SUM"
+                                          ]
+                                        },
+                                        "args": {
+                                          "type": "array",
+                                          "items": {
+                                            "$ref": "#/definitions/alias-1554117974-145072-145490-1554117974-0-1800451306129553"
+                                          }
+                                        }
+                                      },
+                                      "required": [
+                                        "fn",
+                                        "args"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "formula": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "formula"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "rule": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "rule"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  ],
+                                  "description": "A formula: a literal, a reference, an operation, a function call or a library reference."
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "cmp",
+                          "left"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ],
+                    "description": "A condition: AND (`all`) / OR (`any`) groups of comparisons. `right` is absent for `empty` / `notEmpty`, a list for `in` and `[low, high]` for `between`."
+                  },
+                  "then": {
+                    "anyOf": [
+                      {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "lit": {
+                                "type": [
+                                  "number",
+                                  "string",
+                                  "boolean",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "lit"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "ref": {
+                                "type": "string",
+                                "enum": [
+                                  "field",
+                                  "state",
+                                  "row",
+                                  "url"
+                                ],
+                                "description": "Where an `Expr` reference reads: the nearest form's field `key`, the global-state slice `key`, the nearest item (`row`: a repeater item, a table's edit record by table name, the row of a style rule / computed column — `key: \"none\"` the row itself, `\"value\"` the cell value, `\"index\"` its position) or a URL param / query."
+                              },
+                              "key": {
+                                "type": "string"
+                              },
+                              "path": {
+                                "type": "string"
+                              },
+                              "source": {
+                                "type": "string",
+                                "enum": [
+                                  "param",
+                                  "query"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "ref",
+                              "key"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "op": {
+                                "type": "string",
+                                "enum": [
+                                  "+",
+                                  "-",
+                                  "*",
+                                  "/",
+                                  "&"
+                                ]
+                              },
+                              "args": {
+                                "type": "array",
+                                "items": {
+                                  "$ref": "#/definitions/alias-1554117974-145072-145490-1554117974-0-1800451306129553"
+                                },
+                                "minItems": 2,
+                                "maxItems": 2
+                              }
+                            },
+                            "required": [
+                              "op",
+                              "args"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "fn": {
+                                "type": "string",
+                                "enum": [
+                                  "ROUND",
+                                  "MIN",
+                                  "MAX",
+                                  "ABS",
+                                  "LEN",
+                                  "TODAY",
+                                  "DAYS",
+                                  "COUNT",
+                                  "SUM"
+                                ]
+                              },
+                              "args": {
+                                "type": "array",
+                                "items": {
+                                  "$ref": "#/definitions/alias-1554117974-145072-145490-1554117974-0-1800451306129553"
+                                }
+                              }
+                            },
+                            "required": [
+                              "fn",
+                              "args"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "formula": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "formula"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "rule": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "rule"
+                            ],
+                            "additionalProperties": false
+                          }
+                        ],
+                        "description": "A formula: a literal, a reference, an operation, a function call or a library reference."
+                      },
+                      {
+                        "$ref": "#/definitions/alias-1554117974-145972-146172-1554117974-0-180045428339802"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "when",
+                  "then"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "else": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "lit": {
+                      "type": [
+                        "number",
+                        "string",
+                        "boolean",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "lit"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "ref": {
+                      "type": "string",
+                      "enum": [
+                        "field",
+                        "state",
+                        "row",
+                        "url"
+                      ],
+                      "description": "Where an `Expr` reference reads: the nearest form's field `key`, the global-state slice `key`, the nearest item (`row`: a repeater item, a table's edit record by table name, the row of a style rule / computed column — `key: \"none\"` the row itself, `\"value\"` the cell value, `\"index\"` its position) or a URL param / query."
+                    },
+                    "key": {
+                      "type": "string"
+                    },
+                    "path": {
+                      "type": "string"
+                    },
+                    "source": {
+                      "type": "string",
+                      "enum": [
+                        "param",
+                        "query"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ref",
+                    "key"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "op": {
+                      "type": "string",
+                      "enum": [
+                        "+",
+                        "-",
+                        "*",
+                        "/",
+                        "&"
+                      ]
+                    },
+                    "args": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/alias-1554117974-145072-145490-1554117974-0-1800451306129553"
+                      },
+                      "minItems": 2,
+                      "maxItems": 2
+                    }
+                  },
+                  "required": [
+                    "op",
+                    "args"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "fn": {
+                      "type": "string",
+                      "enum": [
+                        "ROUND",
+                        "MIN",
+                        "MAX",
+                        "ABS",
+                        "LEN",
+                        "TODAY",
+                        "DAYS",
+                        "COUNT",
+                        "SUM"
+                      ]
+                    },
+                    "args": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/alias-1554117974-145072-145490-1554117974-0-1800451306129553"
+                      }
+                    }
+                  },
+                  "required": [
+                    "fn",
+                    "args"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "formula": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "formula"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "rule": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "rule"
+                  ],
+                  "additionalProperties": false
+                }
+              ],
+              "description": "A formula: a literal, a reference, an operation, a function call or a library reference."
+            }
+          },
+          "required": [
+            "branches",
+            "else"
+          ],
+          "additionalProperties": false,
+          "description": "IF / ELSE IF / ELSE: the first branch whose `when` holds gives the result, else `else`."
+        },
+        "format": {
+          "$ref": "#/definitions/ColumnFormatConfig"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description",
+        "resultType",
+        "rule",
+        "format"
+      ],
+      "additionalProperties": false
+    },
     "SelectFieldConfig": {
       "type": "object",
       "properties": {
@@ -5406,15 +6422,6 @@
       ],
       "additionalProperties": false
     },
-    "ShowWhen": {
-      "type": "string",
-      "enum": [
-        "always",
-        "adding",
-        "editing"
-      ],
-      "description": "When an item inside a data table's modal canvas is shown: always, only while adding (no row selected) or only while editing. Exported as the engine `condition` on `<table name>._id`; absent = always."
-    },
     "SidebarSettings": {
       "type": "object",
       "properties": {
@@ -5499,6 +6506,689 @@
       ],
       "additionalProperties": false,
       "description": "The exported app's sidebar look (the library `SidebarConfig`, see the grilled design `sidebar-pill-variant`); empty strings mean unset."
+    },
+    "StudioCondition": {
+      "anyOf": [
+        {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "all": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/alias-1554117974-145609-145909-1554117974-0-180045682715431"
+                  }
+                }
+              },
+              "required": [
+                "all"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "any": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/alias-1554117974-145609-145909-1554117974-0-180045682715431"
+                  }
+                }
+              },
+              "required": [
+                "any"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "cmp": {
+                  "type": "string",
+                  "enum": [
+                    "eq",
+                    "neq",
+                    "gt",
+                    "gte",
+                    "lt",
+                    "lte",
+                    "empty",
+                    "notEmpty",
+                    "contains",
+                    "in",
+                    "between"
+                  ]
+                },
+                "left": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "lit": {
+                          "type": [
+                            "number",
+                            "string",
+                            "boolean",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "lit"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "ref": {
+                          "type": "string",
+                          "enum": [
+                            "field",
+                            "state",
+                            "row",
+                            "url"
+                          ],
+                          "description": "Where an `Expr` reference reads: the nearest form's field `key`, the global-state slice `key`, the nearest item (`row`: a repeater item, a table's edit record by table name, the row of a style rule / computed column — `key: \"none\"` the row itself, `\"value\"` the cell value, `\"index\"` its position) or a URL param / query."
+                        },
+                        "key": {
+                          "type": "string"
+                        },
+                        "path": {
+                          "type": "string"
+                        },
+                        "source": {
+                          "type": "string",
+                          "enum": [
+                            "param",
+                            "query"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "ref",
+                        "key"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "op": {
+                          "type": "string",
+                          "enum": [
+                            "+",
+                            "-",
+                            "*",
+                            "/",
+                            "&"
+                          ]
+                        },
+                        "args": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/definitions/alias-1554117974-145072-145490-1554117974-0-1800451306129553"
+                          },
+                          "minItems": 2,
+                          "maxItems": 2
+                        }
+                      },
+                      "required": [
+                        "op",
+                        "args"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "fn": {
+                          "type": "string",
+                          "enum": [
+                            "ROUND",
+                            "MIN",
+                            "MAX",
+                            "ABS",
+                            "LEN",
+                            "TODAY",
+                            "DAYS",
+                            "COUNT",
+                            "SUM"
+                          ]
+                        },
+                        "args": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/definitions/alias-1554117974-145072-145490-1554117974-0-1800451306129553"
+                          }
+                        }
+                      },
+                      "required": [
+                        "fn",
+                        "args"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "formula": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "formula"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "rule": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "rule"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ],
+                  "description": "A formula: a literal, a reference, an operation, a function call or a library reference."
+                },
+                "right": {
+                  "anyOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "lit": {
+                              "type": [
+                                "number",
+                                "string",
+                                "boolean",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "lit"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "ref": {
+                              "type": "string",
+                              "enum": [
+                                "field",
+                                "state",
+                                "row",
+                                "url"
+                              ],
+                              "description": "Where an `Expr` reference reads: the nearest form's field `key`, the global-state slice `key`, the nearest item (`row`: a repeater item, a table's edit record by table name, the row of a style rule / computed column — `key: \"none\"` the row itself, `\"value\"` the cell value, `\"index\"` its position) or a URL param / query."
+                            },
+                            "key": {
+                              "type": "string"
+                            },
+                            "path": {
+                              "type": "string"
+                            },
+                            "source": {
+                              "type": "string",
+                              "enum": [
+                                "param",
+                                "query"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "ref",
+                            "key"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "op": {
+                              "type": "string",
+                              "enum": [
+                                "+",
+                                "-",
+                                "*",
+                                "/",
+                                "&"
+                              ]
+                            },
+                            "args": {
+                              "type": "array",
+                              "items": {
+                                "$ref": "#/definitions/alias-1554117974-145072-145490-1554117974-0-1800451306129553"
+                              },
+                              "minItems": 2,
+                              "maxItems": 2
+                            }
+                          },
+                          "required": [
+                            "op",
+                            "args"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "fn": {
+                              "type": "string",
+                              "enum": [
+                                "ROUND",
+                                "MIN",
+                                "MAX",
+                                "ABS",
+                                "LEN",
+                                "TODAY",
+                                "DAYS",
+                                "COUNT",
+                                "SUM"
+                              ]
+                            },
+                            "args": {
+                              "type": "array",
+                              "items": {
+                                "$ref": "#/definitions/alias-1554117974-145072-145490-1554117974-0-1800451306129553"
+                              }
+                            }
+                          },
+                          "required": [
+                            "fn",
+                            "args"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "formula": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "formula"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "rule": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "rule"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ],
+                      "description": "A formula: a literal, a reference, an operation, a function call or a library reference."
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "lit": {
+                                "type": [
+                                  "number",
+                                  "string",
+                                  "boolean",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "lit"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "ref": {
+                                "type": "string",
+                                "enum": [
+                                  "field",
+                                  "state",
+                                  "row",
+                                  "url"
+                                ],
+                                "description": "Where an `Expr` reference reads: the nearest form's field `key`, the global-state slice `key`, the nearest item (`row`: a repeater item, a table's edit record by table name, the row of a style rule / computed column — `key: \"none\"` the row itself, `\"value\"` the cell value, `\"index\"` its position) or a URL param / query."
+                              },
+                              "key": {
+                                "type": "string"
+                              },
+                              "path": {
+                                "type": "string"
+                              },
+                              "source": {
+                                "type": "string",
+                                "enum": [
+                                  "param",
+                                  "query"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "ref",
+                              "key"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "op": {
+                                "type": "string",
+                                "enum": [
+                                  "+",
+                                  "-",
+                                  "*",
+                                  "/",
+                                  "&"
+                                ]
+                              },
+                              "args": {
+                                "type": "array",
+                                "items": {
+                                  "$ref": "#/definitions/alias-1554117974-145072-145490-1554117974-0-1800451306129553"
+                                },
+                                "minItems": 2,
+                                "maxItems": 2
+                              }
+                            },
+                            "required": [
+                              "op",
+                              "args"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "fn": {
+                                "type": "string",
+                                "enum": [
+                                  "ROUND",
+                                  "MIN",
+                                  "MAX",
+                                  "ABS",
+                                  "LEN",
+                                  "TODAY",
+                                  "DAYS",
+                                  "COUNT",
+                                  "SUM"
+                                ]
+                              },
+                              "args": {
+                                "type": "array",
+                                "items": {
+                                  "$ref": "#/definitions/alias-1554117974-145072-145490-1554117974-0-1800451306129553"
+                                }
+                              }
+                            },
+                            "required": [
+                              "fn",
+                              "args"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "formula": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "formula"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "rule": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "rule"
+                            ],
+                            "additionalProperties": false
+                          }
+                        ],
+                        "description": "A formula: a literal, a reference, an operation, a function call or a library reference."
+                      }
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "cmp",
+                "left"
+              ],
+              "additionalProperties": false
+            }
+          ],
+          "description": "A condition: AND (`all`) / OR (`any`) groups of comparisons. `right` is absent for `empty` / `notEmpty`, a list for `in` and `[low, high]` for `between`."
+        },
+        {
+          "type": "object",
+          "properties": {
+            "rule": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "rule"
+          ],
+          "additionalProperties": false
+        }
+      ],
+      "description": "A condition slot's value: a `Cond`, or a saved boolean rule by id."
+    },
+    "StudioFormula": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "formulaId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "formulaId"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "expr": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "lit": {
+                      "type": [
+                        "number",
+                        "string",
+                        "boolean",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "lit"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "ref": {
+                      "type": "string",
+                      "enum": [
+                        "field",
+                        "state",
+                        "row",
+                        "url"
+                      ],
+                      "description": "Where an `Expr` reference reads: the nearest form's field `key`, the global-state slice `key`, the nearest item (`row`: a repeater item, a table's edit record by table name, the row of a style rule / computed column — `key: \"none\"` the row itself, `\"value\"` the cell value, `\"index\"` its position) or a URL param / query."
+                    },
+                    "key": {
+                      "type": "string"
+                    },
+                    "path": {
+                      "type": "string"
+                    },
+                    "source": {
+                      "type": "string",
+                      "enum": [
+                        "param",
+                        "query"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ref",
+                    "key"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "op": {
+                      "type": "string",
+                      "enum": [
+                        "+",
+                        "-",
+                        "*",
+                        "/",
+                        "&"
+                      ]
+                    },
+                    "args": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/alias-1554117974-145072-145490-1554117974-0-1800451306129553"
+                      },
+                      "minItems": 2,
+                      "maxItems": 2
+                    }
+                  },
+                  "required": [
+                    "op",
+                    "args"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "fn": {
+                      "type": "string",
+                      "enum": [
+                        "ROUND",
+                        "MIN",
+                        "MAX",
+                        "ABS",
+                        "LEN",
+                        "TODAY",
+                        "DAYS",
+                        "COUNT",
+                        "SUM"
+                      ]
+                    },
+                    "args": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/alias-1554117974-145072-145490-1554117974-0-1800451306129553"
+                      }
+                    }
+                  },
+                  "required": [
+                    "fn",
+                    "args"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "formula": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "formula"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "rule": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "rule"
+                  ],
+                  "additionalProperties": false
+                }
+              ],
+              "description": "A formula: a literal, a reference, an operation, a function call or a library reference."
+            },
+            "format": {
+              "$ref": "#/definitions/ColumnFormatConfig"
+            },
+            "onEmpty": {
+              "type": "string",
+              "enum": [
+                "empty",
+                "zero",
+                "error"
+              ],
+              "description": "What a formula gives for a blank input / a division by zero. Default `\"empty\"`."
+            },
+            "onDivideByZero": {
+              "type": "string",
+              "enum": [
+                "empty",
+                "zero",
+                "error"
+              ],
+              "description": "What a formula gives for a blank input / a division by zero. Default `\"empty\"`."
+            }
+          },
+          "required": [
+            "expr",
+            "format",
+            "onEmpty",
+            "onDivideByZero"
+          ],
+          "additionalProperties": false
+        }
+      ],
+      "description": "A value slot's formula: a saved one by id, or inline with its own output settings."
     },
     "StudioNavigate": {
       "type": "object",
@@ -5621,6 +7311,17 @@
       "properties": {
         "id": {
           "type": "string"
+        },
+        "condition": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/StudioCondition"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "A custom condition (logic editor); when set it replaces the one-comparison `field · op · value`."
         },
         "field": {
           "type": "string",
@@ -6643,6 +8344,1406 @@
       ],
       "additionalProperties": false,
       "description": "The dialog's user list: an endpoint walked along `paths` to the user rows, read with these keys."
+    },
+    "alias-1554117974-145072-145490-1554117974-0-1800451306129553": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "lit": {
+              "type": [
+                "number",
+                "string",
+                "boolean",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "lit"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "ref": {
+              "type": "string",
+              "enum": [
+                "field",
+                "state",
+                "row",
+                "url"
+              ],
+              "description": "Where an `Expr` reference reads: the nearest form's field `key`, the global-state slice `key`, the nearest item (`row`: a repeater item, a table's edit record by table name, the row of a style rule / computed column — `key: \"none\"` the row itself, `\"value\"` the cell value, `\"index\"` its position) or a URL param / query."
+            },
+            "key": {
+              "type": "string"
+            },
+            "path": {
+              "type": "string"
+            },
+            "source": {
+              "type": "string",
+              "enum": [
+                "param",
+                "query"
+              ]
+            }
+          },
+          "required": [
+            "ref",
+            "key"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "op": {
+              "type": "string",
+              "enum": [
+                "+",
+                "-",
+                "*",
+                "/",
+                "&"
+              ]
+            },
+            "args": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/alias-1554117974-145072-145490-1554117974-0-1800451306129553"
+              },
+              "minItems": 2,
+              "maxItems": 2
+            }
+          },
+          "required": [
+            "op",
+            "args"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "fn": {
+              "type": "string",
+              "enum": [
+                "ROUND",
+                "MIN",
+                "MAX",
+                "ABS",
+                "LEN",
+                "TODAY",
+                "DAYS",
+                "COUNT",
+                "SUM"
+              ]
+            },
+            "args": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/alias-1554117974-145072-145490-1554117974-0-1800451306129553"
+              }
+            }
+          },
+          "required": [
+            "fn",
+            "args"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "formula": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "formula"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "rule": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "rule"
+          ],
+          "additionalProperties": false
+        }
+      ],
+      "description": "A formula: a literal, a reference, an operation, a function call or a library reference."
+    },
+    "alias-1554117974-145609-145909-1554117974-0-180045682715431": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "all": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/alias-1554117974-145609-145909-1554117974-0-180045682715431"
+              }
+            }
+          },
+          "required": [
+            "all"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "any": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/alias-1554117974-145609-145909-1554117974-0-180045682715431"
+              }
+            }
+          },
+          "required": [
+            "any"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "cmp": {
+              "type": "string",
+              "enum": [
+                "eq",
+                "neq",
+                "gt",
+                "gte",
+                "lt",
+                "lte",
+                "empty",
+                "notEmpty",
+                "contains",
+                "in",
+                "between"
+              ]
+            },
+            "left": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "lit": {
+                      "type": [
+                        "number",
+                        "string",
+                        "boolean",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "lit"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "ref": {
+                      "type": "string",
+                      "enum": [
+                        "field",
+                        "state",
+                        "row",
+                        "url"
+                      ],
+                      "description": "Where an `Expr` reference reads: the nearest form's field `key`, the global-state slice `key`, the nearest item (`row`: a repeater item, a table's edit record by table name, the row of a style rule / computed column — `key: \"none\"` the row itself, `\"value\"` the cell value, `\"index\"` its position) or a URL param / query."
+                    },
+                    "key": {
+                      "type": "string"
+                    },
+                    "path": {
+                      "type": "string"
+                    },
+                    "source": {
+                      "type": "string",
+                      "enum": [
+                        "param",
+                        "query"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ref",
+                    "key"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "op": {
+                      "type": "string",
+                      "enum": [
+                        "+",
+                        "-",
+                        "*",
+                        "/",
+                        "&"
+                      ]
+                    },
+                    "args": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/alias-1554117974-145072-145490-1554117974-0-1800451306129553"
+                      },
+                      "minItems": 2,
+                      "maxItems": 2
+                    }
+                  },
+                  "required": [
+                    "op",
+                    "args"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "fn": {
+                      "type": "string",
+                      "enum": [
+                        "ROUND",
+                        "MIN",
+                        "MAX",
+                        "ABS",
+                        "LEN",
+                        "TODAY",
+                        "DAYS",
+                        "COUNT",
+                        "SUM"
+                      ]
+                    },
+                    "args": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/alias-1554117974-145072-145490-1554117974-0-1800451306129553"
+                      }
+                    }
+                  },
+                  "required": [
+                    "fn",
+                    "args"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "formula": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "formula"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "rule": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "rule"
+                  ],
+                  "additionalProperties": false
+                }
+              ],
+              "description": "A formula: a literal, a reference, an operation, a function call or a library reference."
+            },
+            "right": {
+              "anyOf": [
+                {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "lit": {
+                          "type": [
+                            "number",
+                            "string",
+                            "boolean",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "lit"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "ref": {
+                          "type": "string",
+                          "enum": [
+                            "field",
+                            "state",
+                            "row",
+                            "url"
+                          ],
+                          "description": "Where an `Expr` reference reads: the nearest form's field `key`, the global-state slice `key`, the nearest item (`row`: a repeater item, a table's edit record by table name, the row of a style rule / computed column — `key: \"none\"` the row itself, `\"value\"` the cell value, `\"index\"` its position) or a URL param / query."
+                        },
+                        "key": {
+                          "type": "string"
+                        },
+                        "path": {
+                          "type": "string"
+                        },
+                        "source": {
+                          "type": "string",
+                          "enum": [
+                            "param",
+                            "query"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "ref",
+                        "key"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "op": {
+                          "type": "string",
+                          "enum": [
+                            "+",
+                            "-",
+                            "*",
+                            "/",
+                            "&"
+                          ]
+                        },
+                        "args": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/definitions/alias-1554117974-145072-145490-1554117974-0-1800451306129553"
+                          },
+                          "minItems": 2,
+                          "maxItems": 2
+                        }
+                      },
+                      "required": [
+                        "op",
+                        "args"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "fn": {
+                          "type": "string",
+                          "enum": [
+                            "ROUND",
+                            "MIN",
+                            "MAX",
+                            "ABS",
+                            "LEN",
+                            "TODAY",
+                            "DAYS",
+                            "COUNT",
+                            "SUM"
+                          ]
+                        },
+                        "args": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/definitions/alias-1554117974-145072-145490-1554117974-0-1800451306129553"
+                          }
+                        }
+                      },
+                      "required": [
+                        "fn",
+                        "args"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "formula": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "formula"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "rule": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "rule"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ],
+                  "description": "A formula: a literal, a reference, an operation, a function call or a library reference."
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "lit": {
+                            "type": [
+                              "number",
+                              "string",
+                              "boolean",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "lit"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "ref": {
+                            "type": "string",
+                            "enum": [
+                              "field",
+                              "state",
+                              "row",
+                              "url"
+                            ],
+                            "description": "Where an `Expr` reference reads: the nearest form's field `key`, the global-state slice `key`, the nearest item (`row`: a repeater item, a table's edit record by table name, the row of a style rule / computed column — `key: \"none\"` the row itself, `\"value\"` the cell value, `\"index\"` its position) or a URL param / query."
+                          },
+                          "key": {
+                            "type": "string"
+                          },
+                          "path": {
+                            "type": "string"
+                          },
+                          "source": {
+                            "type": "string",
+                            "enum": [
+                              "param",
+                              "query"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "ref",
+                          "key"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "op": {
+                            "type": "string",
+                            "enum": [
+                              "+",
+                              "-",
+                              "*",
+                              "/",
+                              "&"
+                            ]
+                          },
+                          "args": {
+                            "type": "array",
+                            "items": {
+                              "$ref": "#/definitions/alias-1554117974-145072-145490-1554117974-0-1800451306129553"
+                            },
+                            "minItems": 2,
+                            "maxItems": 2
+                          }
+                        },
+                        "required": [
+                          "op",
+                          "args"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "fn": {
+                            "type": "string",
+                            "enum": [
+                              "ROUND",
+                              "MIN",
+                              "MAX",
+                              "ABS",
+                              "LEN",
+                              "TODAY",
+                              "DAYS",
+                              "COUNT",
+                              "SUM"
+                            ]
+                          },
+                          "args": {
+                            "type": "array",
+                            "items": {
+                              "$ref": "#/definitions/alias-1554117974-145072-145490-1554117974-0-1800451306129553"
+                            }
+                          }
+                        },
+                        "required": [
+                          "fn",
+                          "args"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "formula": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "formula"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "rule": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "rule"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ],
+                    "description": "A formula: a literal, a reference, an operation, a function call or a library reference."
+                  }
+                }
+              ]
+            }
+          },
+          "required": [
+            "cmp",
+            "left"
+          ],
+          "additionalProperties": false
+        }
+      ],
+      "description": "A condition: AND (`all`) / OR (`any`) groups of comparisons. `right` is absent for `empty` / `notEmpty`, a list for `in` and `[low, high]` for `between`."
+    },
+    "alias-1554117974-145972-146172-1554117974-0-180045428339802": {
+      "type": "object",
+      "properties": {
+        "branches": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "when": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "all": {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/definitions/alias-1554117974-145609-145909-1554117974-0-180045682715431"
+                        }
+                      }
+                    },
+                    "required": [
+                      "all"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "any": {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/definitions/alias-1554117974-145609-145909-1554117974-0-180045682715431"
+                        }
+                      }
+                    },
+                    "required": [
+                      "any"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "cmp": {
+                        "type": "string",
+                        "enum": [
+                          "eq",
+                          "neq",
+                          "gt",
+                          "gte",
+                          "lt",
+                          "lte",
+                          "empty",
+                          "notEmpty",
+                          "contains",
+                          "in",
+                          "between"
+                        ]
+                      },
+                      "left": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "lit": {
+                                "type": [
+                                  "number",
+                                  "string",
+                                  "boolean",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "lit"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "ref": {
+                                "type": "string",
+                                "enum": [
+                                  "field",
+                                  "state",
+                                  "row",
+                                  "url"
+                                ],
+                                "description": "Where an `Expr` reference reads: the nearest form's field `key`, the global-state slice `key`, the nearest item (`row`: a repeater item, a table's edit record by table name, the row of a style rule / computed column — `key: \"none\"` the row itself, `\"value\"` the cell value, `\"index\"` its position) or a URL param / query."
+                              },
+                              "key": {
+                                "type": "string"
+                              },
+                              "path": {
+                                "type": "string"
+                              },
+                              "source": {
+                                "type": "string",
+                                "enum": [
+                                  "param",
+                                  "query"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "ref",
+                              "key"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "op": {
+                                "type": "string",
+                                "enum": [
+                                  "+",
+                                  "-",
+                                  "*",
+                                  "/",
+                                  "&"
+                                ]
+                              },
+                              "args": {
+                                "type": "array",
+                                "items": {
+                                  "$ref": "#/definitions/alias-1554117974-145072-145490-1554117974-0-1800451306129553"
+                                },
+                                "minItems": 2,
+                                "maxItems": 2
+                              }
+                            },
+                            "required": [
+                              "op",
+                              "args"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "fn": {
+                                "type": "string",
+                                "enum": [
+                                  "ROUND",
+                                  "MIN",
+                                  "MAX",
+                                  "ABS",
+                                  "LEN",
+                                  "TODAY",
+                                  "DAYS",
+                                  "COUNT",
+                                  "SUM"
+                                ]
+                              },
+                              "args": {
+                                "type": "array",
+                                "items": {
+                                  "$ref": "#/definitions/alias-1554117974-145072-145490-1554117974-0-1800451306129553"
+                                }
+                              }
+                            },
+                            "required": [
+                              "fn",
+                              "args"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "formula": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "formula"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "rule": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "rule"
+                            ],
+                            "additionalProperties": false
+                          }
+                        ],
+                        "description": "A formula: a literal, a reference, an operation, a function call or a library reference."
+                      },
+                      "right": {
+                        "anyOf": [
+                          {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "lit": {
+                                    "type": [
+                                      "number",
+                                      "string",
+                                      "boolean",
+                                      "null"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "lit"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "ref": {
+                                    "type": "string",
+                                    "enum": [
+                                      "field",
+                                      "state",
+                                      "row",
+                                      "url"
+                                    ],
+                                    "description": "Where an `Expr` reference reads: the nearest form's field `key`, the global-state slice `key`, the nearest item (`row`: a repeater item, a table's edit record by table name, the row of a style rule / computed column — `key: \"none\"` the row itself, `\"value\"` the cell value, `\"index\"` its position) or a URL param / query."
+                                  },
+                                  "key": {
+                                    "type": "string"
+                                  },
+                                  "path": {
+                                    "type": "string"
+                                  },
+                                  "source": {
+                                    "type": "string",
+                                    "enum": [
+                                      "param",
+                                      "query"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "ref",
+                                  "key"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "op": {
+                                    "type": "string",
+                                    "enum": [
+                                      "+",
+                                      "-",
+                                      "*",
+                                      "/",
+                                      "&"
+                                    ]
+                                  },
+                                  "args": {
+                                    "type": "array",
+                                    "items": {
+                                      "$ref": "#/definitions/alias-1554117974-145072-145490-1554117974-0-1800451306129553"
+                                    },
+                                    "minItems": 2,
+                                    "maxItems": 2
+                                  }
+                                },
+                                "required": [
+                                  "op",
+                                  "args"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "fn": {
+                                    "type": "string",
+                                    "enum": [
+                                      "ROUND",
+                                      "MIN",
+                                      "MAX",
+                                      "ABS",
+                                      "LEN",
+                                      "TODAY",
+                                      "DAYS",
+                                      "COUNT",
+                                      "SUM"
+                                    ]
+                                  },
+                                  "args": {
+                                    "type": "array",
+                                    "items": {
+                                      "$ref": "#/definitions/alias-1554117974-145072-145490-1554117974-0-1800451306129553"
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "fn",
+                                  "args"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "formula": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "formula"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "rule": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "rule"
+                                ],
+                                "additionalProperties": false
+                              }
+                            ],
+                            "description": "A formula: a literal, a reference, an operation, a function call or a library reference."
+                          },
+                          {
+                            "type": "array",
+                            "items": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "lit": {
+                                      "type": [
+                                        "number",
+                                        "string",
+                                        "boolean",
+                                        "null"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "lit"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "ref": {
+                                      "type": "string",
+                                      "enum": [
+                                        "field",
+                                        "state",
+                                        "row",
+                                        "url"
+                                      ],
+                                      "description": "Where an `Expr` reference reads: the nearest form's field `key`, the global-state slice `key`, the nearest item (`row`: a repeater item, a table's edit record by table name, the row of a style rule / computed column — `key: \"none\"` the row itself, `\"value\"` the cell value, `\"index\"` its position) or a URL param / query."
+                                    },
+                                    "key": {
+                                      "type": "string"
+                                    },
+                                    "path": {
+                                      "type": "string"
+                                    },
+                                    "source": {
+                                      "type": "string",
+                                      "enum": [
+                                        "param",
+                                        "query"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "ref",
+                                    "key"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "op": {
+                                      "type": "string",
+                                      "enum": [
+                                        "+",
+                                        "-",
+                                        "*",
+                                        "/",
+                                        "&"
+                                      ]
+                                    },
+                                    "args": {
+                                      "type": "array",
+                                      "items": {
+                                        "$ref": "#/definitions/alias-1554117974-145072-145490-1554117974-0-1800451306129553"
+                                      },
+                                      "minItems": 2,
+                                      "maxItems": 2
+                                    }
+                                  },
+                                  "required": [
+                                    "op",
+                                    "args"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "fn": {
+                                      "type": "string",
+                                      "enum": [
+                                        "ROUND",
+                                        "MIN",
+                                        "MAX",
+                                        "ABS",
+                                        "LEN",
+                                        "TODAY",
+                                        "DAYS",
+                                        "COUNT",
+                                        "SUM"
+                                      ]
+                                    },
+                                    "args": {
+                                      "type": "array",
+                                      "items": {
+                                        "$ref": "#/definitions/alias-1554117974-145072-145490-1554117974-0-1800451306129553"
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "fn",
+                                    "args"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "formula": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "formula"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "rule": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "rule"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              ],
+                              "description": "A formula: a literal, a reference, an operation, a function call or a library reference."
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "cmp",
+                      "left"
+                    ],
+                    "additionalProperties": false
+                  }
+                ],
+                "description": "A condition: AND (`all`) / OR (`any`) groups of comparisons. `right` is absent for `empty` / `notEmpty`, a list for `in` and `[low, high]` for `between`."
+              },
+              "then": {
+                "anyOf": [
+                  {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "lit": {
+                            "type": [
+                              "number",
+                              "string",
+                              "boolean",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "lit"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "ref": {
+                            "type": "string",
+                            "enum": [
+                              "field",
+                              "state",
+                              "row",
+                              "url"
+                            ],
+                            "description": "Where an `Expr` reference reads: the nearest form's field `key`, the global-state slice `key`, the nearest item (`row`: a repeater item, a table's edit record by table name, the row of a style rule / computed column — `key: \"none\"` the row itself, `\"value\"` the cell value, `\"index\"` its position) or a URL param / query."
+                          },
+                          "key": {
+                            "type": "string"
+                          },
+                          "path": {
+                            "type": "string"
+                          },
+                          "source": {
+                            "type": "string",
+                            "enum": [
+                              "param",
+                              "query"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "ref",
+                          "key"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "op": {
+                            "type": "string",
+                            "enum": [
+                              "+",
+                              "-",
+                              "*",
+                              "/",
+                              "&"
+                            ]
+                          },
+                          "args": {
+                            "type": "array",
+                            "items": {
+                              "$ref": "#/definitions/alias-1554117974-145072-145490-1554117974-0-1800451306129553"
+                            },
+                            "minItems": 2,
+                            "maxItems": 2
+                          }
+                        },
+                        "required": [
+                          "op",
+                          "args"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "fn": {
+                            "type": "string",
+                            "enum": [
+                              "ROUND",
+                              "MIN",
+                              "MAX",
+                              "ABS",
+                              "LEN",
+                              "TODAY",
+                              "DAYS",
+                              "COUNT",
+                              "SUM"
+                            ]
+                          },
+                          "args": {
+                            "type": "array",
+                            "items": {
+                              "$ref": "#/definitions/alias-1554117974-145072-145490-1554117974-0-1800451306129553"
+                            }
+                          }
+                        },
+                        "required": [
+                          "fn",
+                          "args"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "formula": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "formula"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "rule": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "rule"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ],
+                    "description": "A formula: a literal, a reference, an operation, a function call or a library reference."
+                  },
+                  {
+                    "$ref": "#/definitions/alias-1554117974-145972-146172-1554117974-0-180045428339802"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "when",
+              "then"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "else": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "lit": {
+                  "type": [
+                    "number",
+                    "string",
+                    "boolean",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "lit"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "ref": {
+                  "type": "string",
+                  "enum": [
+                    "field",
+                    "state",
+                    "row",
+                    "url"
+                  ],
+                  "description": "Where an `Expr` reference reads: the nearest form's field `key`, the global-state slice `key`, the nearest item (`row`: a repeater item, a table's edit record by table name, the row of a style rule / computed column — `key: \"none\"` the row itself, `\"value\"` the cell value, `\"index\"` its position) or a URL param / query."
+                },
+                "key": {
+                  "type": "string"
+                },
+                "path": {
+                  "type": "string"
+                },
+                "source": {
+                  "type": "string",
+                  "enum": [
+                    "param",
+                    "query"
+                  ]
+                }
+              },
+              "required": [
+                "ref",
+                "key"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "op": {
+                  "type": "string",
+                  "enum": [
+                    "+",
+                    "-",
+                    "*",
+                    "/",
+                    "&"
+                  ]
+                },
+                "args": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/alias-1554117974-145072-145490-1554117974-0-1800451306129553"
+                  },
+                  "minItems": 2,
+                  "maxItems": 2
+                }
+              },
+              "required": [
+                "op",
+                "args"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "fn": {
+                  "type": "string",
+                  "enum": [
+                    "ROUND",
+                    "MIN",
+                    "MAX",
+                    "ABS",
+                    "LEN",
+                    "TODAY",
+                    "DAYS",
+                    "COUNT",
+                    "SUM"
+                  ]
+                },
+                "args": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/alias-1554117974-145072-145490-1554117974-0-1800451306129553"
+                  }
+                }
+              },
+              "required": [
+                "fn",
+                "args"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "formula": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "formula"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "rule": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "rule"
+              ],
+              "additionalProperties": false
+            }
+          ],
+          "description": "A formula: a literal, a reference, an operation, a function call or a library reference."
+        }
+      },
+      "required": [
+        "branches",
+        "else"
+      ],
+      "additionalProperties": false,
+      "description": "IF / ELSE IF / ELSE: the first branch whose `when` holds gives the result, else `else`."
     }
   }
 }

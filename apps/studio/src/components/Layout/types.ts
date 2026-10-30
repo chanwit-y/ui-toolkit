@@ -1,4 +1,5 @@
 import type { CellFormat, DataTableAggregate, DataTableStyleRule, DataType } from '@gummy-ui/ui'
+import type { StudioCondition, StudioFormula } from '../Workspace/logic'
 export { LOW_CONTRAST_HUES, MAX_SERIES } from '@gummy-ui/ui'
 import type { Breakpoint } from './breakpoints'
 import type { ComponentType } from './componentCatalog'
@@ -715,6 +716,8 @@ export function columnFormatToEngine(f: ColumnFormatConfig | undefined): CellFor
  */
 export type StyleRuleConfig = {
   id: string
+  /** A custom condition (logic editor); when set it replaces the one-comparison `field · op · value`. */
+  condition?: StudioCondition | null
   field: 'value' | 'row'
   path: string
   op: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'set' | 'unset'
@@ -740,18 +743,24 @@ export function ruleValue(text: string): string | number | boolean {
 }
 
 /** The engine rules (`cellStyles` / `rowStyles`); `undefined` when there are none. */
-export function styleRulesToEngine(rules: StyleRuleConfig[] | undefined): DataTableStyleRule[] | undefined {
+export function styleRulesToEngine(
+  rules: StyleRuleConfig[] | undefined,
+  /** Lowers a custom condition to the engine's names (`logicToEngine`); without it a custom condition exports as stored. */
+  convertCondition: (c: StudioCondition) => unknown = (c) => c,
+): DataTableStyleRule[] | undefined {
   const out = (rules ?? [])
     .filter((r) => r.tone || r.bold || r.italic || r.strike)
     .map((r): DataTableStyleRule => {
       const left = r.field === 'row' ? { key: 'row', path: r.path.trim() } : { key: 'value' }
       const presence = r.op === 'set' || r.op === 'unset'
       return {
-        when: {
-          left,
-          operator: presence ? (r.op === 'set' ? 'neq' : 'eq') : (r.op as Exclude<StyleRuleConfig['op'], 'set' | 'unset'>),
-          right: presence ? {} : { val: ruleValue(r.value) },
-        },
+        when: r.condition
+          ? (convertCondition(r.condition) as DataTableStyleRule['when'])
+          : {
+              left,
+              operator: presence ? (r.op === 'set' ? 'neq' : 'eq') : (r.op as Exclude<StyleRuleConfig['op'], 'set' | 'unset'>),
+              right: presence ? {} : { val: ruleValue(r.value) },
+            },
         ...(r.tone ? { tone: r.tone as DataTableStyleRule['tone'] } : {}),
         ...(r.tone && r.fill ? { fill: true } : {}),
         ...(r.bold ? { weight: 'bold' as const } : {}),
@@ -837,6 +846,8 @@ export const DEFAULT_CELL_LINES: CellLines = 2
 export type DataTableColumnConfig = ColumnSizingConfig & {
   /** Studio-only stable card identity; never exported. */
   id: string
+  /** A computed column: each row's value from this formula (`row` refs read the row); `null` / absent = the accessor's value. */
+  value?: StudioFormula | null
   accessor: string
   header: string
   enableSorting: boolean
@@ -1692,7 +1703,12 @@ export const CHART_TYPE_FEATURES: Record<ChartType, ChartTypeFeatures> = {
  * a page load's id (resolved to its key at export), `path` drills its data or
  * reads `$status`.
  */
-export type ItemBinding = { key: string; path: string; source?: 'row' | 'state' } | null
+/**
+ * Where a display / value slot reads: the enclosing repeater item's field
+ * (`row`, default), a page load (`state`: `key` = the load id) or a formula
+ * (`formula`: a saved one or inline — see `spec/gummy-logic-spec.md`).
+ */
+export type ItemBinding = { key: string; path: string; source?: 'row' | 'state' | 'formula'; formula?: StudioFormula } | null
 
 /**
  * Editable config for a repeater. Maps onto the engine's `RepeaterElement`;
@@ -2696,9 +2712,21 @@ export type GridItemData = {
   /** Which palette component this cell represents (set on drop). */
   type: ComponentType
   settings: GridItemSettings
-  /** Inside a data table's modal canvas only: adding / editing visibility (see `ShowWhen`). */
+  /**
+   * Shown while it holds (the logic editor's **Show when**; `null` / absent =
+   * always) — exported as the bin's `condition`. Replaced `showWhen` /
+   * `dataWhen` in workspace v60.
+   */
+  condition?: StudioCondition | null
+  /** Inputs and buttons: enabled while it holds (exported as the element's `enabledWhen`). */
+  enabledWhen?: StudioCondition | null
+  /** Form fields: the value from a formula (exported as the element's `value`; wins over `initialValue`). */
+  valueFormula?: StudioFormula | null
+  /** With `valueFormula`: `computed` locks the field and recalculates it live; absent = the formula seeds it once. */
+  valueMode?: 'computed'
+  /** @deprecated v60 — migrated into `condition`; kept only so older payloads type-check in the migration. */
   showWhen?: ShowWhen
-  /** Show only while a page-data condition holds (any canvas); `null` / absent = always. */
+  /** @deprecated v60 — migrated into `condition`. */
   dataWhen?: DataCondition | null
   /** Form-bound types: the field's initial value from a page load (`source: 'state'`). */
   initialValue?: ItemBinding

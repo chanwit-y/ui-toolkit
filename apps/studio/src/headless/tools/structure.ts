@@ -16,7 +16,8 @@ import * as cmd from '../../components/Workspace/commands'
 import type { PageDef } from '../../components/Workspace/types'
 import { ToolError } from '../errors'
 import { isBlockedInRepeater, isComponentType, ITEM_TYPES, paletteLabel } from '../itemTypes'
-import { refScope, resolveRefs } from '../refs'
+import { logicCondition, logicFormula, refScope, resolveRefs, type RefScope } from '../refs'
+import { LOGIC_PRESETS } from '../../components/Workspace/logic'
 import { assertMatches } from '../schemas'
 import { rootCanvas, withRoot, type CanvasRef, type Session } from '../session'
 import {
@@ -43,9 +44,22 @@ const ITEM_FIELDS = {
   label: str('The editor label (shown in the studio’s layers; not rendered).'),
   config: obj('A deep-merge patch of the type’s config (describe_item_type has the schema). Objects merge, arrays and scalars replace. References may be names.'),
   layout: obj('A deep-merge patch of the grid settings, e.g. { "colSpan": { "xs": 4, "sm": 6, "md": 4, "lg": 6 } }.'),
-  showWhen: { type: 'string', enum: ['always', 'adding', 'editing'], description: 'Inside a data table’s edit modal only.' },
-  dataWhen: obj('Show only while a page-data condition holds: { loadId, test: loaded|loading|failed|compare, path, op, value } (loadId may be the load key); null clears.'),
+  condition: {
+    description:
+      'Show when (gummy://guide/concepts/logic): Code-mode text — "[customerType] = \'Business\'", "IF((Is business))", "$country.$status = \'success\'", "row.featured = TRUE" — or "adding" / "editing" inside a data table’s edit modal, or a Cond JSON. Hidden fields are not validated or sent. null clears.',
+  },
+  enabledWhen: { description: 'Inputs and buttons: enabled while it holds — same forms as condition. Disabled fields are not validated but are sent. null clears.' },
+  valueFormula: { description: 'Form fields: the value from a formula — "((Subtotal))" (a saved formula / rule), "[qty] * [unitPrice]", or a StudioFormula object. null clears.' },
+  valueMode: { type: 'string', enum: ['initial', 'computed'], description: 'With valueFormula: computed = locked and recalculated live; initial (default) = seeds the field once.' },
   initialValue: obj('Form fields: prefill from a page load — { source: "state", key: "<load>", path }; null clears.'),
+}
+
+/** A condition input: "adding" / "editing" (a table modal's presets), Code-mode text, or JSON (names → ids). */
+function conditionInput(value: unknown, scope: RefScope, at: string): unknown {
+  if (value === 'adding') return LOGIC_PRESETS.adding()
+  if (value === 'editing') return LOGIC_PRESETS.editing()
+  if (typeof value === 'string') return logicCondition(value, scope, at)
+  return resolveRefs(value, scope, at)
 }
 
 function canvasOf(page: PageDef, path: PathSeg[]): ChildCanvas {
@@ -65,8 +79,8 @@ function checkRepeaterRule(page: PageDef, path: PathSeg[], item: GridItemData) {
 }
 
 /**
- * Apply the shared item edits (label, config patch, layout, showWhen,
- * dataWhen, initialValue) to `item`, resolving references, checking the
+ * Apply the shared item edits (label, config patch, layout, condition,
+ * enabledWhen, valueFormula / valueMode, initialValue) to `item`, resolving references, checking the
  * config against its schema and keeping the canvas invariants.
  */
 function applyItemEdits(s: Session, projectId: string, page: PageDef, item: GridItemData, i: Record<string, unknown>, isNew: boolean): GridItemData {
@@ -98,24 +112,29 @@ function applyItemEdits(s: Session, projectId: string, page: PageDef, item: Grid
     assertMatches('GridItemSettings', settings, 'layout')
     next = { ...next, settings }
   }
-  if (i.showWhen !== undefined) {
-    const v = String(i.showWhen)
-    if (!['always', 'adding', 'editing'].includes(v)) throw new ToolError('must be always | adding | editing', 'showWhen')
-    next = { ...next }
-    delete next.showWhen
-    if (v !== 'always') next.showWhen = v as 'adding' | 'editing'
-  }
-  for (const key of ['dataWhen', 'initialValue'] as const) {
+  for (const key of ['condition', 'enabledWhen', 'valueFormula', 'initialValue'] as const) {
     if (i[key] === undefined) continue
     if (i[key] === null) {
       next = { ...next }
       delete next[key]
+      if (key === 'valueFormula') delete next.valueMode
       continue
     }
-    const value = resolveRefs(i[key], scope, key)
-    assertMatches(key === 'dataWhen' ? 'DataCondition' : 'ItemBinding', value, key)
+    const value =
+      key === 'valueFormula'
+        ? logicFormula(i[key], scope, key)
+        : key === 'initialValue'
+          ? resolveRefs(i[key], scope, key)
+          : conditionInput(i[key], scope, key)
+    assertMatches(key === 'valueFormula' ? 'StudioFormula' : key === 'initialValue' ? 'ItemBinding' : 'StudioCondition', value, key)
     next = { ...next, [key]: value } as GridItemData
   }
+  if (i.valueMode !== undefined) {
+    next = { ...next }
+    if (i.valueMode === 'computed') next.valueMode = 'computed'
+    else delete next.valueMode
+  }
+  if (next.valueMode && !next.valueFormula) throw new ToolError('needs a valueFormula', 'valueMode')
   s.attachUsed(projectId, scope.usedEndpoints)
   return next
 }
@@ -317,7 +336,7 @@ export const structureTools: Tool[] = [
   {
     name: 'update_item',
     description:
-      'Edit an item: label, a deep-merge config patch (checked against the type’s schema; references may be names), layout, showWhen, dataWhen, initialValue. Send whole arrays (columns, series, options, actions) — arrays replace.',
+      'Edit an item: label, a deep-merge config patch (checked against the type’s schema; references may be names), layout, condition (Show when), enabledWhen, valueFormula / valueMode, initialValue. Send whole arrays (columns, series, options, actions) — arrays replace.',
     inputSchema: writeInput({ project: PROJECT, page: PAGE, item: ITEM, ...ITEM_FIELDS }, ['project', 'page', 'item']),
     write: true,
     run: (s, i) => {

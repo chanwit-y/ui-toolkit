@@ -10,7 +10,7 @@ function project(id: string, name: string, pageNames = ['Home']): ProjectDef {
   return { id, name, description: '', createdAt: 0, updatedAt: 0, snapshot: { ...snapshot, pages: pageNames.map((n) => createPage(n)) } }
 }
 
-const payload = (projects: ProjectDef[], lib = library()) => JSON.stringify({ state: { projects, library: lib }, version: 59 })
+const payload = (projects: ProjectDef[], lib = library()) => JSON.stringify({ state: { projects, library: lib }, version: 61 })
 
 describe('projectFileKeys', () => {
   test('slugs the names and numbers clashes in workspace order', () => {
@@ -59,5 +59,30 @@ describe('createProjectFolderDeriver', () => {
     // `a` leaves the name, so `b` becomes `shop` instead of `shop-2`.
     const renamed = { ...a, name: 'Store' }
     expect(Object.keys(derive(payload([renamed, b])).projectFolders).sort()).toEqual(['shop', 'store'])
+  })
+})
+
+describe('logic in the runtime document', () => {
+  test('the seeded Logic page exports its conditions, formulas and library by name', async () => {
+    const { assertGummyProject } = await import('@gummy-ui/ui')
+    const { countryLibrary, countryProjectSnapshot } = await import('./snapshots')
+    const { projectToRuntime } = await import('./runtimeProject')
+    const lib = countryLibrary()
+    const snapshot = countryProjectSnapshot(lib)
+    const doc = projectToRuntime({ id: 'seed-project-country', name: 'Country manager', description: '', createdAt: 0, updatedAt: 0, snapshot }, lib)
+    expect(() => assertGummyProject(doc)).not.toThrow()
+    expect(Object.keys(doc.formulas ?? {})).toEqual(['Subtotal', 'Total', 'Density'])
+    expect(doc.rules?.['Is business'].resultType).toBe('boolean')
+    const bins = (doc.pages.logic as { containers: { bins: Record<string, unknown>[] }[] }).containers[0].bins
+    const find = (name: string) => bins.find((b) => (b.element as { name?: string } | undefined)?.name === name)!
+    expect(find('company').condition).toEqual({ rule: 'Is business' })
+    expect((find('subtotal').element as Record<string, unknown>).value).toEqual({ type: 'formula', key: 'none', formula: 'Subtotal' })
+    expect((find('subtotal').element as Record<string, unknown>).valueMode).toBe('computed')
+    expect((find('discountCode').element as Record<string, unknown>).enabledWhen).toEqual({ cmp: 'gte', left: { formula: 'Subtotal' }, right: { lit: 5000 } })
+    const table = bins.find((b) => b.type === 'datatable')!.element as { columns: Record<string, unknown>[]; rowStyles: { when: unknown }[] }
+    expect(table.columns.find((c) => c.accessor === 'density')!.value).toEqual({ type: 'formula', key: 'none', formula: 'Density' })
+    expect(JSON.stringify(table.rowStyles[0].when)).toContain('"formula":"Density"')
+    // Every page migrated: nothing left of the old show-when keys.
+    expect(JSON.stringify(snapshot)).not.toMatch(/"(showWhen|dataWhen)"/)
   })
 })

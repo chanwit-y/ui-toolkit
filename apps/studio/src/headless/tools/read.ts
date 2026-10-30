@@ -1,4 +1,6 @@
 import { createItem } from '../../components/Layout/canvasCommands'
+import { printCondition, printExpr } from '../../components/Workspace/logic'
+import { refScope } from '../refs'
 import { defaultContainerSettings } from '../../components/Layout/types'
 import { MODEL_REF_KEYS } from '../../components/Api/types'
 import type { ModelField } from '../../components/Model/types'
@@ -109,7 +111,7 @@ export const readTools: Tool[] = [
   },
   {
     name: 'get_item',
-    description: 'One item in full: type, label, config, layout settings, showWhen / dataWhen / initialValue and its child canvases (as item views).',
+    description: 'One item in full: type, label, config, layout settings, condition / enabledWhen / valueFormula (with `logic`: the same as Code-mode text) / initialValue and its child canvases (as item views).',
     inputSchema: input({ project: PROJECT, page: PAGE, item: ITEM }, ['project', 'page', 'item']),
     write: false,
     run: (s, i) => {
@@ -117,8 +119,17 @@ export const readTools: Tool[] = [
       const page = s.page(project, i.page)
       const { item, path } = s.item(page, i.item)
       const { childCanvases, ...rest } = item
+      const names = refScope(project, s.ws.library, page.id).logic
+      const logic = {
+        ...(item.condition ? { condition: printCondition(item.condition, names) } : {}),
+        ...(item.enabledWhen ? { enabledWhen: printCondition(item.enabledWhen, names) } : {}),
+        ...(item.valueFormula
+          ? { valueFormula: 'formulaId' in item.valueFormula ? `((${names.formulas.find((f) => f.id === (item.valueFormula as { formulaId: string }).formulaId)?.name ?? '?'}))` : printExpr(item.valueFormula.expr, names) }
+          : {}),
+      }
       return {
         ...rest,
+        ...(Object.keys(logic).length ? { logic } : {}),
         parent: path.length ? { item: path[path.length - 1].itemId, canvas: path[path.length - 1].canvasIndex } : null,
         ...(childCanvases ? { canvases: itemView(item).canvases } : {}),
       }

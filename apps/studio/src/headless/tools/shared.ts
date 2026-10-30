@@ -92,8 +92,10 @@ export type ItemView = {
   type: string
   label: string
   name?: string
-  showWhen?: string
-  dataWhen?: true
+  /** Has a Show when / Enabled when / value formula (get_item prints them). */
+  condition?: true
+  enabledWhen?: true
+  valueFormula?: true
   canvases?: { canvas: number; label: string; items: ItemView[] }[]
 }
 
@@ -105,8 +107,9 @@ export function itemView(item: GridItemData): ItemView {
     type: item.type,
     label: item.label,
     ...(bindingName(item) ? { name: bindingName(item) } : {}),
-    ...(item.showWhen ? { showWhen: item.showWhen } : {}),
-    ...(item.dataWhen ? { dataWhen: true as const } : {}),
+    ...(item.condition ? { condition: true as const } : {}),
+    ...(item.enabledWhen ? { enabledWhen: true as const } : {}),
+    ...(item.valueFormula ? { valueFormula: true as const } : {}),
     ...(item.childCanvases?.length
       ? {
           canvases: item.childCanvases.map((c, i) => ({

@@ -13,8 +13,7 @@ import {
   Save,
   SlidersHorizontal,
   Sun,
-  Undo2,
-} from 'lucide-react'
+  Undo2, Sigma } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
 import { cliInfo, isCliMode } from '../cli/cliStorage'
@@ -42,6 +41,7 @@ const TABS = [
   { to: 'env', label: 'Env', icon: SlidersHorizontal },
   { to: 'theme', label: 'Theme', icon: Palette },
   { to: 'menu', label: 'Menu', icon: PanelLeft },
+  { to: 'logic', label: 'Logic', icon: Sigma },
 ]
 
 // Icon-only like the topbar's action buttons; the label is a hover tooltip +

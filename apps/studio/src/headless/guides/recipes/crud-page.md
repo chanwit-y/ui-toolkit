@@ -17,8 +17,8 @@ Goal: `/books` lists books; Add and Edit open one modal form; Delete confirms.
      (start from `describe_item_type datatable` defaults for a column);
    - into `parent: { item: "$1.id", canvas: 0 }` (the edit modal): a `hidden`
      `_id`, the inputs (`name` = row field), a **Create** button
-     (`showWhen: "adding"`, `confirmTrue: [StartLoading, SubmitFormToPostAPI,
+     (`condition: "adding"`, `confirmTrue: [StartLoading, SubmitFormToPostAPI,
      StopLoading, CloseModal]`, `endpointId: createBook`, `reloadTableItemId: books`)
-     and a **Save** button (`showWhen: "editing"`, `SubmitFormToPatchAPI`,
+     and a **Save** button (`condition: "editing"`, `SubmitFormToPatchAPI`,
      `updateBook`).
 5. `update_menu` with a page link to `books`, then `validate_project`.

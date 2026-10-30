@@ -16,6 +16,8 @@ import { ColumnSizeFields } from './ColumnSizeFields'
 import { ColumnFormatFields } from './ColumnFormatFields'
 import { DataTableGridPanel } from './DataTableGridPanel'
 import { StyleRulesField } from './StyleRulesField'
+import { LogicChip } from '../Logic/LogicChip'
+import { useTableRowScope } from '../Logic/scope'
 import { RequestMappingSection, seedRequestParams, ServerFiltersSection, ServerSortSection } from './DataTableRequestPanel'
 import { buildDataTablePreviewRows } from './dataTablePreview'
 import { paginationPlacement, rowModelFields, segmentFields, type RowModel } from './rowFields'
@@ -304,6 +306,27 @@ const parseLines = (v: string): CellLines => Number(v) as CellLines
  * live preview + exported JSON. No validation — like the other option editors,
  * empty/duplicate accessors just show their consequence in the preview.
  */
+/**
+ * A computed column (spec §4.2): the cell's value from a formula over the
+ * row (`row.<field>`), written under the column's accessor — so sorting,
+ * search and export see it. Blank = the accessor's own value.
+ */
+function ComputedValueField({ column, rowModel, onChange }: { column: DataTableColumnConfig; rowModel: RowModel; onChange: (v: DataTableColumnConfig['value']) => void }) {
+  const fields = useMemo(() => (rowModel.fields ? rowModel.fields.map((f) => ({ name: f.name, kind: f.kind })) : null), [rowModel])
+  const scope = useTableRowScope(fields, false)
+  return (
+    <LogicChip
+      kind="formula"
+      label="Computed value"
+      emptyLabel="The accessor's value"
+      scope={scope}
+      value={column.value}
+      onChange={onChange}
+      hint={column.value ? 'Written under the accessor — give the column a name no field uses.' : undefined}
+    />
+  )
+}
+
 function ColumnsEditor({
   columns,
   onChange,
@@ -379,6 +402,7 @@ function ColumnsEditor({
                       }
                     />
                   </Field>
+                  <ComputedValueField column={column} rowModel={rowModel} onChange={(value) => patch(index, { value })} />
                   <ColumnFormatFields column={column} onChange={(format) => patch(index, { format })} />
                   <Field label="Pin (sticky while scrolling sideways)">
                     <Select

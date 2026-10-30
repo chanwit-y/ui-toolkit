@@ -19,6 +19,8 @@ import {
   setItemLabel,
   setItemLayout,
   setItemPageData,
+  setItemLogic,
+  type ItemLogicPatch,
   setItemShowWhen,
   updateCanvasAtPath,
   type PathSeg,
@@ -143,6 +145,8 @@ type GridState = {
     id: string,
     patch: { dataWhen?: DataCondition | null; initialValue?: ItemBinding },
   ) => void
+  /** The item's own logic: Show when, Enabled when, value formula + mode (`null` clears). */
+  updateItemLogic: (id: string, patch: ItemLogicPatch) => void
   updateItemConfig: (
     id: string,
     patch: Partial<
@@ -502,6 +506,8 @@ export const useGridStore = create<GridState>((set, get) => {
     updateItemShowWhen: (id, showWhen) => setActiveCanvas((canvas) => setItemShowWhen(canvas, id, showWhen)),
 
     updateItemPageData: (id, patch) => setActiveCanvas((canvas) => setItemPageData(canvas, id, patch)),
+
+    updateItemLogic: (id, patch) => setActiveCanvas((canvas) => setItemLogic(canvas, id, patch)),
 
     // Config edits change the cell's preview but never the grid layout, so they
     // skip the FLIP animation. No-op for items without a config (non-textfield).

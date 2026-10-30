@@ -22,7 +22,7 @@ formatted text too), `pin` (`"" | left | right`), `html` (a
 - `canEdit` opens child canvas **0** (the edit modal) with the row as
   context; `canAdd` + `addButton` opens the same modal with an empty context.
   Put the form there: a `hidden` `_id` field, the inputs (`name` = row field),
-  and two buttons told apart by `showWhen`: `"adding"` (POST create) and
+  and two buttons told apart by `condition`: `"adding"` (POST create) and
   `"editing"` (PATCH update), each ending with `CloseModal` and reloading the
   table.
 - `canDelete` + `deleteEndpointId` + `deleteParams` (`{ ":param": "<row field>" }`,

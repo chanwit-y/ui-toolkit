@@ -5,11 +5,14 @@ import { WiringHint } from './ButtonConfigPanel'
 import { LoadFieldPicker, usePageLoads } from './pageData'
 import type { RepeaterScope } from './repeaterScope'
 import type { ItemBinding } from './types'
+import { LogicChip } from '../Logic/LogicChip'
+import { useCanvasLogicScope, useLogicLibrary } from '../Logic/scope'
+import { inlineFormula, isSavedFormula } from '../Workspace/logic'
 
 /** `key: 'none'` is the engine's "the item itself" (an item of a primitive array). */
 const ITEM_ITSELF = { name: 'none', kind: 'the item itself' }
 
-type Mode = 'static' | 'item' | 'state'
+type Mode = 'static' | 'item' | 'state' | 'formula'
 
 type ItemBindingFieldProps = {
   /** What is being bound, for the control's accessible names ("Text", "Image URL"). */
@@ -22,6 +25,8 @@ type ItemBindingFieldProps = {
   kinds?: readonly string[]
   /** Offer page data (default true); off for props the page's loads can't feed. */
   allowState?: boolean
+  /** Offer a formula (a computed value, see `spec/gummy-logic-spec.md`); text-like props only. */
+  allowFormula?: boolean
 }
 
 /**
@@ -34,16 +39,19 @@ type ItemBindingFieldProps = {
  * (free text when it can't be resolved) plus an optional path; page-data
  * mode picks a load and a field of its model (or `$status`).
  */
-export function ItemBindingField({ label, binding, onChange, scope, kinds, allowState = true }: ItemBindingFieldProps) {
+export function ItemBindingField({ label, binding, onChange, scope, kinds, allowState = true, allowFormula = false }: ItemBindingFieldProps) {
   const loads = usePageLoads()
-  const mode: Mode = binding === null ? 'static' : binding.source === 'state' ? 'state' : 'item'
+  const logicScope = useCanvasLogicScope()
+  const mode: Mode = binding === null ? 'static' : binding.source === 'state' ? 'state' : binding.source === 'formula' ? 'formula' : 'item'
   const offerItem = scope !== null || mode === 'item'
   const offerState = (allowState && loads.length > 0) || mode === 'state'
-  if (!offerItem && !offerState) return null
+  const offerFormula = allowFormula || mode === 'formula'
+  if (!offerItem && !offerState && !offerFormula) return null
   const options = [
     { value: 'static', label: 'Static' },
     ...(offerItem ? [{ value: 'item', label: 'Item field' }] : []),
     ...(offerState ? [{ value: 'state', label: 'Page data' }] : []),
+    ...(offerFormula ? [{ value: 'formula', label: 'Formula' }] : []),
   ]
   const fields = scope?.itemFields.fields
   return (
@@ -58,7 +66,9 @@ export function ItemBindingField({ label, binding, onChange, scope, kinds, allow
               ? { key: '', path: '' }
               : next === 'state'
                 ? { key: loads[0]?.id ?? '', path: '', source: 'state' }
-                : null,
+                : next === 'formula'
+                  ? { key: '', path: '', source: 'formula', formula: inlineFormula({ lit: '' }) }
+                  : null,
           )
         }
       />
@@ -85,6 +95,17 @@ export function ItemBindingField({ label, binding, onChange, scope, kinds, allow
             </WiringHint>
           )}
         </>
+      )}
+      {binding && mode === 'formula' && (
+        <LogicChip
+          kind="formula"
+          label={`${label} formula`}
+          emptyLabel="No formula"
+          scope={logicScope}
+          value={binding.formula}
+          onChange={(formula) => onChange(formula ? { key: '', path: '', source: 'formula', formula } : null)}
+          hint="Shown through the formula’s output format."
+        />
       )}
       {binding && mode === 'state' && (
         <>
@@ -113,8 +134,16 @@ export function bindingToken(binding: NonNullable<ItemBinding>): string {
 /** `bindingToken` that also names page-data bindings by their load's key: `{country.name}`. */
 export function useBindingToken(): (binding: NonNullable<ItemBinding>) => string {
   const loads = usePageLoads()
+  const { formulas, rules } = useLogicLibrary()
   return useCallback(
-    (binding) => (binding.source === 'state' ? stateBindingToken(binding, loads) : bindingToken(binding)),
-    [loads],
+    (binding) => {
+      if (binding.source === 'formula') {
+        const f = binding.formula
+        const saved = f && isSavedFormula(f) ? (formulas.find((x) => x.id === f.formulaId) ?? rules.find((x) => x.id === f.formulaId)) : undefined
+        return `{ƒ ${saved ? saved.name : 'formula'}}`
+      }
+      return binding.source === 'state' ? stateBindingToken(binding, loads) : bindingToken(binding)
+    },
+    [loads, formulas, rules],
   )
 }

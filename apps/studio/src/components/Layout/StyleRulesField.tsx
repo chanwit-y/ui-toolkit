@@ -2,6 +2,9 @@ import { Plus, Trash2 } from 'lucide-react'
 import { IconButton, Input, Select } from '../common'
 import { ColorField } from '../Theme/ThemeEditor'
 import { createStyleRule, type StyleRuleConfig } from './types'
+import { LogicChip } from '../Logic/LogicChip'
+import { useTableRowScope } from '../Logic/scope'
+import { useMemo } from 'react'
 
 const OP_OPTIONS: { value: StyleRuleConfig['op']; label: string }[] = [
   { value: 'lt', label: '<' },
@@ -24,7 +27,9 @@ const FIELD_OPTIONS = [
  * of a table's rows (`rowStyles`, `scope: 'row'` — a rule there always reads a
  * row field). One card per rule: when (field · comparison · value), then the
  * look (a Radix tone, fill, bold / italic / strike). The first matching rule
- * gives the tone; every matching rule adds its weight / style.
+ * gives the tone; every matching rule adds its weight / style. "Custom
+ * condition" swaps the one comparison for the logic editor (AND / OR groups,
+ * formulas, saved rules over `row.<field>` / `row.$value`).
  */
 export function StyleRulesField({
   label,
@@ -41,6 +46,8 @@ export function StyleRulesField({
   fieldSuggestions?: string[]
 }) {
   const list = rules ?? []
+  const rowFields = useMemo(() => (fieldSuggestions.length ? fieldSuggestions.map((name) => ({ name, kind: '' })) : null), [fieldSuggestions])
+  const logicScope = useTableRowScope(rowFields, scope === 'cell')
   const patch = (i: number, p: Partial<StyleRuleConfig>) => onChange(list.map((r, j) => (j === i ? { ...r, ...p } : r)))
   const flag = (i: number, key: 'fill' | 'bold' | 'italic' | 'strike', text: string) => (
     <label className="flex items-center gap-1 text-ui-xs text-ink-2">
@@ -70,6 +77,24 @@ export function StyleRulesField({
         const readsRow = scope === 'row' || rule.field === 'row'
         return (
           <div key={rule.id} className="box space-y-1.5 p-2">
+            {rule.condition ? (
+              <div className="flex items-start gap-1.5">
+                <div className="min-w-0 flex-1">
+                  <LogicChip
+                    kind="condition"
+                    label="When"
+                    emptyLabel="Always"
+                    scope={logicScope}
+                    value={rule.condition}
+                    onChange={(condition) => patch(i, { condition })}
+                  />
+                </div>
+                <IconButton label="Remove rule" onClick={() => onChange(list.filter((_, j) => j !== i))}>
+                  <Trash2 size={13} />
+                </IconButton>
+              </div>
+            ) : (
+            <>
             <div className="flex items-center gap-1.5">
               <span className="text-ui-xs text-ink-3">When</span>
               {scope === 'cell' && (
@@ -105,6 +130,15 @@ export function StyleRulesField({
                 </div>
               )}
             </div>
+            <button
+              type="button"
+              className="text-ui-xs text-ink-3 underline"
+              onClick={() => patch(i, { condition: { all: [{ cmp: 'eq', left: { ref: 'row', key: readsRow ? rule.path || 'none' : '$value' }, right: { lit: '' } }] } })}
+            >
+              Custom condition…
+            </button>
+            </>
+            )}
             <ColorField label="Tone" value={rule.tone} onChange={(tone) => patch(i, { tone })} unsetLabel="no tone" />
             <div className="flex flex-wrap items-center gap-3">
               {flag(i, 'fill', 'fill')}

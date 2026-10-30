@@ -38,7 +38,7 @@ import { pickedAuth } from '../Workspace/runtimeProject'
 import { authProfileLoad } from '../Workspace/auth'
 import { runtimeDocument } from '../Workspace/runtimeProject'
 import type { PageLoadDef } from '../Workspace/pageLoads'
-import { gridConfigToJson } from './gridConfig'
+import { gridConfigToJson, type LogicLibraryRef } from './gridConfig'
 import { NestedRouterBoundary } from './NestedRouterBoundary'
 import { useGridStore } from './gridStore'
 import { livePreviewProject, previewWiring } from './livePreview'
@@ -183,6 +183,11 @@ export function LivePreviewModal({ onClose }: { onClose: () => void }) {
   // name in its exported config, and the preview mounts a placeholder stub
   // per name (below) that shows the resolved value.
   const customComponents = project?.snapshot.customComponents ?? NO_CUSTOM_COMPONENTS
+  // Saved formulas / rules: their ids resolve to names in the Config tab's export.
+  const logicLibrary = useMemo(
+    () => ({ formulas: project?.snapshot.formulas, rules: project?.snapshot.rules }),
+    [project?.snapshot.formulas, project?.snapshot.rules],
+  )
   // The project's attached endpoints and the models they reference — exactly
   // what its model.ts / api.ts exports contain.
   const models = useProjectModels()
@@ -366,6 +371,7 @@ export function LivePreviewModal({ onClose }: { onClose: () => void }) {
             fullscreen={fullscreen}
             customActions={customActions}
             customComponents={customComponents}
+            logicLibrary={logicLibrary}
             stubActions={stubActions}
             stubComponents={stubComponents}
             onConfigJson={setConfigJson}
@@ -411,6 +417,7 @@ const PreviewApp = memo(function PreviewApp({
   fullscreen,
   customActions,
   customComponents,
+  logicLibrary,
   stubActions,
   stubComponents,
   onConfigJson,
@@ -427,6 +434,7 @@ const PreviewApp = memo(function PreviewApp({
   fullscreen: boolean
   customActions: CustomActionDef[]
   customComponents: CustomComponentDef[]
+  logicLibrary: LogicLibraryRef
   stubActions: TActionMaster
   stubComponents: TComponentMaster
   onConfigJson: (json: string) => void
@@ -472,9 +480,10 @@ const PreviewApp = memo(function PreviewApp({
             [...(current?.page.loads ?? []), ...globalLoads],
             customActions,
             customComponents,
+            logicLibrary,
           )
         : '[]',
-    [grid, endpoints, pages, current?.page.loads, globalLoads, customActions, customComponents],
+    [grid, endpoints, pages, current?.page.loads, globalLoads, customActions, customComponents, logicLibrary],
   )
   useEffect(() => onConfigJson(configJson), [configJson, onConfigJson])
   const paramKeys = current ? pathParams(current.page.path) : []

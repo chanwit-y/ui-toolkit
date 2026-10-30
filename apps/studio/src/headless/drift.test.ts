@@ -126,6 +126,8 @@ const SNAPSHOT_TOOLS: Record<string, string> = {
   globalLoads: 'upsert_load',
   customActions: 'upsert_custom_action',
   customComponents: 'upsert_custom_component',
+  formulas: 'upsert_formula',
+  rules: 'upsert_rule',
   authId: 'set_project_auth',
 }
 const LIBRARY_TOOLS: Record<string, string> = {

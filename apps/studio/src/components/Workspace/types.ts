@@ -1,4 +1,5 @@
 import type { EndpointDef } from '../Api/types'
+import type { FormulaLibDef, RuleLibDef } from './logic'
 import type { EnvVarDef } from '../Env/types'
 import type { GridContainerSettings, GridItemData, NavParamSource, StudioNavigate } from '../Layout/types'
 import type { GroupDef } from '../Library/groupStore'
@@ -177,6 +178,13 @@ export type ProjectSnapshot = {
    * lives in the app; see `customComponents.ts`). Optional: absent = none.
    */
   customComponents?: CustomComponentDef[]
+  /**
+   * The project's saved formulas and rules (see `logic.ts` and
+   * `spec/gummy-logic-spec.md`), referenced by id from items and exported by
+   * name as `project.formulas` / `project.rules`. Optional: absent = none.
+   */
+  formulas?: FormulaLibDef[]
+  rules?: RuleLibDef[]
   /** The shared auth entry this project signs in with (`library.auth[].id`); null / absent = no sign-in. */
   authId?: string | null
 }
@@ -243,7 +251,7 @@ export type ActivityEntry = {
 
 /** The persisted shape (one localStorage key, versioned). */
 export type WorkspaceData = {
-  version: 59
+  version: 61
   /** The portal's own appearance; inside a project the project theme wins. */
   appearance: ThemeAppearance
   /** The mock identity stamped on activity and templates (see `MOCK_USERS`). */

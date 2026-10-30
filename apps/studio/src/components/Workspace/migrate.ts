@@ -115,6 +115,7 @@ import {
   dataGridDemoPage,
   fileCollectionDemoPage,
   chartDemoPage,
+  logicDemoPage,
   cardDemoPage,
   htmlContentDemoPage,
   drawerDemoPage,
@@ -146,6 +147,8 @@ import type {
   WorkspaceData,
   MenuItemDef,
 } from './types'
+import { migrateItemConditions } from './logic'
+import { LOGIC_PAGE_ID, logicSeedFormulas, logicSeedRules } from '../seed/logic'
 import { walkItems } from '../Layout/pageLinks'
 import type { ContainerConfig } from '../Layout/types'
 import { defaultMenu } from './menu'
@@ -1065,10 +1068,45 @@ function migrateV58(data: { projects: ProjectDef[]; library: LibraryData }): {
   library: LibraryData
 } {
   const seeded = seedLibraryAdditions(data.projects, data.library, chartSeedModels(), chartSeedEndpoints())
-  return {
+  return migrateV59({
     projects: seeded.projects.map((p) => (p.id === 'seed-project-country' ? appendDemoPages(p, [chartDemoPage()]) : p)),
     library: seeded.library,
-  }
+  })
+}
+
+/**
+ * v59 → v60: logic (see `spec/gummy-logic-spec.md`). Every item's
+ * `showWhen` (a table modal's adding / editing) and `dataWhen` (page data /
+ * the repeater item) become one `condition` (AND-ed when both were set), in
+ * every page and template.
+ */
+function migrateV59(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  for (const p of data.projects) for (const pg of p.snapshot.pages) migrateItemConditions(pg.grid.items)
+  for (const t of data.library.templates) migrateItemConditions(t.grid.items)
+  return migrateV60(data)
+}
+
+/**
+ * v60 → v61: the seeded project gains the **Logic** page and the saved
+ * formulas / rules it uses (by id, so a deleted one stays deleted only if
+ * the page is gone too — the page is appended once, by id).
+ */
+function migrateV60(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  const projects = data.projects.map((p) => {
+    if (p.id !== 'seed-project-country' || p.snapshot.pages.some((pg) => pg.id === LOGIC_PAGE_ID)) return p
+    const have = (list: { id: string }[] | undefined, id: string) => (list ?? []).some((x) => x.id === id)
+    const formulas = [...(p.snapshot.formulas ?? []), ...logicSeedFormulas().filter((f) => !have(p.snapshot.formulas, f.id))]
+    const rules = [...(p.snapshot.rules ?? []), ...logicSeedRules().filter((r) => !have(p.snapshot.rules, r.id))]
+    const withPage = appendDemoPages(p, [logicDemoPage()])
+    return { ...withPage, snapshot: { ...withPage.snapshot, formulas, rules } }
+  })
+  return { projects, library: data.library }
 }
 
 /**
@@ -1794,7 +1832,7 @@ export function withSeedLibrary(library: LibraryData): LibraryData {
 }
 
 /** The workspace version this build writes (and the newest it reads). */
-export const WORKSPACE_VERSION = 59
+export const WORKSPACE_VERSION = 61
 
 /** What a persisted payload migrates to: the stored fields at the current shape. */
 export type MigratedWorkspace = Pick<WorkspaceData, 'appearance' | 'user' | 'activity' | 'projects' | 'library'>
@@ -2011,7 +2049,15 @@ export function migrateWorkspace(persisted: unknown): MigratedWorkspace | null {
     const normalized = { ...library, auth: (library.auth ?? []).map((a) => normalizeAuthDef(a)) }
     return { appearance, user, activity, ...migrateV58({ projects: data.projects, library: normalized }) }
   }
-  if (data.version !== 59) return null
+  if (data.version === 59) {
+    const normalized = { ...library, auth: (library.auth ?? []).map((a) => normalizeAuthDef(a)) }
+    return { appearance, user, activity, ...migrateV59({ projects: data.projects, library: normalized }) }
+  }
+  if (data.version === 60) {
+    const normalized = { ...library, auth: (library.auth ?? []).map((a) => normalizeAuthDef(a)) }
+    return { appearance, user, activity, ...migrateV60({ projects: data.projects, library: normalized }) }
+  }
+  if (data.version !== 61) return null
   // Same version, possibly older entry shapes (fields added without a bump): fill the defaults.
   return { appearance, user, activity, projects: data.projects, library: { ...library, auth: (library.auth ?? []).map((a) => normalizeAuthDef(a)) } }
 }
