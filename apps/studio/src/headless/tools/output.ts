@@ -150,8 +150,8 @@ export function validateProject(ws: WorkspaceData, projectId: string): Validatio
   const logic = libraryIssues(formulas, rules)
   for (const pg of project.snapshot.pages)
     walkItems(pg.grid.items, (item) => {
-      for (const key of ['condition', 'enabledWhen'] as const)
-        logic.push(...conditionIssues(item[key], rules, formulas, `page ${pg.name} › ${item.label} › ${key === 'condition' ? 'Show when' : 'Enabled when'}`))
+      for (const key of ['condition', 'enabledWhen', 'requiredWhen'] as const)
+        logic.push(...conditionIssues(item[key], rules, formulas, `page ${pg.name} › ${item.label} › ${key === 'condition' ? 'Show when' : key === 'enabledWhen' ? 'Enabled when' : 'Required when'}`))
     })
   for (const issue of logic) (issue.level === 'error' ? errors : []).push(`${issue.where}: ${issue.message}`)
   const warnings = missingRefs(document).map((w) => `reference to nothing at ${w}`)

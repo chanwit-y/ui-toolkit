@@ -4,7 +4,7 @@ Computed values and conditions live in the config (no app code). Three things:
 
 - **Formula** — computes a value: `[qty] * [unitPrice]`, `ROUND($country.population / row.area_km2, 1)`.
 - **Rule** — IF / ELSE IF / ELSE, the first branch whose condition holds gives the result; a `boolean` rule is also a condition.
-- **Condition** — AND / OR groups of comparisons, used by **Show when** (`condition`), **Enabled when** (`enabledWhen`) and table style rules.
+- **Condition** — AND / OR groups of comparisons, used by **Show when** (`condition`), **Enabled when** (`enabledWhen`), **Required when** (`requiredWhen`, on a required field: required only while it holds, otherwise it may be blank, and it is not stripped from the payload) and table style rules.
 
 ## Code-mode text (what the tools take)
 
@@ -28,7 +28,7 @@ Semantics: a blank operand makes `> < BETWEEN` false; `eq` against blank is true
 
 ## Where it goes
 
-- `update_item` / `add_item`: `condition` (Show when; `"adding"` / `"editing"` are shortcuts in a table modal), `enabledWhen` (inputs and buttons), and on form fields `valueFormula` (`"((Subtotal))"` or text) + `valueMode: "computed"` (locked, recalculated, submitted) — default `initial` seeds the field once.
+- `update_item` / `add_item`: `condition` (Show when; `"adding"` / `"editing"` are shortcuts in a table modal), `enabledWhen` (inputs and buttons), `requiredWhen` (required form fields), and on form fields `valueFormula` (`"((Subtotal))"` or text) + `valueMode: "computed"` (locked, recalculated, submitted) — default `initial` seeds the field once.
 - Display values: a text / typography / html / card binding `{ "source": "formula", "formula": "((Total))" }` (or text, or `{ "expr": "…", "format": {…} }`).
 - A data table column: `value: "((Density))"` (or `{ "expr": "DAYS(row.joined_at, TODAY())" }`) makes it **computed** — written under its accessor, so sort / search / export see it.
 - A style rule: `condition: "row.growth > 0.02 AND ((Density)) > 100"` replaces its one comparison.

@@ -2720,6 +2720,8 @@ export type GridItemData = {
   condition?: StudioCondition | null
   /** Inputs and buttons: enabled while it holds (exported as the element's `enabledWhen`). */
   enabledWhen?: StudioCondition | null
+  /** Required form fields: required only while it holds (exported as the element's `requiredWhen`; otherwise optional, still sent). */
+  requiredWhen?: StudioCondition | null
   /** Form fields: the value from a formula (exported as the element's `value`; wins over `initialValue`). */
   valueFormula?: StudioFormula | null
   /** With `valueFormula`: `computed` locks the field and recalculates it live; absent = the formula seeds it once. */

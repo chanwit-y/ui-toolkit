@@ -2312,12 +2312,14 @@ export function buildBins(
     const formula = isField && item.valueFormula ? formulaToDataValue(item.valueFormula, buttonRefs.logic, { tableName: scope?.tableName }) : undefined
     const initial = isField && !formula ? itemBindingValue(item.initialValue, buttonRefs) : undefined
     const enabledWhen = item.enabledWhen ? logicToEngine(item.enabledWhen, buttonRefs.logic, { tableName: scope?.tableName }) : undefined
+    const requiredWhen = isField && item.requiredWhen ? logicToEngine(item.requiredWhen, buttonRefs.logic, { tableName: scope?.tableName }) : undefined
     const element = built
       ? {
           ...built,
           ...(formula ? { value: formula, ...(item.valueMode === 'computed' ? { valueMode: 'computed' } : {}) } : {}),
           ...(initial ? { value: initial } : {}),
           ...(enabledWhen ? { enabledWhen } : {}),
+          ...(requiredWhen ? { requiredWhen } : {}),
         }
       : built
     // Adding / editing visibility inside a data table's modal: the engine

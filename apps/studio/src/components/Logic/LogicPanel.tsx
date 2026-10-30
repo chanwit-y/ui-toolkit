@@ -134,6 +134,19 @@ export function LogicPanel({ item }: { item: GridItemData }) {
           />
         </div>
       )}
+      {isField && (item.config as { isRequired?: boolean } | undefined)?.isRequired && (
+        <div className="border-t border-line pt-2">
+          <LogicChip
+            kind="condition"
+            label="Required when"
+            emptyLabel="Always required"
+            scope={scope}
+            value={item.requiredWhen}
+            onChange={(requiredWhen) => updateLogic(item.id, { requiredWhen })}
+            hint="While it doesn’t hold the field may be left blank; it is not removed from the payload."
+          />
+        </div>
+      )}
       {isField && (
         <div className="space-y-1.5 border-t border-line pt-2">
           <span className="text-ui-sm font-medium text-ink-2">Value</span>

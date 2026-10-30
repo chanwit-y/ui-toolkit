@@ -333,12 +333,12 @@ export function setItemPageData(
 }
 
 /** The logic on the item itself (Show when, Enabled when, a value formula and its mode); `null` / `undefined` clears. */
-export type ItemLogicPatch = Partial<Pick<GridItemData, 'condition' | 'enabledWhen' | 'valueFormula' | 'valueMode'>>
+export type ItemLogicPatch = Partial<Pick<GridItemData, 'condition' | 'enabledWhen' | 'requiredWhen' | 'valueFormula' | 'valueMode'>>
 
 export function setItemLogic(canvas: ChildCanvas, id: string, patch: ItemLogicPatch): ChildCanvas {
   return patchItem(canvas, id, (item) => {
     const next: GridItemData = { ...item, ...patch }
-    for (const key of ['condition', 'enabledWhen', 'valueFormula', 'valueMode'] as const) if (next[key] == null) delete next[key]
+    for (const key of ['condition', 'enabledWhen', 'requiredWhen', 'valueFormula', 'valueMode'] as const) if (next[key] == null) delete next[key]
     // A mode means nothing without a formula.
     if (!next.valueFormula) delete next.valueMode
     return next

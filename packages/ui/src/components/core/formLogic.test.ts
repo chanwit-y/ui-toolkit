@@ -19,6 +19,7 @@ const container: Container = {
     bin("textfield", field("company"), { condition: isBusiness }),
     bin("textfield", field("note", { enabledWhen: accepted })),
     bin("textfield", field("locked", { disabled: true })),
+    bin("textfield", field("taxId", { isRequired: true, requiredWhen: isBusiness })),
     bin("hidden", { name: "_id", dataType: "string" }, { condition: isBusiness }),
     bin("textfield", field("total", { valueMode: "computed", value: { type: "formula", key: "none", expr: { lit: 1 } } })),
     { sm: "12", md: "12", lg: "12", xl: "12", type: "container", condition: isBusiness, container: { id: "n", name: "n", bins: [bin("textfield", field("vat"))] } } as Bin,
@@ -32,7 +33,8 @@ const decide = (values: Record<string, unknown>) => gateDecisions(gates, { field
 describe("form gates", () => {
   test("collects fields through nested containers and tabs, with inherited conditions", () => {
     const byName = Object.fromEntries(gates.map((g) => [g.name, g]));
-    expect(Object.keys(byName).sort()).toEqual(["_id", "company", "inTab", "locked", "note", "total", "type", "vat"]);
+    expect(Object.keys(byName).sort()).toEqual(["_id", "company", "inTab", "locked", "note", "taxId", "total", "type", "vat"]);
+    expect(byName.taxId.requiredWhen).toBeDefined();
     expect(byName.vat.conditions).toHaveLength(1);
     expect(byName.inTab.conditions).toHaveLength(1);
     expect(byName._id.conditions).toHaveLength(0); // a hidden bin is never hidden away
@@ -46,6 +48,21 @@ describe("form gates", () => {
     const business = decide({ type: "Business", accept: true });
     expect(business.skip.size).toBe(0);
     expect([...business.relax]).toEqual(["locked"]);
+    // requiredWhen: optional while it doesn't hold, required while it does.
+    expect([...personal.optional]).toEqual(["taxId"]);
+    expect(business.optional.size).toBe(0);
+  });
+
+  test("a requiredWhen field may be blank while the condition fails, must be filled while it holds", () => {
+    const schema = new Schema([container]).generate();
+    const base = { type: "Business", company: "c", note: "n", locked: "l", total: "1", _id: "x", vat: "v", inTab: "i", accept: true };
+    const business = narrowSchema(schema, decide({ type: "Business", accept: true }));
+    expect(business.safeParse({ ...base, taxId: "" }).success).toBe(false);
+    expect(business.safeParse({ ...base, taxId: "TH-1" }).success).toBe(true);
+    const personal = narrowSchema(schema, decide({ type: "Personal", accept: true }));
+    const out = personal.safeParse({ ...base, type: "Personal", taxId: "" });
+    expect(out.success).toBe(true);
+    if (out.success) expect("taxId" in out.data).toBe(true); // still submitted
   });
 
   test("the narrowed schema neither validates nor returns hidden fields", () => {
@@ -60,7 +77,7 @@ describe("form gates", () => {
 
   test("narrowSchema leaves non-object schemas alone", () => {
     const s = z.string();
-    expect(narrowSchema(s, { skip: new Set(["a"]), relax: new Set() })).toBe(s);
+    expect(narrowSchema(s, { skip: new Set(["a"]), relax: new Set(), optional: new Set() })).toBe(s);
   });
 
   test("computed fields reading each other are cyclic", () => {

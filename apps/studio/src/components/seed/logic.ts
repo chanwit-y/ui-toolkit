@@ -29,6 +29,8 @@ export const LOGIC_TOTAL_ID = 'formula-seed-total'
 export const LOGIC_DENSITY_ID = 'formula-seed-density'
 export const LOGIC_DISCOUNT_ID = 'rule-seed-discount'
 export const LOGIC_BUSINESS_ID = 'rule-seed-business'
+/** The v62 **Required when** items (inserted into an existing Logic page by `migrateV61`). */
+export const LOGIC_REQUIRED_ITEM_IDS = ['seed-item-logic-require-h-title', 'seed-item-logic-require-h-caption', 'seed-item-logic-tax']
 
 const field = (key: string): Expr => ({ ref: 'field', key })
 const lit = (v: number | string | boolean): Expr => ({ lit: v })
@@ -166,6 +168,8 @@ export function logicDemoSeedItems(): GridItemData[] {
       },
     },
     textField('seed-item-logic-company', 'company', 'Company name', { isRequired: true }, half, { condition: { rule: LOGIC_BUSINESS_ID } }),
+    ...heading('seed-item-logic-require-h', 'Required when', 'Tax ID is required only for a Business customer: for Personal it may be left blank.'),
+    textField('seed-item-logic-tax', 'taxId', 'Tax ID', { isRequired: true, errorMessage: 'A business needs a tax ID' }, half, { requiredWhen: { rule: LOGIC_BUSINESS_ID } }),
     ...heading('seed-item-logic-enable-h', 'Enabled when', 'Discount code unlocks once the subtotal reaches 5,000. Save is clickable only while Accept the terms is on; a disabled field is not validated but is still sent.'),
     textField('seed-item-logic-code', 'discountCode', 'Discount code', { helperText: 'Needs a subtotal of 5,000' }, half, {
       enabledWhen: { cmp: 'gte', left: { formula: LOGIC_SUBTOTAL_ID }, right: lit(5000) },

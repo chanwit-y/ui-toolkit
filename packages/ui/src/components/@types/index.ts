@@ -3365,6 +3365,11 @@ export type FieldValueMode = "initial" | "computed";
 export type FieldLogic = {
   /** Enabled while it holds; a disabled field is not validated but is submitted. */
   enabledWhen?: AnyCondition;
+  /**
+   * With `isRequired`: required only while it holds — otherwise the field
+   * validates as optional (its other rules still apply) and is not stripped from the payload.
+   */
+  requiredWhen?: AnyCondition;
   /** How a `value` formula feeds the field (default `initial`). */
   valueMode?: FieldValueMode;
 };
