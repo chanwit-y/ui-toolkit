@@ -1,9 +1,10 @@
 # Gummy videos
 
-Four narrated videos share this pipeline: the Studio intro below, `grid/`, `charts/` and `logic/`
+Five narrated videos share this pipeline: the Studio intro below, `grid/`, `charts/`, `logic/`
 (`bun logic/build.ts` → `logic/out/gummy-logic.mp4`, ~110 s, scenes `l1`–`l8`: formulas, rules and
 conditions over `api` + `example` + `studio` + `demo-api` + `demo`; the studio runs on its own seed
-in a fresh browser context, so unlike the others it writes nothing to `demo/gummy`).
+in a fresh browser context, so unlike the others it writes nothing to `demo/gummy`) and `formula/`
+(below).
 
 # Gummy Studio intro video
 
@@ -107,3 +108,31 @@ bun charts/build.ts                   # capture every scene, then render
 bun charts/build.ts --only c3-mix     # re-capture one scene, render
 bun charts/build.ts --render-only     # re-render from the last capture
 ```
+
+# Formula walkthrough video
+
+A ~3-minute tour of every formula function: the nine functions (`ROUND MIN MAX ABS LEN TODAY DAYS
+COUNT SUM`), the five operators, output formats and blank / divide-by-zero policies on the example
+app's **Formula** page; computed fields, conditions, saved formulas with a rule inside them and
+computed columns on its **Logic** page; the end user's `formula` element; then the studio's Formula
+tile, Insert list, formula bar, Try it, in-cell editor and Logic tab:
+
+| File | What it is |
+|---|---|
+| `formula/narration.ts` | the eleven scenes (`f1`–`f11`) and their lines |
+| `formula/capture.ts` | the recorded scenes |
+| `formula/build.ts` | the build entry → `formula/out/gummy-formula.mp4` |
+
+Servers: `api` (9000), `example` (3200) and `studio` (3300). The studio runs on its own seed in a
+fresh browser context, so nothing is written to `demo/gummy`.
+
+```bash
+bun formula/build.ts                  # capture every scene, then render
+bun formula/build.ts --only f5-lists  # re-capture one scene, render
+bun formula/build.ts --render-only    # re-render from the last capture
+```
+
+Two things to know when changing a scene. A native `title` tooltip never reaches the screencast, so
+show a formula's error reason where the page draws it (Try it), not by hovering the dash. And
+`Actor` scrolls its target into view instantly, which reads as a jump cut: wheel to the target first
+with `scrollTo`, so the move happens on camera.

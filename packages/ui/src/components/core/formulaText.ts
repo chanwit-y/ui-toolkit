@@ -134,6 +134,8 @@ class Parser {
   constructor(
     private toks: Tok[],
     private end: number,
+    /** Read every arithmetic operator at one level, left to right (`leftToRight`). */
+    private flat = false,
   ) {}
 
   private peek(): Tok | undefined {
@@ -161,13 +163,15 @@ class Parser {
   }
   private add(): Expr {
     let left = this.mul();
-    for (let t = this.peek(); this.isOp(t, "+", "-"); t = this.peek()) {
+    const ops: Op[] = this.flat ? ["+", "-", "*", "/"] : ["+", "-"];
+    for (let t = this.peek(); this.isOp(t, ...ops); t = this.peek()) {
       this.next();
       left = { op: t.v, args: [left, this.mul()] };
     }
     return left;
   }
   private mul(): Expr {
+    if (this.flat) return this.unary();
     let left = this.unary();
     for (let t = this.peek(); this.isOp(t, "*", "/"); t = this.peek()) {
       this.next();
@@ -254,12 +258,16 @@ class Parser {
 
 export type FormulaParse = { expr: Expr; error?: undefined } | { expr?: undefined; error: string; at: number };
 
-/** Parse formula text; blank text is an error too (the caller decides what blank means). */
-export function parseFormulaText(text: string): FormulaParse {
+/**
+ * Parse formula text; blank text is an error too (the caller decides what
+ * blank means). `leftToRight` ignores precedence (what the editor's "× and ÷
+ * are calculated first" note offers instead).
+ */
+export function parseFormulaText(text: string, { leftToRight = false }: { leftToRight?: boolean } = {}): FormulaParse {
   try {
     const toks = lex(text);
     if (toks.length === 0) return { error: "Type a formula", at: 0 };
-    const p = new Parser(toks, text.length);
+    const p = new Parser(toks, text.length, leftToRight);
     const expr = p.expr();
     p.done();
     return { expr };
@@ -267,6 +275,29 @@ export function parseFormulaText(text: string): FormulaParse {
     if (e instanceof FormulaParseError) return { error: e.message, at: e.at };
     throw e;
   }
+}
+
+/** Whether bracket-free text mixes `+ −` with `× ÷` at one level. */
+export function mixesPrecedence(text: string): boolean {
+  let toks: Tok[];
+  try {
+    toks = lex(text);
+  } catch {
+    return false;
+  }
+  let depth = 0;
+  const seen: Record<number, { add: boolean; mul: boolean }> = {};
+  for (const t of toks) {
+    if (t.k === "(") depth++;
+    else if (t.k === ")") depth--;
+    else if (t.k === "op" && t.v !== "&") {
+      const s = (seen[depth] ??= { add: false, mul: false });
+      if (t.v === "+" || t.v === "-") s.add = true;
+      else s.mul = true;
+      if (s.add && s.mul) return true;
+    }
+  }
+  return false;
 }
 
 function printLit(v: number | string | boolean | null): string {

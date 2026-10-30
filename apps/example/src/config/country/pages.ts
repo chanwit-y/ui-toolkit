@@ -22,7 +22,7 @@ import { containerHtmlContentDemo } from "./htmlContentDemo";
 import { containerDrawerDemo } from "./drawerDemo";
 import { containerSwitchDemo } from "./switchDemo";
 import { containerLogicDemo } from "./logicDemo";
-import { containerFormulaDemo } from "./formulaDemo";
+import { containerFormulaDemo, formulaDemoLoads } from "./formulaDemo";
 import { containerCustomActionsDemo } from "./customActionsDemo";
 import { containerCustomComponentsDemo, customComponentsLoads } from "./customComponentsDemo";
 import { containerUploadDemo } from "./uploadDemo";
@@ -221,11 +221,13 @@ export const pages = {
   formulaDemo: {
     // Inline formulas as typography values — the twin of the studio's seeded
     // Formula page (see ./formulaDemo.ts): operators, functions, formats and
-    // the blank / divide-by-zero policies over a small form.
+    // the blank / divide-by-zero policies over a small form, COUNT and SUM
+    // over the `sales` page load.
     path: "/formula",
     parent: "countryList",
     title: "Formula",
     containers: containerFormulaDemo,
+    loads: formulaDemoLoads,
   },
   customActionsDemo: {
     // Consumer-coded button actions (`src/actions.ts`, mounted through

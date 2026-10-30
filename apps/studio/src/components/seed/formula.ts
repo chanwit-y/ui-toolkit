@@ -129,10 +129,15 @@ export function formulaDemoSeedItems(): GridItemData[] {
         { id: 'seed-item-formula-min', caption: 'MIN(Low, High)', formula: formula(fn('MIN', field('low'), field('high'))) },
         { id: 'seed-item-formula-max', caption: 'MAX(Low, High)', formula: formula(fn('MAX', field('low'), field('high'))) },
         { id: 'seed-item-formula-abs', caption: 'ABS(Low − High)', formula: formula(fn('ABS', op('-', field('low'), field('high')))) },
+      ],
+      third,
+    ),
+    ...metrics(
+      [
         { id: 'seed-item-formula-days', caption: 'DAYS(Start date, TODAY())', formula: formula(fn('DAYS', field('startDate'), fn('TODAY')), integer) },
         { id: 'seed-item-formula-today', caption: 'TODAY()', formula: formula(fn('TODAY'), fmt({ type: 'date', pattern: 'DD MMM YYYY' })) },
       ],
-      quarter,
+      half,
     ),
     ...heading('seed-item-formula-blank-h', 'Blanks and errors', 'The same arithmetic with the other policies: blanks counted as 0, and an error (a dash with the reason as a tooltip) on dividing by zero.'),
     ...metrics(

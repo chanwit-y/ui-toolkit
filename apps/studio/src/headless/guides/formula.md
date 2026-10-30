@@ -2,10 +2,12 @@
 
 The **end user's** formula (the Logic group's *New formula* tile). In the
 running app it shows a result as a typography; clicking it (or the pencil)
-opens a modal where the user writes the formula over the page's form fields —
-chips insert fields, functions (`ROUND MIN MAX ABS LEN TODAY DAYS COUNT SUM`)
-and operators, the result updates as they type, and *Show as* picks the
-output format. Blank clears it. Display-only: not a field of the form.
+opens the studio's editor over the page: an **Insert** list (the form's fields,
+page data read off what has loaded, saved formulas and rules, the functions
+`ROUND MIN MAX ABS LEN TODAY DAYS COUNT SUM`), a formula bar with autocomplete
+and the function hint, *Show as* with the blank / divide-by-zero policies, and
+**Try it** over samples that start from the form's live values. Blank clears
+it. Display-only: not a field of the form.
 
 The grammar is the studio's Code mode with engine names: `[field]` or a bare
 `field`, `$load.path`, `row.x`, `url.x` / `query.x`, `((Saved formula))`,
@@ -18,7 +20,7 @@ The grammar is the studio's Code mode with engine names: `[field]` or a bare
 - `persist` — where the user's formula is kept: `local` (default,
   localStorage under `gummy.formula.<page key>.<name>`), `session`, `none`.
   Only a formula that differs from the starting one is stored.
-- `allowFormat: false` hides the *Show as* controls.
+- `allowFormat: false` hides *Show as*, the policies with it.
 - `variant` / `weight` / `color` / `align` — the result typography;
   `label` a caption above it; `editLabel` the pencil's label and modal title.
 

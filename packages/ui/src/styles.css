@@ -23,6 +23,7 @@
 @import "./styles/sidebar.css";
 @import "./styles/surface.css";
 @import "./styles/logic.css";
+@import "./styles/formulaEditor.css";
 
 @tailwind base;
 @tailwind components;

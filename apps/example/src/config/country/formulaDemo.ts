@@ -1,4 +1,4 @@
-import type { Bin, CellFormat, Container, DataValue, Expr } from "@gummy-ui/ui";
+import type { Bin, CellFormat, Container, DataValue, Expr, PageLoad } from "@gummy-ui/ui";
 import { DEFAULT_CONTAINER_GRID } from "@gummy-ui/ui";
 
 /**
@@ -14,7 +14,8 @@ import { DEFAULT_CONTAINER_GRID } from "@gummy-ui/ui";
  * 2. **Text** — `&` joins text, `LEN` counts characters.
  * 3. **Functions** — `MIN`, `MAX`, `ABS`, `DAYS(date, TODAY())`, `TODAY()`
  *    with a date pattern.
- * 4. **Blanks and errors** — the other policies: `onEmpty: "zero"` and
+ * 4. **Lists** — `COUNT` and `SUM` over a page load (`sales`, twelve months).
+ * 5. **Blanks and errors** — the other policies: `onEmpty: "zero"` and
  *    `onDivideByZero: "error"` (a dash with the reason as a tooltip).
  */
 const full = { sm: "12", md: "12", lg: "12", xl: "12" } as const;
@@ -26,7 +27,8 @@ type Span = typeof full | typeof half | typeof third | typeof quarter;
 const field = (key: string): Expr => ({ ref: "field", key });
 const lit = (v: number | string | boolean): Expr => ({ lit: v });
 const op = (o: "+" | "-" | "*" | "/" | "&", a: Expr, b: Expr): Expr => ({ op: o, args: [a, b] });
-const fn = (name: "ROUND" | "MIN" | "MAX" | "ABS" | "LEN" | "TODAY" | "DAYS", ...args: Expr[]): Expr => ({ fn: name, args });
+const fn = (name: "ROUND" | "MIN" | "MAX" | "ABS" | "LEN" | "TODAY" | "DAYS" | "COUNT" | "SUM", ...args: Expr[]): Expr => ({ fn: name, args });
+const sales: Expr = { ref: "state", key: "sales" };
 const thb: CellFormat = { type: "currency", currency: "THB", decimals: 2 };
 const integer: CellFormat = { type: "number", decimals: 0 };
 
@@ -64,6 +66,8 @@ const metrics = (list: Metric[], span: Span): Bin[] => [
 const subtotal = op("*", field("quantity"), field("price"));
 const discount = op("/", op("*", subtotal, field("discountPct")), lit(100));
 const total = fn("ROUND", op("-", subtotal, discount), lit(2));
+
+export const formulaDemoLoads: PageLoad[] = [{ key: "sales", api: { name: "salesByMonth", paths: ["data"] } }];
 
 export const containerFormulaDemo: Container[] = [
   {
@@ -121,8 +125,24 @@ export const containerFormulaDemo: Container[] = [
           { caption: "MIN(Low, High)", value: formula(fn("MIN", field("low"), field("high"))) },
           { caption: "MAX(Low, High)", value: formula(fn("MAX", field("low"), field("high"))) },
           { caption: "ABS(Low − High)", value: formula(fn("ABS", op("-", field("low"), field("high")))) },
+        ],
+        third,
+      ),
+      ...metrics(
+        [
           { caption: "DAYS(Start date, TODAY())", value: formula(fn("DAYS", field("startDate"), fn("TODAY")), integer) },
           { caption: "TODAY()", value: formula(fn("TODAY"), { type: "date", pattern: "DD MMM YYYY" }) },
+        ],
+        half,
+      ),
+
+      ...section("Lists", "COUNT and SUM read a list: here the page load $sales, twelve months of orders and revenue. SUM takes the list and the field to add up."),
+      ...metrics(
+        [
+          { caption: "COUNT($sales)", value: formula(fn("COUNT", sales), integer) },
+          { caption: "SUM($sales, 'orders')", value: formula(fn("SUM", sales, lit("orders")), integer) },
+          { caption: "SUM($sales, 'revenue')", value: formula(fn("SUM", sales, lit("revenue")), thb) },
+          { caption: "SUM($sales, 'revenue') ÷ COUNT($sales)", value: formula(op("/", fn("SUM", sales, lit("revenue")), fn("COUNT", sales)), thb), weight: "bold" },
         ],
         quarter,
       ),
@@ -136,7 +156,7 @@ export const containerFormulaDemo: Container[] = [
         half,
       ),
 
-      ...section("Your own formula", "The formula element: click the value (or the pencil) to write a formula over this page's fields in a modal — chips insert fields, functions and operators, the result updates as you type, and Show as picks the format. It is kept in this browser (localStorage) per page and element; Reset returns to the configured one. The second starts empty and forgets on reload."),
+      ...section("Your own formula", "The formula element: click the value (or the pencil) to write a formula over this page in the studio's editor — the Insert list, a formula bar that completes what you type, Show as, and Try it with sample values. It is kept in this browser (localStorage) per page and element; Reset returns to the configured one. The second starts empty and forgets on reload."),
       {
         ...half,
         type: "formula",

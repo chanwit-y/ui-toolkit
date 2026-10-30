@@ -1,0 +1,629 @@
+/*
+ * The `formula` element's editor (components/FormulaEditorModal.tsx). A
+ * Radix-vars partial, so it follows the accent, light / dark and the glass
+ * surface, ships in the compiled stylesheet, and needs nothing from a
+ * consumer's Tailwind. The look is the studio's logic editor.
+ */
+.gummy-fx {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  font-size: 13px;
+  color: var(--gray-12);
+}
+.gummy-fx code,
+.gummy-fx textarea,
+.gummy-fx-bar-overlay {
+  font-family: var(--code-font-family, ui-monospace, SFMono-Regular, Menlo, monospace);
+}
+.gummy-fx-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 22rem;
+  max-height: 68vh;
+  overflow: hidden;
+}
+/* A steady height: searching the Insert list mustn't resize the dialog. */
+.gummy-fx-body[data-insert] {
+  height: 68vh;
+}
+.gummy-fx-grid {
+  display: grid;
+  flex: 1;
+  min-height: 0;
+  gap: 1.25rem;
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 15rem);
+}
+.gummy-fx-grid[data-insert] {
+  grid-template-columns: minmax(0, 12.5rem) minmax(0, 1fr) minmax(0, 15rem);
+}
+.gummy-fx-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 2px 4px 2px 2px;
+}
+.gummy-fx-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.gummy-fx-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gray-10);
+}
+.gummy-fx-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+.gummy-fx-field {
+  display: flex;
+  flex: 1 1 8rem;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--gray-11);
+}
+.gummy-fx-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2rem;
+  font-size: 12px;
+  color: var(--gray-11);
+}
+
+/* Insert */
+.gummy-fx-insert {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.gummy-fx-search {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0 0.5rem;
+  border: 1px solid var(--gray-6);
+  border-radius: 6px;
+  color: var(--gray-10);
+  background: var(--color-surface);
+}
+.gummy-fx-search input {
+  width: 100%;
+  height: 1.75rem;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font-size: 12px;
+  color: var(--gray-12);
+}
+.gummy-fx-insert > ul {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0 2px 0 0;
+  list-style: none;
+}
+.gummy-fx-insert ul ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.gummy-fx-group {
+  padding: 0.5rem 0.25rem 0.125rem;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--gray-10);
+}
+.gummy-fx-insert li button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  padding: 2px 4px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.gummy-fx-insert li button:hover {
+  background: var(--gray-a3);
+}
+.gummy-fx-pill {
+  display: inline-flex;
+  max-width: 100%;
+  min-width: 0;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 1px 0.5rem;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.gummy-fx-pill > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gummy-fx-pill > svg {
+  flex-shrink: 0;
+}
+.gummy-fx-insert .gummy-fx-fn {
+  align-items: baseline;
+  gap: 0.5rem;
+}
+.gummy-fx-fn code {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gray-12);
+}
+.gummy-fx-fn span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--gray-10);
+}
+.gummy-fx-none {
+  padding: 0.25rem;
+  font-size: 11px;
+  color: var(--gray-10);
+}
+
+/* Operand tones: a pill, a suggestion, a span in the bar. */
+.gummy-fx-tone-field,
+.gummy-fx-hl-field {
+  color: var(--blue-11);
+  background: var(--blue-a3);
+}
+.gummy-fx-tone-data,
+.gummy-fx-hl-data {
+  color: var(--purple-11);
+  background: var(--purple-a3);
+}
+.gummy-fx-tone-saved,
+.gummy-fx-hl-saved {
+  color: var(--teal-11);
+  background: var(--teal-a3);
+}
+.gummy-fx-tone-rule,
+.gummy-fx-hl-rule {
+  color: var(--orange-11);
+  background: var(--orange-a3);
+}
+.gummy-fx-tone-fn {
+  color: var(--gray-12);
+  font-weight: 600;
+}
+
+/* The bar: a transparent textarea over the coloured overlay. */
+.gummy-fx-barwrap {
+  position: relative;
+  min-width: 0;
+}
+.gummy-fx-bar {
+  position: relative;
+}
+.gummy-fx-bar > .gummy-fx-bar-overlay,
+.gummy-fx-bar > textarea {
+  box-sizing: border-box;
+  font-size: 12px;
+  line-height: 20px;
+  letter-spacing: 0;
+  padding: 6px 9px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  tab-size: 2;
+}
+.gummy-fx-bar > .gummy-fx-bar-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  color: var(--gray-12);
+  border: 1px solid transparent;
+}
+.gummy-fx-bar > textarea {
+  position: relative;
+  display: block;
+  width: 100%;
+  margin: 0;
+  resize: none;
+  overflow: hidden;
+  background: transparent;
+  color: transparent;
+  caret-color: var(--gray-12);
+  border: 1px solid var(--gray-6);
+  border-radius: 7px;
+  outline: none;
+}
+.gummy-fx-bar > textarea:focus {
+  border-color: var(--gray-8);
+  box-shadow: 0 0 0 2px var(--accent-a5);
+}
+.gummy-fx-bar > textarea::placeholder {
+  color: var(--gray-10);
+  font-family: var(--default-font-family);
+}
+.gummy-fx-bar[data-invalid] > textarea {
+  border-color: var(--red-8);
+}
+.gummy-fx-hl {
+  border-radius: 4px;
+}
+.gummy-fx-hl-field,
+.gummy-fx-hl-data,
+.gummy-fx-hl-saved,
+.gummy-fx-hl-rule {
+  box-shadow: 0 0 0 1.5px var(--gummy-fx-tint, transparent);
+}
+.gummy-fx-hl-field {
+  --gummy-fx-tint: var(--blue-a3);
+}
+.gummy-fx-hl-data {
+  --gummy-fx-tint: var(--purple-a3);
+}
+.gummy-fx-hl-saved {
+  --gummy-fx-tint: var(--teal-a3);
+}
+.gummy-fx-hl-rule {
+  --gummy-fx-tint: var(--orange-a3);
+}
+.gummy-fx-hl-value {
+  color: var(--green-11);
+}
+.gummy-fx-hl-fn {
+  color: var(--gray-12);
+  -webkit-text-stroke: 0.35px currentColor;
+}
+.gummy-fx-hl-op {
+  color: var(--gray-11);
+  -webkit-text-stroke: 0.3px currentColor;
+}
+.gummy-fx-hl-punct {
+  color: var(--gray-10);
+}
+.gummy-fx-hl-error {
+  color: var(--red-11);
+  text-decoration: underline wavy var(--red-9);
+  text-decoration-skip-ink: none;
+  text-underline-offset: 3px;
+}
+.gummy-fx-bar-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 7px;
+  pointer-events: none;
+  animation: gummy-fx-ring 0.45s ease-out;
+}
+@keyframes gummy-fx-ring {
+  from {
+    box-shadow: 0 0 0 0 var(--blue-a7);
+  }
+  to {
+    box-shadow: 0 0 0 6px transparent;
+  }
+}
+.gummy-fx-suggest {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 50;
+  width: 100%;
+  max-width: 20rem;
+  max-height: 16rem;
+  overflow: auto;
+  margin: 0.25rem 0 0;
+  padding: 0.25rem 0;
+  list-style: none;
+  border: 1px solid var(--gray-6);
+  border-radius: 8px;
+  background: var(--color-panel-solid);
+  box-shadow: var(--shadow-5);
+  animation: gummy-fx-drop 0.14s ease-out;
+}
+@keyframes gummy-fx-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+}
+.gummy-fx-suggest button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.gummy-fx-suggest button[data-active] {
+  background: var(--gray-a3);
+}
+.gummy-fx-suggest-label {
+  overflow: hidden;
+  padding: 0 0.375rem;
+  border-radius: 9999px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--code-font-family, monospace);
+  font-size: 11px;
+}
+.gummy-fx-suggest-sub {
+  flex-shrink: 0;
+  margin-left: auto;
+  max-width: 55%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--gray-10);
+}
+.gummy-fx-hint {
+  margin: 0.25rem 0 0;
+  font-size: 11px;
+  color: var(--gray-10);
+}
+.gummy-fx-hint code {
+  color: var(--gray-11);
+}
+.gummy-fx-hint [data-current] {
+  font-weight: 600;
+  color: var(--gray-12);
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+}
+.gummy-fx-error {
+  margin: 0.25rem 0 0;
+  font-size: 11px;
+  color: var(--red-11);
+}
+.gummy-fx-ops {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.375rem;
+}
+.gummy-fx-ops button {
+  height: 1.5rem;
+  min-width: 1.75rem;
+  padding: 0 0.375rem;
+  border: 1px solid var(--gray-6);
+  border-radius: 6px;
+  background: var(--color-surface);
+  font-family: var(--code-font-family, monospace);
+  font-size: 12px;
+  color: var(--gray-11);
+  cursor: pointer;
+}
+.gummy-fx-ops button:hover {
+  background: var(--gray-a3);
+  color: var(--gray-12);
+}
+.gummy-fx-starters {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 11px;
+  color: var(--gray-10);
+}
+.gummy-fx-starters > div:last-child {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+.gummy-fx-starters button {
+  padding: 2px 0.625rem;
+  border: 1px solid var(--gray-6);
+  border-radius: 9999px;
+  background: var(--color-surface);
+  font-size: 12px;
+  color: var(--gray-11);
+  cursor: pointer;
+}
+.gummy-fx-starters button:hover {
+  border-color: var(--gray-8);
+  color: var(--gray-12);
+}
+.gummy-fx-note {
+  padding: 0.5rem;
+  border: 1px solid var(--amber-7);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--gray-11);
+}
+.gummy-fx-note strong {
+  color: var(--gray-12);
+}
+
+/* Show as */
+.gummy-fx-showas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+.gummy-fx-preview {
+  max-width: 45%;
+  margin-left: auto;
+  overflow: hidden;
+  padding: 2px 0.5rem;
+  border-radius: 6px;
+  background: var(--gray-a3);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--code-font-family, monospace);
+  font-size: 12px;
+}
+.gummy-fx-disclose {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  font-size: 11px;
+  color: var(--gray-11);
+  cursor: pointer;
+}
+.gummy-fx-disclose:hover {
+  color: var(--gray-12);
+}
+.gummy-fx-disclose svg {
+  transition: transform 0.15s;
+}
+.gummy-fx-disclose[aria-expanded="true"] svg {
+  transform: rotate(90deg);
+}
+
+/* Try it */
+.gummy-fx-try {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.gummy-fx-result {
+  padding: 0.75rem;
+  border: 1px solid var(--gray-6);
+  border-radius: 8px;
+  background: var(--gray-a2);
+}
+.gummy-fx-result-value {
+  overflow-wrap: anywhere;
+  font-family: var(--code-font-family, monospace);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.2;
+  animation: gummy-fx-pop 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transform-origin: left center;
+}
+@keyframes gummy-fx-pop {
+  from {
+    transform: scale(1.08);
+    filter: brightness(1.15);
+  }
+}
+.gummy-fx-result-raw {
+  margin: 0.25rem 0 0;
+  overflow-wrap: anywhere;
+  font-family: var(--code-font-family, monospace);
+  font-size: 11px;
+  color: var(--gray-10);
+}
+.gummy-fx-result-error {
+  margin: 0.25rem 0 0;
+  font-size: 11px;
+  color: var(--red-11);
+}
+.gummy-fx-samples {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  gap: 0.5rem;
+  overflow-y: auto;
+  padding: 2px;
+}
+.gummy-fx-sample {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.gummy-fx-sample > span:first-child {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  overflow: hidden;
+  font-size: 11px;
+  color: var(--gray-11);
+}
+.gummy-fx-reset {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: 11px;
+  color: var(--gray-10);
+  cursor: pointer;
+}
+.gummy-fx-reset:hover {
+  color: var(--gray-12);
+  text-decoration: underline;
+}
+.gummy-fx-note-sm {
+  margin: 0;
+  font-size: 11px;
+  color: var(--gray-10);
+}
+
+.gummy-fx-footer {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 0 0.125rem 0.25rem;
+  border-top: 1px solid var(--gray-5);
+}
+.gummy-fx-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+@media (max-width: 760px) {
+  .gummy-fx-body,
+  .gummy-fx-body[data-insert] {
+    height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+  .gummy-fx-grid,
+  .gummy-fx-grid[data-insert] {
+    grid-template-rows: none;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .gummy-fx-main {
+    overflow: visible;
+  }
+  .gummy-fx-insert > ul {
+    max-height: 12rem;
+  }
+  /* The tabs scroll sideways rather than clip Date and Text. */
+  .gummy-fx-showas > :first-child {
+    width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+  }
+  .gummy-fx-preview {
+    max-width: 100%;
+    margin-left: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gummy-fx-bar-ring,
+  .gummy-fx-suggest,
+  .gummy-fx-result-value {
+    animation: none;
+  }
+  .gummy-fx-disclose svg {
+    transition: none;
+  }
+}

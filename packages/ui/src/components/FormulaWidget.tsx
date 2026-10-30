@@ -1,19 +1,19 @@
-import { Button, IconButton, Select, Text, TextField } from "@radix-ui/themes";
-import { Pencil, RotateCcw } from "lucide-react";
+import { IconButton, Text } from "@radix-ui/themes";
+import { Pencil } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CellFormat } from "../util/format";
 import type { Expr, FormulaDef, FormulaWidgetElement } from "./@types";
 import { LogicError } from "./core/bound";
 import { evaluateFormula, formatResult, logicDeps, type LogicDeps } from "./core/formula";
-import { FORMULA_FUNCTIONS, parseFormulaText, printFormulaText } from "./core/formulaText";
+import { printFormulaText } from "./core/formulaText";
 import { useLocale } from "./core/locale";
 import { useFormLogic, useLogicLibrary, useLogicScope } from "./core/logic";
 import { matchPageKey, usePages } from "./core/pages";
-import { Modal } from "./Modal";
+import { FormulaEditorModal, type FormulaPolicies } from "./FormulaEditorModal";
 import { Typography } from "./Typography";
 
-/** What the end user owns: the formula and (optionally) its output format. */
-export type FormulaWidgetState = { expr: Expr | null; format?: CellFormat };
+/** What the end user owns: the formula and (optionally) its output format and blank policies. */
+export type FormulaWidgetState = { expr: Expr | null; format?: CellFormat } & FormulaPolicies;
 
 const STORAGE_VERSION = 1;
 const NO_DEPS: LogicDeps = { fields: [], states: [], url: false, row: false };
@@ -31,9 +31,10 @@ function readStored(storage: Storage | null, key: string): FormulaWidgetState | 
   try {
     const raw = storage?.getItem(key);
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as { v?: number; expr?: Expr | null; format?: CellFormat };
+    const parsed = JSON.parse(raw) as { v?: number; expr?: Expr | null } & Omit<FormulaWidgetState, "expr">;
     if (parsed?.v !== STORAGE_VERSION) return null;
-    return { expr: parsed.expr ?? null, format: parsed.format };
+    const { v: _v, ...state } = parsed;
+    return { ...state, expr: parsed.expr ?? null };
   } catch {
     return null;
   }
@@ -120,27 +121,28 @@ export function FormulaWidget(props: FormulaWidgetElement) {
     return `gummy.formula.${pageKey ?? "_"}.${name}`;
   }, [pages, name]);
   const storage = useMemo(() => storageOf(persist), [persist]);
-  const defaults = useRef<FormulaWidgetState>({ expr: formula ?? null, format });
-  defaults.current = { expr: formula ?? null, format };
+  const defaults = useRef<FormulaWidgetState>({ expr: formula ?? null, format, onEmpty, onDivideByZero });
+  defaults.current = { expr: formula ?? null, format, onEmpty, onDivideByZero };
   const [state, setState] = useState<FormulaWidgetState>(() => readStored(storage, storageKey) ?? defaults.current);
   // Another page / name: pick up that key's formula.
   useEffect(() => {
     setState(readStored(storage, storageKey) ?? defaults.current);
   }, [storage, storageKey]);
   const def = useMemo<FormulaDef | undefined>(
-    () => (state.expr ? { expr: state.expr, format: state.format ?? format, onEmpty, onDivideByZero } : undefined),
+    () => (state.expr ? { expr: state.expr, format: state.format ?? format, onEmpty: state.onEmpty ?? onEmpty, onDivideByZero: state.onDivideByZero ?? onDivideByZero } : undefined),
     [state, format, onEmpty, onDivideByZero],
   );
   const result = useFormulaResult(def);
   const [open, setOpen] = useState(false);
   const { fieldTypes } = useFormLogic();
-  const fields = useMemo(() => Object.keys(fieldTypes).filter((f) => f !== name), [fieldTypes, name]);
+  const fields = useMemo(() => Object.entries(fieldTypes).flatMap(([f, kind]) => (f === name ? [] : [{ name: f, kind }])), [fieldTypes, name]);
 
-  const apply = (expr: Expr | null, nextFormat: CellFormat | undefined) => {
-    const next: FormulaWidgetState = { expr, ...(nextFormat ? { format: nextFormat } : {}) };
+  const apply = (expr: Expr | null, nextFormat: CellFormat | undefined, policies: FormulaPolicies) => {
+    const next: FormulaWidgetState = { expr, ...(nextFormat ? { format: nextFormat } : {}), ...policies };
     setState(next);
     const d = defaults.current;
-    const isDefault = JSON.stringify(expr) === JSON.stringify(d.expr) && JSON.stringify(nextFormat ?? null) === JSON.stringify(d.format ?? null);
+    const same = (a: unknown, b: unknown) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+    const isDefault = same(expr, d.expr) && same(nextFormat, d.format) && (policies.onEmpty ?? "empty") === (d.onEmpty ?? "empty") && (policies.onDivideByZero ?? "empty") === (d.onDivideByZero ?? "empty");
     writeStored(storage, storageKey, isDefault ? null : next);
     setOpen(false);
   };
@@ -154,275 +156,14 @@ export function FormulaWidget(props: FormulaWidgetElement) {
           title={label ? `${label} — ${editLabel.toLowerCase()}` : editLabel}
           text={state.expr ? printFormulaText(state.expr) : ""}
           format={state.format ?? format}
-          defaultText={formula ? printFormulaText(formula) : ""}
-          defaultFormat={format}
+          policies={{ onEmpty: state.onEmpty ?? onEmpty, onDivideByZero: state.onDivideByZero ?? onDivideByZero }}
+          defaults={{ text: formula ? printFormulaText(formula) : "", format, policies: { onEmpty, onDivideByZero } }}
           fields={fields}
           allowFormat={allowFormat}
-          policies={{ onEmpty, onDivideByZero }}
           onApply={apply}
           onClose={() => setOpen(false)}
         />
       )}
     </>
-  );
-}
-
-// ---- the modal ----------------------------------------------------------------
-
-type FormatKind = "" | CellFormat["type"];
-
-function formatKind(f: CellFormat | undefined): FormatKind {
-  return f?.type ?? "";
-}
-
-/** The format edited as flat knobs (kind + the one or two it reads). */
-type FormatDraft = { kind: FormatKind; decimals: string; currency: string; pattern: string };
-
-function toDraft(f: CellFormat | undefined): FormatDraft {
-  return {
-    kind: formatKind(f),
-    decimals: f && "decimals" in f && f.decimals !== undefined ? String(f.decimals) : "",
-    currency: f?.type === "currency" ? f.currency : "",
-    pattern: f && (f.type === "date" || f.type === "datetime") ? (f.pattern ?? "") : "",
-  };
-}
-
-function fromDraft(d: FormatDraft): CellFormat | undefined {
-  const decimals = d.decimals.trim() === "" ? undefined : Math.max(0, Math.min(10, Number(d.decimals) || 0));
-  switch (d.kind) {
-    case "number":
-      return { type: "number", ...(decimals !== undefined ? { decimals } : {}) };
-    case "currency":
-      return { type: "currency", currency: d.currency.trim().toUpperCase() || "USD", ...(decimals !== undefined ? { decimals } : {}) };
-    case "percent":
-      return { type: "percent", ...(decimals !== undefined ? { decimals } : {}) };
-    case "date":
-    case "datetime":
-      return { type: d.kind, ...(d.pattern.trim() ? { pattern: d.pattern.trim() } : {}) };
-    case "boolean":
-      return { type: "boolean" };
-    case "text":
-      return { type: "text" };
-    default:
-      return undefined;
-  }
-}
-
-const FORMAT_OPTIONS: { value: FormatKind; label: string }[] = [
-  { value: "", label: "As is" },
-  { value: "number", label: "Number" },
-  { value: "currency", label: "Currency" },
-  { value: "percent", label: "Percent" },
-  { value: "date", label: "Date" },
-  { value: "datetime", label: "Date & time" },
-  { value: "text", label: "Text" },
-];
-
-const OPERATORS: { show: string; insert: string }[] = [
-  { show: "+", insert: " + " },
-  { show: "−", insert: " − " },
-  { show: "×", insert: " × " },
-  { show: "÷", insert: " ÷ " },
-  { show: "&", insert: " & " },
-  { show: "( )", insert: "()" },
-];
-
-const CHIP = "rounded-full border border-[var(--gray-6)] px-2 py-0.5 text-xs text-[var(--gray-12)] transition-colors hover:border-[var(--accent-8)] hover:bg-[var(--accent-a3)]";
-
-/** The live result of the draft, where the widget sits. */
-function DraftResult({ def }: { def: FormulaDef }) {
-  const { text, error } = useFormulaResult(def);
-  return (
-    <Text as="div" size="2" className="gummy-formula-result">
-      <span className="text-[var(--gray-11)]">Result: </span>
-      {error ? <span className="text-[var(--red-11)]">— {error}</span> : <span className="font-medium">{text || "(empty)"}</span>}
-    </Text>
-  );
-}
-
-export type FormulaEditorModalProps = {
-  id: string;
-  title: string;
-  /** The formula as text (`""` = none yet). */
-  text: string;
-  format: CellFormat | undefined;
-  /** What Reset returns to (the config's). */
-  defaultText: string;
-  defaultFormat: CellFormat | undefined;
-  /** The enclosing form's field names, offered as chips. */
-  fields: string[];
-  allowFormat: boolean;
-  policies: Pick<FormulaDef, "onEmpty" | "onDivideByZero">;
-  /** `expr: null` clears the formula. */
-  onApply: (expr: Expr | null, format: CellFormat | undefined) => void;
-  onClose: () => void;
-};
-
-/**
- * The end user's formula editor: a text box over the formula grammar with
- * insert chips (fields, functions, operators), the live result, the output
- * format, and Reset / Cancel / Apply.
- */
-export function FormulaEditorModal({ id, title, text: initialText, format, defaultText, defaultFormat, fields, allowFormat, policies, onApply, onClose }: FormulaEditorModalProps) {
-  const [text, setText] = useState(initialText);
-  const [draft, setDraft] = useState<FormatDraft>(() => toDraft(format));
-  const ref = useRef<HTMLTextAreaElement>(null);
-  const parsed = useMemo(() => (text.trim() ? parseFormulaText(text) : null), [text]);
-  const nextFormat = useMemo(() => fromDraft(draft), [draft]);
-  const def = useMemo<FormulaDef | undefined>(() => (parsed?.expr ? { expr: parsed.expr, format: nextFormat, ...policies } : undefined), [parsed, nextFormat, policies]);
-  const canApply = !parsed || !!parsed.expr;
-  const isDefault = text.trim() === defaultText.trim() && JSON.stringify(nextFormat ?? null) === JSON.stringify(defaultFormat ?? null);
-
-  const insert = (snippet: string, caretBack = 0) => {
-    const el = ref.current;
-    const start = el?.selectionStart ?? text.length;
-    const end = el?.selectionEnd ?? text.length;
-    const next = text.slice(0, start) + snippet + text.slice(end);
-    setText(next);
-    requestAnimationFrame(() => {
-      el?.focus();
-      const pos = start + snippet.length - caretBack;
-      el?.setSelectionRange(pos, pos);
-    });
-  };
-
-  return (
-    <Modal id={id} open onOpenChange={(o) => !o && onClose()} title={title} width="min(92vw, 40rem)">
-      <div className="flex flex-col gap-3">
-        <div>
-          <textarea
-            ref={ref}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            rows={3}
-            spellCheck={false}
-            placeholder="e.g. [quantity] × [price]"
-            aria-label="Formula"
-            aria-invalid={!!parsed?.error}
-            className={`w-full resize-y rounded-md border bg-[var(--color-surface)] p-2 font-mono text-sm text-[var(--gray-12)] focus:outline-none focus:ring-2 ${parsed?.error ? "border-[var(--red-8)] focus:ring-[var(--red-7)]" : "border-[var(--gray-7)] focus:ring-[var(--accent-8)]"}`}
-          />
-          {parsed?.error ? (
-            <Text as="div" size="1" className="text-[var(--red-11)]" role="alert">
-              {parsed.error}
-            </Text>
-          ) : (
-            <Text as="div" size="1" color="gray">
-              Fields by name, numbers, 'text', ( ), and the functions below. Blank clears the formula.
-            </Text>
-          )}
-        </div>
-
-        {fields.length > 0 && (
-          <div>
-            <Text as="div" size="1" color="gray" className="mb-1">
-              Fields
-            </Text>
-            <div className="flex flex-wrap gap-1">
-              {fields.map((f) => (
-                <button key={f} type="button" className={CHIP} onClick={() => insert(`[${f}]`)}>
-                  {f}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-        <div className="flex flex-wrap gap-x-4 gap-y-2">
-          <div>
-            <Text as="div" size="1" color="gray" className="mb-1">
-              Functions
-            </Text>
-            <div className="flex flex-wrap gap-1">
-              {FORMULA_FUNCTIONS.map((f) => (
-                <button key={f.fn} type="button" className={CHIP} title={`${f.fn}(${f.args}) — ${f.hint}`} onClick={() => insert(`${f.fn}()`, 1)}>
-                  {f.fn}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <Text as="div" size="1" color="gray" className="mb-1">
-              Operators
-            </Text>
-            <div className="flex flex-wrap gap-1">
-              {OPERATORS.map((o) => (
-                <button key={o.show} type="button" className={CHIP} onClick={() => insert(o.insert, o.insert === "()" ? 1 : 0)}>
-                  {o.show}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {def && <DraftResult def={def} />}
-
-        {allowFormat && (
-          <div className="flex flex-wrap items-end gap-2">
-            <label className="flex flex-col gap-1">
-              <Text size="1" color="gray">
-                Show as
-              </Text>
-              <Select.Root value={draft.kind || "asis"} onValueChange={(v) => setDraft((d) => ({ ...d, kind: (v === "asis" ? "" : v) as FormatKind }))}>
-                <Select.Trigger aria-label="Output format" />
-                <Select.Content>
-                  {FORMAT_OPTIONS.map((o) => (
-                    <Select.Item key={o.value || "asis"} value={o.value || "asis"}>
-                      {o.label}
-                    </Select.Item>
-                  ))}
-                </Select.Content>
-              </Select.Root>
-            </label>
-            {(draft.kind === "number" || draft.kind === "currency" || draft.kind === "percent") && (
-              <label className="flex flex-col gap-1">
-                <Text size="1" color="gray">
-                  Decimals
-                </Text>
-                <TextField.Root type="number" min={0} max={10} value={draft.decimals} onChange={(e) => setDraft((d) => ({ ...d, decimals: e.target.value }))} className="w-20" aria-label="Decimals" />
-              </label>
-            )}
-            {draft.kind === "currency" && (
-              <label className="flex flex-col gap-1">
-                <Text size="1" color="gray">
-                  Currency
-                </Text>
-                <TextField.Root value={draft.currency} placeholder="USD" onChange={(e) => setDraft((d) => ({ ...d, currency: e.target.value }))} className="w-24" aria-label="Currency code" />
-              </label>
-            )}
-            {(draft.kind === "date" || draft.kind === "datetime") && (
-              <label className="flex flex-col gap-1">
-                <Text size="1" color="gray">
-                  Pattern
-                </Text>
-                <TextField.Root value={draft.pattern} placeholder="DD MMM YYYY" onChange={(e) => setDraft((d) => ({ ...d, pattern: e.target.value }))} className="w-40" aria-label="Date pattern" />
-              </label>
-            )}
-          </div>
-        )}
-
-        <div className="flex items-center gap-2 pt-1">
-          {!isDefault && (
-            <Button
-              type="button"
-              variant="ghost"
-              color="gray"
-              onClick={() => {
-                setText(defaultText);
-                setDraft(toDraft(defaultFormat));
-              }}
-            >
-              <RotateCcw size={14} aria-hidden /> Reset
-            </Button>
-          )}
-          <div className="ml-auto flex gap-2">
-            <Button type="button" variant="soft" color="gray" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="button" disabled={!canApply} onClick={() => onApply(parsed?.expr ?? null, nextFormat)}>
-              Apply
-            </Button>
-          </div>
-        </div>
-      </div>
-    </Modal>
   );
 }

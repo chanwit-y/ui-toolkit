@@ -21,7 +21,7 @@ const PROJECT = '/p/seed-project-country'
 const LOGIC_PAGE = `${PROJECT}/pages/seed-page-logic`
 
 /** A native select: the cursor goes there and the option lands (its popup isn't part of the screencast). */
-async function choose(page: Page, actor: Actor, select: Locator, value: string) {
+export async function choose(page: Page, actor: Actor, select: Locator, value: string) {
   await actor.moveTo(select, 550)
   const box = await select.boundingBox()
   if (box) await page.evaluate(([x, y]) => (window as any).__vid?.ripple(x, y), [Math.round(box.x + box.width / 2), Math.round(box.y + box.height / 2)] as const)

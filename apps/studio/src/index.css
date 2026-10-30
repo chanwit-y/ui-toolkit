@@ -22,6 +22,7 @@
 /* Surface tokens (flat / glass): the canvas frame and the Live Preview carry `data-surface`. */
 @import "../../../packages/ui/src/styles/surface.css";
 @import "../../../packages/ui/src/styles/logic.css";
+@import "../../../packages/ui/src/styles/formulaEditor.css";
 
 /* The library `<Modal>` (Live Preview chrome + engine modal bins) styles its
    backdrop, fade animations, and close button via semantic `.modal-*` classes

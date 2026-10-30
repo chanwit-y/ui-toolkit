@@ -112,15 +112,11 @@ export function LogicPage() {
     else if (v.kind === 'savedRule') setRules(rules.map((r) => (r.id === v.def.id ? v.def : r)))
   }
   const where = selected ? (used.get(selected.id) ?? []) : []
-  const json = selected
-    ? JSON.stringify(
-        'expr' in selected
-          ? (logicLibraryToEngine([selected], [], scope.loads).formulas ?? {})
-          : (logicLibraryToEngine(formulas.filter((f) => logicRefIds(selected.rule).formulas.has(f.id)), [selected], scope.loads).rules ?? {}),
-        null,
-        2,
-      )
-    : ''
+  // The whole library: a saved item's references only resolve to names against it.
+  const engine = logicLibraryToEngine(formulas, rules, scope.loads)
+  const name = selected?.name.trim() ?? ''
+  const exported = selected && ('expr' in selected ? engine.formulas : engine.rules)?.[name]
+  const json = selected ? JSON.stringify(exported ? { [name]: exported } : {}, null, 2) : ''
 
   return (
     <div className="flex min-h-0 flex-1 bg-surface">
