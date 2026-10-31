@@ -208,6 +208,23 @@ export const PALETTES: ThemePalette[] = [
   { name: 'Sunset ops', accent: 2, colors: ['#003049', '#d62828', '#f77f00', '#fcbf49', '#eae2b7'] },
   { name: 'Slate calm', accent: 4, colors: ['#f8f9fa', '#e9ecef', '#dee2e6', '#adb5bd', '#495057'] },
   { name: 'Graphite', accent: 4, colors: ['#ffffff', '#f4f5f6', '#c9ccd1', '#4b5158', '#14161a'] },
+  { name: 'Ocean desk', accent: 2, colors: ['#f0f8ff', '#d3e9fb', '#0090ff', '#0b3a66', '#051a30'] },
+  { name: 'Sky deck', accent: 2, colors: ['#f1fbff', '#d5f3fd', '#7ce2fe', '#134a5e', '#071f29'] },
+  { name: 'Cobalt night', accent: 2, colors: ['#f2f5ff', '#dbe3fd', '#3e63dd', '#1c2c6b', '#0b1233'] },
+  { name: 'Lavender note', accent: 2, colors: ['#f7f5ff', '#e7e2fb', '#6e56cf', '#2f2366', '#140f30'] },
+  { name: 'Plum press', accent: 2, colors: ['#fdf5fe', '#f3e0f6', '#ab4aba', '#4d1f55', '#220c27'] },
+  { name: 'Orchid pop', accent: 2, colors: ['#fff3fa', '#fbdcef', '#d6409f', '#6a1a4d', '#2d0a20'] },
+  { name: 'Crimson pulse', accent: 2, colors: ['#fff3f7', '#fcdce7', '#e93d82', '#701a3d', '#2f0a19'] },
+  { name: 'Ruby stone', accent: 2, colors: ['#fff4f6', '#fbdfe5', '#e54666', '#6d1c2d', '#2e0b13'] },
+  { name: 'Tomato field', accent: 2, colors: ['#fff5f2', '#fde1d9', '#e54d2e', '#6b2212', '#2e0e07'] },
+  { name: 'Sticky note', accent: 2, colors: ['#fffdf0', '#fdf3c4', '#ffe629', '#57490a', '#252003'] },
+  { name: 'Lime press', accent: 2, colors: ['#f9fdef', '#ecf7d0', '#bdee63', '#3c5212', '#192307'] },
+  { name: 'Jade garden', accent: 2, colors: ['#f1fbf7', '#d7f2e7', '#29a383', '#124b3c', '#071f19'] },
+  { name: 'Seafoam', accent: 2, colors: ['#f0fcf9', '#d4f6ed', '#86ead4', '#14524a', '#08231f'] },
+  { name: 'Gold ledger', accent: 2, colors: ['#fbf9f3', '#efe8d8', '#978365', '#40351f', '#1c170d'] },
+  { name: 'Bronze mark', accent: 2, colors: ['#fbf6f3', '#f1e4de', '#a18072', '#47322a', '#20150f'] },
+  { name: 'Cocoa roast', accent: 2, colors: ['#fbf5ef', '#f1e3d5', '#ad7f58', '#47301d', '#20150b'] },
+  { name: 'Meadow path', accent: 2, colors: ['#f3fbf3', '#dcf3dd', '#46a758', '#1c4a26', '#0a1f10'] },
 ]
 
 /** Representative step-9 hex per Radix accent, for nearest-colour matching. */
@@ -253,9 +270,17 @@ export function hexLuminance(hex: string): number {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b
 }
 
-/** The Radix accent closest to a hex colour (the palette's marked swatch). */
+/** Below this spread between the RGB channels a colour reads as grey (a muted hue like Gold ledger's sits around 50). */
+const GREY_CHROMA = 25
+
+/**
+ * The Radix accent closest to a hex colour (the palette's marked swatch). A
+ * near-grey is gray outright: by distance alone a dark grey is closer to a
+ * mid-tone hue than to the mid grey, so Graphite came out green.
+ */
 export function nearestAccent(hex: string): AccentColor {
   const [r, g, b] = rgb(hex)
+  if (Math.max(r, g, b) - Math.min(r, g, b) < GREY_CHROMA) return 'gray'
   let best: AccentColor = 'blue'
   let bestD = Infinity
   for (const name of ACCENT_COLORS) {

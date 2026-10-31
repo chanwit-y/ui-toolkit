@@ -1,8 +1,9 @@
 import { SurfaceBackdrop } from '@gummy-ui/ui'
-import { Upload, X } from 'lucide-react'
+import { RotateCcw, Upload, X } from 'lucide-react'
 import { useCallback, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
-import { Button, CodeViewer, IconButton, Input, Popover, Select, SegmentedControl, cn } from '../common'
+import { Button, CodeViewer, ConfirmDialog, IconButton, Input, Popover, Select, SegmentedControl, cn } from '../common'
 import { ColorInput } from '../Menu/MenuEditor'
+import { defaultThemeConfig } from '../Workspace/snapshots'
 import { useWorkspaceStore } from '../Workspace/workspaceStore'
 import { accentInk, resolvedSurfaces } from './designTheme'
 import { useThemeStore } from './themeStore'
@@ -414,11 +415,13 @@ export function ThemeEditor() {
   const updateSurfaces = useThemeStore((s) => s.updateSurfaces)
   const setFont = useThemeStore((s) => s.setFont)
   const applyPalette = useThemeStore((s) => s.applyPalette)
+  const hydrate = useThemeStore((s) => s.hydrate)
   const logActivity = useWorkspaceStore((s) => s.logActivity)
 
   // Palette preview (the mockup's "try it, then Apply"): nothing changes in
   // the project until Apply — the sample block below paints the candidate.
   const [preview, setPreview] = useState<{ palette: ThemePalette } | null>(null)
+  const [confirmReset, setConfirmReset] = useState(false)
 
   const themeJson = useMemo(() => JSON.stringify(toThemeObjects(config), null, 2), [config])
   const mode = config.appearance
@@ -452,7 +455,12 @@ export function ThemeEditor() {
   return (
     <div className="min-h-0 flex-1 overflow-y-auto bg-surface">
       <div className="mx-auto max-w-[760px] px-6 pb-16 pt-6">
-        <h2 className="text-base font-[650] tracking-[-0.01em] text-ink">Theme</h2>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-base font-[650] tracking-[-0.01em] text-ink">Theme</h2>
+          <Button size="sm" onClick={() => setConfirmReset(true)}>
+            <RotateCcw aria-hidden className="size-3.5" /> Reset theme
+          </Button>
+        </div>
         <p className="mb-4 mt-1 text-ui text-ink-2">
           The app-wide <span className="font-mono">ThemeProvider</span> config. Applies
           live to the canvas and Live Preview; exported as{' '}
@@ -853,6 +861,20 @@ export function ThemeEditor() {
           ]}
         />
       </div>
+      {confirmReset && (
+        <ConfirmDialog
+          title="Reset the theme?"
+          body="Every setting on this page goes back to a new project's default: appearance, accent, radius, surface, backdrop, button and table colours, surfaces and font. There is no undo."
+          confirmLabel="Reset theme"
+          onConfirm={() => {
+            hydrate(defaultThemeConfig())
+            setPreview(null)
+            setConfirmReset(false)
+            logActivity('reset', 'theme', 'Theme', 'every setting to the default')
+          }}
+          onClose={() => setConfirmReset(false)}
+        />
+      )}
     </div>
   )
 }
