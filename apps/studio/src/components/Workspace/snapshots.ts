@@ -1044,7 +1044,7 @@ export function countryProjectSnapshot(library: LibraryData): ProjectSnapshot {
 }
 
 /** ThemeProvider's own defaults, nothing overridden. */
-function defaultThemeConfig(): StudioThemeConfig {
+export function defaultThemeConfig(): StudioThemeConfig {
   return {
     appearance: 'light',
     accentColor: 'blue',
