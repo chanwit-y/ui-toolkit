@@ -3590,6 +3590,140 @@
       "additionalProperties": false,
       "description": "One entry of a file collection's **New** menu (`id` is studio-only, never exported)."
     },
+    "FilePreviewConfig": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "binding",
+            "endpoint"
+          ]
+        },
+        "binding": {
+          "$ref": "#/definitions/ItemBinding"
+        },
+        "url": {
+          "type": "string",
+          "description": "The literal URL of a static preview (no binding)."
+        },
+        "read": {
+          "$ref": "#/definitions/FormListCrudRef"
+        },
+        "recordPath": {
+          "type": "string",
+          "description": "Dot path from the response to the file record (engine `api.paths`)."
+        },
+        "keys": {
+          "$ref": "#/definitions/FilePreviewKeyConfig"
+        },
+        "urlTemplate": {
+          "type": "string"
+        },
+        "blurhash": {
+          "type": "string",
+          "description": "An image's blurhash when the record has none; absent = none."
+        },
+        "showBlurhash": {
+          "type": "boolean",
+          "description": "Draw an image's blurhash while it loads; absent = on."
+        },
+        "blurhashDelay": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": ""
+            }
+          ],
+          "description": "Keep the blurhash on show at least this long, in milliseconds; absent or `''` = until the image loads."
+        },
+        "height": {
+          "type": "string",
+          "description": "CSS height or `auto`; `''` = the engine default."
+        },
+        "showHeader": {
+          "type": "boolean"
+        },
+        "openOnClick": {
+          "type": "boolean"
+        },
+        "emptyText": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "source",
+        "binding",
+        "url",
+        "read",
+        "recordPath",
+        "keys",
+        "urlTemplate",
+        "height",
+        "showHeader",
+        "openOnClick",
+        "emptyText"
+      ],
+      "additionalProperties": false,
+      "description": "Editable config for a file preview. Maps onto the engine `FilePreviewElement`: the file comes from a `binding` (page data, a file collection's selection, the repeater item), a literal `url` while unbound, or the preview's own `read` endpoint; `keys` read the record and `urlTemplate` builds a content URL when the record has only an id."
+    },
+    "FilePreviewKeyConfig": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "type": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "size": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "url": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "blurhash": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "name",
+        "type",
+        "size",
+        "url",
+        "data"
+      ],
+      "additionalProperties": false,
+      "description": "Where a file preview reads each field of its record: paths tried in order, none = the engine's defaults."
+    },
     "FilterDefaultRow": {
       "type": "object",
       "properties": {
@@ -3859,7 +3993,7 @@
                 "args": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/definitions/alias-99931500-146760-147178-99931500-0-1819891306129553"
+                    "$ref": "#/definitions/alias-627235100-149964-150382-627235100-0-1857141306129553"
                   },
                   "minItems": 2,
                   "maxItems": 2
@@ -3891,7 +4025,7 @@
                 "args": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/definitions/alias-99931500-146760-147178-99931500-0-1819891306129553"
+                    "$ref": "#/definitions/alias-627235100-149964-150382-627235100-0-1857141306129553"
                   }
                 }
               },
@@ -5493,7 +5627,7 @@
                           "all": {
                             "type": "array",
                             "items": {
-                              "$ref": "#/definitions/alias-99931500-147297-147597-99931500-0-181989682715431"
+                              "$ref": "#/definitions/alias-627235100-150501-150801-627235100-0-185714682715431"
                             }
                           }
                         },
@@ -5508,7 +5642,7 @@
                           "any": {
                             "type": "array",
                             "items": {
-                              "$ref": "#/definitions/alias-99931500-147297-147597-99931500-0-181989682715431"
+                              "$ref": "#/definitions/alias-627235100-150501-150801-627235100-0-185714682715431"
                             }
                           }
                         },
@@ -5604,7 +5738,7 @@
                                   "args": {
                                     "type": "array",
                                     "items": {
-                                      "$ref": "#/definitions/alias-99931500-146760-147178-99931500-0-1819891306129553"
+                                      "$ref": "#/definitions/alias-627235100-149964-150382-627235100-0-1857141306129553"
                                     },
                                     "minItems": 2,
                                     "maxItems": 2
@@ -5636,7 +5770,7 @@
                                   "args": {
                                     "type": "array",
                                     "items": {
-                                      "$ref": "#/definitions/alias-99931500-146760-147178-99931500-0-1819891306129553"
+                                      "$ref": "#/definitions/alias-627235100-149964-150382-627235100-0-1857141306129553"
                                     }
                                   }
                                 },
@@ -5743,7 +5877,7 @@
                                       "args": {
                                         "type": "array",
                                         "items": {
-                                          "$ref": "#/definitions/alias-99931500-146760-147178-99931500-0-1819891306129553"
+                                          "$ref": "#/definitions/alias-627235100-149964-150382-627235100-0-1857141306129553"
                                         },
                                         "minItems": 2,
                                         "maxItems": 2
@@ -5775,7 +5909,7 @@
                                       "args": {
                                         "type": "array",
                                         "items": {
-                                          "$ref": "#/definitions/alias-99931500-146760-147178-99931500-0-1819891306129553"
+                                          "$ref": "#/definitions/alias-627235100-149964-150382-627235100-0-1857141306129553"
                                         }
                                       }
                                     },
@@ -5882,7 +6016,7 @@
                                         "args": {
                                           "type": "array",
                                           "items": {
-                                            "$ref": "#/definitions/alias-99931500-146760-147178-99931500-0-1819891306129553"
+                                            "$ref": "#/definitions/alias-627235100-149964-150382-627235100-0-1857141306129553"
                                           },
                                           "minItems": 2,
                                           "maxItems": 2
@@ -5914,7 +6048,7 @@
                                         "args": {
                                           "type": "array",
                                           "items": {
-                                            "$ref": "#/definitions/alias-99931500-146760-147178-99931500-0-1819891306129553"
+                                            "$ref": "#/definitions/alias-627235100-149964-150382-627235100-0-1857141306129553"
                                           }
                                         }
                                       },
@@ -6034,7 +6168,7 @@
                               "args": {
                                 "type": "array",
                                 "items": {
-                                  "$ref": "#/definitions/alias-99931500-146760-147178-99931500-0-1819891306129553"
+                                  "$ref": "#/definitions/alias-627235100-149964-150382-627235100-0-1857141306129553"
                                 },
                                 "minItems": 2,
                                 "maxItems": 2
@@ -6066,7 +6200,7 @@
                               "args": {
                                 "type": "array",
                                 "items": {
-                                  "$ref": "#/definitions/alias-99931500-146760-147178-99931500-0-1819891306129553"
+                                  "$ref": "#/definitions/alias-627235100-149964-150382-627235100-0-1857141306129553"
                                 }
                               }
                             },
@@ -6104,7 +6238,7 @@
                         "description": "A formula: a literal, a reference, an operation, a function call or a library reference."
                       },
                       {
-                        "$ref": "#/definitions/alias-99931500-147660-147860-99931500-0-181989428339802"
+                        "$ref": "#/definitions/alias-627235100-150864-151064-627235100-0-185714428339802"
                       }
                     ]
                   }
@@ -6184,7 +6318,7 @@
                     "args": {
                       "type": "array",
                       "items": {
-                        "$ref": "#/definitions/alias-99931500-146760-147178-99931500-0-1819891306129553"
+                        "$ref": "#/definitions/alias-627235100-149964-150382-627235100-0-1857141306129553"
                       },
                       "minItems": 2,
                       "maxItems": 2
@@ -6216,7 +6350,7 @@
                     "args": {
                       "type": "array",
                       "items": {
-                        "$ref": "#/definitions/alias-99931500-146760-147178-99931500-0-1819891306129553"
+                        "$ref": "#/definitions/alias-627235100-149964-150382-627235100-0-1857141306129553"
                       }
                     }
                   },
@@ -6617,7 +6751,7 @@
                 "all": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/definitions/alias-99931500-147297-147597-99931500-0-181989682715431"
+                    "$ref": "#/definitions/alias-627235100-150501-150801-627235100-0-185714682715431"
                   }
                 }
               },
@@ -6632,7 +6766,7 @@
                 "any": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/definitions/alias-99931500-147297-147597-99931500-0-181989682715431"
+                    "$ref": "#/definitions/alias-627235100-150501-150801-627235100-0-185714682715431"
                   }
                 }
               },
@@ -6728,7 +6862,7 @@
                         "args": {
                           "type": "array",
                           "items": {
-                            "$ref": "#/definitions/alias-99931500-146760-147178-99931500-0-1819891306129553"
+                            "$ref": "#/definitions/alias-627235100-149964-150382-627235100-0-1857141306129553"
                           },
                           "minItems": 2,
                           "maxItems": 2
@@ -6760,7 +6894,7 @@
                         "args": {
                           "type": "array",
                           "items": {
-                            "$ref": "#/definitions/alias-99931500-146760-147178-99931500-0-1819891306129553"
+                            "$ref": "#/definitions/alias-627235100-149964-150382-627235100-0-1857141306129553"
                           }
                         }
                       },
@@ -6867,7 +7001,7 @@
                             "args": {
                               "type": "array",
                               "items": {
-                                "$ref": "#/definitions/alias-99931500-146760-147178-99931500-0-1819891306129553"
+                                "$ref": "#/definitions/alias-627235100-149964-150382-627235100-0-1857141306129553"
                               },
                               "minItems": 2,
                               "maxItems": 2
@@ -6899,7 +7033,7 @@
                             "args": {
                               "type": "array",
                               "items": {
-                                "$ref": "#/definitions/alias-99931500-146760-147178-99931500-0-1819891306129553"
+                                "$ref": "#/definitions/alias-627235100-149964-150382-627235100-0-1857141306129553"
                               }
                             }
                           },
@@ -7006,7 +7140,7 @@
                               "args": {
                                 "type": "array",
                                 "items": {
-                                  "$ref": "#/definitions/alias-99931500-146760-147178-99931500-0-1819891306129553"
+                                  "$ref": "#/definitions/alias-627235100-149964-150382-627235100-0-1857141306129553"
                                 },
                                 "minItems": 2,
                                 "maxItems": 2
@@ -7038,7 +7172,7 @@
                               "args": {
                                 "type": "array",
                                 "items": {
-                                  "$ref": "#/definitions/alias-99931500-146760-147178-99931500-0-1819891306129553"
+                                  "$ref": "#/definitions/alias-627235100-149964-150382-627235100-0-1857141306129553"
                                 }
                               }
                             },
@@ -7188,7 +7322,7 @@
                     "args": {
                       "type": "array",
                       "items": {
-                        "$ref": "#/definitions/alias-99931500-146760-147178-99931500-0-1819891306129553"
+                        "$ref": "#/definitions/alias-627235100-149964-150382-627235100-0-1857141306129553"
                       },
                       "minItems": 2,
                       "maxItems": 2
@@ -7220,7 +7354,7 @@
                     "args": {
                       "type": "array",
                       "items": {
-                        "$ref": "#/definitions/alias-99931500-146760-147178-99931500-0-1819891306129553"
+                        "$ref": "#/definitions/alias-627235100-149964-150382-627235100-0-1857141306129553"
                       }
                     }
                   },
@@ -8445,7 +8579,7 @@
       "additionalProperties": false,
       "description": "The dialog's user list: an endpoint walked along `paths` to the user rows, read with these keys."
     },
-    "alias-99931500-146760-147178-99931500-0-1819891306129553": {
+    "alias-627235100-149964-150382-627235100-0-1857141306129553": {
       "anyOf": [
         {
           "type": "object",
@@ -8513,7 +8647,7 @@
             "args": {
               "type": "array",
               "items": {
-                "$ref": "#/definitions/alias-99931500-146760-147178-99931500-0-1819891306129553"
+                "$ref": "#/definitions/alias-627235100-149964-150382-627235100-0-1857141306129553"
               },
               "minItems": 2,
               "maxItems": 2
@@ -8545,7 +8679,7 @@
             "args": {
               "type": "array",
               "items": {
-                "$ref": "#/definitions/alias-99931500-146760-147178-99931500-0-1819891306129553"
+                "$ref": "#/definitions/alias-627235100-149964-150382-627235100-0-1857141306129553"
               }
             }
           },
@@ -8582,7 +8716,7 @@
       ],
       "description": "A formula: a literal, a reference, an operation, a function call or a library reference."
     },
-    "alias-99931500-147297-147597-99931500-0-181989682715431": {
+    "alias-627235100-150501-150801-627235100-0-185714682715431": {
       "anyOf": [
         {
           "type": "object",
@@ -8590,7 +8724,7 @@
             "all": {
               "type": "array",
               "items": {
-                "$ref": "#/definitions/alias-99931500-147297-147597-99931500-0-181989682715431"
+                "$ref": "#/definitions/alias-627235100-150501-150801-627235100-0-185714682715431"
               }
             }
           },
@@ -8605,7 +8739,7 @@
             "any": {
               "type": "array",
               "items": {
-                "$ref": "#/definitions/alias-99931500-147297-147597-99931500-0-181989682715431"
+                "$ref": "#/definitions/alias-627235100-150501-150801-627235100-0-185714682715431"
               }
             }
           },
@@ -8701,7 +8835,7 @@
                     "args": {
                       "type": "array",
                       "items": {
-                        "$ref": "#/definitions/alias-99931500-146760-147178-99931500-0-1819891306129553"
+                        "$ref": "#/definitions/alias-627235100-149964-150382-627235100-0-1857141306129553"
                       },
                       "minItems": 2,
                       "maxItems": 2
@@ -8733,7 +8867,7 @@
                     "args": {
                       "type": "array",
                       "items": {
-                        "$ref": "#/definitions/alias-99931500-146760-147178-99931500-0-1819891306129553"
+                        "$ref": "#/definitions/alias-627235100-149964-150382-627235100-0-1857141306129553"
                       }
                     }
                   },
@@ -8840,7 +8974,7 @@
                         "args": {
                           "type": "array",
                           "items": {
-                            "$ref": "#/definitions/alias-99931500-146760-147178-99931500-0-1819891306129553"
+                            "$ref": "#/definitions/alias-627235100-149964-150382-627235100-0-1857141306129553"
                           },
                           "minItems": 2,
                           "maxItems": 2
@@ -8872,7 +9006,7 @@
                         "args": {
                           "type": "array",
                           "items": {
-                            "$ref": "#/definitions/alias-99931500-146760-147178-99931500-0-1819891306129553"
+                            "$ref": "#/definitions/alias-627235100-149964-150382-627235100-0-1857141306129553"
                           }
                         }
                       },
@@ -8979,7 +9113,7 @@
                           "args": {
                             "type": "array",
                             "items": {
-                              "$ref": "#/definitions/alias-99931500-146760-147178-99931500-0-1819891306129553"
+                              "$ref": "#/definitions/alias-627235100-149964-150382-627235100-0-1857141306129553"
                             },
                             "minItems": 2,
                             "maxItems": 2
@@ -9011,7 +9145,7 @@
                           "args": {
                             "type": "array",
                             "items": {
-                              "$ref": "#/definitions/alias-99931500-146760-147178-99931500-0-1819891306129553"
+                              "$ref": "#/definitions/alias-627235100-149964-150382-627235100-0-1857141306129553"
                             }
                           }
                         },
@@ -9061,7 +9195,7 @@
       ],
       "description": "A condition: AND (`all`) / OR (`any`) groups of comparisons. `right` is absent for `empty` / `notEmpty`, a list for `in` and `[low, high]` for `between`."
     },
-    "alias-99931500-147660-147860-99931500-0-181989428339802": {
+    "alias-627235100-150864-151064-627235100-0-185714428339802": {
       "type": "object",
       "properties": {
         "branches": {
@@ -9077,7 +9211,7 @@
                       "all": {
                         "type": "array",
                         "items": {
-                          "$ref": "#/definitions/alias-99931500-147297-147597-99931500-0-181989682715431"
+                          "$ref": "#/definitions/alias-627235100-150501-150801-627235100-0-185714682715431"
                         }
                       }
                     },
@@ -9092,7 +9226,7 @@
                       "any": {
                         "type": "array",
                         "items": {
-                          "$ref": "#/definitions/alias-99931500-147297-147597-99931500-0-181989682715431"
+                          "$ref": "#/definitions/alias-627235100-150501-150801-627235100-0-185714682715431"
                         }
                       }
                     },
@@ -9188,7 +9322,7 @@
                               "args": {
                                 "type": "array",
                                 "items": {
-                                  "$ref": "#/definitions/alias-99931500-146760-147178-99931500-0-1819891306129553"
+                                  "$ref": "#/definitions/alias-627235100-149964-150382-627235100-0-1857141306129553"
                                 },
                                 "minItems": 2,
                                 "maxItems": 2
@@ -9220,7 +9354,7 @@
                               "args": {
                                 "type": "array",
                                 "items": {
-                                  "$ref": "#/definitions/alias-99931500-146760-147178-99931500-0-1819891306129553"
+                                  "$ref": "#/definitions/alias-627235100-149964-150382-627235100-0-1857141306129553"
                                 }
                               }
                             },
@@ -9327,7 +9461,7 @@
                                   "args": {
                                     "type": "array",
                                     "items": {
-                                      "$ref": "#/definitions/alias-99931500-146760-147178-99931500-0-1819891306129553"
+                                      "$ref": "#/definitions/alias-627235100-149964-150382-627235100-0-1857141306129553"
                                     },
                                     "minItems": 2,
                                     "maxItems": 2
@@ -9359,7 +9493,7 @@
                                   "args": {
                                     "type": "array",
                                     "items": {
-                                      "$ref": "#/definitions/alias-99931500-146760-147178-99931500-0-1819891306129553"
+                                      "$ref": "#/definitions/alias-627235100-149964-150382-627235100-0-1857141306129553"
                                     }
                                   }
                                 },
@@ -9466,7 +9600,7 @@
                                     "args": {
                                       "type": "array",
                                       "items": {
-                                        "$ref": "#/definitions/alias-99931500-146760-147178-99931500-0-1819891306129553"
+                                        "$ref": "#/definitions/alias-627235100-149964-150382-627235100-0-1857141306129553"
                                       },
                                       "minItems": 2,
                                       "maxItems": 2
@@ -9498,7 +9632,7 @@
                                     "args": {
                                       "type": "array",
                                       "items": {
-                                        "$ref": "#/definitions/alias-99931500-146760-147178-99931500-0-1819891306129553"
+                                        "$ref": "#/definitions/alias-627235100-149964-150382-627235100-0-1857141306129553"
                                       }
                                     }
                                   },
@@ -9618,7 +9752,7 @@
                           "args": {
                             "type": "array",
                             "items": {
-                              "$ref": "#/definitions/alias-99931500-146760-147178-99931500-0-1819891306129553"
+                              "$ref": "#/definitions/alias-627235100-149964-150382-627235100-0-1857141306129553"
                             },
                             "minItems": 2,
                             "maxItems": 2
@@ -9650,7 +9784,7 @@
                           "args": {
                             "type": "array",
                             "items": {
-                              "$ref": "#/definitions/alias-99931500-146760-147178-99931500-0-1819891306129553"
+                              "$ref": "#/definitions/alias-627235100-149964-150382-627235100-0-1857141306129553"
                             }
                           }
                         },
@@ -9688,7 +9822,7 @@
                     "description": "A formula: a literal, a reference, an operation, a function call or a library reference."
                   },
                   {
-                    "$ref": "#/definitions/alias-99931500-147660-147860-99931500-0-181989428339802"
+                    "$ref": "#/definitions/alias-627235100-150864-151064-627235100-0-185714428339802"
                   }
                 ]
               }
@@ -9768,7 +9902,7 @@
                 "args": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/definitions/alias-99931500-146760-147178-99931500-0-1819891306129553"
+                    "$ref": "#/definitions/alias-627235100-149964-150382-627235100-0-1857141306129553"
                   },
                   "minItems": 2,
                   "maxItems": 2
@@ -9800,7 +9934,7 @@
                 "args": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/definitions/alias-99931500-146760-147178-99931500-0-1819891306129553"
+                    "$ref": "#/definitions/alias-627235100-149964-150382-627235100-0-1857141306129553"
                   }
                 }
               },

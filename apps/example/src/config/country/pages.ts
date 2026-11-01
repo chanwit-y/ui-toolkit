@@ -7,6 +7,7 @@ import { containerColumnResizeDemo } from "./columnResizeDemo";
 import { containerDataTableDemo } from "./dataTableDemo";
 import { containerFormListDemo } from "./formListDemo";
 import { containerFileCollectionDemo } from "./fileCollectionDemo";
+import { containerFilePreviewDemo } from "./filePreviewDemo";
 import { containerHtmlColumnDemo } from "./htmlColumnDemo";
 import { containerPaginationDemo } from "./paginationDemo";
 import { containerRepeaterDemo } from "./repeaterDemo";
@@ -78,6 +79,14 @@ export const pages = {
     parent: "countryList",
     title: "File collection",
     containers: containerFileCollectionDemo,
+  },
+  filePreviewDemo: {
+    // The `filepreview` element fed by a file collection's selection, its own
+    // endpoint, a literal URL and a repeater item (see ./filePreviewDemo.ts).
+    path: "/file-preview",
+    parent: "countryList",
+    title: "File preview",
+    containers: containerFilePreviewDemo,
   },
   repeaterDemo: {
     // The read-only `repeater`: a card grid that links to the detail page and

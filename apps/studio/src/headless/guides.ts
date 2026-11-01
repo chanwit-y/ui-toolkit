@@ -15,6 +15,7 @@ import datatable from './guides/datatable.md' with { type: 'text' }
 import datatableeditable from './guides/datatableeditable.md' with { type: 'text' }
 import date from './guides/date.md' with { type: 'text' }
 import filecollection from './guides/filecollection.md' with { type: 'text' }
+import filepreview from './guides/filepreview.md' with { type: 'text' }
 import display from './guides/display.md' with { type: 'text' }
 import formlist from './guides/formlist.md' with { type: 'text' }
 import html from './guides/html.md' with { type: 'text' }
@@ -60,6 +61,7 @@ export const GUIDES: Record<string, string> = {
   date,
   display,
   filecollection,
+  filepreview,
   formlist,
   html,
   formula,

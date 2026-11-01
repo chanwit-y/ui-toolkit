@@ -34,6 +34,8 @@ import {
   dataGridDemoSeedItems,
   FILE_COLLECTION_PAGE_ID,
   fileCollectionDemoSeedItems,
+  FILE_PREVIEW_PAGE_ID,
+  filePreviewDemoSeedItems,
   CHART_PAGE_ID,
   chartDemoSeedItems,
   TABLE_LAYOUT_PAGE_ID,
@@ -621,6 +623,21 @@ export function chartDemoPage(): PageDef {
  * `/file-collection`). Used by the fresh seed and appended to an existing
  * seeded project by `migrateV57`.
  */
+export function filePreviewDemoPage(): PageDef {
+  return {
+    id: FILE_PREVIEW_PAGE_ID,
+    key: 'filePreview',
+    name: 'File preview',
+    path: '/file-preview',
+    grid: {
+      items: filePreviewDemoSeedItems(),
+      containerSettings: defaultContainerSettings,
+      fieldSeq: 0,
+    },
+    parentId: 'seed-page-countries',
+  }
+}
+
 export function fileCollectionDemoPage(): PageDef {
   return {
     id: FILE_COLLECTION_PAGE_ID,
@@ -935,6 +952,7 @@ export const OPTION_DEMO_MENU_ICONS: Record<string, string> = {
   [FORMATS_PAGE_ID]: 'hash',
   [DATA_GRID_PAGE_ID]: 'table',
   [FILE_COLLECTION_PAGE_ID]: 'folder',
+  [FILE_PREVIEW_PAGE_ID]: 'fileText',
   [CHART_PAGE_ID]: 'chartBar',
   [LOGIC_PAGE_ID]: 'sigma',
   [FORMULA_PAGE_ID]: 'calculator',
@@ -984,6 +1002,7 @@ export function countryProjectSnapshot(library: LibraryData): ProjectSnapshot {
       ...optionDemoPages(),
       formListDemoPage(),
       fileCollectionDemoPage(),
+      filePreviewDemoPage(),
       chartDemoPage(),
       logicDemoPage(),
       formulaDemoPage(),

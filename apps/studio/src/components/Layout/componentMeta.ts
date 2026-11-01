@@ -41,6 +41,7 @@ export type ComponentType =
   | 'formula'
   | 'custom'
   | 'approvalline'
+  | 'filepreview'
   | 'switchprofile'
   | 'replaceprofile'
   | 'popover'
@@ -87,6 +88,7 @@ export const COMPONENT_META_GROUPS: { category: string; items: ComponentMeta[] }
       { type: 'formlist', label: 'Form List' },
       { type: 'repeater', label: 'Repeater' },
       { type: 'filecollection', label: 'File Collection' },
+      { type: 'filepreview', label: 'File Preview' },
       { type: 'chart', label: 'Chart' },
     ],
   },

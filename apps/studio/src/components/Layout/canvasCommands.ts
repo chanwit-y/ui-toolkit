@@ -6,6 +6,7 @@ import {
   childCanvasCount,
   createChildCanvas,
   createDefaultApprovalLineConfig,
+  createDefaultFilePreviewConfig,
   createDefaultAutocompleteConfig,
   createDefaultAvatarConfig,
   createDefaultButtonItemConfig,
@@ -174,6 +175,7 @@ const DEFAULT_CONFIGS: Record<ComponentType, { prefix?: string; create: (name: s
   formlist: { prefix: 'formList', create: (n) => createDefaultFormListConfig(n) },
   repeater: { prefix: 'repeater', create: (n) => createDefaultRepeaterConfig(n) },
   filecollection: { prefix: 'fileCollection', create: (n) => createDefaultFileCollectionConfig(n) },
+  filepreview: { prefix: 'filePreview', create: (n) => createDefaultFilePreviewConfig(n) },
   chart: { prefix: 'chart', create: (n) => createDefaultChartConfig(n) },
   text: { create: () => createDefaultTextConfig() },
   typography: { create: () => createDefaultTypographyConfig() },
@@ -211,7 +213,7 @@ export function defaultItemConfig(type: ComponentType, name = ''): ItemConfig | 
 // Default span (of 12) by component kind: a data table (and a divider — a rule
 // reads edge to edge) is full-bleed, so it spans the full width at every
 // breakpoint, as are the content-hosting containers (container/paper/tab — a
-// nested layout needs room); uploads need room for their dropzone (lg 6); the
+// nested layout needs room); uploads and a file preview need room (lg 6); the
 // common text-ish inputs (and standalone text/typography) read better a touch
 // wider (lg 4); everything else — including the trigger-only modal/popover —
 // falls back to the standard 2.
@@ -219,7 +221,7 @@ const FULL_BLEED = new Set<ComponentType>([
   'datatable', 'datatableeditable', 'formlist', 'repeater', 'divider', 'container', 'paper', 'card', 'html',
   'custom', 'approvalline', 'switchprofile', 'replaceprofile', 'workfloweditor', 'tab', 'chart',
 ])
-const UPLOADS = new Set<ComponentType>(['uploadimage', 'uploadfile'])
+const UPLOADS = new Set<ComponentType>(['uploadimage', 'uploadfile', 'filepreview'])
 // A file collection is a sidebar-shaped tree: a quarter of the row on desktop, half on a tablet.
 const SIDEBARS = new Set<ComponentType>(['filecollection'])
 const WIDE_INPUTS = new Set<ComponentType>([

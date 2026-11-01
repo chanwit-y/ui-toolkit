@@ -65,6 +65,8 @@ import type {
   CustomComponentConfig,
   ApprovalLineConfig,
   ApprovalLineKeyConfig,
+  FilePreviewConfig,
+  FilePreviewKeyConfig,
   ProfileKeysConfig,
   ProfileSessionConfig,
   SwitchProfileConfig,
@@ -1644,6 +1646,37 @@ function replaceProfileElement(
 }
 
 /**
+ * `filepreview` → engine `FilePreviewElement`: `api` or `value` (a binding, else
+ * the literal URL, else nothing: the preview shows its empty text), the keys
+ * that were set, the look off its defaults.
+ */
+function filePreviewElement(
+  c: FilePreviewConfig,
+  endpoints: EndpointRef[],
+  resolveEndpoint: ResolveEndpoint,
+  refs: ButtonRefMaps,
+): Record<string, unknown> {
+  const keys = Object.fromEntries(
+    (Object.keys(c.keys) as (keyof FilePreviewKeyConfig)[]).flatMap((k) => {
+      const list = (c.keys[k] ?? []).map((p) => p.trim()).filter(Boolean)
+      return list.length === 0 ? [] : [[k, list.length === 1 ? list[0] : list] as const]
+    }),
+  )
+  const url = c.url.trim()
+  const value = itemBindingValue(c.binding, refs) ?? (url ? { type: 'value', key: 'none', value: url } : undefined)
+  return {
+    name: c.name,
+    ...(c.source === 'endpoint' ? { api: readApiRef(c.read, c.recordPath, endpoints, resolveEndpoint, refs) } : value ? { value } : {}),
+    ...(Object.keys(keys).length ? { keys } : {}),
+    ...omitEmpty({ urlTemplate: c.urlTemplate.trim(), blurhash: c.blurhash?.trim() ?? '', height: c.height.trim(), emptyText: c.emptyText }),
+    ...(c.showBlurhash === false ? { showBlurhash: false } : {}),
+    ...(c.blurhashDelay ? { blurhashDelay: c.blurhashDelay } : {}),
+    ...(c.showHeader ? {} : { showHeader: false }),
+    ...(c.openOnClick ? { openOnClick: true } : {}),
+  }
+}
+
+/**
  * `approvalline` → engine `ApprovalLineElement`: each key's path list (one
  * path stays a string, several a list, none dropped), the role rules, the
  * status map / labels only when they differ from the engine defaults, the
@@ -2257,6 +2290,8 @@ function buildElement(
       return item.config ? replaceProfileElement(item.config as ReplaceProfileConfig, endpoints, resolveEndpoint, refs) : undefined
     case 'approvalline':
       return item.config ? approvalLineElement(item.config as ApprovalLineConfig, endpoints, resolveEndpoint, refs) : undefined
+    case 'filepreview':
+      return item.config ? filePreviewElement(item.config as FilePreviewConfig, endpoints, resolveEndpoint, refs) : undefined
     case 'avatar':
       return item.config ? avatarElement(item.config as AvatarConfig, refs) : undefined
     case 'divider':

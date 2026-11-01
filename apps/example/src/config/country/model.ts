@@ -384,6 +384,42 @@ export const model: TModelMaster = {
     steps: "any",
   },
   workflowParam: { id: "string" },
+  // File preview demo page (`/file-preview`): the list carries a `url`, one
+  // record its bytes inline as `data`.
+  fileListRes: {
+    data: {
+      type: "array",
+      collection: {
+        _id: "string",
+        id: "string",
+        name: "string",
+        type: "string",
+        size: "number",
+        url: "string",
+        blurhash: "any",
+      },
+    },
+    status: "number",
+    success: "boolean",
+    message: "string",
+  },
+  fileDetailRes: {
+    data: {
+      type: "object",
+      collection: {
+        _id: "string",
+        id: "string",
+        name: "string",
+        type: "string",
+        size: "number",
+        data: "string",
+        blurhash: "any",
+      },
+    },
+    status: "number",
+    success: "boolean",
+    message: "string",
+  },
   // File collection demo page (`/file-collection`): the nested tree and the
   // fixed mutation bodies (see spec/gummy-file-collection-spec.md §2.3).
   // Charts demo page (`config/country/chartsDemo.ts`) — the `/collection/analytics/*` rows.

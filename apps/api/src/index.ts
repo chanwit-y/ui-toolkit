@@ -11,6 +11,7 @@ import { approvalRoutes } from './routes/approvals.js';
 import { workflowRoutes } from './routes/workflows.js';
 import { userProfileRoutes } from './routes/userProfile.js';
 import { fileCollectionRoutes } from './routes/fileCollections.js';
+import { fileRoutes } from './routes/files.js';
 import { analyticsRoutes } from './routes/analytics.js';
 
 const app = new Hono();
@@ -38,6 +39,7 @@ app.route('/', approvalRoutes);
 app.route('/', workflowRoutes);
 app.route('/', userProfileRoutes);
 app.route('/', fileCollectionRoutes);
+app.route('/', fileRoutes);
 app.route('/', analyticsRoutes);
 app.route('/', logicRoutes);
 

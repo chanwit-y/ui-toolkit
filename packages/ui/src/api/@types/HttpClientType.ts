@@ -21,6 +21,8 @@ export type ErrorFunction = (error: AxiosError) => Promise<any>;
 export type LogFunction = (response: AxiosResponse) => void;
 
 export interface IHttpClientFactory {
+  /** The base every request URL is joined to (`""` = same origin). */
+  readonly baseUrl: string;
   handler<R, Q, P, B>(
     apiURL: string,
     method: HttpMethod,

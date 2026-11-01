@@ -36,6 +36,7 @@ const API_PLACEHOLDER_LABEL: Record<string, string> = {
   formlist: 'Form List',
   repeater: 'Repeater',
   approvalline: 'Approval line',
+  filepreview: 'File preview',
   switchprofile: 'Switch profile',
   replaceprofile: 'Replace profile',
   workfloweditor: 'Workflow editor',
@@ -128,7 +129,7 @@ function toPreviewBin(bin: ParsedBin, wiring: LivePreviewWiring): ParsedBin {
       wiringGap((el.searchApi as Record<string, unknown> | undefined)?.name, wiring) ??
       wiringGap((el.profilesApi as Record<string, unknown> | undefined)?.name, wiring)
     if (gap) return placeholderBin(bin, `[ ${label} "${displayName}" — ${gap} ]`)
-  } else if ((type === 'repeater' || type === 'approvalline') && el !== undefined && 'api' in el) {
+  } else if ((type === 'repeater' || type === 'approvalline' || type === 'filepreview') && el !== undefined && 'api' in el) {
     // Only an endpoint-sourced repeater fetches; an `items` one reads its parent item.
     const gap = wiringGap((el.api as Record<string, unknown>)?.name, wiring)
     if (gap) return placeholderBin(bin, `[ ${label} "${displayName}" — ${gap} ]`)

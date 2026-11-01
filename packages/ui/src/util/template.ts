@@ -43,6 +43,22 @@ export function renderTemplate(template: string, row: unknown, value?: unknown):
   );
 }
 
+/**
+ * Fill a URL template from `row`. Each value is `encodeURIComponent`ed, so a
+ * name with spaces or an id with a slash stays one path segment. A blank
+ * placeholder means there is no URL yet (`/files//content` is not a file):
+ * `undefined`. `{{value}}` reads `value` when given, else a row field.
+ */
+export function renderUrlTemplate(template: string, row: unknown, value?: unknown): string | undefined {
+  let blank = false;
+  const url = template.replace(PLACEHOLDER, (_match, path: string) => {
+    const text = toText(path === TEMPLATE_VALUE_KEY && value !== undefined ? value : get(row, path));
+    if (text === "") blank = true;
+    return encodeURIComponent(text);
+  });
+  return blank ? undefined : url;
+}
+
 /** The distinct row paths a template reads (the `{{value}}` alias excluded), in order. */
 export function templateFields(template: string): string[] {
   const fields: string[] = [];

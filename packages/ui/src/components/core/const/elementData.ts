@@ -29,6 +29,7 @@ import { HtmlContent } from "../htmlContent";
 import { FormulaWidget } from "../formulaWidget";
 import { CustomComponent } from "../customComponent";
 import { ApprovalLine } from "../approvalLine";
+import { FilePreview } from "../filePreview";
 import { SwitchProfile } from "../switchProfile";
 import { ReplaceProfile } from "../replaceProfile";
 import { WorkflowEditor } from "../workflowEditor";
@@ -59,6 +60,7 @@ export const ElementData = {
 	formlist: FormList,
 	repeater: Repeater,
 	filecollection: FileCollection,
+	filepreview: FilePreview,
 	chart: Chart,
 	textfield: TextField,
 	textarea: Textarea,

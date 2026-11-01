@@ -53,6 +53,12 @@ export const ITEM_TYPES: Record<ComponentType, ItemTypeInfo> = {
     canvases: none,
     guide: 'filecollection',
   },
+  filepreview: {
+    configType: 'FilePreviewConfig',
+    summary: 'One file shown in place, from a binding (a file collection selection, page data, the repeater item), a literal URL or its own endpoint.',
+    canvases: none,
+    guide: 'filepreview',
+  },
   chart: {
     configType: 'ChartConfig',
     summary: 'A chart over an endpoint or page data: ten types, series, axes, reference lines, click-through.',

@@ -1,7 +1,8 @@
 /**
  * In-memory store behind the example's File collection demo page: a few
  * collections of folders and files. Nodes are kept flat and nested on read,
- * so moves and deletes are one-field edits. Deterministic seed.
+ * so moves and deletes are one-field edits. Deterministic seed. File nodes
+ * share their ids and names with `data/files.ts`, so a selected node previews.
  */
 export interface FileNode {
   id: string;
@@ -38,17 +39,17 @@ const add = (n: FileNode) => (nodes.push(n), n);
 
 const y2026 = add(node('c1', null, '2026', 'folder'));
 const q1 = add(node('c1', y2026.id, 'Q1', 'folder'));
-add(node('c1', q1.id, 'Q1 price list', 'file', 'sheet'));
-add(node('c1', q1.id, 'Q1 cover', 'file', 'image'));
-add(node('c1', y2026.id, 'Q2 price list', 'file', 'sheet'));
+add(node('c1', q1.id, 'Q1 price list.csv', 'file', 'sheet'));
+add(node('c1', q1.id, 'Q1 cover.svg', 'file', 'image'));
+add(node('c1', y2026.id, 'Q2 supplier terms.docx', 'file', 'document'));
 const y2025 = add(node('c1', null, '2025', 'folder'));
-add(node('c1', y2025.id, 'Archive notes', 'file', 'markdown'));
-add(node('c1', null, 'README', 'file', 'markdown'));
+add(node('c1', y2025.id, 'Archive notes.md', 'file', 'markdown'));
+add(node('c1', null, 'README.md', 'file', 'markdown'));
 
 const campaigns = add(node('c2', null, 'Campaigns', 'folder'));
-add(node('c2', campaigns.id, 'Spring launch', 'file', 'markdown'));
-add(node('c2', campaigns.id, 'Hero banner', 'file', 'image'));
-add(node('c2', null, 'Brand guide', 'file', 'markdown'));
+add(node('c2', campaigns.id, 'Spring launch.md', 'file', 'markdown'));
+add(node('c2', campaigns.id, 'Hero banner.png', 'file', 'image'));
+add(node('c2', null, 'Brand guide.pdf', 'file', 'document'));
 add(node('c2', null, 'Empty folder', 'folder'));
 
 let next = seq + 1;

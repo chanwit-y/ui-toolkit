@@ -23,6 +23,8 @@ import {
   createDefaultItemSettings,
   createDefaultRepeaterConfig,
   createDefaultFileCollectionConfig,
+  createDefaultFilePreviewConfig,
+  type FilePreviewConfig,
   createDefaultChartConfig,
   createDefaultChartSeries,
   createDefaultChartAxis,
@@ -224,6 +226,7 @@ export function countrySeedModels(): ModelDef[] {
     ...approvalSeedModels(),
     ...workflowSeedModels(),
     ...fileCollectionSeedModels(),
+    ...filePreviewSeedModels(),
     ...chartSeedModels(),
     ...profileSeedModels(),
     ...profileByEmailSeedModels(),
@@ -1896,6 +1899,7 @@ export function countrySeedEndpoints(): EndpointDef[] {
     ...tableLayoutSeedEndpoints(),
     ...dataGridSeedEndpoints(),
     ...fileCollectionSeedEndpoints(),
+    ...filePreviewSeedEndpoints(),
     ...chartSeedEndpoints(),
     ...pageDataSeedEndpoints(),
     ...approvalSeedEndpoints(),
@@ -5188,6 +5192,123 @@ export function profileDemoSeedItems(): GridItemData[] {
         binding: { key: 'profile', path: '', source: 'state' },
         html: '<p><strong>{{firstNameEn}} {{lastNameEN}}</strong> \u00b7 <span class="dt-muted">{{email}}</span></p><p>{{jobTitle}}</p><p class="dt-muted">{{companyModel.name}} \u00b7 {{businessUnitModel.name}} \u00b7 user id <code>{{userId}}</code></p>',
       },
+    },
+  ]
+}
+
+/* -------------------------------------------------------------------------
+ * File preview demo (see `docs/prompts/file-preview.md`)
+ * ------------------------------------------------------------------------- */
+
+export const FILE_PREVIEW_PAGE_ID = 'seed-page-file-preview'
+export const FILE_LIST_RES_MODEL_ID = 'seed-model-file-list-res'
+export const FILE_DETAIL_RES_MODEL_ID = 'seed-model-file-detail-res'
+export const FILES_ENDPOINT_ID = 'seed-endpoint-files'
+export const FILE_DETAIL_ENDPOINT_ID = 'seed-endpoint-file-detail'
+
+/** The list carries a `url` per file, one record its bytes inline as `data`. */
+export function filePreviewSeedModels(): ModelDef[] {
+  const envelope = () => [field('status', 'number'), field('success', 'boolean'), field('message')]
+  const record = () => [field('_id'), field('id'), field('name'), field('type'), field('size', 'number'), field('blurhash')]
+  return [
+    {
+      id: FILE_LIST_RES_MODEL_ID,
+      name: 'fileListRes',
+      fields: [field('data', 'array', [...record(), field('url')], 'object'), ...envelope()],
+    },
+    {
+      id: FILE_DETAIL_RES_MODEL_ID,
+      name: 'fileDetailRes',
+      fields: [field('data', 'object', [...record(), field('data')]), ...envelope()],
+    },
+  ]
+}
+
+export function filePreviewSeedEndpoints(): EndpointDef[] {
+  const base = { withOptions: false, query: null, parameter: null, body: null, method: 'GET' as const }
+  return [
+    { ...base, id: FILES_ENDPOINT_ID, name: 'files', description: 'List the demo files, each with a content URL', url: '/collection/files', response: FILE_LIST_RES_MODEL_ID },
+    { ...base, id: FILE_DETAIL_ENDPOINT_ID, name: 'fileDetail', description: 'One file with its bytes inline as a data URL', url: '/collection/files/:id', response: FILE_DETAIL_RES_MODEL_ID, parameter: ID_PARAM_MODEL_ID },
+  ]
+}
+
+/**
+ * One preview per source: a file collection's selection with a content URL
+ * template, an endpoint reading the same selection, a literal URL, each item of
+ * a repeater (a click opens the viewer), and the "No preview" card.
+ */
+export function filePreviewDemoSeedItems(): GridItemData[] {
+  const full = () => createDefaultItemSettings({ colSpan: { xs: 4, sm: 6, md: 8, lg: 12 } })
+  const caption = (id: string, text: string): GridItemData => ({
+    id,
+    label: 'Typography',
+    type: 'typography',
+    settings: full(),
+    config: { ...createDefaultTypographyConfig(), text, color: 'gray' },
+  })
+  const preview = (id: string, lg: number, config: Partial<FilePreviewConfig> & { name: string }): GridItemData => ({
+    id,
+    label: 'File Preview',
+    type: 'filepreview',
+    settings: createDefaultItemSettings({ colSpan: { xs: 4, sm: 6, md: Math.round((lg / 12) * 8), lg } }),
+    config: { ...createDefaultFilePreviewConfig(config.name), ...config },
+  })
+  const tree = createDefaultFileCollectionConfig('previewDocs')
+  const selected = 'previewDocsSelected'
+  return [
+    caption('seed-item-file-preview-caption', 'Pick a file: the first preview reads the tree’s selection and builds a content URL from the node’s id, the second fetches the same id through its own endpoint and gets the bytes inline. A folder has no file: the first shows its empty text, the second’s read fails.'),
+    {
+      id: 'seed-item-file-preview-tree',
+      label: 'File Collection',
+      type: 'filecollection',
+      settings: createDefaultItemSettings({ colSpan: { xs: 4, sm: 6, md: 2, lg: 3 } }),
+      config: {
+        ...tree,
+        title: 'Documents',
+        readOnly: true,
+        endpoints: { ...tree.endpoints, list: { ...tree.endpoints.list, endpointId: FILE_COLLECTIONS_ENDPOINT_ID, apiPaths: 'data' } },
+        kindIcons: { markdown: 'fileText', sheet: 'table', image: 'image', document: 'fileText' },
+      },
+    },
+    preview('seed-item-file-preview-selected', 5, {
+      name: 'selectedFile',
+      binding: { key: selected, path: '', source: 'state' },
+      urlTemplate: '/collection/files/{{id}}/content',
+    }),
+    preview('seed-item-file-preview-fetched', 4, {
+      name: 'fetchedFile',
+      source: 'endpoint',
+      read: { endpointId: FILE_DETAIL_ENDPOINT_ID, params: { id: { type: 'state', key: selected, path: 'id' } }, extra: {} },
+      emptyText: 'Waiting for a selection',
+    }),
+    caption('seed-item-file-preview-literal-caption', 'A literal URL: its last segment names the file, and the extension picks how it is shown. The second file has no preview, so it offers the download.'),
+    preview('seed-item-file-preview-literal', 6, { name: 'literalUrl', url: '/collection/files/n11/Hero%20banner.png', height: '220px' }),
+    preview('seed-item-file-preview-no-preview', 6, { name: 'noPreview', url: '/collection/files/n5/Q2%20supplier%20terms.docx', height: '220px' }),
+    caption('seed-item-file-preview-repeater-caption', 'One preview per item of the list, bound to the item itself. A click opens the modal viewer.'),
+    {
+      id: 'seed-item-file-preview-repeater',
+      label: 'Repeater',
+      type: 'repeater',
+      settings: full(),
+      config: {
+        ...createDefaultRepeaterConfig('fileCards'),
+        title: 'Files',
+        idKey: '_id',
+        read: { endpointId: FILES_ENDPOINT_ID, params: {}, extra: {} },
+        itemSpan: { xs: 12, sm: 6, md: 4, lg: 3 },
+        emptyText: 'No files',
+      },
+      childCanvases: [
+        {
+          ...createChildCanvas(),
+          items: [
+            {
+              ...preview('seed-item-file-preview-card', 12, { name: 'fileCard', binding: { key: 'none', path: '' }, height: '140px', openOnClick: true }),
+              settings: full(),
+            },
+          ],
+        },
+      ],
     },
   ]
 }

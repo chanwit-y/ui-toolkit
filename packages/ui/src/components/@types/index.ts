@@ -2177,6 +2177,7 @@ export type TElement =
   | FormulaWidgetElement
   | CustomComponentElement
   | ApprovalLineElement
+  | FilePreviewElement
   | SwitchProfileElement
   | ReplaceProfileElement
   | WorkflowEditorElement
@@ -2295,6 +2296,7 @@ export type BinType =
   | "formlist"
   | "repeater"
   | "filecollection"
+  | "filepreview"
   | "chart"
   | "autocomplete"
   | "textfield"
@@ -3051,6 +3053,74 @@ export type ApprovalLineElement = {
   stepMinWidth?: number;
   /** Flip a horizontal line to vertical under this breakpoint. */
   verticalBelow?: "sm" | "md";
+  emptyText?: string;
+  className?: string;
+};
+
+/** Paths into a file record, each a lodash path or fallback paths (see {@link ApprovalKeyPath}). */
+export type FilePreviewKeys = {
+  name?: ApprovalKeyPath;
+  /** A mime type; anything else (a tree node's `"file"`) is ignored and the kind comes from the name. */
+  type?: ApprovalKeyPath;
+  size?: ApprovalKeyPath;
+  url?: ApprovalKeyPath;
+  /** The content itself: a data URL, base64 or bytes (the {@link UploadedFile} formats). */
+  data?: ApprovalKeyPath;
+  /** An image's blurhash, the placeholder drawn while it loads. */
+  blurhash?: ApprovalKeyPath;
+};
+
+/** What the preview draws, normalized from whatever it was bound to. */
+export type PreviewFile = {
+  name: string;
+  /** Mime type, `""` when unknown. */
+  type: string;
+  size?: number;
+  url?: string;
+  data?: UploadFileContent;
+  blurhash?: string;
+};
+
+/**
+ * One file shown in place (Bin type `"filepreview"`): an image, PDF, video,
+ * audio or text file drawn inline, a "no preview" card for anything else. The
+ * element knows nothing about where the file came from: exactly one of
+ * `value` (a slice, a repeater item, a URL param, a literal URL) or `api`,
+ * resolved through `keys`. Bytes come by URL or inline as `data`; a binary
+ * endpoint is a `urlTemplate`. A URL the browser loads carries no bearer
+ * token, so protected files need a cookie session, a signed URL or `data`.
+ */
+export type FilePreviewElement = {
+  name?: string;
+  /** A record, or a bare URL string. A list previews its first file. */
+  value?: DataValue;
+  /** Own fetch (the repeater's read plumbing): `paths` drills to the record. */
+  api?: API;
+  /** Merged over the defaults: `name`, `type`, `size`, `url` / `src`, `data`, `blurhash` / `blurHash`. */
+  keys?: FilePreviewKeys;
+  /**
+   * The content URL over the record (`"/api/files/{{id}}/content"`, `{{value}}`
+   * for a bare string), each value URL-encoded; a blank placeholder means no
+   * file. Beats `keys.url`, loses to inline `data`.
+   */
+  urlTemplate?: string;
+  /** An image's blurhash when the record has none: a literal URL has no record. */
+  blurhash?: string;
+  /** Draw an image's blurhash while it loads. Default true. */
+  showBlurhash?: boolean;
+  /**
+   * Keep the blurhash on show at least this long, in milliseconds (0–10000),
+   * even when the image is ready sooner. Default 0: it leaves as the image
+   * loads. A slow image still takes as long as it takes.
+   */
+  blurhashDelay?: number;
+  /** The body's CSS height, `"auto"` lets an image size itself. Default `320px`. */
+  height?: string;
+  /** Name, size, Open and Download above the file. Default true. */
+  showHeader?: boolean;
+  /** A click opens the file in the modal viewer. Default false. */
+  openOnClick?: boolean;
+  /** Shown while there is no file. Default "Select a file to preview". */
   emptyText?: string;
   className?: string;
 };

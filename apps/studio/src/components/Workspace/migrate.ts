@@ -60,9 +60,11 @@ import {
   FORMAT_DEMO_FIELDS,
   dataGridSeedEndpoints,
   fileCollectionSeedModels,
+  filePreviewSeedModels,
   chartSeedModels,
   chartSeedEndpoints,
   fileCollectionSeedEndpoints,
+  filePreviewSeedEndpoints,
   DATA_TABLE_PAGE_ID,
   HTML_COLUMNS_PAGE_ID,
   COUNTRY_PAGE_BODY_MODEL_ID,
@@ -114,6 +116,7 @@ import {
   formatsDemoPage,
   dataGridDemoPage,
   fileCollectionDemoPage,
+  filePreviewDemoPage,
   chartDemoPage,
   logicDemoPage,
   formulaDemoPage,
@@ -1155,7 +1158,23 @@ function migrateV63(data: { projects: ProjectDef[]; library: LibraryData }): {
   if (page && !page.grid.items.some((item) => FORMULA_WIDGET_ITEM_IDS.includes(item.id))) {
     page.grid.items.push(...formulaDemoSeedItems().filter((item) => FORMULA_WIDGET_ITEM_IDS.includes(item.id)))
   }
-  return data
+  return migrateV64(data)
+}
+
+/**
+ * v64 → v65: the file preview (see `docs/prompts/file-preview.md`). A new item
+ * type, so no item changes; the library gains the file models + endpoints and
+ * the seeded project the **File preview** page.
+ */
+function migrateV64(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  const seeded = seedLibraryAdditions(data.projects, data.library, filePreviewSeedModels(), filePreviewSeedEndpoints())
+  return {
+    projects: seeded.projects.map((p) => (p.id === 'seed-project-country' ? appendDemoPages(p, [filePreviewDemoPage()]) : p)),
+    library: seeded.library,
+  }
 }
 
 /**
@@ -1881,7 +1900,7 @@ export function withSeedLibrary(library: LibraryData): LibraryData {
 }
 
 /** The workspace version this build writes (and the newest it reads). */
-export const WORKSPACE_VERSION = 64
+export const WORKSPACE_VERSION = 65
 
 /** What a persisted payload migrates to: the stored fields at the current shape. */
 export type MigratedWorkspace = Pick<WorkspaceData, 'appearance' | 'user' | 'activity' | 'projects' | 'library'>
@@ -2118,7 +2137,11 @@ export function migrateWorkspace(persisted: unknown): MigratedWorkspace | null {
     const normalized = { ...library, auth: (library.auth ?? []).map((a) => normalizeAuthDef(a)) }
     return { appearance, user, activity, ...migrateV63({ projects: data.projects, library: normalized }) }
   }
-  if (data.version !== 64) return null
+  if (data.version === 64) {
+    const normalized = { ...library, auth: (library.auth ?? []).map((a) => normalizeAuthDef(a)) }
+    return { appearance, user, activity, ...migrateV64({ projects: data.projects, library: normalized }) }
+  }
+  if (data.version !== 65) return null
   // Same version, possibly older entry shapes (fields added without a bump): fill the defaults.
   return { appearance, user, activity, projects: data.projects, library: { ...library, auth: (library.auth ?? []).map((a) => normalizeAuthDef(a)) } }
 }

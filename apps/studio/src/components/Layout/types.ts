@@ -2401,6 +2401,64 @@ export function createDefaultCustomComponentConfig(name: string): CustomComponen
   return { name, componentId: '', props: {}, binding: null }
 }
 
+/** Where a file preview reads each field of its record: paths tried in order, none = the engine's defaults. */
+export type FilePreviewKeyConfig = {
+  name: string[]
+  type: string[]
+  size: string[]
+  url: string[]
+  data: string[]
+  blurhash?: string[]
+}
+
+/**
+ * Editable config for a file preview. Maps onto the engine `FilePreviewElement`:
+ * the file comes from a `binding` (page data, a file collection's selection, the
+ * repeater item), a literal `url` while unbound, or the preview's own `read`
+ * endpoint; `keys` read the record and `urlTemplate` builds a content URL when
+ * the record has only an id.
+ */
+export type FilePreviewConfig = {
+  name: string
+  source: 'binding' | 'endpoint'
+  binding: ItemBinding
+  /** The literal URL of a static preview (no binding). */
+  url: string
+  read: FormListCrudRef
+  /** Dot path from the response to the file record (engine `api.paths`). */
+  recordPath: string
+  keys: FilePreviewKeyConfig
+  urlTemplate: string
+  /** An image's blurhash when the record has none; absent = none. */
+  blurhash?: string
+  /** Draw an image's blurhash while it loads; absent = on. */
+  showBlurhash?: boolean
+  /** Keep the blurhash on show at least this long, in milliseconds; absent or `''` = until the image loads. */
+  blurhashDelay?: number | ''
+  /** CSS height or `auto`; `''` = the engine default. */
+  height: string
+  showHeader: boolean
+  openOnClick: boolean
+  emptyText: string
+}
+
+export function createDefaultFilePreviewConfig(name: string): FilePreviewConfig {
+  return {
+    name,
+    source: 'binding',
+    binding: null,
+    url: '',
+    read: createFormListCrudRef(),
+    recordPath: 'data',
+    keys: { name: [], type: [], size: [], url: [], data: [] },
+    urlTemplate: '',
+    height: '',
+    showHeader: true,
+    openOnClick: false,
+    emptyText: '',
+  }
+}
+
 /** One key of an approval line's row mapping: paths tried in order (see the engine `ApprovalKeyPath`). */
 export type ApprovalLineKeyConfig = {
   name: string[]
@@ -2820,6 +2878,7 @@ export type GridItemData = {
     | FormulaWidgetConfig
     | CustomComponentConfig
     | ApprovalLineConfig
+    | FilePreviewConfig
     | SwitchProfileConfig
     | ReplaceProfileConfig
     | WorkflowEditorConfig
@@ -2914,6 +2973,7 @@ export function collectButtonTargets(items: GridItemData[]): ButtonRefTargets {
           item.type === 'datatableeditable' ||
           item.type === 'formlist' ||
           item.type === 'filecollection' ||
+          (item.type === 'filepreview' && (item.config as FilePreviewConfig | undefined)?.source === 'endpoint') ||
           (item.type === 'chart' && !(item.config as ChartConfig | undefined)?.rowsBinding) ||
           (item.type === 'repeater' &&
             (item.config as RepeaterConfig | undefined)?.source === 'endpoint')) &&
