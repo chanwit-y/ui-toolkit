@@ -2409,6 +2409,9 @@ export type FilePreviewKeyConfig = {
   url: string[]
   data: string[]
   blurhash?: string[]
+  /** An image's pixel size: its blurhash then takes the image's exact box before it loads. */
+  width?: string[]
+  height?: string[]
 }
 
 /**
@@ -2437,6 +2440,8 @@ export type FilePreviewConfig = {
   blurhashDelay?: number | ''
   /** CSS height or `auto`; `''` = the engine default. */
   height: string
+  /** How an image is resized in the frame (engine `fit`); absent = `natural`, its own size. */
+  fit?: 'natural' | 'contain' | 'cover'
   showHeader: boolean
   openOnClick: boolean
   emptyText: string

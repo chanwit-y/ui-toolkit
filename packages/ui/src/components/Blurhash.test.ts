@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { blurhashHold, decodeBlurhash } from "./Blurhash";
+import { blurhashCanvasSize, blurhashHold, decodeBlurhash } from "./Blurhash";
 
 describe("blurhashHold", () => {
   test("whole milliseconds, clamped to 0–10 s", () => {
@@ -25,6 +25,24 @@ describe("decodeBlurhash", () => {
   test("anything else draws nothing", () => {
     for (const hash of ["", "not a hash", "LEHV6nWB2yk8", "http://x.test/a.png"]) {
       expect(decodeBlurhash(hash)).toBeUndefined();
+    }
+  });
+});
+
+describe("blurhashCanvasSize", () => {
+  test("keeps the image's aspect ratio at a longer side of 256", () => {
+    expect(blurhashCanvasSize(640, 360)).toEqual({ width: 256, height: 144 });
+    expect(blurhashCanvasSize(36, 64)).toEqual({ width: 144, height: 256 });
+    expect(blurhashCanvasSize(100, 100)).toEqual({ width: 256, height: 256 });
+  });
+
+  test("a side never rounds to nothing", () => {
+    expect(blurhashCanvasSize(1, 10_000)).toEqual({ width: 1, height: 256 });
+  });
+
+  test("anything but a positive size is no size", () => {
+    for (const [w, h] of [[0, 10], [10, -1], [Number.NaN, 10], ["640", 360], [undefined, undefined], [Number.POSITIVE_INFINITY, 1]] as const) {
+      expect(blurhashCanvasSize(w, h)).toBeUndefined();
     }
   });
 });

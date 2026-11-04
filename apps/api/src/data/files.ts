@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 /**
  * In-memory files behind the example's File preview page. Ids match the file
  * nodes of the File collection demo (`data/fileCollections.ts`), so a tree
@@ -10,9 +11,14 @@ export interface StoredFile {
   bytes: Uint8Array<ArrayBuffer>;
   /** An image's placeholder, encoded from its pixels. */
   blurhash?: string;
+  /** An image's pixel size, so the placeholder can take its exact box. */
+  width?: number;
+  height?: number;
 }
 
 const encoder = new TextEncoder();
+/** A real photo (1200 × 1600, metadata stripped) kept beside this module; its blurhash was computed from these pixels. */
+const PHOTO_JPG = new Uint8Array(readFileSync(new URL('./assets/IMG_5844.jpg', import.meta.url)));
 const text = (body: string) => encoder.encode(body);
 
 /** A one-page PDF with a text line per entry: the xref offsets are computed, so viewers don't repair it. */
@@ -64,7 +70,7 @@ const FILES: StoredFile[] = [
     type: 'text/csv',
     bytes: text('sku,name,price\nA-100,Notebook,120.00\nA-101,Pencil set,45.50\nA-102,Desk lamp,890.00\n'),
   },
-  { _id: 'n4', name: 'Q1 cover.svg', type: 'image/svg+xml', bytes: text(coverSvg), blurhash: 'LKJOf{3GaORq2znlj[ofICM|oytQ' },
+  { _id: 'n4', name: 'Q1 cover.svg', type: 'image/svg+xml', bytes: text(coverSvg), blurhash: 'LKJOf{3GaORq2znlj[ofICM|oytQ', width: 640, height: 360 },
   {
     _id: 'n5',
     name: 'Q2 supplier terms.docx',
@@ -74,7 +80,16 @@ const FILES: StoredFile[] = [
   { _id: 'n7', name: 'Archive notes.md', type: 'text/markdown', bytes: text('# Archive notes\n\nEverything from 2025 moved to cold storage in January.\n') },
   { _id: 'n8', name: 'README.md', type: 'text/markdown', bytes: text('# Catalog\n\nPrice lists and cover art, one folder per year.\n') },
   { _id: 'n10', name: 'Spring launch.md', type: 'text/markdown', bytes: text('# Spring launch\n\n- Teaser on 1 March\n- Launch on 15 March\n') },
-  { _id: 'n11', name: 'Hero banner.png', type: 'image/png', bytes: Uint8Array.from(Buffer.from(BANNER_PNG, 'base64')), blurhash: 'LXI_Rx2gw#SjsqWrjtfRfQfQfQfQ' },
+  {
+    _id: 'n11',
+    name: 'Hero banner.png',
+    type: 'image/png',
+    bytes: Uint8Array.from(Buffer.from(BANNER_PNG, 'base64')),
+    blurhash: 'LXI_Rx2gw#SjsqWrjtfRfQfQfQfQ',
+    width: 64,
+    height: 36,
+  },
+  { _id: 'n14', name: 'Mountain meadow.jpg', type: 'image/jpeg', bytes: PHOTO_JPG, blurhash: 'LvHx.@ofj[of.AWCoea#-;f5j[fP', width: 1200, height: 1600 },
   {
     _id: 'n12',
     name: 'Brand guide.pdf',
@@ -87,13 +102,14 @@ const contentUrl = (id: string) => `/collection/files/${id}/content`;
 
 export const fileService = {
   /** The list: a URL per record, no bytes. */
-  list: () => FILES.map(({ _id, name, type, bytes, blurhash }) => ({ _id, id: _id, name, type, size: bytes.length, url: contentUrl(_id), blurhash })),
+  list: () =>
+    FILES.map(({ _id, name, type, bytes, blurhash, width, height }) => ({ _id, id: _id, name, type, size: bytes.length, url: contentUrl(_id), blurhash, width, height })),
   /** One record with its bytes inline, the JSON envelope shape. */
   detail(id: string) {
     const file = FILES.find((f) => f._id === id);
     if (!file) return undefined;
     const data = `data:${file.type};base64,${Buffer.from(file.bytes).toString('base64')}`;
-    return { _id: file._id, id: file._id, name: file.name, type: file.type, size: file.bytes.length, data, blurhash: file.blurhash };
+    return { _id: file._id, id: file._id, name: file.name, type: file.type, size: file.bytes.length, data, blurhash: file.blurhash, width: file.width, height: file.height };
   },
   content: (id: string) => FILES.find((f) => f._id === id),
 };

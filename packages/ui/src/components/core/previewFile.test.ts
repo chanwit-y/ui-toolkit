@@ -116,6 +116,24 @@ describe("normalizePreviewFile", () => {
     });
   });
 
+  describe("image size", () => {
+    const record = { name: "a.png", url: "/a.png" };
+
+    test("comes from the record, numbers or numeric text, by the default or a configured key", () => {
+      expect(normalizePreviewFile({ ...record, width: 640, height: 360 })).toMatchObject({ width: 640, height: 360 });
+      expect(normalizePreviewFile({ ...record, imageWidth: "64", imageHeight: "36" })).toMatchObject({ width: 64, height: 36 });
+      expect(normalizePreviewFile({ ...record, meta: { w: 4, h: 3 } }, { keys: { width: "meta.w", height: "meta.h" } })).toMatchObject({ width: 4, height: 3 });
+    });
+
+    test("one side alone, or a side that isn't positive, is no size", () => {
+      for (const extra of [{ width: 640 }, { height: 360 }, { width: 0, height: 360 }, { width: 640, height: -1 }, { width: "wide", height: 360 }]) {
+        const file = normalizePreviewFile({ ...record, ...extra });
+        expect(file).not.toHaveProperty("width");
+        expect(file).not.toHaveProperty("height");
+      }
+    });
+  });
+
   test("an unsafe scheme never reaches the DOM", () => {
     expect(normalizePreviewFile("javascript:alert(1)")).toBeUndefined();
     expect(normalizePreviewFile({ name: "a.pdf", url: "java\nscript:alert(1)" })).toBeUndefined();

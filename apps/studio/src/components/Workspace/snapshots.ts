@@ -36,6 +36,7 @@ import {
   fileCollectionDemoSeedItems,
   FILE_PREVIEW_PAGE_ID,
   filePreviewDemoSeedItems,
+  filePreviewSeedLoads,
   CHART_PAGE_ID,
   chartDemoSeedItems,
   TABLE_LAYOUT_PAGE_ID,
@@ -635,6 +636,7 @@ export function filePreviewDemoPage(): PageDef {
       fieldSeq: 0,
     },
     parentId: 'seed-page-countries',
+    loads: filePreviewSeedLoads(),
   }
 }
 

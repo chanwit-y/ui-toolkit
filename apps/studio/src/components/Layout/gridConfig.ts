@@ -1671,6 +1671,7 @@ function filePreviewElement(
     ...omitEmpty({ urlTemplate: c.urlTemplate.trim(), blurhash: c.blurhash?.trim() ?? '', height: c.height.trim(), emptyText: c.emptyText }),
     ...(c.showBlurhash === false ? { showBlurhash: false } : {}),
     ...(c.blurhashDelay ? { blurhashDelay: c.blurhashDelay } : {}),
+    ...(c.fit && c.fit !== 'natural' ? { fit: c.fit } : {}),
     ...(c.showHeader ? {} : { showHeader: false }),
     ...(c.openOnClick ? { openOnClick: true } : {}),
   }

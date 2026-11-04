@@ -11,7 +11,7 @@ import { UploadFileViewer } from "./UploadFileViewer";
 
 const DEFAULT_HEIGHT = "320px";
 
-export type FilePreviewViewProps = Pick<FilePreviewElement, "height" | "showHeader" | "openOnClick" | "emptyText" | "blurhashDelay" | "className"> & {
+export type FilePreviewViewProps = Pick<FilePreviewElement, "height" | "fit" | "showHeader" | "openOnClick" | "emptyText" | "blurhashDelay" | "className"> & {
   file?: PreviewFile;
   /** Draw the placeholder instead (the bound slice or the read is still loading). */
   skeleton?: boolean;
@@ -33,7 +33,8 @@ function FileFrame({
   showHeader,
   openOnClick,
   blurhashDelay,
-}: Required<Pick<FilePreviewViewProps, "height" | "showHeader" | "openOnClick">> & Pick<FilePreviewViewProps, "blurhashDelay"> & { file: PreviewFile }) {
+  fit,
+}: Required<Pick<FilePreviewViewProps, "height" | "showHeader" | "openOnClick">> & Pick<FilePreviewViewProps, "blurhashDelay" | "fit"> & { file: PreviewFile }) {
   const [attempt, setAttempt] = useState(0);
   const [failedUrl, setFailedUrl] = useState<string>();
   const [open, setOpen] = useState(false);
@@ -72,6 +73,7 @@ function FileFrame({
             preview={preview}
             onLoadError={() => setFailedUrl(url)}
             blurhashDelay={blurhashDelay}
+            fit={fit}
             noPreview={!showHeader && (
               <>
                 <span className="text-xs">{meta}</span>
@@ -105,6 +107,7 @@ export function FilePreviewView({
   openOnClick = false,
   emptyText = "Select a file to preview",
   blurhashDelay,
+  fit,
   badge,
   className,
   style,
@@ -140,7 +143,7 @@ export function FilePreviewView({
       </div>
     );
   } else {
-    content = <FileFrame key={file.url ?? file.name} file={file} height={height} showHeader={showHeader} openOnClick={openOnClick} blurhashDelay={blurhashDelay} />;
+    content = <FileFrame key={file.url ?? file.name} file={file} height={height} showHeader={showHeader} openOnClick={openOnClick} blurhashDelay={blurhashDelay} fit={fit} />;
   }
   return (
     <div

@@ -34,16 +34,23 @@ a URL. The browser loads it itself, **without the app's bearer token**: protecte
 files need a cookie session, a signed URL or inline `data`.
 
 **Blurhash.** While an image loads, its blurhash is drawn in its place; the image
-fades in over it, then it fades out. An image scales to fill the frame. The hash is computed from the image when it is stored,
+fades in over it, then it fades out. An image is drawn at its own size, no larger than the frame. The hash is computed from the image when it is stored,
 so it comes with the record: the default paths are `blurhash` and `blurHash`, and
-`keys.blurhash` overrides them. `blurhash` in the config is the hash to use when
+`keys.blurhash` overrides them. The placeholder has the image's exact size when the
+record also carries the image's pixel size — `keys.width` / `keys.height`, default
+paths `width` / `imageWidth` and `height` / `imageHeight`, both needed; without
+it the placeholder fills the frame until the image's own size is known. `blurhash` in the config is the hash to use when
 the record has none, as with a literal URL. `showBlurhash: false` turns it off.
 `blurhashDelay` keeps it on show at least that many milliseconds (0 to 10000),
 even when the image is ready sooner; it can't make a slow image any faster.
 Other file kinds ignore it, and an invalid hash draws nothing. Under
-`height: "auto"` the placeholder is 200px tall until the image arrives.
+`height: "auto"` the placeholder has the image's aspect ratio when its size is
+known, else it is 200px tall until the image arrives.
 
-**Look.** `height` (CSS length or `"auto"`, `""` = 320px), `showHeader`,
+**Look.** `height` (CSS length or `"auto"`, `""` = 320px), `fit` (how an image is
+resized in the frame: `"natural"` — its own size, no larger than the frame, the
+default —, `"contain"` to scale it to fit, `"cover"` to scale it to fill, cropped;
+the blurhash follows), `showHeader`,
 `openOnClick` (a click opens the modal viewer; it covers the file, so a PDF can't
 be scrolled inline), `emptyText`.
 

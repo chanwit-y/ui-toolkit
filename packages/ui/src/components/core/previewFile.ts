@@ -12,6 +12,8 @@ export const DEFAULT_PREVIEW_KEYS: Required<FilePreviewKeys> = {
   url: ["url", "src"],
   data: ["data"],
   blurhash: ["blurhash", "blurHash"],
+  width: ["width", "imageWidth"],
+  height: ["height", "imageHeight"],
 };
 
 export type PreviewFileOptions = {
@@ -109,6 +111,10 @@ export function normalizePreviewFile(raw: unknown, options: PreviewFileOptions =
   const hash = options.showBlurhash === false ? undefined : text(readKey(record, keys.blurhash)) ?? options.blurhash;
   // An invalid hash is no hash: the image then loads as it would without one.
   const blurhash = hash && isBlurhashValid(hash).result ? hash : undefined;
+  // The image's size lets its placeholder take the image's exact box before it loads; one side alone says nothing.
+  const width = toSize(readKey(record, keys.width));
+  const height = toSize(readKey(record, keys.height));
+  const sized = width !== undefined && height !== undefined && width > 0 && height > 0;
   return {
     name,
     type,
@@ -116,5 +122,6 @@ export function normalizePreviewFile(raw: unknown, options: PreviewFileOptions =
     ...(url ? { url } : {}),
     ...(data ? { data } : {}),
     ...(blurhash ? { blurhash } : {}),
+    ...(sized ? { width, height } : {}),
   };
 }

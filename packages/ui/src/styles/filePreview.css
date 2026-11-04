@@ -96,16 +96,29 @@
   background: var(--gray-a3);
 }
 
-/* An image fills the frame, so a small one doesn't end up as a speck where its
- * placeholder filled the box. The modal viewer keeps images at their own size. */
+/* `fit: natural` (the default): an image is drawn at its own size and no larger
+ * than the body, in the frame as in the modal viewer — a 64 × 36 banner is
+ * 64 × 36, a photo is contained. `contain` scales it to fit the body, `cover`
+ * scales it to fill the body, cropped. */
 .gummy-fp-body .gummy-fp-image {
+  max-width: 100%;
+  max-height: 100%;
+}
+.gummy-fp-body .gummy-fp-image.is-fit-contain,
+.gummy-fp-body .gummy-fp-image.is-fit-cover {
   width: 100%;
   height: 100%;
+}
+.gummy-fp-image.is-fit-cover {
+  object-fit: cover;
 }
 
 /* An image's blurhash sits exactly where the image will. The image fades in over
  * it and only then does it leave, or the frame's background shows through both
- * halfway. Only a pending image is hidden, so one without a hash paints as it loads. */
+ * halfway. Only a pending image is hidden, so one without a hash paints as it loads.
+ * `is-sized`: the canvas has the image's aspect ratio and is laid out like the
+ * image — capped at the image's pixel size, centred, contained in the same box —
+ * instead of being stretched over the box as a halo around the image. */
 .gummy-fp-blurhash {
   position: absolute;
   inset: var(--gummy-fp-pad, 0px);
@@ -113,6 +126,22 @@
   height: calc(100% - 2 * var(--gummy-fp-pad, 0px));
   border-radius: var(--radius-2, 6px);
   transition: opacity 250ms ease-out;
+}
+.gummy-fp-blurhash.is-sized {
+  margin: auto;
+  max-width: var(--gummy-fp-w, none);
+  max-height: var(--gummy-fp-h, none);
+  object-fit: contain;
+  border-radius: 0;
+}
+/* A scaled image takes the whole body, so its hash does too, cropped the same way under `cover`. */
+.gummy-fp-blurhash.is-sized.is-fit-contain,
+.gummy-fp-blurhash.is-sized.is-fit-cover {
+  max-width: none;
+  max-height: none;
+}
+.gummy-fp-blurhash.is-fit-cover {
+  object-fit: cover;
 }
 .gummy-fp-blurhash.is-loaded {
   opacity: 0;

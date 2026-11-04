@@ -65,6 +65,11 @@ import {
   chartSeedEndpoints,
   fileCollectionSeedEndpoints,
   filePreviewSeedEndpoints,
+  filePreviewSeedLoads,
+  filePreviewBlurhashSeedItems,
+  FILE_PREVIEW_PAGE_ID,
+  FILE_PREVIEW_BLURHASH_ITEM_ID,
+  FILE_PREVIEW_DOCUMENT_ITEM_IDS,
   DATA_TABLE_PAGE_ID,
   HTML_COLUMNS_PAGE_ID,
   COUNTRY_PAGE_BODY_MODEL_ID,
@@ -155,7 +160,7 @@ import { migrateItemConditions } from './logic'
 import { LOGIC_PAGE_ID, LOGIC_REQUIRED_ITEM_IDS, logicDemoSeedItems, logicSeedFormulas, logicSeedRules } from '../seed/logic'
 import { FORMULA_PAGE_ID, FORMULA_WIDGET_ITEM_IDS, formulaDemoSeedItems } from '../seed/formula'
 import { walkItems } from '../Layout/pageLinks'
-import type { ContainerConfig } from '../Layout/types'
+import type { ContainerConfig, FilePreviewConfig } from '../Layout/types'
 import { defaultMenu } from './menu'
 import { createDefaultPaginationConfig, DEFAULT_ADD_BUTTON, createDefaultApprovalLineConfig, createFormListCrudRef, type ApprovalLineConfig } from '../Layout/types'
 import { createDefaultSortConfig, DEFAULT_CELL_LINES, DEFAULT_FILTER_BUTTON, ensureDataTableCanvases, createDefaultProfileKeysConfig } from '../Layout/types'
@@ -1171,10 +1176,71 @@ function migrateV64(data: { projects: ProjectDef[]; library: LibraryData }): {
   library: LibraryData
 } {
   const seeded = seedLibraryAdditions(data.projects, data.library, filePreviewSeedModels(), filePreviewSeedEndpoints())
-  return {
+  return migrateV65({
     projects: seeded.projects.map((p) => (p.id === 'seed-project-country' ? appendDemoPages(p, [filePreviewDemoPage()]) : p)),
     library: seeded.library,
+  })
+}
+
+/**
+ * v65 → v66: the blurhash placeholder is the image's size (the record's
+ * `width` / `height`). No item changes; the seeded **File preview** page gains
+ * the Blurhash section and its `banner` page load when it doesn't have them.
+ */
+function migrateV65(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  const page = data.projects.find((p) => p.id === 'seed-project-country')?.snapshot.pages.find((pg) => pg.id === FILE_PREVIEW_PAGE_ID)
+  if (page) {
+    if (!page.grid.items.some((item) => item.id === FILE_PREVIEW_BLURHASH_ITEM_ID)) page.grid.items.push(...filePreviewBlurhashSeedItems())
+    const loads = page.loads ?? []
+    for (const load of filePreviewSeedLoads()) if (!loads.some((l) => l.id === load.id)) loads.push(load)
+    page.loads = loads
   }
+  return migrateV66(data)
+}
+
+/**
+ * v66 → v67: the file preview's `fit` (Resizing: own size / fit / cover).
+ * Optional on the config, so no item changes; the seeded Blurhash record
+ * preview is set to `cover` where nothing was chosen yet.
+ */
+function migrateV66(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  patchSeedPreviews(data.projects, [FILE_PREVIEW_BLURHASH_ITEM_ID], { fit: 'cover' })
+  return migrateV67(data)
+}
+
+/** The seeded File preview page's items by id get each key of `patch` that nothing has set yet. */
+function patchSeedPreviews(projects: ProjectDef[], ids: string[], patch: Partial<FilePreviewConfig>) {
+  const page = projects.find((p) => p.id === 'seed-project-country')?.snapshot.pages.find((pg) => pg.id === FILE_PREVIEW_PAGE_ID)
+  for (const item of page?.grid.items ?? []) {
+    if (!ids.includes(item.id) || item.type !== 'filepreview') continue
+    const config = item.config as FilePreviewConfig
+    const missing = Object.fromEntries(Object.entries(patch).filter(([k]) => config[k as keyof FilePreviewConfig] === undefined))
+    if (Object.keys(missing).length) item.config = { ...config, ...missing }
+  }
+}
+
+/** v67 → v68: the two previews beside the seeded Documents tree cover their frame. */
+function migrateV67(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  patchSeedPreviews(data.projects, FILE_PREVIEW_DOCUMENT_ITEM_IDS, { fit: 'cover' })
+  return migrateV68(data)
+}
+
+/** v68 → v69: the same two previews hold their blurhash 2 s, so it can be seen over a local API. */
+function migrateV68(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  patchSeedPreviews(data.projects, FILE_PREVIEW_DOCUMENT_ITEM_IDS, { blurhashDelay: 2000 })
+  return data
 }
 
 /**
@@ -1900,7 +1966,7 @@ export function withSeedLibrary(library: LibraryData): LibraryData {
 }
 
 /** The workspace version this build writes (and the newest it reads). */
-export const WORKSPACE_VERSION = 65
+export const WORKSPACE_VERSION = 69
 
 /** What a persisted payload migrates to: the stored fields at the current shape. */
 export type MigratedWorkspace = Pick<WorkspaceData, 'appearance' | 'user' | 'activity' | 'projects' | 'library'>
@@ -2141,7 +2207,23 @@ export function migrateWorkspace(persisted: unknown): MigratedWorkspace | null {
     const normalized = { ...library, auth: (library.auth ?? []).map((a) => normalizeAuthDef(a)) }
     return { appearance, user, activity, ...migrateV64({ projects: data.projects, library: normalized }) }
   }
-  if (data.version !== 65) return null
+  if (data.version === 65) {
+    const normalized = { ...library, auth: (library.auth ?? []).map((a) => normalizeAuthDef(a)) }
+    return { appearance, user, activity, ...migrateV65({ projects: data.projects, library: normalized }) }
+  }
+  if (data.version === 66) {
+    const normalized = { ...library, auth: (library.auth ?? []).map((a) => normalizeAuthDef(a)) }
+    return { appearance, user, activity, ...migrateV66({ projects: data.projects, library: normalized }) }
+  }
+  if (data.version === 67) {
+    const normalized = { ...library, auth: (library.auth ?? []).map((a) => normalizeAuthDef(a)) }
+    return { appearance, user, activity, ...migrateV67({ projects: data.projects, library: normalized }) }
+  }
+  if (data.version === 68) {
+    const normalized = { ...library, auth: (library.auth ?? []).map((a) => normalizeAuthDef(a)) }
+    return { appearance, user, activity, ...migrateV68({ projects: data.projects, library: normalized }) }
+  }
+  if (data.version !== 69) return null
   // Same version, possibly older entry shapes (fields added without a bump): fill the defaults.
   return { appearance, user, activity, projects: data.projects, library: { ...library, auth: (library.auth ?? []).map((a) => normalizeAuthDef(a)) } }
 }

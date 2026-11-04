@@ -52,6 +52,8 @@ const fromCollectionBins: Bin[] = [
       name: "selectedFile",
       value: state("previewDocsSelected"),
       urlTemplate: "/collection/files/{{id}}/content",
+      fit: "cover",
+      blurhashDelay: 2000,
     },
   },
   {
@@ -61,6 +63,8 @@ const fromCollectionBins: Bin[] = [
       name: "fetchedFile",
       api: { name: "fileDetail", paths: ["data"], params: { id: { type: "url", key: "file", source: "query" } } },
       emptyText: "Waiting for ?file= in the URL",
+      fit: "cover",
+      blurhashDelay: 2000,
     },
   },
 ];
@@ -109,30 +113,33 @@ const repeaterBins: Bin[] = [
 /** The banner, held back by the mock API so the placeholder stays on screen. */
 const SLOW_BANNER = "/collection/files/n11/Hero%20banner.png?delay=2500";
 const BANNER_HASH = "LXI_Rx2gw#SjsqWrjtfRfQfQfQfQ";
+/** The banner's pixel size: with it, the placeholder is the image's exact box before the image arrives. */
+const BANNER_SIZE = { width: 64, height: 36 };
 
 const blurhashBins: Bin[] = [
-  note("Each image takes 2.5 seconds here, so the placeholder can be seen; reload the page to replay it. The hash is computed when an image is stored and comes with its record: one preview has it in the config instead, for a literal URL, which has no record. The last image isn't delayed by the API: blurhashDelay holds its placeholder for 4 seconds."),
-  { ...third, type: "filepreview", element: { name: "hashRecord", value: literal({ name: "From the record.png", url: SLOW_BANNER, blurhash: BANNER_HASH }), height: "200px" } },
+  note("Each image takes 2.5 seconds here, so the placeholder can be seen; reload the page to replay it. The hash is computed when an image is stored and comes with its record: one preview has it in the config instead, for a literal URL, which has no record. A record that also carries the image's width and height gets a placeholder of the image's exact size from the start (the first is resized to cover the frame, and so is its placeholder); without them (the literal URL, the next one) the placeholder fills the frame until the image's own size is known. The last image isn't delayed by the API: blurhashDelay holds its placeholder for 4 seconds."),
+  { ...third, type: "filepreview", element: { name: "hashRecord", value: literal({ name: "From the record.png", url: SLOW_BANNER, blurhash: BANNER_HASH, ...BANNER_SIZE }), height: "200px", fit: "cover" } },
   {
     ...third,
     type: "filepreview",
     element: {
       name: "hashKey",
-      value: literal({ name: "From a key.png", url: SLOW_BANNER, thumb: { hash: BANNER_HASH } }),
-      keys: { blurhash: "thumb.hash" },
+      value: literal({ name: "From a key.png", url: SLOW_BANNER, thumb: { hash: BANNER_HASH, w: BANNER_SIZE.width, h: BANNER_SIZE.height } }),
+      keys: { blurhash: "thumb.hash", width: "thumb.w", height: "thumb.h" },
       height: "200px",
     },
   },
-  { ...third, type: "filepreview", element: { name: "hashOff", value: literal({ name: "Turned off.png", url: SLOW_BANNER, blurhash: BANNER_HASH }), showBlurhash: false, height: "200px" } },
+  { ...third, type: "filepreview", element: { name: "hashOff", value: literal({ name: "Turned off.png", url: SLOW_BANNER, blurhash: BANNER_HASH, ...BANNER_SIZE }), showBlurhash: false, height: "200px" } },
   { ...third, type: "filepreview", element: { name: "hashLiteral", value: literal(SLOW_BANNER), blurhash: BANNER_HASH, height: "200px" } },
-  { ...third, type: "filepreview", element: { name: "hashAuto", value: literal({ name: "Auto height.png", url: SLOW_BANNER, blurhash: BANNER_HASH }), height: "auto" } },
+  { ...third, type: "filepreview", element: { name: "hashNoSize", value: literal({ name: "No size in the record.png", url: SLOW_BANNER, blurhash: BANNER_HASH }), height: "200px" } },
+  { ...third, type: "filepreview", element: { name: "hashAuto", value: literal({ name: "Auto height.png", url: SLOW_BANNER, blurhash: BANNER_HASH, ...BANNER_SIZE }), height: "auto" } },
   { ...third, type: "filepreview", element: { name: "hashBad", value: literal({ name: "Not a real hash.png", url: SLOW_BANNER, blurhash: "not a hash" }), height: "200px" } },
   {
     ...third,
     type: "filepreview",
     element: {
       name: "hashDelay",
-      value: literal({ name: "Held for 4 seconds.png", url: "/collection/files/n11/Hero%20banner.png", blurhash: BANNER_HASH }),
+      value: literal({ name: "Held for 4 seconds.png", url: "/collection/files/n11/Hero%20banner.png", blurhash: BANNER_HASH, ...BANNER_SIZE }),
       blurhashDelay: 4000,
       height: "200px",
     },

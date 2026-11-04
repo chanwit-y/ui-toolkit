@@ -1667,6 +1667,7 @@ function FilePreviewLivePreview({ config }: { config: FilePreviewConfig }) {
       <FilePreviewView
         file={bound ? FILE_PREVIEW_SAMPLE : undefined}
         height={height}
+        fit={config.fit}
         showHeader={config.showHeader}
         emptyText="No file source"
         badge={

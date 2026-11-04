@@ -3068,7 +3068,17 @@ export type FilePreviewKeys = {
   data?: ApprovalKeyPath;
   /** An image's blurhash, the placeholder drawn while it loads. */
   blurhash?: ApprovalKeyPath;
+  /** An image's pixel size: its blurhash is then drawn at the image's exact size from the start. */
+  width?: ApprovalKeyPath;
+  height?: ApprovalKeyPath;
 };
+
+/**
+ * How an image sits in the preview's frame: at its own pixel size, no larger
+ * than the frame (`natural`, the default), scaled to fit inside it (`contain`)
+ * or scaled to fill it, cropped (`cover`). Other kinds ignore it.
+ */
+export type FilePreviewFit = "natural" | "contain" | "cover";
 
 /** What the preview draws, normalized from whatever it was bound to. */
 export type PreviewFile = {
@@ -3079,6 +3089,9 @@ export type PreviewFile = {
   url?: string;
   data?: UploadFileContent;
   blurhash?: string;
+  /** An image's pixel size, when the record carries it (both or neither). */
+  width?: number;
+  height?: number;
 };
 
 /**
@@ -3096,7 +3109,10 @@ export type FilePreviewElement = {
   value?: DataValue;
   /** Own fetch (the repeater's read plumbing): `paths` drills to the record. */
   api?: API;
-  /** Merged over the defaults: `name`, `type`, `size`, `url` / `src`, `data`, `blurhash` / `blurHash`. */
+  /**
+   * Merged over the defaults: `name`, `type`, `size`, `url` / `src`, `data`,
+   * `blurhash` / `blurHash`, `width` / `imageWidth`, `height` / `imageHeight`.
+   */
   keys?: FilePreviewKeys;
   /**
    * The content URL over the record (`"/api/files/{{id}}/content"`, `{{value}}`
@@ -3116,6 +3132,8 @@ export type FilePreviewElement = {
   blurhashDelay?: number;
   /** The body's CSS height, `"auto"` lets an image size itself. Default `320px`. */
   height?: string;
+  /** How an image is resized in the frame. Default `natural`. */
+  fit?: FilePreviewFit;
   /** Name, size, Open and Download above the file. Default true. */
   showHeader?: boolean;
   /** A click opens the file in the modal viewer. Default false. */

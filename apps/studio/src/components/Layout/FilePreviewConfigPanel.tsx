@@ -42,7 +42,7 @@ function Heading({ children }: { children: ReactNode }) {
 }
 
 /** The engine's default paths in each label: an unset key uses them. */
-const KEY_ROWS: { key: Exclude<keyof FilePreviewKeyConfig, 'blurhash'>; label: string }[] = [
+const KEY_ROWS: { key: Exclude<keyof FilePreviewKeyConfig, 'blurhash' | 'width' | 'height'>; label: string }[] = [
   { key: 'name', label: 'File name (name, fileName, filename)' },
   { key: 'type', label: 'Mime type (type, mimeType, contentType)' },
   { key: 'size', label: 'Size in bytes (size)' },
@@ -199,6 +199,22 @@ export function FilePreviewConfigPanel({ itemId, config }: { itemId: string; con
             onChange={(p) => set('keys', { ...config.keys, blurhash: p })}
             fields={fields}
           />
+          <p className="text-ui-xs text-ink-3">
+            The placeholder is drawn at the image's exact size when the record carries the image's pixel size; without it, it fills the frame until
+            the image's own size is known.
+          </p>
+          <PathListField
+            label="Width key (width, imageWidth)"
+            paths={config.keys.width ?? []}
+            onChange={(p) => set('keys', { ...config.keys, width: p })}
+            fields={fields}
+          />
+          <PathListField
+            label="Height key (height, imageHeight)"
+            paths={config.keys.height ?? []}
+            onChange={(p) => set('keys', { ...config.keys, height: p })}
+            fields={fields}
+          />
           <Field label="Blurhash" hint="Used when the record has none, as with a literal URL.">
             <Input value={config.blurhash ?? ''} onChange={(e) => set('blurhash', e.target.value)} placeholder="LEHV6nWB2yk8pyo0adR*.7kCMdnj" className="font-mono" />
           </Field>
@@ -220,6 +236,18 @@ export function FilePreviewConfigPanel({ itemId, config }: { itemId: string; con
       <Heading>Look</Heading>
       <Field label="Height" hint="Any CSS length, or auto to let an image size itself.">
         <Input value={config.height} onChange={(e) => set('height', e.target.value)} placeholder="320px" className="font-mono" />
+      </Field>
+      <Field label="Resizing" hint="How an image sits in the frame: at its own size, scaled to fit inside it, or scaled to cover it (cropped).">
+        <SegmentedControl
+          aria-label="Image resizing"
+          options={[
+            { value: 'natural', label: 'Own size' },
+            { value: 'contain', label: 'Fit' },
+            { value: 'cover', label: 'Cover' },
+          ]}
+          value={config.fit ?? 'natural'}
+          onChange={(v) => set('fit', v as NonNullable<FilePreviewConfig['fit']>)}
+        />
       </Field>
       <Toggle label="Show the header" checked={config.showHeader} onChange={(v) => set('showHeader', v)} />
       <Toggle label="Open the viewer on click" checked={config.openOnClick} onChange={(v) => set('openOnClick', v)} />

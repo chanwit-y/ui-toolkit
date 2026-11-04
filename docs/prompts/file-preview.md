@@ -33,6 +33,14 @@ An image can show a [blurhash](https://blurha.sh/) while it loads, and hold it f
 - **The hash comes with the data.** It is computed from the image when it is stored, so `keys.blurhash`
   reads it from the record (defaults `blurhash`, `blurHash`) and `blurhash` in the config covers a
   literal URL, which has no record. Nothing can make one in the browser before the image has loaded.
+- **Same size as the image.** The placeholder is laid out exactly like the image: the canvas carries the
+  image's aspect ratio (`keys.width` / `keys.height` on the record, defaults `width` / `imageWidth` and
+  `height` / `imageHeight`, both needed; the loaded image's own size replaces them) and is contained in
+  the same box with `object-fit: contain`, so a letterboxed image never has a blurred halo around it.
+  Without a known size it fills the frame until the image arrives, then snaps to the image.
+- **`fit`** (`natural` default | `contain` | `cover`, the studio's **Resizing**: Own size / Fit / Cover) says how an
+  image is resized in the frame; the placeholder takes the same class, so it is capped, scaled or cropped like
+  the image.
 - **`showBlurhash`** (default true) turns it off; an invalid hash counts as none.
 - **`blurhashDelay`** (ms, 0–10000, default 0) is the least time the placeholder stays, even when the
   image is ready sooner. It is a floor, so it can't speed up a slow image, and it applies to the inline
@@ -46,9 +54,11 @@ An image can show a [blurhash](https://blurha.sh/) while it loads, and hold it f
   drawn after paint), both faded together so the frame washed out, and a 64 × 36 image shrank to a speck
   inside a placeholder that filled the frame. Now the hash is drawn before paint in the image's own box,
   the image waits for `decode()` and fades in over the opaque hash, the hash leaves after it, and an
-  image scales up to fill the frame. The modal viewer keeps images at their own size.
-- **Known limit**: under `height: "auto"` the placeholder has no aspect ratio to use, so a 200px spacer
-  stands in and the height shifts on load. A fixed height doesn't shift.
+  image is drawn at its own size, no larger than the frame, as in the modal viewer (it used to scale up to
+  fill the frame while the placeholder filled it; now the placeholder follows the image instead).
+- **Known limit**: under `height: "auto"` a record without the image's size gives the placeholder no
+  aspect ratio to use, so a 200px spacer stands in and the height shifts on load; with the size the image
+  has its final box at once. A fixed height never shifts.
 
 ## Goal
 

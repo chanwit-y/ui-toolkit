@@ -13,6 +13,10 @@ export interface FileNode {
   kind: string | null;
   createdAt: number;
   updatedAt: number;
+  /** An image node carries its placeholder and pixel size (the same values as `data/files.ts`), so a selection previews with a blurhash. */
+  blurhash?: string;
+  width?: number;
+  height?: number;
 }
 
 export interface Collection {
@@ -40,7 +44,7 @@ const add = (n: FileNode) => (nodes.push(n), n);
 const y2026 = add(node('c1', null, '2026', 'folder'));
 const q1 = add(node('c1', y2026.id, 'Q1', 'folder'));
 add(node('c1', q1.id, 'Q1 price list.csv', 'file', 'sheet'));
-add(node('c1', q1.id, 'Q1 cover.svg', 'file', 'image'));
+add({ ...node('c1', q1.id, 'Q1 cover.svg', 'file', 'image'), blurhash: 'LKJOf{3GaORq2znlj[ofICM|oytQ', width: 640, height: 360 });
 add(node('c1', y2026.id, 'Q2 supplier terms.docx', 'file', 'document'));
 const y2025 = add(node('c1', null, '2025', 'folder'));
 add(node('c1', y2025.id, 'Archive notes.md', 'file', 'markdown'));
@@ -48,9 +52,11 @@ add(node('c1', null, 'README.md', 'file', 'markdown'));
 
 const campaigns = add(node('c2', null, 'Campaigns', 'folder'));
 add(node('c2', campaigns.id, 'Spring launch.md', 'file', 'markdown'));
-add(node('c2', campaigns.id, 'Hero banner.png', 'file', 'image'));
+add({ ...node('c2', campaigns.id, 'Hero banner.png', 'file', 'image'), blurhash: 'LXI_Rx2gw#SjsqWrjtfRfQfQfQfQ', width: 64, height: 36 });
 add(node('c2', null, 'Brand guide.pdf', 'file', 'document'));
 add(node('c2', null, 'Empty folder', 'folder'));
+// Appended last so the ids above stay as `data/files.ts` names them.
+add({ ...node('c2', campaigns.id, 'Mountain meadow.jpg', 'file', 'image'), blurhash: 'LvHx.@ofj[of.AWCoea#-;f5j[fP', width: 1200, height: 1600 });
 
 let next = seq + 1;
 const newId = () => `n${next++}`;

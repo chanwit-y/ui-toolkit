@@ -1,10 +1,11 @@
-import type { ReactNode } from "react"
+import type { CSSProperties, ReactNode } from "react"
 
 import { useEffect, useState } from "react"
 import { Download, ExternalLink } from "lucide-react"
 import { Blurhash, blurhashHold } from "./Blurhash"
 import { FileKindIcon } from "./UploadFileParts"
 import { fileKind, isTextFile, isUrlContent, toFileBlob, type UploadFileContent } from "../util/file"
+import type { FilePreviewFit } from "./@types"
 
 /** What the viewers can show: an uploaded file, or a record pointing at one by URL. */
 export type ViewableFile = {
@@ -16,6 +17,9 @@ export type ViewableFile = {
 	url?: string
 	/** An image's placeholder while it loads. */
 	blurhash?: string
+	/** An image's pixel size: its placeholder then takes the image's exact box. */
+	width?: number
+	height?: number
 }
 
 export type ViewerMode = "image" | "pdf" | "video" | "audio" | "text" | "none"
@@ -160,6 +164,8 @@ export type FilePreviewBodyProps = {
 	noPreview?: ReactNode
 	/** Keep an image's blurhash on show at least this long, in milliseconds. */
 	blurhashDelay?: number
+	/** How an image is resized in its parent. Default `natural`: its own size, no larger than the parent. */
+	fit?: FilePreviewFit
 }
 
 type PreviewImageProps = {
@@ -167,6 +173,10 @@ type PreviewImageProps = {
 	alt: string
 	blurhash?: string
 	blurhashDelay?: number
+	/** The image's pixel size when the record carries it; the loaded image's own size replaces it. */
+	width?: number
+	height?: number
+	fit?: FilePreviewFit
 	onLoadError?: () => void
 }
 
@@ -174,14 +184,30 @@ type PreviewImageProps = {
  * An image, faded in over its blurhash when it has one, once it is decoded and
  * `blurhashDelay` has passed: a decoded image paints at once, so the fade
  * doesn't start on an empty box. The hash covers the parent, which must be
- * positioned; a spacer gives it height under `height: "auto"`, where nothing
- * else does until the image arrives.
+ * positioned, and is laid out like the image itself whenever the image's size
+ * is known — from the record before the image arrives, from the image once it
+ * has — so it never shows as a halo around the image. `fit` says how the image
+ * is resized (its own size, scaled to fit, scaled to cover) and the hash takes
+ * the same class, so it is cropped or capped the same way; under
+ * `height: "auto"` a known size gives the image its final box at once, without
+ * one a spacer gives the hash height until the image arrives.
  */
-const PreviewImage = ({ url, alt, blurhash, blurhashDelay, onLoadError }: PreviewImageProps) => {
+const PreviewImage = ({ url, alt, blurhash, blurhashDelay, width, height, fit = "natural", onLoadError }: PreviewImageProps) => {
 	const hold = blurhash ? blurhashHold(blurhashDelay) : 0
 	const [loaded, setLoaded] = useState(false)
 	const [held, setHeld] = useState(hold > 0)
+	const [natural, setNatural] = useState<{ width: number; height: number }>()
 	const pending = !!blurhash && (!loaded || held)
+	const size = natural ?? (width && height ? { width, height } : undefined)
+	const sizeStyle = size ? ({ "--gummy-fp-w": `${size.width}px`, "--gummy-fp-h": `${size.height}px` } as CSSProperties) : undefined
+	const fitClass = `is-fit-${fit}`
+	// The image's box before it loads: its pixel size at `natural` (capped by the parent); its aspect ratio
+	// when it is scaled, so under `height: "auto"` the frame has its final height at once.
+	const imageStyle: CSSProperties | undefined = !size
+		? undefined
+		: fit === "natural"
+			? { width: size.width, height: size.height }
+			: { aspectRatio: `auto ${size.width} / ${size.height}` }
 
 	useEffect(() => {
 		setHeld(hold > 0)
@@ -192,16 +218,29 @@ const PreviewImage = ({ url, alt, blurhash, blurhashDelay, onLoadError }: Previe
 
 	return (
 		<>
-			{blurhash && <Blurhash hash={blurhash} className={`gummy-fp-blurhash ${pending ? "" : "is-loaded"}`} />}
-			{blurhash && !loaded && <span aria-hidden className="gummy-fp-blurhash-space" />}
+			{blurhash && (
+				<Blurhash
+					hash={blurhash}
+					width={size?.width}
+					height={size?.height}
+					style={sizeStyle}
+					className={`gummy-fp-blurhash ${fitClass} ${size ? "is-sized" : ""} ${pending ? "" : "is-loaded"}`}
+				/>
+			)}
+			{blurhash && !loaded && !size && <span aria-hidden className="gummy-fp-blurhash-space" />}
 			{url && (
 				<img
 					src={url}
 					alt={alt}
 					decoding="async"
-					onLoad={(event) => void event.currentTarget.decode().catch(() => undefined).finally(() => setLoaded(true))}
+					style={imageStyle}
+					onLoad={(event) => {
+						const img = event.currentTarget
+						if (img.naturalWidth > 0 && img.naturalHeight > 0) setNatural({ width: img.naturalWidth, height: img.naturalHeight })
+						void img.decode().catch(() => undefined).finally(() => setLoaded(true))
+					}}
 					onError={onLoadError}
-					className={`gummy-fp-image relative max-h-full max-w-full object-contain ${pending ? "is-pending" : ""}`}
+					className={`gummy-fp-image ${fitClass} relative max-h-full max-w-full object-contain ${pending ? "is-pending" : ""}`}
 				/>
 			)}
 		</>
@@ -213,12 +252,22 @@ const PreviewImage = ({ url, alt, blurhash, blurhashDelay, onLoadError }: Previe
  * kind is drawn with, shared by the upload's modal viewer and the `filepreview`
  * element, so the forced-mime and SVG rules can't drift apart.
  */
-export const FilePreviewBody = ({ file, preview, onLoadError, noPreview, blurhashDelay }: FilePreviewBodyProps) => {
+export const FilePreviewBody = ({ file, preview, onLoadError, noPreview, blurhashDelay, fit }: FilePreviewBodyProps) => {
 	const { mode, url, text } = preview
 	return (
 		<>
 			{mode === "image" && (url || file.blurhash) && (
-				<PreviewImage key={url} url={url} alt={file.name} blurhash={file.blurhash} blurhashDelay={blurhashDelay} onLoadError={onLoadError} />
+				<PreviewImage
+					key={url}
+					url={url}
+					alt={file.name}
+					blurhash={file.blurhash}
+					blurhashDelay={blurhashDelay}
+					width={file.width}
+					height={file.height}
+					fit={fit}
+					onLoadError={onLoadError}
+				/>
 			)}
 			{mode === "pdf" && url && (
 				<iframe src={url} title={file.name} className="h-full w-full rounded-md border border-[var(--gray-6)]" />
