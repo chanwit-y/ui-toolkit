@@ -65,6 +65,11 @@ export class ApiMaster<M extends TModelMaster, A extends TApiMaster<M>> {
     return this._apiNames;
   }
 
+  /** The HTTP client's base URL, for a component that builds a URL the browser loads itself. */
+  public get baseUrl(): string {
+    return this._apiFactory.baseUrl;
+  }
+
   public get models() {
     return this._models;
   }

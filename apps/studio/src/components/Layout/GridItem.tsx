@@ -2,6 +2,7 @@ import type { ThemeProps } from '@radix-ui/themes'
 import type { DataTableAddButton, DataType } from '@gummy-ui/ui'
 import {
   ApprovalLineView,
+  FilePreviewView,
   ChartView,
   FileCollectionView,
   parseCollections,
@@ -91,7 +92,7 @@ import { useBindingToken } from './ItemBindingField'
 import { useActiveProject } from '../Workspace/workspaceStore'
 import { FormulaWidgetView } from '@gummy-ui/ui'
 import type { FormulaWidgetConfig } from './types'
-import { Sigma } from 'lucide-react'
+import { FileSearch, Sigma } from 'lucide-react'
 import { ExprField, type LogicEnv } from '../Logic/editors'
 import { LogicDialog } from '../Logic/LogicDialog'
 import { useCanvasLogicScope, useLogicLibrary } from '../Logic/scope'
@@ -121,6 +122,7 @@ import type {
   HtmlContentConfig,
   CustomComponentConfig,
   ApprovalLineConfig,
+  FilePreviewConfig,
   SwitchProfileConfig,
   ReplaceProfileConfig,
   WorkflowEditorConfig,
@@ -213,6 +215,8 @@ function thresholdsForType(type: GridItemData['type']): LiveThresholds {
     type === 'approvalline' ||
     // A file collection is a sidebar-shaped tree — it truncates names when narrow.
     type === 'filecollection' ||
+    // A file preview scales to its cell; the sample file shows at any width.
+    type === 'filepreview' ||
     // A chart scales to its cell; the sample data shows at any width.
     type === 'chart' ||
     // The profile elements are a short list / a button and a banner.
@@ -336,6 +340,9 @@ function CellContent({ item }: { item: GridItemData }) {
   if (item.type === 'approvalline' && item.config) {
     return <GlyphChip Icon={Workflow} />
   }
+  if (item.type === 'filepreview' && item.config) {
+    return <GlyphChip Icon={FileSearch} />
+  }
   if (item.type === 'switchprofile' && item.config) {
     return <GlyphChip Icon={UserCheck} />
   }
@@ -421,6 +428,8 @@ function ActiveBody({ item }: { item: GridItemData }) {
                                       ? Puzzle
                                     : item.type === 'approvalline'
                                       ? Workflow
+                                    : item.type === 'filepreview'
+                                      ? FileSearch
                                     : item.type === 'switchprofile'
                                       ? UserCheck
                                     : item.type === 'replaceprofile'
@@ -1635,6 +1644,42 @@ function ChartLivePreview({ config }: { config: ChartConfig }) {
   )
 }
 
+const FILE_PREVIEW_SAMPLE_SVG =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180"><rect width="320" height="180" rx="8" fill="#e2e8f0"/><circle cx="84" cy="64" r="22" fill="#94a3b8"/><path d="M0 180 112 92l56 44 56-60 96 104z" fill="#64748b"/></svg>'
+
+/** What a bound preview shows on the canvas: the real file only exists at runtime. */
+const FILE_PREVIEW_SAMPLE = {
+  name: 'sample.svg',
+  type: 'image/svg+xml',
+  size: FILE_PREVIEW_SAMPLE_SVG.length,
+  data: `data:image/svg+xml;base64,${btoa(FILE_PREVIEW_SAMPLE_SVG)}`,
+}
+
+/**
+ * The live, real `FilePreviewView` from the library over a sample file, with
+ * the look the config sets. Unbound, it says so instead of showing a sample.
+ */
+function FilePreviewLivePreview({ config }: { config: FilePreviewConfig }) {
+  const height = config.height.trim() || undefined
+  const bound = config.source === 'endpoint' ? config.read.endpointId != null : config.binding != null || config.url.trim() !== ''
+  return (
+    <div data-grid-item-content className="pointer-events-none h-full w-full">
+      <FilePreviewView
+        file={bound ? FILE_PREVIEW_SAMPLE : undefined}
+        height={height}
+        fit={config.fit}
+        showHeader={config.showHeader}
+        emptyText="No file source"
+        badge={
+          bound ? (
+            <span className="absolute bottom-2 right-2 z-10 rounded-full bg-[var(--amber-a3)] px-2 py-0.5 text-[10px] text-[var(--amber-11)]">Sample file</span>
+          ) : undefined
+        }
+      />
+    </div>
+  )
+}
+
 /** A small tree for the file collection's canvas preview (the real rows are fetched at runtime). */
 const FILE_COLLECTION_PREVIEW: FileCollectionGroup[] = parseCollections([
   {
@@ -2097,6 +2142,9 @@ function renderLive(item: GridItemData, isLive: boolean) {
   }
   if (item.type === 'filecollection' && item.config) {
     return <FileCollectionLivePreview config={item.config as FileCollectionConfig} />
+  }
+  if (item.type === 'filepreview' && item.config) {
+    return <FilePreviewLivePreview config={item.config as FilePreviewConfig} />
   }
   if (item.type === 'chart' && item.config) {
     return <ChartLivePreview config={item.config as ChartConfig} />

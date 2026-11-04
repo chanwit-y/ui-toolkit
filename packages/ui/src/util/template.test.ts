@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { escapeHtml, renderTemplate, templateFields } from "./template";
+import { escapeHtml, renderTemplate, renderUrlTemplate, templateFields } from "./template";
 
 const row = {
   name: "Thailand",
@@ -54,5 +54,32 @@ describe("templateFields", () => {
 describe("escapeHtml", () => {
   test("escapes the five significant characters", () => {
     expect(escapeHtml(`&<>"'`)).toBe("&amp;&lt;&gt;&quot;&#39;");
+  });
+});
+
+describe("renderUrlTemplate", () => {
+  test("encodes each value so it stays one path segment", () => {
+    expect(renderUrlTemplate("/files/{{name}}/{{id}}", { name: "Q4 report.pdf", id: "a/b?c" })).toBe(
+      "/files/Q4%20report.pdf/a%2Fb%3Fc",
+    );
+  });
+
+  test("a blank placeholder means no URL yet", () => {
+    expect(renderUrlTemplate("/files/{{id}}/content", {})).toBeUndefined();
+    expect(renderUrlTemplate("/files/{{id}}/content", { id: "" })).toBeUndefined();
+    expect(renderUrlTemplate("/files/{{id}}/content", { id: { nested: 1 } })).toBeUndefined();
+  });
+
+  test("keeps falsy values that are values", () => {
+    expect(renderUrlTemplate("/files/{{id}}", { id: 0 })).toBe("/files/0");
+  });
+
+  test("{{value}} reads the value, else a row field", () => {
+    expect(renderUrlTemplate("/f/{{value}}", undefined, "n1")).toBe("/f/n1");
+    expect(renderUrlTemplate("/f/{{value}}", { value: "n2" })).toBe("/f/n2");
+  });
+
+  test("a template with no placeholder is the URL", () => {
+    expect(renderUrlTemplate("/files/fixed.pdf", {})).toBe("/files/fixed.pdf");
   });
 });

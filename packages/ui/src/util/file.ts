@@ -123,7 +123,7 @@ export const fileKind = (file: { name: string; type: string }): FileKind =>
 export const isTextFile = (file: { name: string; type: string }): boolean =>
 	matchesAccept(file, ACCEPT_PRESETS.text.tokens)
 
-type FileLike = { name: string; type: string; data: UploadFileContent }
+type FileLike = { name: string; type: string; data?: UploadFileContent }
 
 /**
  * A src for an uploaded file in any value format: the URL itself, or a data

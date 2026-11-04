@@ -23,6 +23,8 @@ import {
   createDefaultItemSettings,
   createDefaultRepeaterConfig,
   createDefaultFileCollectionConfig,
+  createDefaultFilePreviewConfig,
+  type FilePreviewConfig,
   createDefaultChartConfig,
   createDefaultChartSeries,
   createDefaultChartAxis,
@@ -224,6 +226,7 @@ export function countrySeedModels(): ModelDef[] {
     ...approvalSeedModels(),
     ...workflowSeedModels(),
     ...fileCollectionSeedModels(),
+    ...filePreviewSeedModels(),
     ...chartSeedModels(),
     ...profileSeedModels(),
     ...profileByEmailSeedModels(),
@@ -1896,6 +1899,7 @@ export function countrySeedEndpoints(): EndpointDef[] {
     ...tableLayoutSeedEndpoints(),
     ...dataGridSeedEndpoints(),
     ...fileCollectionSeedEndpoints(),
+    ...filePreviewSeedEndpoints(),
     ...chartSeedEndpoints(),
     ...pageDataSeedEndpoints(),
     ...approvalSeedEndpoints(),
@@ -5189,6 +5193,179 @@ export function profileDemoSeedItems(): GridItemData[] {
         html: '<p><strong>{{firstNameEn}} {{lastNameEN}}</strong> \u00b7 <span class="dt-muted">{{email}}</span></p><p>{{jobTitle}}</p><p class="dt-muted">{{companyModel.name}} \u00b7 {{businessUnitModel.name}} \u00b7 user id <code>{{userId}}</code></p>',
       },
     },
+  ]
+}
+
+/* -------------------------------------------------------------------------
+ * File preview demo (see `docs/prompts/file-preview.md`)
+ * ------------------------------------------------------------------------- */
+
+export const FILE_PREVIEW_PAGE_ID = 'seed-page-file-preview'
+export const FILE_LIST_RES_MODEL_ID = 'seed-model-file-list-res'
+export const FILE_DETAIL_RES_MODEL_ID = 'seed-model-file-detail-res'
+export const FILES_ENDPOINT_ID = 'seed-endpoint-files'
+export const FILE_DETAIL_ENDPOINT_ID = 'seed-endpoint-file-detail'
+/** The Blurhash section's page load: the banner record (hash, width and height) with its bytes inline. */
+export const LOAD_FP_BANNER_ID = 'load-seed-fp-banner'
+/** The first Blurhash item: `migrateV65` adds the section to an existing page when it is missing. */
+export const FILE_PREVIEW_BLURHASH_ITEM_ID = 'seed-item-file-preview-hash-record'
+/** The two previews beside the Documents tree: `migrateV67` sets them to cover their frame, `migrateV68` holds their blurhash 2 s. */
+export const FILE_PREVIEW_DOCUMENT_ITEM_IDS = ['seed-item-file-preview-selected', 'seed-item-file-preview-fetched']
+
+/** The list carries a `url` per file, one record its bytes inline as `data`. */
+export function filePreviewSeedModels(): ModelDef[] {
+  const envelope = () => [field('status', 'number'), field('success', 'boolean'), field('message')]
+  const record = () => [
+    field('_id'),
+    field('id'),
+    field('name'),
+    field('type'),
+    field('size', 'number'),
+    field('blurhash'),
+    field('width', 'number'),
+    field('height', 'number'),
+  ]
+  return [
+    {
+      id: FILE_LIST_RES_MODEL_ID,
+      name: 'fileListRes',
+      fields: [field('data', 'array', [...record(), field('url')], 'object'), ...envelope()],
+    },
+    {
+      id: FILE_DETAIL_RES_MODEL_ID,
+      name: 'fileDetailRes',
+      fields: [field('data', 'object', [...record(), field('data')]), ...envelope()],
+    },
+  ]
+}
+
+export function filePreviewSeedEndpoints(): EndpointDef[] {
+  const base = { withOptions: false, query: null, parameter: null, body: null, method: 'GET' as const }
+  return [
+    { ...base, id: FILES_ENDPOINT_ID, name: 'files', description: 'List the demo files, each with a content URL', url: '/collection/files', response: FILE_LIST_RES_MODEL_ID },
+    { ...base, id: FILE_DETAIL_ENDPOINT_ID, name: 'fileDetail', description: 'One file with its bytes inline as a data URL', url: '/collection/files/:id', response: FILE_DETAIL_RES_MODEL_ID, parameter: ID_PARAM_MODEL_ID },
+  ]
+}
+
+const fpFull = () => createDefaultItemSettings({ colSpan: { xs: 4, sm: 6, md: 8, lg: 12 } })
+const fpCaption = (id: string, text: string): GridItemData => ({
+  id,
+  label: 'Typography',
+  type: 'typography',
+  settings: fpFull(),
+  config: { ...createDefaultTypographyConfig(), text, color: 'gray' },
+})
+const fpPreview = (id: string, lg: number, config: Partial<FilePreviewConfig> & { name: string }): GridItemData => ({
+  id,
+  label: 'File Preview',
+  type: 'filepreview',
+  settings: createDefaultItemSettings({ colSpan: { xs: 4, sm: 6, md: Math.round((lg / 12) * 8), lg } }),
+  config: { ...createDefaultFilePreviewConfig(config.name), ...config },
+})
+
+/** The File preview page's loads: the banner record, fetched once for the Blurhash section. */
+export function filePreviewSeedLoads(): PageLoadDef[] {
+  return [seedLoad(LOAD_FP_BANNER_ID, 'banner', FILE_DETAIL_ENDPOINT_ID, { id: { type: 'value', value: 'n11' } })]
+}
+
+/** The banner's hash, for the previews that have no record to read it from. */
+const BANNER_HASH = 'LXI_Rx2gw#SjsqWrjtfRfQfQfQfQ'
+/** The banner, held back by the mock API so the placeholder stays on screen. */
+const SLOW_BANNER_URL = '/collection/files/n11/Hero%20banner.png?delay=2500'
+
+/**
+ * The Blurhash section (the example page's): a record from page data — hash,
+ * width and height come with it, so the placeholder is the image's exact size,
+ * held 3 s to be seen —, the hash in the config over a slow literal URL (no
+ * record, so it fills the frame until the image arrives), turned off, and a
+ * frame sizing itself from the record under `height: auto`.
+ */
+export function filePreviewBlurhashSeedItems(): GridItemData[] {
+  const banner = { key: LOAD_FP_BANNER_ID, path: '', source: 'state' as const }
+  return [
+    fpCaption(
+      'seed-item-file-preview-hash-caption',
+      'Blurhash: a blurred placeholder while an image loads. The first reads the banner record from page data — the hash, width and height come with it, so the placeholder is the image\u2019s exact size — and holds it for 3 seconds so it can be seen; its Resizing is Cover, so it fills the frame. The second has the hash in the config over a literal URL the API delays by 2.5 seconds: no record, no size, so it fills the frame until the image arrives. The third turns it off; the last sizes itself from the record under an auto height.',
+    ),
+    fpPreview(FILE_PREVIEW_BLURHASH_ITEM_ID, 3, { name: 'hashRecord', binding: banner, blurhashDelay: 3000, height: '200px', fit: 'cover' }),
+    fpPreview('seed-item-file-preview-hash-config', 3, { name: 'hashConfig', url: SLOW_BANNER_URL, blurhash: BANNER_HASH, height: '200px' }),
+    fpPreview('seed-item-file-preview-hash-off', 3, { name: 'hashOff', url: SLOW_BANNER_URL, blurhash: BANNER_HASH, showBlurhash: false, height: '200px' }),
+    fpPreview('seed-item-file-preview-hash-auto', 3, { name: 'hashAuto', binding: banner, blurhashDelay: 3000, height: 'auto' }),
+  ]
+}
+
+/**
+ * One preview per source: a file collection's selection with a content URL
+ * template, an endpoint reading the same selection, a literal URL, each item of
+ * a repeater (a click opens the viewer), the "No preview" card, and the
+ * Blurhash section.
+ */
+export function filePreviewDemoSeedItems(): GridItemData[] {
+  const full = fpFull
+  const caption = fpCaption
+  const preview = fpPreview
+  const tree = createDefaultFileCollectionConfig('previewDocs')
+  const selected = 'previewDocsSelected'
+  return [
+    caption('seed-item-file-preview-caption', 'Pick a file: the first preview reads the tree’s selection and builds a content URL from the node’s id, the second fetches the same id through its own endpoint and gets the bytes inline. A folder has no file: the first shows its empty text, the second’s read fails.'),
+    {
+      id: 'seed-item-file-preview-tree',
+      label: 'File Collection',
+      type: 'filecollection',
+      settings: createDefaultItemSettings({ colSpan: { xs: 4, sm: 6, md: 2, lg: 3 } }),
+      config: {
+        ...tree,
+        title: 'Documents',
+        readOnly: true,
+        endpoints: { ...tree.endpoints, list: { ...tree.endpoints.list, endpointId: FILE_COLLECTIONS_ENDPOINT_ID, apiPaths: 'data' } },
+        kindIcons: { markdown: 'fileText', sheet: 'table', image: 'image', document: 'fileText' },
+      },
+    },
+    preview('seed-item-file-preview-selected', 5, {
+      name: 'selectedFile',
+      binding: { key: selected, path: '', source: 'state' },
+      urlTemplate: '/collection/files/{{id}}/content',
+      fit: 'cover',
+      blurhashDelay: 2000,
+    }),
+    preview('seed-item-file-preview-fetched', 4, {
+      name: 'fetchedFile',
+      source: 'endpoint',
+      read: { endpointId: FILE_DETAIL_ENDPOINT_ID, params: { id: { type: 'state', key: selected, path: 'id' } }, extra: {} },
+      emptyText: 'Waiting for a selection',
+      fit: 'cover',
+      blurhashDelay: 2000,
+    }),
+    caption('seed-item-file-preview-literal-caption', 'A literal URL: its last segment names the file, and the extension picks how it is shown. The second file has no preview, so it offers the download.'),
+    preview('seed-item-file-preview-literal', 6, { name: 'literalUrl', url: '/collection/files/n11/Hero%20banner.png', height: '220px' }),
+    preview('seed-item-file-preview-no-preview', 6, { name: 'noPreview', url: '/collection/files/n5/Q2%20supplier%20terms.docx', height: '220px' }),
+    caption('seed-item-file-preview-repeater-caption', 'One preview per item of the list, bound to the item itself. A click opens the modal viewer.'),
+    {
+      id: 'seed-item-file-preview-repeater',
+      label: 'Repeater',
+      type: 'repeater',
+      settings: full(),
+      config: {
+        ...createDefaultRepeaterConfig('fileCards'),
+        title: 'Files',
+        idKey: '_id',
+        read: { endpointId: FILES_ENDPOINT_ID, params: {}, extra: {} },
+        itemSpan: { xs: 12, sm: 6, md: 4, lg: 3 },
+        emptyText: 'No files',
+      },
+      childCanvases: [
+        {
+          ...createChildCanvas(),
+          items: [
+            {
+              ...preview('seed-item-file-preview-card', 12, { name: 'fileCard', binding: { key: 'none', path: '' }, height: '140px', openOnClick: true }),
+              settings: full(),
+            },
+          ],
+        },
+      ],
+    },
+    ...filePreviewBlurhashSeedItems(),
   ]
 }
 

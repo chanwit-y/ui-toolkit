@@ -14,6 +14,7 @@
 /* HTML content blocks (the `html` element): prose defaults for the canvas + Live Preview. */
 @import "../../../packages/ui/src/styles/htmlContent.css";
 @import "../../../packages/ui/src/styles/approvalLine.css";
+@import "../../../packages/ui/src/styles/filePreview.css";
 @import "../../../packages/ui/src/styles/workflowEditor.css";
 @import "../../../packages/ui/src/styles/profile.css";
 @import "../../../packages/ui/src/styles/fileCollection.css";

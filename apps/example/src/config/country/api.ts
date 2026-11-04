@@ -341,6 +341,22 @@ export const api = {
     response: "scoresRes",
     withOptions: false,
   },
+  // File preview demo page — records with a URL, and one with its bytes inline.
+  files: {
+    url: "/collection/files",
+    description: "List the demo files, each with a content URL",
+    methods: "GET" as const,
+    response: "fileListRes",
+    withOptions: false,
+  },
+  fileDetail: {
+    url: "/collection/files/:id",
+    description: "One file with its bytes inline as a data URL",
+    methods: "GET" as const,
+    response: "fileDetailRes",
+    parameter: "idParam",
+    withOptions: false,
+  },
   // File collection demo page — the nine slots of the `filecollection` element.
   fileCollections: {
     url: "/collection/file-collections",

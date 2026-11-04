@@ -6,6 +6,7 @@ import { FormulaWidgetConfigPanel } from './FormulaWidgetConfigPanel'
 import type { FormulaWidgetConfig } from './types'
 import { CustomComponentConfigPanel } from './CustomComponentConfigPanel'
 import { ApprovalLineConfigPanel } from './ApprovalLineConfigPanel'
+import { FilePreviewConfigPanel } from './FilePreviewConfigPanel'
 import { ReplaceProfileConfigPanel, SwitchProfileConfigPanel } from './ProfileConfigPanel'
 import { WorkflowEditorConfigPanel } from './WorkflowEditorConfigPanel'
 import { CheckboxConfigPanel } from './CheckboxConfigPanel'
@@ -62,6 +63,7 @@ import type {
   HtmlContentConfig,
   CustomComponentConfig,
   ApprovalLineConfig,
+  FilePreviewConfig,
   SwitchProfileConfig,
   ReplaceProfileConfig,
   WorkflowEditorConfig,
@@ -302,6 +304,8 @@ export function Sidebar({ gridConfigJson, fullGridCss }: SidebarProps) {
             <CustomComponentConfigPanel itemId={selectedItem.id} config={selectedItem.config as CustomComponentConfig} />
           ) : selectedItem.type === 'approvalline' && selectedItem.config ? (
             <ApprovalLineConfigPanel itemId={selectedItem.id} config={selectedItem.config as ApprovalLineConfig} />
+          ) : selectedItem.type === 'filepreview' && selectedItem.config ? (
+            <FilePreviewConfigPanel itemId={selectedItem.id} config={selectedItem.config as FilePreviewConfig} />
           ) : selectedItem.type === 'switchprofile' && selectedItem.config ? (
             <SwitchProfileConfigPanel itemId={selectedItem.id} config={selectedItem.config as SwitchProfileConfig} />
           ) : selectedItem.type === 'replaceprofile' && selectedItem.config ? (

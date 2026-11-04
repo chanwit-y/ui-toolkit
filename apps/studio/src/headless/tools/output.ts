@@ -10,6 +10,7 @@ import {
   MAX_SERIES,
   type ChartConfig,
   type FileCollectionConfig,
+  type FilePreviewConfig,
 } from '../../components/Layout/types'
 import { projectToRuntime } from '../../components/Workspace/runtimeProject'
 import type { LibraryData, ProjectDef, WorkspaceData } from '../../components/Workspace/types'
@@ -54,6 +55,24 @@ export function fileCollectionWarnings(project: ProjectDef, library: LibraryData
         }
         if (slot !== 'list' && FILE_COLLECTION_BODY_SLOTS.has(slot) && endpoint.body == null)
           out.push(`${at}: ${slot} endpoint ${endpoint.name} declares no body model — the engine sends none`)
+      }
+    })
+  }
+  return out
+}
+
+/** A file preview on its own endpoint with a URL `:param` unmapped: the read is held for ever. */
+export function filePreviewWarnings(project: ProjectDef, library: LibraryData): string[] {
+  const out: string[] = []
+  for (const page of project.snapshot.pages) {
+    walkItems(page.grid.items, (item) => {
+      if (item.type !== 'filepreview' || !item.config) return
+      const c = item.config as FilePreviewConfig
+      if (c.source !== 'endpoint' || c.read.endpointId == null) return
+      const endpoint = library.endpoints.find((e) => e.id === c.read.endpointId)
+      if (!endpoint) return
+      for (const k of urlParams(endpoint.url)) {
+        if (!c.read.params[k]) out.push(`${page.key} / ${c.name}: read leaves :${k} of ${endpoint.name} unmapped`)
       }
     })
   }
@@ -155,7 +174,7 @@ export function validateProject(ws: WorkspaceData, projectId: string): Validatio
     })
   for (const issue of logic) (issue.level === 'error' ? errors : []).push(`${issue.where}: ${issue.message}`)
   const warnings = missingRefs(document).map((w) => `reference to nothing at ${w}`)
-  warnings.push(...fileCollectionWarnings(project, ws.library), ...charts.warnings)
+  warnings.push(...fileCollectionWarnings(project, ws.library), ...filePreviewWarnings(project, ws.library), ...charts.warnings)
   warnings.push(...logic.filter((x) => x.level === 'warning').map((x) => `${x.where}: ${x.message}`))
   for (const id of project.snapshot.endpointIds) {
     if (!ws.library.endpoints.some((e) => e.id === id)) warnings.push(`attached endpoint ${id} is not in the library`)

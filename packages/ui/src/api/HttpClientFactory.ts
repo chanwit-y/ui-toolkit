@@ -39,6 +39,10 @@ export class HttpClientFactory
   
   }
 
+  public get baseUrl() {
+    return this._baseUrl;
+  }
+
   public get accessToken() {
     return this._getAccessToken();
   }

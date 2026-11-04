@@ -1,0 +1,175 @@
+/* File preview (`filepreview`).
+ *
+ * A partial like `fileCollection.css`: plain CSS over Radix theme variables
+ * only, so the studio can `@import` it through its Tailwind 4 pipeline and every
+ * colour follows the accent, the appearance and the Glass surface. The frame is
+ * a `gummy-surface`; the body stays transparent inside it. */
+
+.gummy-fp {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  width: 100%;
+  border: 1px solid var(--gray-6);
+  border-radius: var(--radius-3, 8px);
+  overflow: hidden;
+  color: var(--gray-12);
+}
+
+.gummy-fp-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 8px 0 12px;
+  border-bottom: 1px solid var(--gray-a5);
+}
+.gummy-fp-name {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gummy-fp-size {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--gray-11);
+}
+.gummy-fp-actions {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+}
+.gummy-fp-action {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-2, 6px);
+  color: var(--gray-11);
+}
+.gummy-fp-action:hover {
+  background: var(--gray-a3);
+  color: var(--gray-12);
+}
+.gummy-fp-action:focus-visible,
+.gummy-fp-retry:focus-visible,
+.gummy-fp-open:focus-visible {
+  outline: 2px solid var(--accent-8);
+  outline-offset: -2px;
+}
+
+.gummy-fp-body {
+  position: relative;
+  display: flex;
+  min-height: 0;
+  align-items: center;
+  justify-content: center;
+  --gummy-fp-pad: 8px;
+  padding: var(--gummy-fp-pad);
+}
+
+.gummy-fp-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  font-size: 13px;
+  text-align: center;
+  color: var(--gray-11);
+}
+.gummy-fp-retry {
+  padding: 4px 12px;
+  border: 1px solid var(--gray-a6);
+  border-radius: var(--radius-2, 6px);
+  font-size: 12px;
+  color: var(--gray-12);
+}
+.gummy-fp-retry:hover {
+  background: var(--gray-a3);
+}
+
+/* `fit: natural` (the default): an image is drawn at its own size and no larger
+ * than the body, in the frame as in the modal viewer — a 64 × 36 banner is
+ * 64 × 36, a photo is contained. `contain` scales it to fit the body, `cover`
+ * scales it to fill the body, cropped. */
+.gummy-fp-body .gummy-fp-image {
+  max-width: 100%;
+  max-height: 100%;
+}
+.gummy-fp-body .gummy-fp-image.is-fit-contain,
+.gummy-fp-body .gummy-fp-image.is-fit-cover {
+  width: 100%;
+  height: 100%;
+}
+.gummy-fp-image.is-fit-cover {
+  object-fit: cover;
+}
+
+/* An image's blurhash sits exactly where the image will. The image fades in over
+ * it and only then does it leave, or the frame's background shows through both
+ * halfway. Only a pending image is hidden, so one without a hash paints as it loads.
+ * `is-sized`: the canvas has the image's aspect ratio and is laid out like the
+ * image — capped at the image's pixel size, centred, contained in the same box —
+ * instead of being stretched over the box as a halo around the image. */
+.gummy-fp-blurhash {
+  position: absolute;
+  inset: var(--gummy-fp-pad, 0px);
+  width: calc(100% - 2 * var(--gummy-fp-pad, 0px));
+  height: calc(100% - 2 * var(--gummy-fp-pad, 0px));
+  border-radius: var(--radius-2, 6px);
+  transition: opacity 250ms ease-out;
+}
+.gummy-fp-blurhash.is-sized {
+  margin: auto;
+  max-width: var(--gummy-fp-w, none);
+  max-height: var(--gummy-fp-h, none);
+  object-fit: contain;
+  border-radius: 0;
+}
+/* A scaled image takes the whole body, so its hash does too, cropped the same way under `cover`. */
+.gummy-fp-blurhash.is-sized.is-fit-contain,
+.gummy-fp-blurhash.is-sized.is-fit-cover {
+  max-width: none;
+  max-height: none;
+}
+.gummy-fp-blurhash.is-fit-cover {
+  object-fit: cover;
+}
+.gummy-fp-blurhash.is-loaded {
+  opacity: 0;
+  transition-delay: 250ms;
+}
+.gummy-fp-blurhash-space {
+  display: block;
+  width: 100%;
+  min-height: 200px;
+}
+.gummy-fp-image {
+  transition: opacity 250ms ease-out;
+}
+.gummy-fp-image.is-pending {
+  opacity: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .gummy-fp-blurhash,
+  .gummy-fp-image {
+    transition: none;
+  }
+}
+
+/* `openOnClick`: one transparent button over the file. An `<iframe>` swallows
+ * the clicks a wrapper would get, so nothing else works for every kind. */
+.gummy-fp-open {
+  position: absolute;
+  inset: 0;
+  cursor: zoom-in;
+  background: transparent;
+}

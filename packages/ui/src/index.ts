@@ -127,7 +127,7 @@ export { toCsv, csvCell, csvFileName, downloadCsv } from "./util/csv";
 export { ClampedCell, DEFAULT_CELL_LINES } from "./components/ClampedCell";
 export { DEFAULT_ACTION_SIZE } from "./components/dataTableActions";
 export { groupColumns, headerRows, computeSpans, columnMeta, type ColumnLayoutMeta } from "./components/dataTableLayout";
-export { renderTemplate, templateFields, escapeHtml } from "./util/template";
+export { renderTemplate, renderUrlTemplate, templateFields, escapeHtml } from "./util/template";
 export { sanitizeHtml, type SanitizedHtml } from "./util/sanitizeHtml";
 export * from "./components/DataTableEditable";
 export type {
@@ -247,6 +247,10 @@ export type { FormulaBarHandle, FormulaBarProps } from "./components/FormulaBar"
 export { FORMULA_FUNCTIONS, FormulaParseError, mixesPrecedence, parseFormulaText, printFormulaText } from "./components/core/formulaText";
 export type { FormulaParse } from "./components/core/formulaText";
 export * from "./components/ApprovalLine";
+export * from "./components/FilePreview";
+export * from "./components/Blurhash";
+export { normalizePreviewFile, DEFAULT_PREVIEW_KEYS } from "./components/core/previewFile";
+export type { FilePreviewElement, FilePreviewKeys, PreviewFile } from "./components/@types";
 export { WorkflowEditorBase } from "./components/WorkflowEditor";
 export { WorkflowEditor } from "./components/form/WorkflowEditor";
 export { stepsFromValue, insertStep, replaceStep, removeStep, roleAvailable, insertAllowed, DEFAULT_STEP_KEYS } from "./components/core/workflowSteps";

@@ -88,6 +88,10 @@ export class ApiFactory<_A extends Config, MapFunc extends Map> {
   ) {
   }
 
+  public get baseUrl(): string {
+    return this._http.baseUrl;
+  }
+
   private async _call<R, Q, P, B>(
     ctx: Context,
     req: Req<Q, P, B>,
