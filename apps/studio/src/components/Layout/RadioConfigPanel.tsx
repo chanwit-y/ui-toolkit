@@ -10,6 +10,10 @@ const ORIENTATION_OPTIONS = [
   { value: 'vertical', label: 'Vertical' },
   { value: 'horizontal', label: 'Horizontal' },
 ]
+const DISPLAY_OPTIONS = [
+  { value: 'plain', label: 'Plain' },
+  { value: 'card', label: 'Card' },
+]
 
 /** One labelled row in the config form. */
 function Field({ label, children }: { label: string; children: ReactNode }) {
@@ -45,8 +49,9 @@ function Toggle({
 }
 
 /**
- * The radio options editor: one row per option with editable `value`/`label` and a
- * per-option `disabled` toggle, plus add/remove. The radio option shape is fixed
+ * The radio options editor: one row per option with editable `value`/`label`, an
+ * optional helper text (the second line of a `card`) and a per-option `disabled`
+ * toggle, plus add/remove. The radio option shape is fixed
  * (`{ value, label, disabled }`, like the checkbox), so a structured row editor is
  * friendlier than raw JSON and can't go invalid. Every mutation commits a fresh
  * array through `onChange` (driving the live preview + exported JSON).
@@ -88,6 +93,11 @@ function OptionsEditor({
                 placeholder="label"
               />
             </div>
+            <Input
+              value={option.helperText ?? ''}
+              onChange={(e) => patch(index, { helperText: e.target.value })}
+              placeholder="helper text (optional)"
+            />
             <div className="flex items-center justify-between gap-2">
               <Toggle
                 label="Disabled"
@@ -197,6 +207,15 @@ export function RadioConfigPanel({ itemId, config }: RadioConfigPanelProps) {
           value={config.orientation}
           onChange={(v) => set('orientation', v as RadioConfig['orientation'])}
           aria-label="Radio orientation"
+        />
+      </Field>
+
+      <Field label="Display">
+        <SegmentedControl
+          options={DISPLAY_OPTIONS}
+          value={config.display ?? 'plain'}
+          onChange={(v) => set('display', v as NonNullable<RadioConfig['display']>)}
+          aria-label="Radio display"
         />
       </Field>
 

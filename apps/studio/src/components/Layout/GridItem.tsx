@@ -737,6 +737,7 @@ function RadioLivePreview({ config }: { config: RadioConfig }) {
         errorMessage={config.errorMessage}
         variant={config.variant}
         size={config.size}
+        display={config.display ?? 'plain'}
         orientation={config.orientation}
         options={config.options}
         value={config.defaultValue || undefined}

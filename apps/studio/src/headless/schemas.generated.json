@@ -5225,6 +5225,14 @@
             "3"
           ]
         },
+        "display": {
+          "type": "string",
+          "enum": [
+            "plain",
+            "card"
+          ],
+          "description": "How the options are drawn: `plain` (bare circles) or `card` (every option in its own accent-tinted box). Optional — absent = the engine default, `plain`, no migration; exported only when `card`."
+        },
         "orientation": {
           "type": "string",
           "enum": [
@@ -5269,6 +5277,9 @@
         },
         "disabled": {
           "type": "boolean"
+        },
+        "helperText": {
+          "type": "string"
         }
       },
       "required": [
@@ -5277,7 +5288,7 @@
         "disabled"
       ],
       "additionalProperties": false,
-      "description": "A single radio option. Maps onto the library `RadioButtonProps` option shape (`value`/`label`/`disabled`) minus `helperText` — per-option sub-labels are out of studio's scope, matching the checkbox option editor."
+      "description": "A single radio option. Maps onto the library `RadioButtonProps` option shape (`value`/`label`/`disabled`/`helperText`). `helperText` is optional (older options have none; absent or `''` = no sub-label) and earns its place in the `card` display, where each box has room for a second line."
     },
     "RepeaterConfig": {
       "type": "object",

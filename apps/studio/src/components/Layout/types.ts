@@ -369,13 +369,15 @@ export function createDefaultSwitchConfig(name: string): SwitchConfig {
 
 /**
  * A single radio option. Maps onto the library `RadioButtonProps` option shape
- * (`value`/`label`/`disabled`) minus `helperText` — per-option sub-labels are out
- * of studio's scope, matching the checkbox option editor.
+ * (`value`/`label`/`disabled`/`helperText`). `helperText` is optional (older
+ * options have none; absent or `''` = no sub-label) and earns its place in the
+ * `card` display, where each box has room for a second line.
  */
 export type RadioOption = {
   value: string
   label: string
   disabled: boolean
+  helperText?: string
 }
 
 /**
@@ -395,6 +397,12 @@ export type RadioConfig = {
   errorMessage: string
   variant: 'classic' | 'surface' | 'soft'
   size: '1' | '2' | '3'
+  /**
+   * How the options are drawn: `plain` (bare circles) or `card` (every option in
+   * its own accent-tinted box). Optional — absent = the engine default, `plain`,
+   * no migration; exported only when `card`.
+   */
+  display?: 'plain' | 'card'
   orientation: 'horizontal' | 'vertical'
   options: RadioOption[]
   /** Preselected option value; `''` means nothing is selected. */
