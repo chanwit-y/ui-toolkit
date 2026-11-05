@@ -29,6 +29,7 @@ export * from "./components/Autocomplete2";
 // studio canvas). Like Autocomplete2 it calls useCore, so it needs CoreProvider.
 export { MultiAutocompleteBase } from "./components/MultiAutocomplete";
 export type { MultiAutocompleteProps } from "./components/@types";
+export type { OptionItemGroup, OptionGroup } from "./components/OptionRow";
 // The option row (avatar/icon + title + subtitle) both autocompletes render — also
 // the studio's "Option preview" strip.
 export { OptionRow, SelectedChip } from "./components/OptionRow";

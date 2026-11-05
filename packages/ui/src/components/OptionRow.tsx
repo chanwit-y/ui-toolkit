@@ -12,6 +12,8 @@ export type OptionItemIcon<T extends Item = Item> =
 export type OptionItemSubtitle<T extends Item = Item> = keyof T | ((item: T) => string);
 export type OptionAvatarValue = string | { src: string; alt?: string; fallback?: string };
 export type OptionItemAvatar<T extends Item = Item> = keyof T | ((item: T) => OptionAvatarValue);
+/** The field (or function) naming the section an option is listed under. */
+export type OptionItemGroup<T extends Item = Item> = keyof T | ((item: T) => string);
 
 export type OptionAvatarProps = { src: string; alt?: string; fallback?: string };
 
@@ -60,12 +62,50 @@ export const matchesOptionQuery = <T extends Item>(
 	query: string,
 	searchKey: keyof T,
 	itemSubtitle?: OptionItemSubtitle<T>,
+	/** A query matching the option's group label keeps the whole group. */
+	itemGroup?: OptionItemGroup<T>,
 ): boolean => {
 	const q = query.trim().toLowerCase();
 	if (!q) return true;
 	const hit = (value: unknown) => value != null && String(value).toLowerCase().includes(q);
 	if (hit(item[searchKey])) return true;
-	return typeof itemSubtitle === "function" || itemSubtitle == null ? false : hit(item[itemSubtitle]);
+	if (itemSubtitle != null && typeof itemSubtitle !== "function" && hit(item[itemSubtitle])) return true;
+	return itemGroup != null && hit(resolveItemGroup(item, itemGroup));
+};
+
+/** The option's group label, `null` when it has none (blank / missing field). */
+export const resolveItemGroup = <T extends Item>(item: T, itemGroup?: OptionItemGroup<T>): string | null => {
+	if (itemGroup == null) return null;
+	const value = typeof itemGroup === "function" ? itemGroup(item) : item[itemGroup];
+	if (value == null) return null;
+	const text = String(value).trim();
+	return text === "" ? null : text;
+};
+
+export type OptionGroup<T extends Item = Item> = { group: string | null; items: T[] };
+
+/**
+ * The options in the order a grouped list draws them: the ungrouped ones first
+ * (no header), then one section per group label in first-seen order. Without
+ * `itemGroup` it is one headerless section — the flat list as before.
+ */
+export const groupOptions = <T extends Item>(items: T[], itemGroup?: OptionItemGroup<T>): OptionGroup<T>[] => {
+	if (itemGroup == null) return [{ group: null, items }];
+	const ungrouped: T[] = [];
+	const groups = new Map<string, T[]>();
+	for (const item of items) {
+		const label = resolveItemGroup(item, itemGroup);
+		if (label === null) ungrouped.push(item);
+		else {
+			const bucket = groups.get(label);
+			if (bucket) bucket.push(item);
+			else groups.set(label, [item]);
+		}
+	}
+	const out: OptionGroup<T>[] = [];
+	if (ungrouped.length) out.push({ group: null, items: ungrouped });
+	groups.forEach((groupItems, group) => out.push({ group, items: groupItems }));
+	return out;
 };
 
 export type OptionRowProps = {

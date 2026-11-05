@@ -454,6 +454,15 @@ export type MultiAutocompleteProps<T extends Record<string, any> = {}> =
       itemIcon?: keyof typeof IconData | LucideIcon | ((item: T) => keyof typeof IconData | LucideIcon);
       itemSubtitle?: keyof T | ((item: T) => string);
       itemAvatar?: keyof T | ((item: T) => string | { src: string; alt?: string; fallback?: string });
+      /**
+       * Group the options under section headers: the field (or function)
+       * giving each row's group label. Rows with a blank label are listed
+       * first without a header; groups follow in first-seen order; a query
+       * matching a label keeps its whole group.
+       */
+      itemGroup?: keyof T | ((item: T) => string);
+      /** Draw a checkbox at the start of every row instead of the trailing check on the selected ones. */
+      checkboxes?: boolean;
       options: T[];
       searchKey: keyof T;
       idKey: keyof T;
@@ -1465,6 +1474,14 @@ export type AutocompleteElement = {
   maxSelections?: number;
   /** `multiAutocomplete` only. */
   showSelectedCount?: boolean;
+  /**
+   * `multiAutocomplete` only: the option field whose value names the section
+   * a row is listed under (sticky headers, ungrouped rows first, a query
+   * matching a label keeps its group).
+   */
+  itemGroup?: keyof any | ((item: any) => string);
+  /** `multiAutocomplete` only: a checkbox at the start of every row. */
+  checkboxes?: boolean;
 };
 
 export type ColumnDef = {

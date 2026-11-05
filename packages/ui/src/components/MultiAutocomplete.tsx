@@ -19,7 +19,7 @@ import { useObservableCleanup } from "../hooks";
 import { useFormContext } from "react-hook-form";
 import { ConditionExpression } from "./core/expression";
 import { useData } from "./context/DataProvider";
-import { OptionRow, SelectedChip, matchesOptionQuery, resolveIcon, resolveItemAvatar, resolveItemIcon, resolveItemSubtitle } from "./OptionRow";
+import { OptionRow, SelectedChip, groupOptions, matchesOptionQuery, resolveIcon, resolveItemAvatar, resolveItemIcon, resolveItemSubtitle } from "./OptionRow";
 import { OptionSearch, OPTION_SEARCH_HEIGHT } from "./OptionSearch";
 import { callArgs } from "./core/readApi";
 import { followFormField } from "./core/observedField";
@@ -43,6 +43,8 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 		itemIcon,
 		itemSubtitle,
 		itemAvatar,
+		itemGroup,
+		checkboxes = false,
 		options,
 		searchKey,
 		idKey,
@@ -121,11 +123,16 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 
 		const subject = useMemo(() => new Subject<string>(), [])
 
-		const filteredItems = useMemo(() => {
-			if (!query.trim()) return items;
-
-			return items.filter(item => matchesOptionQuery(item, query, searchKey, itemSubtitle))
-		}, [query, items, searchKey, itemSubtitle])
+		// The sections as drawn (ungrouped first, then groups in first-seen
+		// order); `filteredItems` is the same rows flattened, so the keyboard
+		// index walks the list in the order it is shown and skips the headers.
+		const groups = useMemo(() => {
+			const matching = query.trim()
+				? items.filter(item => matchesOptionQuery(item, query, searchKey, itemSubtitle, itemGroup))
+				: items
+			return groupOptions(matching, itemGroup)
+		}, [query, items, searchKey, itemSubtitle, itemGroup])
+		const filteredItems = useMemo(() => groups.flatMap(g => g.items), [groups])
 
 		const hasError = useMemo(() => error && !!errorMessage, [error, errorMessage]);
 		const displayHelperText = useMemo(() => hasError ? errorMessage : helperText, [hasError, errorMessage, helperText]);
@@ -525,33 +532,61 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 							? <div className="flex justify-center text-sm">
 								No results found
 							</div>
-							: filteredItems.map((item) => {
-								const isSelected = selectedIndex === filteredItems.findIndex(i => i[idKey] === item[idKey]);
-								const isCurrent = internalValues.includes(String(item[idKey]));
-								const isDisabled = !isCurrent && isMaxReached;
+							: groups.map((section, sectionIndex) => (
+								<div key={section.group ?? `__ungrouped_${sectionIndex}`} role="group" aria-label={section.group ?? undefined}>
+									{section.group !== null && (
+										// Sticky so the section stays named while its rows scroll by.
+										<div
+											role="presentation"
+											className="sticky top-0 z-10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-[var(--gray-11)] bg-[var(--gray-2)] truncate"
+										>
+											{section.group}
+										</div>
+									)}
+									{section.items.map((item) => {
+										const isSelected = selectedIndex === filteredItems.findIndex(i => i[idKey] === item[idKey]);
+										const isCurrent = internalValues.includes(String(item[idKey]));
+										const isDisabled = !isCurrent && isMaxReached;
 
-								return (<button key={item[idKey]}
-									onClick={() => handleSelect(item)}
-									disabled={isDisabled}
-									aria-selected={isCurrent}
-									data-focused={isSelected}
-									className={cn("w-full flex items-center justify-between px-3 py-2 text-sm text-left transition-colors cursor-pointer",
-										isDisabled
-											? "text-gray-400 dark:text-gray-500 cursor-not-allowed bg-[var(--gray-a3)]"
-											: isSelected
-												? "bg-[var(--accent-3,#eff6ff)] text-[var(--accent-11,#1d4ed8)] font-semibold"
-												: "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800",
-										isCurrent ? "bg-[var(--accent-3,#eff6ff)] text-[var(--accent-11,#1d4ed8)] font-semibold" : ""
-									)}>
-									<OptionRow
-										title={String(item[displayKey] ?? "")}
-										subtitle={resolveItemSubtitle(item, itemSubtitle)}
-										icon={resolveItemIcon(item, itemIcon)}
-										avatar={resolveItemAvatar(item, itemAvatar, displayKey)}
-									/>
-									{isCurrent && (<Check className="h-4 w-4 text-[var(--accent-11,#2563eb)] ml-2 flex-shrink-0" />)}
-								</button>)
-							})}
+										return (<button key={item[idKey]}
+											onClick={() => handleSelect(item)}
+											disabled={isDisabled}
+											aria-selected={isCurrent}
+											data-focused={isSelected}
+											className={cn("w-full flex items-center justify-between px-3 py-2 text-sm text-left transition-colors cursor-pointer",
+												isDisabled
+													? "text-gray-400 dark:text-gray-500 cursor-not-allowed bg-[var(--gray-a3)]"
+													: isSelected
+														? "bg-[var(--accent-3,#eff6ff)] text-[var(--accent-11,#1d4ed8)] font-semibold"
+														: "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800",
+												isCurrent ? "bg-[var(--accent-3,#eff6ff)] text-[var(--accent-11,#1d4ed8)] font-semibold" : ""
+											)}>
+											{checkboxes && (
+												// Drawn, not a control: the row button is what toggles.
+												<span
+													aria-hidden="true"
+													data-state={isCurrent ? "checked" : "unchecked"}
+													className={cn(
+														"mr-2.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-[3px] border transition-colors",
+														isCurrent
+															? "border-[var(--accent-9)] bg-[var(--accent-9)] text-[var(--accent-contrast)]"
+															: "border-[var(--gray-8)] bg-[var(--color-surface)]"
+													)}
+												>
+													{isCurrent && <Check className="h-3 w-3" strokeWidth={3} />}
+												</span>
+											)}
+											<OptionRow
+												title={String(item[displayKey] ?? "")}
+												subtitle={resolveItemSubtitle(item, itemSubtitle)}
+												icon={resolveItemIcon(item, itemIcon)}
+												avatar={resolveItemAvatar(item, itemAvatar, displayKey)}
+											/>
+											{isCurrent && !checkboxes && (<Check className="h-4 w-4 text-[var(--accent-11,#2563eb)] ml-2 flex-shrink-0" />)}
+										</button>)
+									})}
+								</div>
+							))}
 					</div>
 				</div>
 			)}
