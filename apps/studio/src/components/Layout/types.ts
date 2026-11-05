@@ -193,6 +193,14 @@ export type MultiAutocompleteConfig = SelectFieldConfig & {
   maxSelections: number | ''
   /** Show the `(n/max)` count label and chip-overflow summary. */
   showSelectedCount: boolean
+  /**
+   * Option-row field whose value names the section a row is listed under
+   * (engine `itemGroup`: sticky headers, ungrouped rows first, a query matching
+   * a label keeps its group). Optional — absent / `''` = flat list, no migration.
+   */
+  groupKey?: string
+  /** A checkbox at the start of every row (engine `checkboxes`); absent = the trailing check. */
+  checkboxes?: boolean
 }
 
 /**

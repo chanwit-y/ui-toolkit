@@ -1,7 +1,8 @@
 # select, autocomplete, multiAutocomplete
 
 One config shape for the three (`SelectFieldConfig`; the multi adds
-`maxSelections` and `showSelectedCount` and submits an array of ids).
+`maxSelections`, `showSelectedCount`, `groupKey` and `checkboxes`, and
+submits an array of ids).
 
 **Options** come from one of:
 - `mode: "static"` + `options: [{ "id": "a", "name": "Alpha" }, …]` — records,
@@ -23,4 +24,16 @@ parent field.
 ```json
 { "mode": "source", "dataSource": { "endpointId": "listAuthors", "paths": "data" },
   "idKey": "_id", "displayKey": "name", "searchKey": "name", "subtitleKey": "country", "avatarKey": "avatar" }
+```
+
+**Grouped options (multi only)**: `groupKey` names the row field whose value
+is the section header (sticky, uppercase); rows with a blank value come first
+without a header, groups follow in first-seen order, and a search matching a
+header keeps that whole group. `checkboxes: true` draws a checkbox at the
+start of every row instead of the trailing check on the selected ones.
+
+```json
+{ "mode": "source", "dataSource": { "endpointId": "regionCountries", "paths": "data" },
+  "idKey": "_id", "displayKey": "name", "searchKey": "name", "subtitleKey": "code",
+  "groupKey": "region", "checkboxes": true }
 ```

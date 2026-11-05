@@ -318,6 +318,9 @@ function OptionDisplaySection({
       />
     </Field>
   )
+  // Multi only: the engine groups a multi's rows (`itemGroup`); the single
+  // autocomplete's list is still flat.
+  const multiConfig = multi ? (config as MultiAutocompleteConfig) : null
   return (
     <div className="space-y-3 rounded-lg border border-line bg-panel p-3">
       <h4 className="text-ui-sm font-semibold uppercase tracking-wide text-ink-3">
@@ -333,6 +336,25 @@ function OptionDisplaySection({
         {picker('subtitleKey', 'Subtitle field', { kinds: TEXT_KINDS, allowNone: true })}
         {config.subtitleKey && <p className="text-ui-xs text-ink-3">Also matched when searching.</p>}
       </div>
+      {multiConfig && (
+        <div className="space-y-1">
+          <Field label="Group field">
+            <FieldPicker
+              fields={row.fields}
+              value={multiConfig.groupKey ?? ''}
+              onChange={(v) => set('groupKey' as keyof SelectFieldConfig, v as never)}
+              kinds={TEXT_KINDS}
+              allowNone
+              aria-label="Group field"
+            />
+          </Field>
+          {multiConfig.groupKey && (
+            <p className="text-ui-xs text-ink-3">
+              Options are listed under a header per value; a search matching a header keeps its whole group.
+            </p>
+          )}
+        </div>
+      )}
       <div className="space-y-1">
         {picker('avatarKey', 'Image field', { kinds: IMAGE_KINDS, allowNone: true })}
         {config.avatarKey && config.itemIcon && (
@@ -536,6 +558,11 @@ export function SelectFieldConfigPanel({
             label="Show selected count"
             checked={multiConfig.showSelectedCount}
             onChange={(v) => setMulti('showSelectedCount', v)}
+          />
+          <Toggle
+            label="Checkbox on every option"
+            checked={multiConfig.checkboxes ?? false}
+            onChange={(v) => setMulti('checkboxes', v)}
           />
         </div>
       )}

@@ -651,6 +651,8 @@ function MultiAutocompleteLivePreview({ config }: { config: MultiAutocompleteCon
         itemAvatar={(config.avatarKey || undefined) as never}
         maxSelections={config.maxSelections === '' ? undefined : config.maxSelections}
         showSelectedCount={config.showSelectedCount}
+        itemGroup={(config.groupKey || undefined) as never}
+        checkboxes={config.checkboxes}
       />
     </div>
   )

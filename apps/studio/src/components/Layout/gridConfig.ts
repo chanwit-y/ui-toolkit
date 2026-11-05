@@ -443,6 +443,8 @@ function autocompleteElement(
       ? {
           ...(typeof multi.maxSelections === 'number' ? { maxSelections: multi.maxSelections } : {}),
           showSelectedCount: multi.showSelectedCount,
+          ...(multi.groupKey ? { itemGroup: multi.groupKey } : {}),
+          ...(multi.checkboxes ? { checkboxes: true } : {}),
         }
       : {}),
     ...(c.mode === 'source'
