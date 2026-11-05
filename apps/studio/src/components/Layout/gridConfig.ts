@@ -548,7 +548,7 @@ function checkboxElement(c: CheckboxConfig): Record<string, unknown> {
  * `radio` → engine `RadioElement`. `dataType` is fixed `string` (a radio stores one
  * scalar value). Always emits the static `options` (`value`/`label`, plus `disabled`
  * only when true and `helperText` only when set) and `orientation`; `defaultValue`
- * and `helperText` are dropped when empty, `display` emitted only when `card`.
+ * and `helperText` are dropped when empty, `display` emitted only off `plain`.
  * Static-only — no API `source` mode is emitted.
  */
 function radioElement(c: RadioConfig): Record<string, unknown> {
@@ -560,7 +560,7 @@ function radioElement(c: RadioConfig): Record<string, unknown> {
     errorMessage: c.errorMessage,
     variant: c.variant,
     size: c.size,
-    ...(c.display === 'card' ? { display: 'card' } : {}),
+    ...(c.display && c.display !== 'plain' ? { display: c.display } : {}),
     orientation: c.orientation,
     options: c.options.map((o) => ({
       value: o.value,

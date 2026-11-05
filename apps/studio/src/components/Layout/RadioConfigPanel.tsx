@@ -13,6 +13,7 @@ const ORIENTATION_OPTIONS = [
 const DISPLAY_OPTIONS = [
   { value: 'plain', label: 'Plain' },
   { value: 'card', label: 'Card' },
+  { value: 'chip', label: 'Chip' },
 ]
 
 /** One labelled row in the config form. */
@@ -214,7 +215,14 @@ export function RadioConfigPanel({ itemId, config }: RadioConfigPanelProps) {
         <SegmentedControl
           options={DISPLAY_OPTIONS}
           value={config.display ?? 'plain'}
-          onChange={(v) => set('display', v as NonNullable<RadioConfig['display']>)}
+          onChange={(v) => {
+            const display = v as NonNullable<RadioConfig['display']>
+            // Chips read as a row; nudge a still-default orientation along with them.
+            updateItemConfig(itemId, {
+              display,
+              ...(display === 'chip' && config.orientation === 'vertical' ? { orientation: 'horizontal' } : {}),
+            } as Partial<RadioConfig>)
+          }}
           aria-label="Radio display"
         />
       </Field>

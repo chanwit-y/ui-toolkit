@@ -398,11 +398,12 @@ export type RadioConfig = {
   variant: 'classic' | 'surface' | 'soft'
   size: '1' | '2' | '3'
   /**
-   * How the options are drawn: `plain` (bare circles) or `card` (every option in
-   * its own accent-tinted box). Optional — absent = the engine default, `plain`,
-   * no migration; exported only when `card`.
+   * How the options are drawn: `plain` (bare circles), `card` (every option in
+   * its own accent-tinted box) or `chip` (content-sized pills, the selected one
+   * checked). Optional — absent = the engine default, `plain`, no migration;
+   * exported only off `plain`.
    */
-  display?: 'plain' | 'card'
+  display?: 'plain' | 'card' | 'chip'
   orientation: 'horizontal' | 'vertical'
   options: RadioOption[]
   /** Preselected option value; `''` means nothing is selected. */

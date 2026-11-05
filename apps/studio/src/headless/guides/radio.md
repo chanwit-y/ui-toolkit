@@ -23,3 +23,17 @@ cards share the row equally and wrap.
   "options": [{ "value": "new", "label": "New priority", "helperText": "Starts a top-level item" },
               { "value": "sub", "label": "Sub-item under an existing priority" }], "defaultValue": "new" } }
 ```
+
+## Chip display
+
+`display: "chip"` draws every option as a content-sized pill with no circle;
+the selected pill takes the accent and shows a check mark. Keyboard and
+screen-reader behaviour is the radio group's (the Radix item is kept, clipped
+away). An option's `helperText` becomes the pill's tooltip. Pair it with
+`orientation: "horizontal"` (a wrapping row); `vertical` stacks the pills.
+
+```json
+{ "type": "radio", "config": { "name": "status", "label": "Status", "display": "chip", "orientation": "horizontal",
+  "options": [{ "value": "not_started", "label": "Not started" }, { "value": "on_track", "label": "On track" },
+              { "value": "delayed", "label": "Delayed" }, { "value": "completed", "label": "Completed" }], "defaultValue": "not_started" } }
+```
