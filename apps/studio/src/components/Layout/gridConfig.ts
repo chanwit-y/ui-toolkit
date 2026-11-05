@@ -445,6 +445,7 @@ function autocompleteElement(
           showSelectedCount: multi.showSelectedCount,
           ...(multi.groupKey ? { itemGroup: multi.groupKey } : {}),
           ...(multi.checkboxes ? { checkboxes: true } : {}),
+          ...(multi.disabledKey ? { itemDisabled: multi.disabledKey } : {}),
         }
       : {}),
     ...(c.mode === 'source'

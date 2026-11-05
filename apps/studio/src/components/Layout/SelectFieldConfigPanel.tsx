@@ -6,6 +6,9 @@ import { FieldPicker, IconField, Input, Select, SegmentedControl } from '../comm
 import { useActiveItems, useGridStore } from './gridStore'
 import { isSelectFamily, observeWarnings } from './observe'
 import { IMAGE_KINDS, rowFieldsFor, TEXT_KINDS } from './rowFields'
+
+/** Fields a multi's Disabled field may point at: a flag, a reason text, or anything. */
+const DISABLED_KINDS = ['string', 'boolean', 'any'] as const
 import { bindingRowModel, LoadFieldPicker, useLoadShapes, usePageLoads } from './pageData'
 import type { MultiAutocompleteConfig, SelectFieldConfig, SelectOption } from './types'
 
@@ -351,6 +354,21 @@ function OptionDisplaySection({
           {multiConfig.groupKey && (
             <p className="text-ui-xs text-ink-3">
               Options are listed under a header per value; a search matching a header keeps its whole group.
+            </p>
+          )}
+          <Field label="Disabled field">
+            <FieldPicker
+              fields={row.fields}
+              value={multiConfig.disabledKey ?? ''}
+              onChange={(v) => set('disabledKey' as keyof SelectFieldConfig, v as never)}
+              kinds={DISABLED_KINDS}
+              allowNone
+              aria-label="Disabled field"
+            />
+          </Field>
+          {multiConfig.disabledKey && (
+            <p className="text-ui-xs text-ink-3">
+              A true value greys the option out; a text value is shown beside it as the reason.
             </p>
           )}
         </div>

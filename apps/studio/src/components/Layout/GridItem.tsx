@@ -653,6 +653,7 @@ function MultiAutocompleteLivePreview({ config }: { config: MultiAutocompleteCon
         showSelectedCount={config.showSelectedCount}
         itemGroup={(config.groupKey || undefined) as never}
         checkboxes={config.checkboxes}
+        itemDisabled={(config.disabledKey || undefined) as never}
       />
     </div>
   )

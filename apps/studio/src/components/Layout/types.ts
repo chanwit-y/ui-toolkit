@@ -201,6 +201,12 @@ export type MultiAutocompleteConfig = SelectFieldConfig & {
   groupKey?: string
   /** A checkbox at the start of every row (engine `checkboxes`); absent = the trailing check. */
   checkboxes?: boolean
+  /**
+   * Option-row field whose truthy value disables the row; a text value is
+   * also shown as the reason badge (engine `itemDisabled`). Optional —
+   * absent / `''` = every option pickable, no migration.
+   */
+  disabledKey?: string
 }
 
 /**
