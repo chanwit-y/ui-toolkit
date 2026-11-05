@@ -827,6 +827,27 @@ const countryOverviewBins: Bin[] = [
   {
     sm: "12",
     md: "12",
+    lg: "4",
+    xl: "4",
+    type: "radio",
+    element: {
+      name: "radioPriority",
+      label: "Priority (card display)",
+      dataType: "string",
+      isRequired: false,
+      display: "card",
+      orientation: "vertical",
+      defaultValue: "new",
+      options: [
+        { value: "new", label: "New priority", helperText: "Starts a top-level item" },
+        { value: "sub", label: "Sub-item under an existing priority" },
+        { value: "archived", label: "Archived priority", helperText: "Read-only", disabled: true },
+      ],
+    },
+  },
+  {
+    sm: "12",
+    md: "12",
     lg: "12",
     xl: "12",
     type: "text",

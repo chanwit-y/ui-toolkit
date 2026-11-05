@@ -289,6 +289,9 @@ export type CheckboxProps = BaseComponentProps<
   }
 >;
 
+/** How a radio group draws its options: bare circles, or one bordered box per option. */
+export type RadioDisplay = "plain" | "card";
+
 export type RadioButtonProps = BaseComponentProps<
   typeof RadixRadioGroup.Root,
   {
@@ -298,6 +301,13 @@ export type RadioButtonProps = BaseComponentProps<
     errorMessage?: string;
     size?: "1" | "2" | "3";
     variant?: "classic" | "surface" | "soft";
+    /**
+     * How the options are drawn: `plain` (default) is the bare circle + label;
+     * `card` puts every option in its own bordered box, the whole box the
+     * label, the selected one tinted with the accent. Orthogonal to `variant`,
+     * which stays the circle's look.
+     */
+    display?: RadioDisplay;
     value?: string;
     onValueChange?: (value: string) => void;
     options: Array<{
@@ -2120,6 +2130,8 @@ export type RadioElement = {
   errorMessage?: string;
   size?: "1" | "2" | "3";
   variant?: "classic" | "surface" | "soft";
+  /** `plain` (default) or `card` — every option in its own accent-tinted box. */
+  display?: RadioDisplay;
   orientation?: "horizontal" | "vertical";
   defaultValue?: string;
   /** Read-only initial value bound from a global-state slice. */

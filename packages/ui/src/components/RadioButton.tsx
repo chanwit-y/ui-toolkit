@@ -17,6 +17,7 @@ const RadioButtonBase = forwardRef<
 	errorMessage,
 	variant = "surface",
 	size = "2",
+	display = "plain",
 	value,
 	defaultValue,
 	onValueChange,
@@ -74,6 +75,36 @@ const RadioButtonBase = forwardRef<
 				{...props}
 				{...(hasError && { 'data-error': 'true' })}
 			>
+				{display === "card" ? (
+					// One bordered box per option, the box itself the label; the
+					// selected / focus / error looks live in styles/radioCard.css
+					// and read the Radix button's own state, so the circle inside
+					// keeps the `variant` look.
+					<div
+						className="gummy-radio-cards"
+						data-orientation={orientation}
+						data-size={size}
+					>
+						{options.map((option) => (
+							<Text
+								key={option.value}
+								as="label"
+								size="2"
+								className="gummy-radio-card gummy-surface"
+							>
+								<RadioGroup.Item value={option.value} disabled={option.disabled} />
+								<span className="gummy-radio-card-text">
+									<Text weight="medium" as="div">{option.label}</Text>
+									{option.helperText && (
+										<Text size="1" as="div" className="text-[var(--gray-11)]">
+											{option.helperText}
+										</Text>
+									)}
+								</span>
+							</Text>
+						))}
+					</div>
+				) : (
 				<Flex 
 					direction={orientation === "horizontal" ? "row" : "column"} 
 					gap="3"
@@ -105,6 +136,7 @@ const RadioButtonBase = forwardRef<
 						</Flex>
 					))}
 				</Flex>
+				)}
 			</RadioGroup.Root>
 
 			{displayHelperText && (

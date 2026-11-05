@@ -1,0 +1,102 @@
+/*
+ * Radio `display: "card"` (components/RadioButton.tsx): every option drawn in
+ * its own bordered box, the whole box the label, the selected one tinted with
+ * the accent. Radix vars only — the accent, the dark appearance and the glass
+ * surface (`gummy-surface` on the box) come free. The selected / focused /
+ * error looks read the Radix radio button's own state through `:has()`, so
+ * the circle inside keeps whatever `variant` says. Portable partial:
+ * `@import`ed by the library `styles.css` and the studio `index.css`.
+ */
+.gummy-radio-cards {
+  display: flex;
+  gap: var(--space-3);
+}
+.gummy-radio-cards[data-orientation="vertical"] {
+  flex-direction: column;
+}
+.gummy-radio-cards[data-orientation="horizontal"] {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.gummy-radio-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  box-sizing: border-box;
+  min-width: 0;
+  border: 1px solid var(--gray-7);
+  border-radius: var(--radius-3);
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  color: var(--gray-12);
+  transition:
+    border-color 150ms ease-out,
+    background-color 150ms ease-out,
+    box-shadow 150ms ease-out;
+}
+.gummy-radio-cards[data-orientation="vertical"] > .gummy-radio-card {
+  width: 100%;
+}
+.gummy-radio-cards[data-orientation="horizontal"] > .gummy-radio-card {
+  flex: 1 1 9rem;
+}
+
+/* Padding by the group's `size`. */
+.gummy-radio-cards[data-size="1"] > .gummy-radio-card {
+  padding: 0.5rem 0.75rem;
+  gap: 0.5rem;
+}
+.gummy-radio-cards[data-size="3"] > .gummy-radio-card {
+  padding: 1rem 1.25rem;
+  gap: 0.75rem;
+}
+
+/* The circle sits on the first text line. */
+.gummy-radio-card > button[role="radio"] {
+  flex: none;
+  margin-top: 0.125rem;
+}
+.gummy-radio-card > .gummy-radio-card-text {
+  min-width: 0;
+}
+
+.gummy-radio-card:hover {
+  border-color: var(--gray-8);
+}
+.gummy-radio-card:has(button[role="radio"][data-state="checked"]) {
+  border-color: var(--accent-8);
+  background: var(--accent-3);
+  color: var(--accent-12);
+}
+.gummy-radio-card:has(button[role="radio"][data-state="checked"]):hover {
+  border-color: var(--accent-9);
+}
+/* Keyboard focus rings the box, not the 16px circle inside it. */
+.gummy-radio-card:has(button[role="radio"]:focus-visible) {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-8);
+}
+.gummy-radio-card > button[role="radio"]:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+.gummy-radio-card:has(button[role="radio"][disabled]),
+.gummy-radio-card:has(button[role="radio"][data-disabled]) {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Required and empty: every box takes the error border, like the helper line. */
+[data-error="true"] .gummy-radio-card {
+  border-color: var(--red-8);
+}
+[data-error="true"] .gummy-radio-card:has(button[role="radio"]:focus-visible) {
+  box-shadow: 0 0 0 2px var(--red-8);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gummy-radio-card {
+    transition: none;
+  }
+}
