@@ -289,8 +289,12 @@ export type CheckboxProps = BaseComponentProps<
   }
 >;
 
-/** How a radio group draws its options: bare circles, or one bordered box per option. */
-export type RadioDisplay = "plain" | "card";
+/**
+ * How a radio group draws its options: bare circles (`plain`), one bordered
+ * box per option (`card`), or content-sized pills with no circle where the
+ * selected one shows a check mark (`chip`).
+ */
+export type RadioDisplay = "plain" | "card" | "chip";
 
 export type RadioButtonProps = BaseComponentProps<
   typeof RadixRadioGroup.Root,
@@ -2130,7 +2134,7 @@ export type RadioElement = {
   errorMessage?: string;
   size?: "1" | "2" | "3";
   variant?: "classic" | "surface" | "soft";
-  /** `plain` (default) or `card` — every option in its own accent-tinted box. */
+  /** `plain` (default), `card` (every option in its own accent-tinted box) or `chip` (pills, the selected one checked). */
   display?: RadioDisplay;
   orientation?: "horizontal" | "vertical";
   defaultValue?: string;

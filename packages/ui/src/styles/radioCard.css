@@ -1,7 +1,8 @@
 /*
- * Radio `display: "card"` (components/RadioButton.tsx): every option drawn in
- * its own bordered box, the whole box the label, the selected one tinted with
- * the accent. Radix vars only — the accent, the dark appearance and the glass
+ * Radio `display: "card"` and `display: "chip"` (components/RadioButton.tsx):
+ * a card is every option drawn in its own bordered box, the whole box the
+ * label, the selected one tinted with the accent; a chip is a content-sized
+ * pill with no circle, the selected one checked. Radix vars only — the accent, the dark appearance and the glass
  * surface (`gummy-surface` on the box) come free. The selected / focused /
  * error looks read the Radix radio button's own state through `:has()`, so
  * the circle inside keeps whatever `variant` says. Portable partial:
@@ -95,8 +96,101 @@
   box-shadow: 0 0 0 2px var(--red-8);
 }
 
+/* ------------------------------------------------------------------ chips */
+
+.gummy-radio-chips {
+  display: flex;
+  gap: var(--space-2);
+}
+.gummy-radio-chips[data-orientation="horizontal"] {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+.gummy-radio-chips[data-orientation="vertical"] {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.gummy-radio-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  box-sizing: border-box;
+  min-height: 2.25rem;
+  padding: 0 1rem;
+  border: 1px solid var(--gray-7);
+  border-radius: 9999px;
+  cursor: pointer;
+  color: var(--gray-12);
+  white-space: nowrap;
+  transition:
+    border-color 150ms ease-out,
+    background-color 150ms ease-out,
+    box-shadow 150ms ease-out;
+}
+.gummy-radio-chips[data-size="1"] > .gummy-radio-chip {
+  min-height: 1.75rem;
+  padding: 0 0.75rem;
+}
+.gummy-radio-chips[data-size="3"] > .gummy-radio-chip {
+  min-height: 2.75rem;
+  padding: 0 1.25rem;
+}
+
+/* The Radix radio stays for keyboard / assistive tech, clipped away. */
+.gummy-radio-chip > .gummy-radio-chip-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.gummy-radio-chip > .gummy-radio-chip-check {
+  display: none;
+  flex: none;
+  width: 1em;
+  height: 1em;
+}
+
+.gummy-radio-chip:hover {
+  border-color: var(--gray-8);
+}
+.gummy-radio-chip:has(button[role="radio"][data-state="checked"]) {
+  border-color: var(--accent-8);
+  background: var(--accent-3);
+  color: var(--accent-12);
+}
+.gummy-radio-chip:has(button[role="radio"][data-state="checked"]) > .gummy-radio-chip-check {
+  display: inline-block;
+}
+.gummy-radio-chip:has(button[role="radio"][data-state="checked"]):hover {
+  border-color: var(--accent-9);
+}
+.gummy-radio-chip:has(button[role="radio"]:focus-visible) {
+  box-shadow: 0 0 0 2px var(--accent-8);
+}
+.gummy-radio-chip:has(button[role="radio"][disabled]),
+.gummy-radio-chip:has(button[role="radio"][data-disabled]) {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+[data-error="true"] .gummy-radio-chip {
+  border-color: var(--red-8);
+}
+[data-error="true"] .gummy-radio-chip:has(button[role="radio"]:focus-visible) {
+  box-shadow: 0 0 0 2px var(--red-8);
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .gummy-radio-card {
+  .gummy-radio-card,
+  .gummy-radio-chip {
     transition: none;
   }
 }
