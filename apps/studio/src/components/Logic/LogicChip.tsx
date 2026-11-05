@@ -1,9 +1,7 @@
 import { Maximize2 } from 'lucide-react'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { Link } from 'react-router-dom'
-import { Button, cn, Input, Popover, Select } from '../common'
-import { ColumnFormatFields } from '../Layout/ColumnFormatFields'
-import { defaultColumnFormat } from '../Layout/types'
+import { useNavigate } from 'react-router-dom'
+import { Button, cn, Input, Select } from '../common'
 import {
   conditionIssues,
   createFormulaDef,
@@ -13,15 +11,16 @@ import {
   LOGIC_PRESETS,
   logicRefIds,
   printCondition,
+  printExpr,
   type StudioCondition,
   type StudioFormula,
 } from '../Workspace/logic'
 import { useActiveProject, useWorkspaceStore } from '../Workspace/workspaceStore'
 import { ConditionLine, typeContext } from './ConditionLine'
-import { ExprField, type LogicEnv } from './editors'
+import type { LogicEnv } from './editors'
 import { LogicDialog, type LogicTarget } from './LogicDialog'
 import { MenuButton } from './MenuButton'
-import { blankCompare, conditionSentence, detachFormula, formatSummary, matchSaved, safeDetachCondition, sameLogic, singleCompare } from './model'
+import { blankCompare, conditionSentence, detachFormula, formatSummary, isBlankOperand, matchSaved, safeDetachCondition, sameLogic, singleCompare } from './model'
 import { OperandPill, Sentence } from './pills'
 import { useLogicLibrary, type LogicScopeInfo } from './scope'
 
@@ -46,8 +45,10 @@ export function showWhenPresets(scope: LogicScopeInfo): ConditionPreset[] {
 /**
  * A condition or formula slot in the inspector (spec §14.3): one mode
  * dropdown (none / presets / saved items / write one), the value as a
- * sentence or the formula bar, a single comparison and a formula edited in
- * place, ⋯ for Save as / Make a copy, ⤢ for the full editor.
+ * sentence or the printed formula, a single comparison edited in place, ⋯ for
+ * Save as / Make a copy, ⤢ for the full editor. A formula is always written in
+ * the dialog: picking "Write a formula…" opens it, and so does clicking the
+ * formula afterwards — the same editor for every component.
  */
 export function LogicChip({
   label,
@@ -70,13 +71,15 @@ export function LogicChip({
   | { kind: 'formula'; value: StudioFormula | null | undefined; onChange: (v: StudioFormula | null) => void }
 )) {
   const [open, setOpen] = useState(!!autoOpen)
+  // The saved formula / rule the slot names, opened in the dialog from its pill.
+  const [savedOpen, setSavedOpen] = useState(false)
+  const navigate = useNavigate()
   const [saveAs, setSaveAs] = useState<string | null>(null)
   // Consume the request once, so a re-mount (a tab switch, a reselect) doesn't reopen.
   useEffect(() => {
     if (autoOpen) onAutoOpened?.()
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount only
   }, [])
-  const [formatAnchor, setFormatAnchor] = useState<DOMRect | null>(null)
   const [note, setNote] = useState<string | null>(null)
   const project = useActiveProject()
   const updateLogic = useWorkspaceStore((s) => s.updateProjectLogic)
@@ -119,7 +122,10 @@ export function LogicChip({
       if (p) slot.onChange(p.value)
     } else {
       if (key === 'none') return slot.onChange(null)
-      if (key === 'custom') return mode === 'custom' ? undefined : slot.onChange(inlineFormula({ lit: '' }))
+      if (key === 'custom') {
+        if (mode !== 'custom') slot.onChange(inlineFormula({ lit: '' }))
+        return setOpen(true)
+      }
       if (key.startsWith('saved:')) slot.onChange({ formulaId: key.slice(6) })
     }
   }
@@ -177,6 +183,7 @@ export function LogicChip({
   const menu = [
     ...(canSaveAs ? [{ label: `Save as ${slot.kind === 'formula' ? 'formula' : 'rule'}…`, onClick: () => setSaveAs('') }] : []),
     ...(saved ? [{ label: 'Make a copy here', onClick: makeCopy }] : []),
+    ...(saved && project ? [{ label: 'Open on the Logic tab', onClick: () => navigate(`/p/${project.id}/logic?item=${saved.id}`) }] : []),
     ...(value ? [{ label: 'Clear', onClick: () => slot.onChange(null) }] : []),
   ]
 
@@ -185,12 +192,19 @@ export function LogicChip({
     slot.kind === 'condition'
       ? { kind: 'condition', value: slot.value ?? null, onSave: slot.onChange }
       : { kind: 'formula', value: slot.value ?? null, onSave: slot.onChange }
+  const savedTarget: LogicTarget | null =
+    saved && project
+      ? 'expr' in saved
+        ? { kind: 'savedFormula', value: saved, onSave: (def) => updateLogic(project.id, { formulas: formulas.map((f) => (f.id === def.id ? def : f)) }) }
+        : { kind: 'savedRule', value: saved, onSave: (def) => updateLogic(project.id, { rules: rules.map((r) => (r.id === def.id ? def : r)) }) }
+      : null
   let body: ReactNode = null
   if (saved && project) {
+    // The saved item's own editor opens in the dialog, like an inline formula's; the Logic tab stays a menu entry.
     body = (
-      <Link to={`/p/${project.id}/logic?item=${saved.id}`} className="inline-flex max-w-full" title="Open it on the Logic tab">
+      <button type="button" onClick={() => setSavedOpen(true)} className="inline-flex max-w-full" title={`Edit ${saved.name}`} aria-label={`Edit the saved ${'expr' in saved ? 'formula' : 'rule'} ${saved.name}`}>
         <OperandPill text={saved.name} tone={'expr' in saved ? 'saved' : 'rule'} className="hover:underline" />
-      </Link>
+      </button>
     )
   } else if (slot.kind === 'condition' && slot.value && mode === 'custom') {
     const single = singleCompare(slot.value)
@@ -223,21 +237,20 @@ export function LogicChip({
     )
   } else if (slot.kind === 'formula' && slot.value && !isSavedFormula(slot.value)) {
     const f = slot.value
-    const onChange = slot.onChange
+    const text = isBlankOperand(f.expr) ? '' : printExpr(f.expr, names)
     body = (
-      <div className="space-y-1">
-        <ExprField label={`${label} formula`} value={f.expr} env={env} onChange={(expr) => onChange({ ...f, expr })} placeholder="Type a field, a number or a function" />
-        <button type="button" onClick={(e) => setFormatAnchor(e.currentTarget.getBoundingClientRect())} className="text-ui-xs text-ink-3 hover:text-ink">
-          Show as: <span className="font-medium text-ink-2">{formatSummary(f.format)}</span> ▾
-        </button>
-        {formatAnchor && (
-          <Popover anchor={formatAnchor} title="Show as" onClose={() => setFormatAnchor(null)}>
-            <div className="p-3">
-              <ColumnFormatFields column={{ format: f.format ?? defaultColumnFormat() }} onChange={(format) => onChange({ ...f, format })} />
-            </div>
-          </Popover>
-        )}
-      </div>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        title="Edit the formula"
+        aria-label={`Edit the ${label} formula`}
+        className="w-full space-y-0.5 rounded-md border border-line bg-sunken px-2 py-1.5 text-left hover:border-line-strong"
+      >
+        <span className={cn('block truncate font-mono text-ui', text ? 'text-ink' : 'text-ink-3')}>{text || 'Write a formula…'}</span>
+        <span className="block text-ui-xs text-ink-3">
+          Show as: <span className="font-medium text-ink-2">{formatSummary(f.format)}</span>
+        </span>
+      </button>
     )
   }
 
@@ -314,6 +327,7 @@ export function LogicChip({
       ))}
       {hint && <p className="text-ui-xs leading-relaxed text-ink-3">{hint}</p>}
       {open && <LogicDialog target={target} scope={scope} title={label} onClose={() => setOpen(false)} />}
+      {savedOpen && savedTarget && saved && <LogicDialog target={savedTarget} scope={scope} title={saved.name} onClose={() => setSavedOpen(false)} />}
     </div>
   )
 }

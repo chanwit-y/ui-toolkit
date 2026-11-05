@@ -93,10 +93,10 @@ import { useActiveProject } from '../Workspace/workspaceStore'
 import { FormulaWidgetView } from '@gummy-ui/ui'
 import type { FormulaWidgetConfig } from './types'
 import { FileSearch, Sigma } from 'lucide-react'
-import { ExprField, type LogicEnv } from '../Logic/editors'
 import { LogicDialog } from '../Logic/LogicDialog'
 import { useCanvasLogicScope, useLogicLibrary } from '../Logic/scope'
-import { isSavedFormula, type StudioFormula } from '../Workspace/logic'
+import { isSavedFormula, type StudioFormula, printExpr } from '../Workspace/logic'
+import { isBlankOperand } from '../Logic/model'
 import type {
   AvatarConfig,
   ButtonConfig,
@@ -1157,8 +1157,9 @@ function inlineFormulaOf(item: GridItemData): Exclude<StudioFormula, { formulaId
 /**
  * A selected Formula cell (a text / typography bound to an inline formula —
  * what the palette's Formula tile drops) turns into its editor: the formula
- * bar in place of the `{ƒ formula}` token, and a button opening the full
- * dialog (format, blank policies, Try it, Save as). Writes go straight to the
+ * printed in place of the `{ƒ formula}` token; a click on it (or the ⤢ button)
+ * opens the full dialog (the bar, format, blank policies, Try it, Save as) —
+ * formulas are written in the dialog everywhere. Writes go straight to the
  * binding, so the inspector's chip shows the same formula. The one live cell
  * that takes pointer events — a click inside still lands on the (already
  * selected) cell, and the grip keeps the drag.
@@ -1166,8 +1167,7 @@ function inlineFormulaOf(item: GridItemData): Exclude<StudioFormula, { formulaId
 function FormulaCellEditor({ item, formula }: { item: GridItemData; formula: Exclude<StudioFormula, { formulaId: string }> }) {
   const updateItemConfig = useGridStore((s) => s.updateItemConfig)
   const scope = useCanvasLogicScope()
-  const { formulas, rules, names } = useLogicLibrary(scope.loads)
-  const env: LogicEnv = useMemo(() => ({ scope, formulas, rules, names }), [scope, formulas, rules, names])
+  const { names } = useLogicLibrary(scope.loads)
   const [open, setOpen] = useState(false)
   // "Formula" (the tile's label) stays as is; "Total" becomes "Total formula".
   const label = /formula/i.test(item.label) ? item.label : `${item.label} formula`
@@ -1175,9 +1175,15 @@ function FormulaCellEditor({ item, formula }: { item: GridItemData; formula: Exc
     updateItemConfig(item.id, { binding: next ? { key: '', path: '', source: 'formula', formula: next } : null } as Partial<TypographyConfig>)
   return (
     <div data-grid-item-content className="pointer-events-auto flex h-full w-full items-center gap-1 px-2">
-      <div className="min-w-0 flex-1">
-        <ExprField label={label} value={formula.expr} env={env} onChange={(expr) => save({ ...formula, expr })} placeholder="Type a field, a number or a function" />
-      </div>
+      <button
+        type="button"
+        aria-label={`Edit the ${label}`}
+        title="Edit the formula"
+        onClick={() => setOpen(true)}
+        className="min-w-0 flex-1 truncate rounded-md border border-line bg-sunken px-2 py-1 text-left font-mono text-ui text-ink hover:border-line-strong"
+      >
+        {isBlankOperand(formula.expr) ? <span className="text-ink-3">Write a formula…</span> : printExpr(formula.expr, names)}
+      </button>
       <IconButton label={`Open the ${label} editor`} className="h-7! w-7! shrink-0" onClick={() => setOpen(true)}>
         <Maximize2 className="h-3.5 w-3.5" aria-hidden="true" />
       </IconButton>
