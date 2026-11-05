@@ -880,7 +880,7 @@ const countryOverviewBins: Bin[] = [
     element: {
       name: "relatedCountriesByRegion",
       label: "Related countries (grouped by region)",
-      subtitle: "Options grouped under their region; searching a region name keeps its whole group",
+      subtitle: "Options grouped under their region; searching a region name keeps its whole group; landlocked countries can't be picked",
       placeholder: "Choose countries...",
       dataType: "array",
       isRequired: false,
@@ -892,6 +892,7 @@ const countryOverviewBins: Bin[] = [
       itemSubtitle: "code",
       itemGroup: "region",
       checkboxes: true,
+      itemDisabled: "unavailable",
       showSelectedCount: true,
       keys: {
         id: "_id",

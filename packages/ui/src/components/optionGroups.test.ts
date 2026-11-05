@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { groupOptions, matchesOptionQuery, resolveItemGroup } from "./OptionRow";
+import { groupOptions, matchesOptionQuery, resolveItemDisabled, resolveItemGroup } from "./OptionRow";
 
 type Team = { id: string; name: string; dept?: string | null };
 const teams: Team[] = [
@@ -46,5 +46,29 @@ describe("matchesOptionQuery with a group", () => {
 
 	test("without a group key the label is not searched", () => {
 		expect(teams.filter((t) => matchesOptionQuery(t, "human", "name")).length).toBe(0);
+	});
+});
+
+describe("resolveItemDisabled", () => {
+	type Person = { id: string; name: string; reason?: string; active?: boolean };
+	const rows: Person[] = [
+		{ id: "1", name: "A", reason: "No role assigned" },
+		{ id: "2", name: "B", reason: "" },
+		{ id: "3", name: "C", active: false },
+		{ id: "4", name: "D" },
+	];
+	test("a text value disables and is the reason", () => {
+		expect(resolveItemDisabled(rows[0], "reason")).toEqual({ disabled: true, reason: "No role assigned" });
+		expect(resolveItemDisabled(rows[1], "reason")).toEqual({ disabled: false, reason: null });
+	});
+	test("a boolean value disables without a reason; a missing field doesn't", () => {
+		expect(resolveItemDisabled(rows[2], "active")).toEqual({ disabled: false, reason: null });
+		expect(resolveItemDisabled({ ...rows[2], active: true }, "active")).toEqual({ disabled: true, reason: null });
+		expect(resolveItemDisabled(rows[3], "reason")).toEqual({ disabled: false, reason: null });
+	});
+	test("a function may return a reason or a flag", () => {
+		expect(resolveItemDisabled(rows[3], (p) => p.id === "4" && "Taken")).toEqual({ disabled: true, reason: "Taken" });
+		expect(resolveItemDisabled(rows[3], () => true)).toEqual({ disabled: true, reason: null });
+		expect(resolveItemDisabled(rows[3])).toEqual({ disabled: false, reason: null });
 	});
 });

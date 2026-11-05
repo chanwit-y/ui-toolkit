@@ -14,6 +14,13 @@ export type OptionAvatarValue = string | { src: string; alt?: string; fallback?:
 export type OptionItemAvatar<T extends Item = Item> = keyof T | ((item: T) => OptionAvatarValue);
 /** The field (or function) naming the section an option is listed under. */
 export type OptionItemGroup<T extends Item = Item> = keyof T | ((item: T) => string);
+/**
+ * The field (or function) saying an option can't be picked: a truthy value
+ * disables it, and a non-empty string is also shown as the reason badge
+ * ("No role assigned").
+ */
+export type OptionItemDisabled<T extends Item = Item> = keyof T | ((item: T) => boolean | string | null | undefined);
+export type OptionDisabledState = { disabled: boolean; reason: string | null };
 
 export type OptionAvatarProps = { src: string; alt?: string; fallback?: string };
 
@@ -80,6 +87,17 @@ export const resolveItemGroup = <T extends Item>(item: T, itemGroup?: OptionItem
 	if (value == null) return null;
 	const text = String(value).trim();
 	return text === "" ? null : text;
+};
+
+/** Whether the option is disabled and, when the value is text, why. */
+export const resolveItemDisabled = <T extends Item>(item: T, itemDisabled?: OptionItemDisabled<T>): OptionDisabledState => {
+	if (itemDisabled == null) return { disabled: false, reason: null };
+	const value: unknown = typeof itemDisabled === "function" ? itemDisabled(item) : item[itemDisabled];
+	if (typeof value === "string") {
+		const text = value.trim();
+		return text === "" ? { disabled: false, reason: null } : { disabled: true, reason: text };
+	}
+	return { disabled: !!value, reason: null };
 };
 
 export type OptionGroup<T extends Item = Item> = { group: string | null; items: T[] };

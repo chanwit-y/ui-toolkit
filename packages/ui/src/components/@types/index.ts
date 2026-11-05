@@ -463,6 +463,13 @@ export type MultiAutocompleteProps<T extends Record<string, any> = {}> =
       itemGroup?: keyof T | ((item: T) => string);
       /** Draw a checkbox at the start of every row instead of the trailing check on the selected ones. */
       checkboxes?: boolean;
+      /**
+       * The field (or function) saying an option can't be picked: a truthy
+       * value disables the row, a non-empty string is also shown as the
+       * reason badge at the row's end. A disabled option already in the
+       * value keeps its chip (removable) but can't be re-picked.
+       */
+      itemDisabled?: keyof T | ((item: T) => boolean | string | null | undefined);
       options: T[];
       searchKey: keyof T;
       idKey: keyof T;
@@ -1482,6 +1489,11 @@ export type AutocompleteElement = {
   itemGroup?: keyof any | ((item: any) => string);
   /** `multiAutocomplete` only: a checkbox at the start of every row. */
   checkboxes?: boolean;
+  /**
+   * `multiAutocomplete` only: the option field whose truthy value disables
+   * the row; a text value is also the reason badge ("No role assigned").
+   */
+  itemDisabled?: keyof any | ((item: any) => boolean | string | null | undefined);
 };
 
 export type ColumnDef = {

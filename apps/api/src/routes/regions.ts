@@ -102,6 +102,9 @@ regionRoutes.get('/collection/region-countries', (c) => {
         regionId: region._id,
         name: country.name,
         code: country.code,
+        // A reason text an option picker can disable a row with (the grouped
+        // multi autocomplete demo); blank for the rest.
+        unavailable: country.landlocked ? 'Landlocked' : '',
         // Every third row was created by someone else.
         created_by_name: (r + i) % 3 === 2 ? 'System' : country.updated_by_name,
         updated_by_name: country.updated_by_name,

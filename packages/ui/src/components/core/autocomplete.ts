@@ -89,6 +89,7 @@ export class MultiAutocomplete<M extends TModelMaster, A extends TApiMaster<M>>
       showSelectedCount: props.showSelectedCount,
       itemGroup: props.itemGroup as any,
       checkboxes: props.checkboxes,
+      itemDisabled: props.itemDisabled as any,
       inputIcon: props.inputIcon,
       itemIcon: props.itemIcon,
       itemSubtitle: props.itemSubtitle as any,

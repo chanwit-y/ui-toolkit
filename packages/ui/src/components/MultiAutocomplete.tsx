@@ -19,7 +19,7 @@ import { useObservableCleanup } from "../hooks";
 import { useFormContext } from "react-hook-form";
 import { ConditionExpression } from "./core/expression";
 import { useData } from "./context/DataProvider";
-import { OptionRow, SelectedChip, groupOptions, matchesOptionQuery, resolveIcon, resolveItemAvatar, resolveItemIcon, resolveItemSubtitle } from "./OptionRow";
+import { OptionRow, SelectedChip, groupOptions, matchesOptionQuery, resolveIcon, resolveItemAvatar, resolveItemDisabled, resolveItemIcon, resolveItemSubtitle } from "./OptionRow";
 import { OptionSearch, OPTION_SEARCH_HEIGHT } from "./OptionSearch";
 import { callArgs } from "./core/readApi";
 import { followFormField } from "./core/observedField";
@@ -45,6 +45,7 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 		itemAvatar,
 		itemGroup,
 		checkboxes = false,
+		itemDisabled,
 		options,
 		searchKey,
 		idKey,
@@ -203,6 +204,9 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 		}, [onValuesChange, onChange, canObserve, name, getDataValue])
 
 		const handleSelect = useCallback((item: T) => {
+			// A disabled option can't be picked (Enter on it does nothing);
+			// one already in the value is only removable through its chip.
+			if (resolveItemDisabled(item, itemDisabled).disabled) return;
 			const itemId = String(item[idKey]);
 			const isSelected = internalValues.includes(itemId);
 
@@ -221,7 +225,7 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 			setQuery('');
 			setSelectedIndex(-1);
 			// Don't close dropdown for multi-selection
-		}, [handleValuesChange, internalValues, idKey, maxSelections, append])
+		}, [handleValuesChange, internalValues, idKey, maxSelections, append, itemDisabled])
 
 		const handleRemoveSelected = useCallback((itemId: string, e: React.MouseEvent) => {
 			e.stopPropagation();
@@ -289,6 +293,19 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 			}, 0)
 		}, [updateDropdownPosition, isOpen]);
 
+		// The next row in `direction` that can be picked, wrapping; `from` when
+		// none can (every row disabled).
+		const nextEnabledIndex = useCallback((from: number, direction: 1 | -1) => {
+			const n = filteredItems.length;
+			if (n === 0) return -1;
+			let i = from;
+			for (let step = 0; step < n; step++) {
+				i = direction === 1 ? (i < n - 1 ? i + 1 : 0) : (i > 0 ? i - 1 : n - 1);
+				if (!resolveItemDisabled(filteredItems[i], itemDisabled).disabled) return i;
+			}
+			return from;
+		}, [filteredItems, itemDisabled]);
+
 		const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
 			if (!isOpen) {
 				if (['Enter', 'ArrowDown'].includes(e.key)) {
@@ -301,11 +318,11 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 			switch (e.key) {
 				case 'ArrowDown':
 					e.preventDefault();
-					setSelectedIndex(prev => prev < filteredItems.length - 1 ? prev + 1 : 0);
+					setSelectedIndex(prev => nextEnabledIndex(prev, 1));
 					break;
 				case 'ArrowUp':
 					e.preventDefault();
-					setSelectedIndex(prev => prev > 0 ? prev - 1 : filteredItems.length - 1);
+					setSelectedIndex(prev => nextEnabledIndex(prev, -1));
 					break;
 				case 'Enter':
 					e.preventDefault();
@@ -322,7 +339,7 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 					setIsOpen(false);
 					break;
 			}
-		}, [isOpen, openDropdown, selectedIndex, filteredItems, handleSelect, triggerElement]);
+		}, [isOpen, openDropdown, selectedIndex, filteredItems, handleSelect, triggerElement, nextEnabledIndex]);
 
 		// Handle click outside
 		useEffect(() => {
@@ -546,20 +563,27 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 									{section.items.map((item) => {
 										const isSelected = selectedIndex === filteredItems.findIndex(i => i[idKey] === item[idKey]);
 										const isCurrent = internalValues.includes(String(item[idKey]));
-										const isDisabled = !isCurrent && isMaxReached;
+										const unavailable = resolveItemDisabled(item, itemDisabled);
+										// Per-option disabled (greyed, a reason badge) or the max reached.
+										const isDisabled = unavailable.disabled || (!isCurrent && isMaxReached);
 
 										return (<button key={item[idKey]}
 											onClick={() => handleSelect(item)}
 											disabled={isDisabled}
 											aria-selected={isCurrent}
+											aria-disabled={isDisabled || undefined}
 											data-focused={isSelected}
+											data-disabled={unavailable.disabled ? "true" : undefined}
+											title={unavailable.reason ?? undefined}
 											className={cn("w-full flex items-center justify-between px-3 py-2 text-sm text-left transition-colors cursor-pointer",
-												isDisabled
-													? "text-gray-400 dark:text-gray-500 cursor-not-allowed bg-[var(--gray-a3)]"
-													: isSelected
-														? "bg-[var(--accent-3,#eff6ff)] text-[var(--accent-11,#1d4ed8)] font-semibold"
-														: "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800",
-												isCurrent ? "bg-[var(--accent-3,#eff6ff)] text-[var(--accent-11,#1d4ed8)] font-semibold" : ""
+												unavailable.disabled
+													? "text-[var(--gray-9)] cursor-not-allowed"
+													: isDisabled
+														? "text-gray-400 dark:text-gray-500 cursor-not-allowed bg-[var(--gray-a3)]"
+														: isSelected
+															? "bg-[var(--accent-3,#eff6ff)] text-[var(--accent-11,#1d4ed8)] font-semibold"
+															: "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800",
+												isCurrent && !unavailable.disabled ? "bg-[var(--accent-3,#eff6ff)] text-[var(--accent-11,#1d4ed8)] font-semibold" : ""
 											)}>
 											{checkboxes && (
 												// Drawn, not a control: the row button is what toggles.
@@ -568,9 +592,11 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 													data-state={isCurrent ? "checked" : "unchecked"}
 													className={cn(
 														"mr-2.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-[3px] border transition-colors",
-														isCurrent
-															? "border-[var(--accent-9)] bg-[var(--accent-9)] text-[var(--accent-contrast)]"
-															: "border-[var(--gray-8)] bg-[var(--color-surface)]"
+														unavailable.disabled
+															? "border-[var(--gray-6)] bg-[var(--gray-a2)] text-[var(--gray-9)]"
+															: isCurrent
+																? "border-[var(--accent-9)] bg-[var(--accent-9)] text-[var(--accent-contrast)]"
+																: "border-[var(--gray-8)] bg-[var(--color-surface)]"
 													)}
 												>
 													{isCurrent && <Check className="h-3 w-3" strokeWidth={3} />}
@@ -582,7 +608,12 @@ const createMultiAutocomplete = <T extends Record<string, any>>() => {
 												icon={resolveItemIcon(item, itemIcon)}
 												avatar={resolveItemAvatar(item, itemAvatar, displayKey)}
 											/>
-											{isCurrent && !checkboxes && (<Check className="h-4 w-4 text-[var(--accent-11,#2563eb)] ml-2 flex-shrink-0" />)}
+											{unavailable.reason && (
+												<span className="ml-2 flex-shrink-0 rounded-full bg-[var(--gray-a3)] px-2 py-0.5 text-xs font-medium text-[var(--gray-11)]">
+													{unavailable.reason}
+												</span>
+											)}
+											{isCurrent && !checkboxes && !unavailable.disabled && (<Check className="h-4 w-4 text-[var(--accent-11,#2563eb)] ml-2 flex-shrink-0" />)}
 										</button>)
 									})}
 								</div>
