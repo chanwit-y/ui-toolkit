@@ -194,6 +194,7 @@ export const model: TModelMaster = {
         regionId: "string",
         name: "string",
         code: "string",
+        unavailable: "string",
         created_by_name: "string",
         updated_by_name: "string",
         created_at: "string",

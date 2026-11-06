@@ -193,6 +193,20 @@ export type MultiAutocompleteConfig = SelectFieldConfig & {
   maxSelections: number | ''
   /** Show the `(n/max)` count label and chip-overflow summary. */
   showSelectedCount: boolean
+  /**
+   * Option-row field whose value names the section a row is listed under
+   * (engine `itemGroup`: sticky headers, ungrouped rows first, a query matching
+   * a label keeps its group). Optional — absent / `''` = flat list, no migration.
+   */
+  groupKey?: string
+  /** A checkbox at the start of every row (engine `checkboxes`); absent = the trailing check. */
+  checkboxes?: boolean
+  /**
+   * Option-row field whose truthy value disables the row; a text value is
+   * also shown as the reason badge (engine `itemDisabled`). Optional —
+   * absent / `''` = every option pickable, no migration.
+   */
+  disabledKey?: string
 }
 
 /**
@@ -369,13 +383,15 @@ export function createDefaultSwitchConfig(name: string): SwitchConfig {
 
 /**
  * A single radio option. Maps onto the library `RadioButtonProps` option shape
- * (`value`/`label`/`disabled`) minus `helperText` — per-option sub-labels are out
- * of studio's scope, matching the checkbox option editor.
+ * (`value`/`label`/`disabled`/`helperText`). `helperText` is optional (older
+ * options have none; absent or `''` = no sub-label) and earns its place in the
+ * `card` display, where each box has room for a second line.
  */
 export type RadioOption = {
   value: string
   label: string
   disabled: boolean
+  helperText?: string
 }
 
 /**
@@ -395,6 +411,13 @@ export type RadioConfig = {
   errorMessage: string
   variant: 'classic' | 'surface' | 'soft'
   size: '1' | '2' | '3'
+  /**
+   * How the options are drawn: `plain` (bare circles), `card` (every option in
+   * its own accent-tinted box) or `chip` (content-sized pills, the selected one
+   * checked). Optional — absent = the engine default, `plain`, no migration;
+   * exported only off `plain`.
+   */
+  display?: 'plain' | 'card' | 'chip'
   orientation: 'horizontal' | 'vertical'
   options: RadioOption[]
   /** Preselected option value; `''` means nothing is selected. */

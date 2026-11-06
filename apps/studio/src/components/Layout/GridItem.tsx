@@ -651,6 +651,9 @@ function MultiAutocompleteLivePreview({ config }: { config: MultiAutocompleteCon
         itemAvatar={(config.avatarKey || undefined) as never}
         maxSelections={config.maxSelections === '' ? undefined : config.maxSelections}
         showSelectedCount={config.showSelectedCount}
+        itemGroup={(config.groupKey || undefined) as never}
+        checkboxes={config.checkboxes}
+        itemDisabled={(config.disabledKey || undefined) as never}
       />
     </div>
   )
@@ -737,6 +740,7 @@ function RadioLivePreview({ config }: { config: RadioConfig }) {
         errorMessage={config.errorMessage}
         variant={config.variant}
         size={config.size}
+        display={config.display ?? 'plain'}
         orientation={config.orientation}
         options={config.options}
         value={config.defaultValue || undefined}

@@ -19,7 +19,7 @@ export type { ButtonBaseProps } from "./components/Button";
 export type { ButtonVariant } from "./components/@types";
 // The curated lucide glyph map ButtonElement.icon keys into (studio icon picker).
 export { IconData } from "./components/core/const/iconData";
-export type { CheckboxProps, CheckboxElement } from "./components/@types";
+export type { CheckboxProps, CheckboxElement, RadioButtonProps, RadioDisplay } from "./components/@types";
 export type { SwitchProps, SwitchElement, SwitchLabelPosition } from "./components/@types";
 export type { TextFieldProps, TextFieldElement, DataType, TextareaProps, TextareaElement, SelectFieldProps } from "./components/@types";
 export * from "./hooks";
@@ -29,6 +29,7 @@ export * from "./components/Autocomplete2";
 // studio canvas). Like Autocomplete2 it calls useCore, so it needs CoreProvider.
 export { MultiAutocompleteBase } from "./components/MultiAutocomplete";
 export type { MultiAutocompleteProps } from "./components/@types";
+export type { OptionItemGroup, OptionGroup, OptionItemDisabled, OptionDisabledState } from "./components/OptionRow";
 // The option row (avatar/icon + title + subtitle) both autocompletes render — also
 // the studio's "Option preview" strip.
 export { OptionRow, SelectedChip } from "./components/OptionRow";

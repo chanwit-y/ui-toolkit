@@ -23,6 +23,7 @@ export class Radio<M extends TModelMaster, A extends TApiMaster<M>>
       errorMessage: props.errorMessage,
       size: props.size,
       variant: props.variant,
+      display: props.display,
       defaultValue: props.defaultValue,
       orientation: props.orientation,
       options: props.options,

@@ -6,6 +6,9 @@ import { FieldPicker, IconField, Input, Select, SegmentedControl } from '../comm
 import { useActiveItems, useGridStore } from './gridStore'
 import { isSelectFamily, observeWarnings } from './observe'
 import { IMAGE_KINDS, rowFieldsFor, TEXT_KINDS } from './rowFields'
+
+/** Fields a multi's Disabled field may point at: a flag, a reason text, or anything. */
+const DISABLED_KINDS = ['string', 'boolean', 'any'] as const
 import { bindingRowModel, LoadFieldPicker, useLoadShapes, usePageLoads } from './pageData'
 import type { MultiAutocompleteConfig, SelectFieldConfig, SelectOption } from './types'
 
@@ -318,6 +321,9 @@ function OptionDisplaySection({
       />
     </Field>
   )
+  // Multi only: the engine groups a multi's rows (`itemGroup`); the single
+  // autocomplete's list is still flat.
+  const multiConfig = multi ? (config as MultiAutocompleteConfig) : null
   return (
     <div className="space-y-3 rounded-lg border border-line bg-panel p-3">
       <h4 className="text-ui-sm font-semibold uppercase tracking-wide text-ink-3">
@@ -333,6 +339,40 @@ function OptionDisplaySection({
         {picker('subtitleKey', 'Subtitle field', { kinds: TEXT_KINDS, allowNone: true })}
         {config.subtitleKey && <p className="text-ui-xs text-ink-3">Also matched when searching.</p>}
       </div>
+      {multiConfig && (
+        <div className="space-y-1">
+          <Field label="Group field">
+            <FieldPicker
+              fields={row.fields}
+              value={multiConfig.groupKey ?? ''}
+              onChange={(v) => set('groupKey' as keyof SelectFieldConfig, v as never)}
+              kinds={TEXT_KINDS}
+              allowNone
+              aria-label="Group field"
+            />
+          </Field>
+          {multiConfig.groupKey && (
+            <p className="text-ui-xs text-ink-3">
+              Options are listed under a header per value; a search matching a header keeps its whole group.
+            </p>
+          )}
+          <Field label="Disabled field">
+            <FieldPicker
+              fields={row.fields}
+              value={multiConfig.disabledKey ?? ''}
+              onChange={(v) => set('disabledKey' as keyof SelectFieldConfig, v as never)}
+              kinds={DISABLED_KINDS}
+              allowNone
+              aria-label="Disabled field"
+            />
+          </Field>
+          {multiConfig.disabledKey && (
+            <p className="text-ui-xs text-ink-3">
+              A true value greys the option out; a text value is shown beside it as the reason.
+            </p>
+          )}
+        </div>
+      )}
       <div className="space-y-1">
         {picker('avatarKey', 'Image field', { kinds: IMAGE_KINDS, allowNone: true })}
         {config.avatarKey && config.itemIcon && (
@@ -536,6 +576,11 @@ export function SelectFieldConfigPanel({
             label="Show selected count"
             checked={multiConfig.showSelectedCount}
             onChange={(v) => setMulti('showSelectedCount', v)}
+          />
+          <Toggle
+            label="Checkbox on every option"
+            checked={multiConfig.checkboxes ?? false}
+            onChange={(v) => setMulti('checkboxes', v)}
           />
         </div>
       )}

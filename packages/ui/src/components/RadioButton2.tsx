@@ -30,6 +30,8 @@ const RadioButtonBase2 = forwardRef<
 	RadioButtonProps2
 >(({
 	name,
+	// Engine-only; must not reach Radix's root as a DOM attribute.
+	dataType: _dataType,
 	options,
 	api,
 	apiInfo,

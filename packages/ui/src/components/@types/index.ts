@@ -289,6 +289,13 @@ export type CheckboxProps = BaseComponentProps<
   }
 >;
 
+/**
+ * How a radio group draws its options: bare circles (`plain`), one bordered
+ * box per option (`card`), or content-sized pills with no circle where the
+ * selected one shows a check mark (`chip`).
+ */
+export type RadioDisplay = "plain" | "card" | "chip";
+
 export type RadioButtonProps = BaseComponentProps<
   typeof RadixRadioGroup.Root,
   {
@@ -298,6 +305,13 @@ export type RadioButtonProps = BaseComponentProps<
     errorMessage?: string;
     size?: "1" | "2" | "3";
     variant?: "classic" | "surface" | "soft";
+    /**
+     * How the options are drawn: `plain` (default) is the bare circle + label;
+     * `card` puts every option in its own bordered box, the whole box the
+     * label, the selected one tinted with the accent. Orthogonal to `variant`,
+     * which stays the circle's look.
+     */
+    display?: RadioDisplay;
     value?: string;
     onValueChange?: (value: string) => void;
     options: Array<{
@@ -440,6 +454,22 @@ export type MultiAutocompleteProps<T extends Record<string, any> = {}> =
       itemIcon?: keyof typeof IconData | LucideIcon | ((item: T) => keyof typeof IconData | LucideIcon);
       itemSubtitle?: keyof T | ((item: T) => string);
       itemAvatar?: keyof T | ((item: T) => string | { src: string; alt?: string; fallback?: string });
+      /**
+       * Group the options under section headers: the field (or function)
+       * giving each row's group label. Rows with a blank label are listed
+       * first without a header; groups follow in first-seen order; a query
+       * matching a label keeps its whole group.
+       */
+      itemGroup?: keyof T | ((item: T) => string);
+      /** Draw a checkbox at the start of every row instead of the trailing check on the selected ones. */
+      checkboxes?: boolean;
+      /**
+       * The field (or function) saying an option can't be picked: a truthy
+       * value disables the row, a non-empty string is also shown as the
+       * reason badge at the row's end. A disabled option already in the
+       * value keeps its chip (removable) but can't be re-picked.
+       */
+      itemDisabled?: keyof T | ((item: T) => boolean | string | null | undefined);
       options: T[];
       searchKey: keyof T;
       idKey: keyof T;
@@ -1451,6 +1481,19 @@ export type AutocompleteElement = {
   maxSelections?: number;
   /** `multiAutocomplete` only. */
   showSelectedCount?: boolean;
+  /**
+   * `multiAutocomplete` only: the option field whose value names the section
+   * a row is listed under (sticky headers, ungrouped rows first, a query
+   * matching a label keeps its group).
+   */
+  itemGroup?: keyof any | ((item: any) => string);
+  /** `multiAutocomplete` only: a checkbox at the start of every row. */
+  checkboxes?: boolean;
+  /**
+   * `multiAutocomplete` only: the option field whose truthy value disables
+   * the row; a text value is also the reason badge ("No role assigned").
+   */
+  itemDisabled?: keyof any | ((item: any) => boolean | string | null | undefined);
 };
 
 export type ColumnDef = {
@@ -2120,6 +2163,8 @@ export type RadioElement = {
   errorMessage?: string;
   size?: "1" | "2" | "3";
   variant?: "classic" | "surface" | "soft";
+  /** `plain` (default), `card` (every option in its own accent-tinted box) or `chip` (pills, the selected one checked). */
+  display?: RadioDisplay;
   orientation?: "horizontal" | "vertical";
   defaultValue?: string;
   /** Read-only initial value bound from a global-state slice. */

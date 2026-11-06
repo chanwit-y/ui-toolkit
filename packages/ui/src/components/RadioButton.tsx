@@ -2,7 +2,7 @@ import type { ElementRef } from "react"
 import type { RadioButtonProps } from "./@types"
 
 import { Box, Flex, RadioGroup, Text } from '@radix-ui/themes'
-import { AlertCircle } from "lucide-react"
+import { AlertCircle, Check } from "lucide-react"
 import { forwardRef, useEffect, useMemo, useState } from "react"
 import { cn } from "../util/utils"
 
@@ -17,6 +17,7 @@ const RadioButtonBase = forwardRef<
 	errorMessage,
 	variant = "surface",
 	size = "2",
+	display = "plain",
 	value,
 	defaultValue,
 	onValueChange,
@@ -74,6 +75,65 @@ const RadioButtonBase = forwardRef<
 				{...props}
 				{...(hasError && { 'data-error': 'true' })}
 			>
+				{display === "chip" ? (
+					// Content-sized pills, the pill itself the label. The Radix item
+					// stays in the DOM (keyboard roving focus, checked state, a11y)
+					// but is clipped away; the selected pill shows the check instead
+					// (styles/radioCard.css). A helper text has no room, so it is
+					// the pill's tooltip.
+					<div
+						className="gummy-radio-chips"
+						data-orientation={orientation}
+						data-size={size}
+					>
+						{options.map((option) => (
+							<Text
+								key={option.value}
+								as="label"
+								size="2"
+								className="gummy-radio-chip gummy-surface"
+								title={option.helperText || undefined}
+							>
+								<RadioGroup.Item
+									value={option.value}
+									disabled={option.disabled}
+									className="gummy-radio-chip-input"
+								/>
+								<Check className="gummy-radio-chip-check" aria-hidden="true" />
+								<Text weight="medium" as="span">{option.label}</Text>
+							</Text>
+						))}
+					</div>
+				) : display === "card" ? (
+					// One bordered box per option, the box itself the label; the
+					// selected / focus / error looks live in styles/radioCard.css
+					// and read the Radix button's own state, so the circle inside
+					// keeps the `variant` look.
+					<div
+						className="gummy-radio-cards"
+						data-orientation={orientation}
+						data-size={size}
+					>
+						{options.map((option) => (
+							<Text
+								key={option.value}
+								as="label"
+								size="2"
+								className="gummy-radio-card gummy-surface"
+							>
+								<RadioGroup.Item value={option.value} disabled={option.disabled} />
+								<span className="gummy-radio-card-text">
+									<Text weight="medium" as="div">{option.label}</Text>
+									{option.helperText && (
+										<Text size="1" as="div" className="text-[var(--gray-11)]">
+											{option.helperText}
+										</Text>
+									)}
+								</span>
+							</Text>
+						))}
+					</div>
+				) : (
 				<Flex 
 					direction={orientation === "horizontal" ? "row" : "column"} 
 					gap="3"
@@ -105,6 +165,7 @@ const RadioButtonBase = forwardRef<
 						</Flex>
 					))}
 				</Flex>
+				)}
 			</RadioGroup.Root>
 
 			{displayHelperText && (

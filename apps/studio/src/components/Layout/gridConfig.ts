@@ -443,6 +443,9 @@ function autocompleteElement(
       ? {
           ...(typeof multi.maxSelections === 'number' ? { maxSelections: multi.maxSelections } : {}),
           showSelectedCount: multi.showSelectedCount,
+          ...(multi.groupKey ? { itemGroup: multi.groupKey } : {}),
+          ...(multi.checkboxes ? { checkboxes: true } : {}),
+          ...(multi.disabledKey ? { itemDisabled: multi.disabledKey } : {}),
         }
       : {}),
     ...(c.mode === 'source'
@@ -547,8 +550,9 @@ function checkboxElement(c: CheckboxConfig): Record<string, unknown> {
 /**
  * `radio` → engine `RadioElement`. `dataType` is fixed `string` (a radio stores one
  * scalar value). Always emits the static `options` (`value`/`label`, plus `disabled`
- * only when true) and `orientation`; `defaultValue` and `helperText` are dropped when
- * empty. Static-only — no API `source` mode is emitted.
+ * only when true and `helperText` only when set) and `orientation`; `defaultValue`
+ * and `helperText` are dropped when empty, `display` emitted only off `plain`.
+ * Static-only — no API `source` mode is emitted.
  */
 function radioElement(c: RadioConfig): Record<string, unknown> {
   return {
@@ -559,11 +563,13 @@ function radioElement(c: RadioConfig): Record<string, unknown> {
     errorMessage: c.errorMessage,
     variant: c.variant,
     size: c.size,
+    ...(c.display && c.display !== 'plain' ? { display: c.display } : {}),
     orientation: c.orientation,
     options: c.options.map((o) => ({
       value: o.value,
       label: o.label,
       ...(o.disabled ? { disabled: true } : {}),
+      ...(o.helperText ? { helperText: o.helperText } : {}),
     })),
     ...omitEmpty({ helperText: c.helperText, defaultValue: c.defaultValue }),
   }
