@@ -9,13 +9,19 @@ import { DEFAULT_CONTAINER_GRID } from "@gummy-ui/ui";
  * - **Documents** — every slot wired: add / rename / delete collections, the
  *   New menu (folder, note, sheet — `kind` drives the icon through
  *   `kindIcons`), inline rename, Move to, drag-and-drop, Duplicate, Delete
- *   with the non-empty-folder block. The card beside it is bound to the
- *   `docsSelected` slice; a file click also navigates to this page with
- *   `?file=<id>`, which the line under the card reads back.
- * - **Browse** — `moveItem`, `duplicateItem` and the two deletes unwired, so
- *   drag-and-drop, Move to, Duplicate and the Delete entries are gone while
- *   New and Rename stay; `menu: false` drops the … button too (rename by
- *   double-click / F2); `collapsible` (the 48px rail) and a fixed `height`.
+ *   with the non-empty-folder block, and **upload** (spec §11): drop files
+ *   from the desktop onto a folder / a collection, or pick them from the New
+ *   menu's "Upload files…" entry — one multipart request per file through
+ *   `uploadFileItem` (images / PDF / documents / spreadsheets / text up to
+ *   10 MB, five per drop), ghost rows while they go, the last one selected.
+ *   The card beside it is bound to the `docsSelected` slice; a file click
+ *   also navigates to this page with `?file=<id>`, which the line under the
+ *   card reads back.
+ * - **Browse** — `moveItem`, `duplicateItem`, `uploadItem` and the two
+ *   deletes unwired, so drag-and-drop (both kinds), Move to, Duplicate and
+ *   the Delete entries are gone while New and Rename stay; `menu: false`
+ *   drops the … button too (rename by double-click / F2); `collapsible`
+ *   (the 48px rail) and a fixed `height`.
  * - **Read-only** — `readOnly: true`: selection and expand only.
  */
 const full = { sm: "12", md: "12", lg: "12", xl: "12" } as const;
@@ -50,9 +56,17 @@ const api: FileCollectionApi = {
   },
   moveItem: { name: "moveFileItem", params: { id: "id" } },
   duplicateItem: { name: "duplicateFileItem", params: { id: "id" } },
+  uploadItem: {
+    name: "uploadFileItem",
+    accept: ["image", "pdf", "document", "spreadsheet", "text"],
+    maxSizeMB: 10,
+    maxFiles: 5,
+    snackbarSuccess: { type: "success", message: "{{count}} file(s) uploaded" },
+  },
 };
 
-const kindIcons = { markdown: "fileText", sheet: "table", image: "image" };
+// The mock API maps the engine's preset kinds onto its own (sheet / markdown / document); the presets stay for a plain backend.
+const kindIcons = { markdown: "fileText", sheet: "table", image: "image", document: "fileText", spreadsheet: "table", pdf: "fileText", text: "fileText" };
 const newItems = [
   { label: "New folder", icon: "folder", type: "folder" },
   { label: "New note", icon: "fileText", type: "file", kind: "markdown" },
@@ -63,7 +77,7 @@ const nothingSelected = { left: { source: "state", key: "docsSelected", path: "i
 const somethingSelected = { ...nothingSelected, operator: "neq" } as const;
 
 const documentsBins: Bin[] = [
-  text("Every slot wired. Click a file to select it (and navigate here with ?file=…); double-click or F2 renames; drag into a folder or onto the collection body; the … menu has Move to, Duplicate and Delete. A non-empty folder can't be deleted.", { color: "gray" }),
+  text("Every slot wired. Click a file to select it (and navigate here with ?file=…); double-click or F2 renames; drag into a folder or onto the collection body; the … menu has Move to, Duplicate and Delete. A non-empty folder can't be deleted. Drop files from your desktop onto a folder or a collection (or New → Upload files…) to upload them — images, PDF, documents, spreadsheets and text, 10 MB and five files at a time.", { color: "gray" }),
   {
     sm: "12", md: "5", lg: "4", xl: "4",
     alignSelf: "stretch",
@@ -133,7 +147,7 @@ const documentsBins: Bin[] = [
 ];
 
 const browseBins: Bin[] = [
-  text("moveItem, duplicateItem and the two deletes are unwired, and menu: false hides the … button (rename by double-click or F2). Collapsible, with a fixed height.", { color: "gray" }),
+  text("moveItem, duplicateItem, uploadItem and the two deletes are unwired — no drag of either kind, no Upload entry — and menu: false hides the … button (rename by double-click or F2). Collapsible, with a fixed height.", { color: "gray" }),
   {
     sm: "12", md: "6", lg: "4", xl: "4",
     type: "filecollection",

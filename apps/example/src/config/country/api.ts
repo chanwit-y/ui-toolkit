@@ -424,6 +424,14 @@ export const api = {
     parameter: "idParam",
     withOptions: false,
   },
+  uploadFileItem: {
+    url: "/collection/file-items/upload",
+    description: "Upload a file into a folder (multipart: file, collectionId, parentId, name, kind)",
+    methods: "POST" as const,
+    response: "fileNodeRes",
+    body: "fileUploadBody",
+    withOptions: false,
+  },
   deleteFileItem: {
     url: "/collection/file-items/:id",
     description: "Delete a file or an empty folder",

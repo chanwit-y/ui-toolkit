@@ -200,6 +200,7 @@ export type {
 } from "./components/@types";
 export * from "./components/core/fileCollectionTree";
 export { FILE_COLLECTION_MUTATIONS } from "./components/core/fileCollection";
+export * from "./components/core/fileCollectionUpload";
 export type {
 	FileCollection as FileCollectionGroup,
 	FileCollectionNode,
@@ -208,6 +209,9 @@ export type {
 	FileCollectionApi,
 	FileCollectionApiConfig,
 	FileCollectionElement,
+	FileCollectionUploadOptions,
+	FileCollectionUploadApiRef,
+	FileCollectionUploadApi,
 	FileCollectionProps,
 } from "./components/@types";
 export type {

@@ -56,8 +56,15 @@ export class HttpClientBase {
         const jwtToken = await getAccessToken();
 
         config.headers = config.headers || {};
-        config.headers['Content-Type'] =
-          config.headers['Content-Type'] || 'application/json';
+        // A multipart body (the file collection's `uploadItem`) must reach
+        // the wire without a forced JSON type: the browser then writes the
+        // multipart boundary itself.
+        if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
+          delete config.headers['Content-Type'];
+        } else {
+          config.headers['Content-Type'] =
+            config.headers['Content-Type'] || 'application/json';
+        }
         config.headers['app-version'] = version;
         config.headers['Authorization'] = 'Bearer ' + jwtToken;
         config.headers['Access-Control-Allow-Origin'] = true;

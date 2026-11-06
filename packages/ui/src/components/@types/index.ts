@@ -967,13 +967,39 @@ export type FileCollectionNewItem = {
 };
 
 /**
- * The nine endpoint slots. `list` reads the nested collections; every
+ * The upload rules and the New-menu entry of the `uploadItem` slot (spec
+ * §11). All optional: absent `accept` / `maxSizeMB` / `maxFiles` means the
+ * server decides; `label` / `icon` name the "Upload files…" entry.
+ */
+export type FileCollectionUploadOptions = {
+  /** Presets + raw tokens, as on `uploadfile`; checked on drop and pick. */
+  accept?: AcceptConfig;
+  maxSizeMB?: number;
+  /** Per drop / pick; the files past it are skipped. */
+  maxFiles?: number;
+  /** The New-menu entry, default "Upload files…". */
+  label?: string;
+  /** An `IconData` key, default `upload`. */
+  icon?: keyof typeof IconData;
+};
+
+/** The `uploadItem` slot: a mutation ref plus the upload rules. */
+export type FileCollectionUploadApiRef = FormListMutationApiRef & FileCollectionUploadOptions;
+/** {@link FileCollectionUploadApiRef} resolved against the ApiMaster. */
+export type FileCollectionUploadApi = FormListMutationApi & FileCollectionUploadOptions;
+
+/**
+ * The ten endpoint slots. `list` reads the nested collections; every
  * mutation's body is fixed by the engine (`{ name }`, `{ collectionId,
  * parentId, name, type, kind }`, `{ collectionId, parentId }`), its `params`
  * map a URL `:param` to a **node / collection field** (`id`, `collectionId`,
  * `parentId`, `name`, `kind`) and `extraParams` / `query` resolve from the
  * route / global state / literals. A mutation's response is ignored: after a
  * 2xx the tree is re-fetched. An absent slot hides the affordance it powers.
+ * `uploadItem` is the exception on the body: the engine always sends a
+ * multipart `FormData` for it (`file`, `collectionId`, `parentId` — omitted at
+ * the root —, `name`, `kind`), one request per dropped / picked file; the
+ * endpoint must still declare a body model so the body lands in its slot.
  */
 export type FileCollectionApi = {
   list: FormListReadApiRef;
@@ -985,6 +1011,8 @@ export type FileCollectionApi = {
   deleteItem?: FormListDeleteApiRef;
   moveItem?: FormListMutationApiRef;
   duplicateItem?: FormListMutationApiRef;
+  /** Drop OS files onto a folder / collection, or pick them from the New menu. */
+  uploadItem?: FileCollectionUploadApiRef;
 };
 
 /** {@link FileCollectionApi} resolved against the ApiMaster. */
@@ -998,6 +1026,7 @@ export type FileCollectionApiConfig = {
   deleteItem?: FormListDeleteApi;
   moveItem?: FormListMutationApi;
   duplicateItem?: FormListMutationApi;
+  uploadItem?: FileCollectionUploadApi;
 };
 
 /**

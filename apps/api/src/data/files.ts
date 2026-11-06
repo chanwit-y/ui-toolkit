@@ -159,6 +159,16 @@ const FILES: StoredFile[] = [
 const contentUrl = (id: string) => `/collection/files/${id}/content`;
 
 export const fileService = {
+  /**
+   * Keep an uploaded file's bytes under its tree node's id (the File collection's
+   * `uploadItem`), so the selection-bound preview shows it at once. In memory only.
+   */
+  add(file: StoredFile) {
+    const index = FILES.findIndex((f) => f._id === file._id);
+    if (index === -1) FILES.push(file);
+    else FILES[index] = file;
+    return file;
+  },
   /** The list: a URL per record, no bytes. */
   list: () =>
     FILES.map(({ _id, name, type, bytes, blurhash, width, height }) => ({ _id, id: _id, name, type, size: bytes.length, url: contentUrl(_id), blurhash, width, height })),

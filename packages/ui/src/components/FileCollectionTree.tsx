@@ -1,9 +1,10 @@
 import { useDraggable, useDroppable } from "@dnd-kit/core";
-import { DropdownMenu } from "@radix-ui/themes";
+import { DropdownMenu, Spinner } from "@radix-ui/themes";
 import {
 	useEffect,
 	useRef,
 	useState,
+	type DragEvent,
 	type KeyboardEvent,
 	type MouseEvent,
 	type ReactNode,
@@ -12,6 +13,7 @@ import type { FileCollection, FileCollectionNewItem, FileCollectionNode } from "
 import Icon from "./Icon";
 import { IconData } from "./core/const/iconData";
 import { nodeIcon } from "./core/fileCollectionTree";
+import { hasFiles, type PendingUpload } from "./core/fileCollectionUpload";
 
 /*
  * The rows of a file collection: a collection header (toggle, hover + / …,
@@ -47,7 +49,104 @@ export type TreeActions = {
 	onMoveItem?: (node: FileCollectionNode) => void;
 	onDuplicateItem?: (node: FileCollectionNode) => void;
 	canDrag: boolean;
+	/** OS files may be dropped on folders / collections and picked from the New menu (`uploadItem` wired, not read-only). */
+	canUpload?: boolean;
+	/** The New menu's trailing "Upload files…" entry. */
+	uploadEntry?: { label: string; icon: IconKey };
+	/** A native file drop on a folder (`parentId`), a file (its parent) or a collection (`null`). */
+	onDropFiles?: (collectionId: string, parentId: string | null, dt: DataTransfer) => void;
+	/** The New menu's upload entry: open the file picker for that target. */
+	onPickFiles?: (collectionId: string, parentId: string | null, fromHeader: boolean) => void;
+	/** Files in flight, drawn as ghost rows under their target. */
+	pending?: PendingUpload[];
 };
+
+/**
+ * Native file-drag handling for one target: the hovered state (a depth
+ * counter, since enter / leave fire for every child) and the handlers to
+ * spread on it. Only a drag that carries `Files` is taken — a dnd-kit row
+ * drag is pointer-based and never reaches these — and each handler stops the
+ * event, so the root zone / the root guard don't see a drop a row took.
+ */
+function useFileDrop(enabled: boolean, onDrop: (dt: DataTransfer) => void) {
+	const [over, setOver] = useState(false);
+	const depth = useRef(0);
+	const take = (e: DragEvent) => enabled && hasFiles(e.dataTransfer);
+	// A drag that ends anywhere else (dropped outside the window, cancelled) sends no leave: reset on the window's own end events.
+	useEffect(() => {
+		if (!over) return;
+		const reset = () => {
+			depth.current = 0;
+			setOver(false);
+		};
+		window.addEventListener("drop", reset, true);
+		window.addEventListener("dragend", reset, true);
+		return () => {
+			window.removeEventListener("drop", reset, true);
+			window.removeEventListener("dragend", reset, true);
+		};
+	}, [over]);
+	const props = {
+		onDragEnter: (e: DragEvent) => {
+			if (!take(e)) return;
+			e.preventDefault();
+			e.stopPropagation();
+			depth.current += 1;
+			setOver(true);
+		},
+		onDragOver: (e: DragEvent) => {
+			if (!take(e)) return;
+			e.preventDefault();
+			e.stopPropagation();
+			e.dataTransfer.dropEffect = "copy";
+		},
+		onDragLeave: (e: DragEvent) => {
+			if (!take(e)) return;
+			e.stopPropagation();
+			depth.current = Math.max(0, depth.current - 1);
+			if (depth.current === 0) setOver(false);
+		},
+		onDrop: (e: DragEvent) => {
+			if (!take(e)) return;
+			e.preventDefault();
+			e.stopPropagation();
+			depth.current = 0;
+			setOver(false);
+			onDrop(e.dataTransfer);
+		},
+	};
+	return { over: enabled && over, props };
+}
+
+/** A file being uploaded: a greyed row with a spinner where it will appear. */
+function PendingRow({ item, level, kindIcons }: { item: PendingUpload; level: number; kindIcons?: Record<string, string> }) {
+	const indent = level * 20 + 8;
+	const trunkX = indent - 12;
+	const ghost: FileCollectionNode = { id: item.key, collectionId: item.collectionId, parentId: item.parentId, name: item.name, type: "file", kind: item.kind };
+	return (
+		<div className="gummy-fc-node" role="none">
+			<span aria-hidden className="gummy-fc-line is-stub" style={{ left: trunkX }} />
+			<span aria-hidden className="gummy-fc-line is-tick" style={{ left: trunkX }} />
+			<div className="gummy-fc-row is-pending" role="treeitem" aria-level={level + 1} aria-selected={false} aria-busy tabIndex={-1} data-pending-upload style={{ marginLeft: indent }}>
+				<span className="gummy-fc-chevron" />
+				<span className="gummy-fc-node-icon">
+					<Icon icon={safeIcon(nodeIcon(ghost, kindIcons, false))} size={16} />
+				</span>
+				<span className="gummy-fc-label" title={item.name}>
+					{item.name}
+				</span>
+				<span className="gummy-fc-pending-spinner" aria-label="Uploading">
+					<Spinner size="1" />
+				</span>
+			</div>
+		</div>
+	);
+}
+
+/** The ghost rows under one target (a folder, or `null` for the collection root). */
+function pendingUnder(pending: PendingUpload[] | undefined, collectionId: string, parentId: string | null): PendingUpload[] {
+	return (pending ?? []).filter((p) => p.collectionId === collectionId && p.parentId === parentId);
+}
 
 type InlineEditProps = {
 	initialValue: string;
@@ -116,8 +215,18 @@ function Entry({ icon, label, onSelect, color }: { icon: IconKey; label: string;
 	);
 }
 
-/** The New menu's entries (one per `newItems` element). */
-function NewEntries({ entries, onPick }: { entries: FileCollectionNewItem[]; onPick: (entry: FileCollectionNewItem) => void }) {
+/** The New menu's entries (one per `newItems` element), then the upload entry when files can be picked. */
+function NewEntries({
+	entries,
+	onPick,
+	uploadEntry,
+	onUpload,
+}: {
+	entries: FileCollectionNewItem[];
+	onPick: (entry: FileCollectionNewItem) => void;
+	uploadEntry?: { label: string; icon: IconKey };
+	onUpload?: () => void;
+}) {
 	return (
 		<>
 			{entries.map((entry, i) => (
@@ -128,8 +237,19 @@ function NewEntries({ entries, onPick }: { entries: FileCollectionNewItem[]; onP
 					onSelect={() => onPick(entry)}
 				/>
 			))}
+			{onUpload && (
+				<>
+					{entries.length > 0 && <DropdownMenu.Separator />}
+					<Entry icon={uploadEntry?.icon ?? "upload"} label={uploadEntry?.label ?? "Upload files…"} onSelect={onUpload} />
+				</>
+			)}
 		</>
 	);
+}
+
+/** Whether a New menu has anything to show: a `newItems` entry (needs `createItem`) or the upload entry. */
+function hasNewMenu(actions: TreeActions): boolean {
+	return !actions.readOnly && ((!!actions.onNewItem && actions.newItems.length > 0) || !!actions.onPickFiles);
 }
 
 /** A hover-revealed icon button on a row (the Remove button); the click never selects or drags the row. */
@@ -216,6 +336,10 @@ export function NodeRow({ node, level, isLast, selectedId, expanded, renamingId,
 		setDropRef(el);
 	};
 	const showDrop = isFolder && isOver && active?.id !== node.id;
+	// OS files: a folder takes them, a file forwards them to its parent (highlighted on the row itself so the drop has a visible home).
+	const fileDrop = useFileDrop(!!actions.canUpload && !isEditing, (dt) => actions.onDropFiles?.(node.collectionId, isFolder ? node.id : node.parentId, dt));
+	const pendingHere = isFolder ? pendingUnder(actions.pending, node.collectionId, node.id) : [];
+	const hasRows = hasChildren || pendingHere.length > 0;
 
 	const onClick = (e: MouseEvent<HTMLDivElement>) => {
 		e.stopPropagation();
@@ -235,7 +359,7 @@ export function NodeRow({ node, level, isLast, selectedId, expanded, renamingId,
 	const canRename = !actions.readOnly && !!actions.onRenameItem;
 	const menuEntries: ReactNode[] = [];
 	if (!actions.readOnly && actions.showMenu) {
-		if (isFolder && actions.onNewItem && actions.newItems.length) {
+		if (isFolder && hasNewMenu(actions)) {
 			menuEntries.push(
 				<DropdownMenu.Sub key="new">
 					<DropdownMenu.SubTrigger>
@@ -243,7 +367,12 @@ export function NodeRow({ node, level, isLast, selectedId, expanded, renamingId,
 						New
 					</DropdownMenu.SubTrigger>
 					<DropdownMenu.SubContent>
-						<NewEntries entries={actions.newItems} onPick={(entry) => actions.onNewItem?.(node.collectionId, node.id, entry, false)} />
+						<NewEntries
+							entries={actions.onNewItem ? actions.newItems : []}
+							onPick={(entry) => actions.onNewItem?.(node.collectionId, node.id, entry, false)}
+							uploadEntry={actions.uploadEntry}
+							onUpload={actions.onPickFiles ? () => actions.onPickFiles?.(node.collectionId, node.id, false) : undefined}
+						/>
 					</DropdownMenu.SubContent>
 				</DropdownMenu.Sub>,
 			);
@@ -273,14 +402,15 @@ export function NodeRow({ node, level, isLast, selectedId, expanded, renamingId,
 				{...(isFolder ? { "aria-expanded": isOpen } : {})}
 				data-node-id={node.id}
 				data-node-type={node.type}
-				data-drop={showDrop || undefined}
+				data-drop={showDrop || fileDrop.over || undefined}
 				data-dragging={isDragging || undefined}
 				className="gummy-fc-row"
 				style={{ marginLeft: indent }}
 				onClick={onClick}
 				onKeyDown={onKeyDown}
+				{...fileDrop.props}
 			>
-				<span className="gummy-fc-chevron">{hasChildren && <Icon icon={isOpen ? "chevronDown" : "chevronRight"} size={14} />}</span>
+				<span className="gummy-fc-chevron">{hasRows && <Icon icon={isOpen ? "chevronDown" : "chevronRight"} size={14} />}</span>
 				<span className={`gummy-fc-node-icon${isFolder ? " is-folder" : customIcon ? " is-custom" : ""}`}>
 					<Icon icon={iconKey} size={16} />
 				</span>
@@ -317,21 +447,24 @@ export function NodeRow({ node, level, isLast, selectedId, expanded, renamingId,
 					</span>
 				)}
 			</div>
-			{hasChildren && (
+			{hasRows && (
 				<Collapse open={isOpen}>
 					<div role="group">
-						{node.children!.map((child, i) => (
+						{(node.children ?? []).map((child, i) => (
 							<NodeRow
 								key={child.id}
 								node={child}
 								level={level + 1}
-								isLast={i === node.children!.length - 1}
+								isLast={pendingHere.length === 0 && i === node.children!.length - 1}
 								selectedId={selectedId}
 								expanded={expanded}
 								renamingId={renamingId}
 								setRenamingId={setRenamingId}
 								actions={actions}
 							/>
+						))}
+						{pendingHere.map((item) => (
+							<PendingRow key={item.key} item={item} level={level + 1} kindIcons={actions.kindIcons} />
 						))}
 					</div>
 				</Collapse>
@@ -382,9 +515,13 @@ export function CollectionGroup({ collection, selectedId, expanded, collapsedCol
 		disabled: !actions.canDrag,
 	});
 	const canRename = !actions.readOnly && !!actions.onRenameCollection;
-	const showNew = !actions.readOnly && !!actions.onNewItem && actions.newItems.length > 0;
+	const showNew = hasNewMenu(actions);
 	const showMenu = !actions.readOnly && actions.showMenu && (canRename || !!actions.onDeleteCollection);
 	const showActions = showNew || showMenu || (!actions.readOnly && !!actions.onDeleteCollection);
+	// OS files on the header or the body land at the collection root.
+	const headerDrop = useFileDrop(!!actions.canUpload && !isEditing, (dt) => actions.onDropFiles?.(collection.id, null, dt));
+	const rootDrop = useFileDrop(!!actions.canUpload, (dt) => actions.onDropFiles?.(collection.id, null, dt));
+	const pendingRoot = pendingUnder(actions.pending, collection.id, null);
 
 	return (
 		<div data-collection-id={collection.id} role="none">
@@ -393,6 +530,8 @@ export function CollectionGroup({ collection, selectedId, expanded, collapsedCol
 				role="none"
 				tabIndex={0}
 				data-collection-header={collection.id}
+				data-drop={headerDrop.over || undefined}
+				{...headerDrop.props}
 				onClick={() => {
 					if (!isEditing) actions.onToggleCollection(collection.id);
 				}}
@@ -440,7 +579,12 @@ export function CollectionGroup({ collection, selectedId, expanded, collapsedCol
 					<div className="gummy-fc-collection-actions" data-open={menuOpen || undefined}>
 						{showNew && (
 							<MenuButton label="New" icon="puls" small onOpenChange={setMenuOpen}>
-								<NewEntries entries={actions.newItems} onPick={(entry) => actions.onNewItem?.(collection.id, null, entry, true)} />
+								<NewEntries
+									entries={actions.onNewItem ? actions.newItems : []}
+									onPick={(entry) => actions.onNewItem?.(collection.id, null, entry, true)}
+									uploadEntry={actions.uploadEntry}
+									onUpload={actions.onPickFiles ? () => actions.onPickFiles?.(collection.id, null, true) : undefined}
+								/>
 							</MenuButton>
 						)}
 						{!actions.readOnly && actions.onDeleteCollection && (
@@ -458,20 +602,23 @@ export function CollectionGroup({ collection, selectedId, expanded, collapsedCol
 				)}
 			</div>
 			<Collapse open={isOpen}>
-				<div ref={setNodeRef} className="gummy-fc-root-zone" data-over={isOver || undefined} role="group">
-					{collection.directories.length === 0 && <div className="gummy-fc-empty-row">Empty</div>}
+				<div ref={setNodeRef} className="gummy-fc-root-zone" data-over={isOver || rootDrop.over || undefined} role="group" {...rootDrop.props}>
+					{collection.directories.length === 0 && pendingRoot.length === 0 && <div className="gummy-fc-empty-row">Empty</div>}
 					{collection.directories.map((node, i) => (
 						<NodeRow
 							key={node.id}
 							node={node}
 							level={0}
-							isLast={i === collection.directories.length - 1}
+							isLast={pendingRoot.length === 0 && i === collection.directories.length - 1}
 							selectedId={selectedId}
 							expanded={expanded}
 							renamingId={renamingId}
 							setRenamingId={setRenamingId}
 							actions={actions}
 						/>
+					))}
+					{pendingRoot.map((item) => (
+						<PendingRow key={item.key} item={item} level={0} kindIcons={actions.kindIcons} />
 					))}
 				</div>
 			</Collapse>
