@@ -9,7 +9,7 @@
         "name": "RAG UI",
         "description": "Banpu RAG UI.",
         "createdAt": 1793937586151,
-        "updatedAt": 1793943166436,
+        "updatedAt": 1793946348752,
         "snapshot": {
           "pages": [
             {
@@ -505,7 +505,7 @@
                                               "errorMessage": "",
                                               "variant": "surface",
                                               "size": "2",
-                                              "orientation": "vertical",
+                                              "orientation": "horizontal",
                                               "options": [
                                                 {
                                                   "label": "Upload files",
@@ -4380,7 +4380,7 @@
                               "confirmTrue": [],
                               "confirmFalse": [],
                               "modalItemId": "1bd6820e-5658-4ea3-bd83-89d2993bbedb",
-                              "reloadTableItemId": "45e0d058-900d-4725-9293-c1252f7c3384",
+                              "reloadTableItemId": "load-abb158dd-1ce6-4807-90b4-3c0c505d83b0",
                               "endpointId": "165d0304-5c32-4ab5-8fc9-e694a4e3aeb8",
                               "snackbarSuccessEnabled": true,
                               "snackbarSuccessType": "success",
@@ -4506,9 +4506,9 @@
                       "name": "appCards",
                       "title": "",
                       "idKey": "id",
-                      "source": "endpoint",
+                      "source": "state",
                       "read": {
-                        "endpointId": "24cb185c-26a7-46ae-9328-e1ce74e57080",
+                        "endpointId": null,
                         "params": {},
                         "extra": {
                           "limit": {
@@ -4542,6 +4542,11 @@
                           }
                         },
                         "replace": false
+                      },
+                      "stateBinding": {
+                        "source": "state",
+                        "key": "load-abb158dd-1ce6-4807-90b4-3c0c505d83b0",
+                        "path": ""
                       }
                     },
                     "childCanvases": [
@@ -5048,7 +5053,30 @@
                   }
                 },
                 "fieldSeq": 11
-              }
+              },
+              "loads": [
+                {
+                  "id": "load-abb158dd-1ce6-4807-90b4-3c0c505d83b0",
+                  "key": "apps",
+                  "read": {
+                    "endpointId": "24cb185c-26a7-46ae-9328-e1ce74e57080",
+                    "params": {},
+                    "extra": {
+                      "limit": {
+                        "type": "value",
+                        "value": "100"
+                      },
+                      "offset": {
+                        "type": "value",
+                        "value": "0"
+                      }
+                    }
+                  },
+                  "paths": "data.items",
+                  "loading": "cycle",
+                  "errorMessage": "Couldn't load the applications"
+                }
+              ]
             }
           ],
           "menu": [
