@@ -19,6 +19,7 @@ import {
   uploadAccept,
   type FileCollectionConfig,
   type FileCollectionDeleteSlot,
+  type FileCollectionUploadSlot,
   type ChartConfig,
   type ChartAxisConfig,
   type ChartOptionsConfig,
@@ -1132,6 +1133,18 @@ function fileCollectionElement(
       : {}),
     ...(ref.snackbarErrorException ? { snackbarError: '$exception' } : {}),
   })
+  // The upload slot: the rules and the New-menu entry only when set (spec §11).
+  const upload = (ref: FileCollectionUploadSlot) => {
+    const accept = uploadAccept({ acceptPresets: ref.acceptPresets ?? [], accept: ref.accept ?? '' })
+    return {
+      ...mutation(ref),
+      ...(accept ? { accept } : {}),
+      ...(ref.maxSizeMB ? { maxSizeMB: Number(ref.maxSizeMB) } : {}),
+      ...(ref.maxFiles ? { maxFiles: Number(ref.maxFiles) } : {}),
+      ...(ref.label?.trim() ? { label: ref.label.trim() } : {}),
+      ...(ref.icon?.trim() ? { icon: ref.icon.trim() } : {}),
+    }
+  }
   const api: Record<string, unknown> = {
     list: {
       name: resolveEndpoint(c.endpoints.list.endpointId) ?? '',
@@ -1142,8 +1155,13 @@ function fileCollectionElement(
   }
   for (const slot of FILE_COLLECTION_MUTATION_SLOTS) {
     const ref = c.endpoints[slot]
-    if (ref.endpointId == null) continue
-    api[slot] = slot === 'deleteCollection' || slot === 'deleteItem' ? del(ref as FileCollectionDeleteSlot) : mutation(ref)
+    if (!ref || ref.endpointId == null) continue
+    api[slot] =
+      slot === 'deleteCollection' || slot === 'deleteItem'
+        ? del(ref as FileCollectionDeleteSlot)
+        : slot === 'uploadItem'
+          ? upload(ref as FileCollectionUploadSlot)
+          : mutation(ref)
   }
   const defaults = defaultFileCollectionNewItems()
   const sameNewItems =

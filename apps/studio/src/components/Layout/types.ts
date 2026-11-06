@@ -1338,14 +1338,36 @@ export type FileCollectionDeleteSlot = FormListCrudRef & {
 }
 
 /**
+ * The `uploadItem` slot (spec §11): a CRUD ref plus the upload rules and the
+ * New-menu entry. Blank rules mean the server decides; a blank label / icon
+ * means "Upload files…" / `upload`.
+ */
+export type FileCollectionUploadSlot = FormListCrudRef & {
+  acceptPresets: UploadAcceptPreset[]
+  /** Extra extensions / mime types, a comma list. */
+  accept: string
+  maxSizeMB: number | ''
+  /** Per drop / pick. */
+  maxFiles: number | ''
+  label: string
+  /** An `IconData` key. */
+  icon: string
+}
+
+export function createFileCollectionUploadSlot(): FileCollectionUploadSlot {
+  return { ...createFormListCrudRef(), acceptPresets: [], accept: '', maxSizeMB: '', maxFiles: '', label: '', icon: '' }
+}
+
+/**
  * Editable config for a file collection (see
  * `spec/gummy-file-collection-spec.md`). Maps onto the engine's
- * `FileCollectionElement`: nine endpoint slots — `list` reads the nested
- * collections, the eight mutations send fixed bodies and map their URL
- * `:param`s to a node field (a `row` source) or the route / state / a
- * literal — an unwired slot (`endpointId: null`) hides its affordance. The
- * selected node is page data under `selection.stateKey` (`''` =
- * `<name>Selected`); `selectNavigate` plays on a file click.
+ * `FileCollectionElement`: ten endpoint slots — `list` reads the nested
+ * collections, the mutations send fixed bodies (`uploadItem` a multipart
+ * one, one request per file) and map their URL `:param`s to a node field (a
+ * `row` source) or the route / state / a literal — an unwired slot
+ * (`endpointId: null`) hides its affordance. The selected node is page data
+ * under `selection.stateKey` (`''` = `<name>Selected`); `selectNavigate`
+ * plays on a file click.
  */
 export type FileCollectionConfig = {
   name: string
@@ -1370,6 +1392,8 @@ export type FileCollectionConfig = {
     deleteItem: FileCollectionDeleteSlot
     moveItem: FormListCrudRef
     duplicateItem: FormListCrudRef
+    /** Drop OS files on a folder / collection, or pick them from the New menu (spec §11). */
+    uploadItem: FileCollectionUploadSlot
   }
   newItems: FileCollectionNewItemConfig[]
   /** `kind` → `IconData` key. */
@@ -1389,6 +1413,7 @@ export const FILE_COLLECTION_MUTATION_SLOTS = [
   'deleteItem',
   'moveItem',
   'duplicateItem',
+  'uploadItem',
 ] as const
 export type FileCollectionMutationSlot = (typeof FILE_COLLECTION_MUTATION_SLOTS)[number]
 
@@ -1399,6 +1424,7 @@ export const FILE_COLLECTION_BODY_SLOTS: ReadonlySet<FileCollectionMutationSlot>
   'createItem',
   'renameItem',
   'moveItem',
+  'uploadItem',
 ])
 
 /** The node fields a mutation's `row` source may read. */
@@ -1446,6 +1472,7 @@ export function createDefaultFileCollectionConfig(name: string): FileCollectionC
       deleteItem: createFileCollectionDeleteSlot('Delete item', 'Delete "{{name}}"? This cannot be undone.'),
       moveItem: createFormListCrudRef(),
       duplicateItem: createFormListCrudRef(),
+      uploadItem: createFileCollectionUploadSlot(),
     },
     newItems: defaultFileCollectionNewItems(),
     kindIcons: {},

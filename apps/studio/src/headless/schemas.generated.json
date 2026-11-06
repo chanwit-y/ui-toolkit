@@ -3429,6 +3429,10 @@
             },
             "duplicateItem": {
               "$ref": "#/definitions/FormListCrudRef"
+            },
+            "uploadItem": {
+              "$ref": "#/definitions/FileCollectionUploadSlot",
+              "description": "Drop OS files on a folder / collection, or pick them from the New menu (spec §11)."
             }
           },
           "required": [
@@ -3440,7 +3444,8 @@
             "renameItem",
             "deleteItem",
             "moveItem",
-            "duplicateItem"
+            "duplicateItem",
+            "uploadItem"
           ],
           "additionalProperties": false
         },
@@ -3486,7 +3491,7 @@
         "selection"
       ],
       "additionalProperties": false,
-      "description": "Editable config for a file collection (see `spec/gummy-file-collection-spec.md`). Maps onto the engine's `FileCollectionElement`: nine endpoint slots — `list` reads the nested collections, the eight mutations send fixed bodies and map their URL `:param`s to a node field (a `row` source) or the route / state / a literal — an unwired slot (`endpointId: null`) hides its affordance. The selected node is page data under `selection.stateKey` (`''` = `<name>Selected`); `selectNavigate` plays on a file click."
+      "description": "Editable config for a file collection (see `spec/gummy-file-collection-spec.md`). Maps onto the engine's `FileCollectionElement`: ten endpoint slots — `list` reads the nested collections, the mutations send fixed bodies (`uploadItem` a multipart one, one request per file) and map their URL `:param`s to a node field (a `row` source) or the route / state / a literal — an unwired slot (`endpointId: null`) hides its affordance. The selected node is page data under `selection.stateKey` (`''` = `<name>Selected`); `selectNavigate` plays on a file click."
     },
     "FileCollectionDeleteSlot": {
       "type": "object",
@@ -3617,6 +3622,82 @@
       ],
       "additionalProperties": false,
       "description": "One entry of a file collection's **New** menu (`id` is studio-only, never exported)."
+    },
+    "FileCollectionUploadSlot": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "acceptPresets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/UploadAcceptPreset"
+          }
+        },
+        "accept": {
+          "type": "string",
+          "description": "Extra extensions / mime types, a comma list."
+        },
+        "maxSizeMB": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": ""
+            }
+          ]
+        },
+        "maxFiles": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": ""
+            }
+          ],
+          "description": "Per drop / pick."
+        },
+        "label": {
+          "type": "string"
+        },
+        "icon": {
+          "type": "string",
+          "description": "An `IconData` key."
+        },
+        "endpointId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "params": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/NavParamSource"
+          }
+        },
+        "extra": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/NavParamSource"
+          }
+        }
+      },
+      "required": [
+        "accept",
+        "acceptPresets",
+        "endpointId",
+        "extra",
+        "icon",
+        "label",
+        "maxFiles",
+        "maxSizeMB",
+        "params"
+      ],
+      "description": "The `uploadItem` slot (spec §11): a CRUD ref plus the upload rules and the New-menu entry. Blank rules mean the server decides; a blank label / icon means \"Upload files…\" / `upload`."
     },
     "FilePreviewConfig": {
       "type": "object",
