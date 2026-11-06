@@ -3,6 +3,7 @@ import type {
   FileCollectionApi,
   FileCollectionApiConfig,
   FileCollectionElement,
+  FileCollectionUploadApiRef,
   FormListDeleteApi,
   FormListDeleteApiRef,
   FormListMutationApi,
@@ -26,6 +27,7 @@ export const FILE_COLLECTION_MUTATIONS = [
   "deleteItem",
   "moveItem",
   "duplicateItem",
+  "uploadItem",
 ] as const;
 
 /**
@@ -39,7 +41,7 @@ export const FILE_COLLECTION_MUTATIONS = [
 export class FileCollection<M extends TModelMaster, A extends TApiMaster<M>> implements IElement {
   constructor(private _context: ElementContext<M, A>) {}
 
-  private mutation(slot: string, ref: FormListMutationApiRef | FormListDeleteApiRef | undefined, name: string): FormListMutationApi | FormListDeleteApi | undefined {
+  private mutation(slot: string, ref: FormListMutationApiRef | FormListDeleteApiRef | FileCollectionUploadApiRef | undefined, name: string): FormListMutationApi | FormListDeleteApi | undefined {
     if (!ref) return undefined;
     const resolved = resolveApiRef(this._context, ref.name);
     if (!resolved) {
@@ -73,6 +75,8 @@ export class FileCollection<M extends TModelMaster, A extends TApiMaster<M>> imp
       readOnly: props.readOnly,
       height: props.height,
       menu: props.menu,
+      loading: props.loading,
+      skeletonDelay: props.skeletonDelay,
       api: config,
       newItems: props.newItems,
       kindIcons: props.kindIcons,

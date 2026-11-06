@@ -1,8 +1,9 @@
 import { useState, type ReactNode } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
+import { ACCEPT_PRESETS } from '@gummy-ui/ui'
 import { urlParams } from '../Api/warnings'
 import { useProjectEndpoints } from '../Library/scope'
-import { IconButton, IconField, Input, Select, SortableCardList } from '../common'
+import { IconButton, IconField, Input, Select, SortableCardList, cn } from '../common'
 import { createDefaultNavigate, type ButtonSnackbarVariant } from './types'
 import { defaultSource, NavigateEditor, ParamSourceFields, WiringHint } from './ButtonConfigPanel'
 import { CrudRefEditor } from './FormListConfigPanel'
@@ -11,6 +12,8 @@ import { EndpointPicker } from './SelectFieldConfigPanel'
 import {
   FILE_COLLECTION_BODY_SLOTS,
   FILE_COLLECTION_MUTATION_SLOTS,
+  type FileCollectionUploadSlot,
+  type UploadAcceptPreset,
   FILE_COLLECTION_NODE_FIELDS,
   type FileCollectionConfig,
   type FileCollectionDeleteSlot,
@@ -41,7 +44,14 @@ const SLOT_LABELS: Record<FileCollectionMutationSlot, { label: string; hint: str
   deleteItem: { label: 'Delete item', hint: 'the … menu entry on a node (a non-empty folder is blocked)' },
   moveItem: { label: 'Move item', hint: 'drag-and-drop and the Move to picker', body: '{ collectionId, parentId }' },
   duplicateItem: { label: 'Duplicate item', hint: 'the … menu entry on a file' },
+  uploadItem: {
+    label: 'Upload',
+    hint: 'dropping files from the desktop on a folder / collection and the New menu’s Upload files… entry',
+    body: 'multipart { file, collectionId, parentId, name, kind } — one request per file',
+  },
 }
+
+const ACCEPT_PRESET_KEYS = Object.keys(ACCEPT_PRESETS) as UploadAcceptPreset[]
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -117,6 +127,53 @@ function SlotEditor({
           This endpoint declares no body model, so the engine sends no body — it posts <code>{meta.body}</code>. Give the endpoint a body model.
         </WiringHint>
       )}
+    </div>
+  )
+}
+
+/** The upload slot's rules and New-menu entry (spec §11); blank = the server decides / the defaults. */
+function UploadFields({ value, onChange }: { value: FileCollectionUploadSlot; onChange: (next: FileCollectionUploadSlot) => void }) {
+  const presets = value.acceptPresets ?? []
+  const num = (raw: string): number | '' => (raw.trim() === '' || Number(raw) <= 0 ? '' : Number(raw))
+  return (
+    <div className="space-y-2">
+      <div className="space-y-1">
+        <span className="text-ui-sm font-medium text-ink-2">Accepted types</span>
+        <div className="flex flex-wrap gap-1">
+          {ACCEPT_PRESET_KEYS.map((preset) => {
+            const on = presets.includes(preset)
+            return (
+              <button
+                key={preset}
+                type="button"
+                aria-pressed={on}
+                onClick={() => onChange({ ...value, acceptPresets: ACCEPT_PRESET_KEYS.filter((p) => (p === preset ? !on : presets.includes(p))) })}
+                className={cn('tag cursor-pointer', on && 'tag-solid')}
+              >
+                {ACCEPT_PRESETS[preset].label}
+              </button>
+            )
+          })}
+        </div>
+        <p className="text-ui-xs text-ink-3">None picked = any file; the server still decides.</p>
+      </div>
+      <Field label="Extra types (comma list)">
+        <Input value={value.accept ?? ''} onChange={(e) => onChange({ ...value, accept: e.target.value })} placeholder=".dwg, image/png" className="font-mono" />
+      </Field>
+      <div className="grid grid-cols-2 gap-2">
+        <Field label="Max size (MB)">
+          <Input type="number" min={0} step={1} value={value.maxSizeMB === '' || value.maxSizeMB == null ? '' : String(value.maxSizeMB)} placeholder="No limit" onChange={(e) => onChange({ ...value, maxSizeMB: num(e.target.value) })} />
+        </Field>
+        <Field label="Max files per drop">
+          <Input type="number" min={0} step={1} value={value.maxFiles === '' || value.maxFiles == null ? '' : String(value.maxFiles)} placeholder="No limit" onChange={(e) => onChange({ ...value, maxFiles: num(e.target.value) })} />
+        </Field>
+      </div>
+      <Field label="New menu entry">
+        <div className="flex items-center gap-1">
+          <Input value={value.label ?? ''} onChange={(e) => onChange({ ...value, label: e.target.value })} placeholder="Upload files…" />
+          <IconField value={value.icon ?? ''} onChange={(v) => onChange({ ...value, icon: v })} placeholder="upload" />
+        </div>
+      </Field>
     </div>
   )
 }
@@ -230,6 +287,20 @@ export function FileCollectionConfigPanel({ itemId, config }: FileCollectionConf
       <Toggle label="Collapsible (48px rail)" checked={config.collapsible} onChange={(v) => set('collapsible', v)} />
       <Toggle label="Read-only" checked={config.readOnly} onChange={(v) => set('readOnly', v)} />
       <Toggle label="… menu on rows" checked={config.showMenu ?? true} onChange={(v) => set('showMenu', v ? undefined : false)} />
+      <Toggle label="Skeleton while loading" checked={config.loading !== 'none'} onChange={(v) => set('loading', v ? undefined : 'none')} />
+      {config.loading !== 'none' && (
+        <Field label="Minimum skeleton time (ms)">
+          <Input
+            type="number"
+            min={0}
+            max={10000}
+            step={100}
+            value={config.skeletonDelay ? String(config.skeletonDelay) : ''}
+            placeholder="0"
+            onChange={(e) => set('skeletonDelay', Number(e.target.value) > 0 ? Number(e.target.value) : undefined)}
+          />
+        </Field>
+      )}
       <Field label="Height (CSS)">
         <Input value={config.height} onChange={(e) => set('height', e.target.value)} placeholder="Fills the cell" className="font-mono" />
       </Field>
@@ -258,6 +329,9 @@ export function FileCollectionConfigPanel({ itemId, config }: FileCollectionConf
           <SlotEditor slot={slot} value={config.endpoints[slot]} onChange={(next) => setSlot(slot, { ...config.endpoints[slot], ...next })} />
           {(slot === 'deleteCollection' || slot === 'deleteItem') && config.endpoints[slot].endpointId != null && (
             <DeleteFields value={config.endpoints[slot]} onChange={(next) => setSlot(slot, next)} />
+          )}
+          {slot === 'uploadItem' && config.endpoints.uploadItem.endpointId != null && (
+            <UploadFields value={config.endpoints.uploadItem} onChange={(next) => setSlot('uploadItem', next)} />
           )}
         </div>
       ))}

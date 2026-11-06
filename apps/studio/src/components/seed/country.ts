@@ -23,6 +23,8 @@ import {
   createDefaultItemSettings,
   createDefaultRepeaterConfig,
   createDefaultFileCollectionConfig,
+  createFileCollectionUploadSlot,
+  type FileCollectionUploadSlot,
   createDefaultFilePreviewConfig,
   type FilePreviewConfig,
   createDefaultChartConfig,
@@ -5211,6 +5213,8 @@ export const LOAD_FP_BANNER_ID = 'load-seed-fp-banner'
 export const FILE_PREVIEW_BLURHASH_ITEM_ID = 'seed-item-file-preview-hash-record'
 /** The two previews beside the Documents tree: `migrateV67` sets them to cover their frame, `migrateV68` holds their blurhash 2 s. */
 export const FILE_PREVIEW_DOCUMENT_ITEM_IDS = ['seed-item-file-preview-selected', 'seed-item-file-preview-fetched']
+/** The seeded File preview page's tree: upload-only, so a dropped image previews with the blurhash the mock API computes. */
+export const FILE_PREVIEW_TREE_ITEM_ID = 'seed-item-file-preview-tree'
 
 /** The list carries a `url` per file, one record its bytes inline as `data`. */
 export function filePreviewSeedModels(): ModelDef[] {
@@ -5307,18 +5311,22 @@ export function filePreviewDemoSeedItems(): GridItemData[] {
   const tree = createDefaultFileCollectionConfig('previewDocs')
   const selected = 'previewDocsSelected'
   return [
-    caption('seed-item-file-preview-caption', 'Pick a file: the first preview reads the tree’s selection and builds a content URL from the node’s id, the second fetches the same id through its own endpoint and gets the bytes inline. A folder has no file: the first shows its empty text, the second’s read fails.'),
+    caption('seed-item-file-preview-caption', 'Pick a file: the first preview reads the tree’s selection and builds a content URL from the node’s id, the second fetches the same id through its own endpoint and gets the bytes inline. A folder has no file: the first shows its empty text, the second’s read fails. Drop a file from your desktop onto a folder or a collection to upload it: it is selected once it lands, and an image gets its blurhash and size from the API when it is stored, so the preview opens on its placeholder.'),
     {
-      id: 'seed-item-file-preview-tree',
+      id: FILE_PREVIEW_TREE_ITEM_ID,
       label: 'File Collection',
       type: 'filecollection',
       settings: createDefaultItemSettings({ colSpan: { xs: 4, sm: 6, md: 2, lg: 3 } }),
       config: {
         ...tree,
         title: 'Documents',
-        readOnly: true,
-        endpoints: { ...tree.endpoints, list: { ...tree.endpoints.list, endpointId: FILE_COLLECTIONS_ENDPOINT_ID, apiPaths: 'data' } },
-        kindIcons: { markdown: 'fileText', sheet: 'table', image: 'image', document: 'fileText' },
+        // Only the upload slot is wired: drops land, nothing else can be changed.
+        endpoints: {
+          ...tree.endpoints,
+          list: { ...tree.endpoints.list, endpointId: FILE_COLLECTIONS_ENDPOINT_ID, apiPaths: 'data' },
+          uploadItem: fileCollectionUploadSeedSlot(),
+        },
+        kindIcons: { markdown: 'fileText', sheet: 'table', image: 'image', document: 'fileText', spreadsheet: 'table', pdf: 'fileText', text: 'fileText' },
       },
     },
     preview('seed-item-file-preview-selected', 5, {
@@ -5388,7 +5396,14 @@ export const RENAME_FILE_ITEM_ENDPOINT_ID = 'seed-endpoint-rename-file-item'
 export const MOVE_FILE_ITEM_ENDPOINT_ID = 'seed-endpoint-move-file-item'
 export const DUPLICATE_FILE_ITEM_ENDPOINT_ID = 'seed-endpoint-duplicate-file-item'
 export const DELETE_FILE_ITEM_ENDPOINT_ID = 'seed-endpoint-delete-file-item'
+export const FILE_UPLOAD_BODY_MODEL_ID = 'seed-model-file-upload-body'
+export const UPLOAD_FILE_ITEM_ENDPOINT_ID = 'seed-endpoint-upload-file-item'
 export const FILE_COLLECTION_DOCS_ITEM_ID = 'seed-item-file-collection-docs'
+
+/** The seeded Documents tree's upload slot (spec §11): images / PDF / documents / spreadsheets / text, 10 MB, five per drop. */
+export function fileCollectionUploadSeedSlot(): FileCollectionUploadSlot {
+  return { ...createFileCollectionUploadSlot(), endpointId: UPLOAD_FILE_ITEM_ENDPOINT_ID, acceptPresets: ['image', 'pdf', 'document', 'spreadsheet', 'text'], maxSizeMB: 10, maxFiles: 5 }
+}
 
 /** The File collection demo's models: the nested tree, one node, and the three fixed bodies. */
 export function fileCollectionSeedModels(): ModelDef[] {
@@ -5423,6 +5438,12 @@ export function fileCollectionSeedModels(): ModelDef[] {
       fields: [field('collectionId'), field('parentId'), field('name'), field('type'), field('kind')],
     },
     { id: FILE_ITEM_MOVE_BODY_MODEL_ID, name: 'fileItemMoveBody', fields: [field('collectionId'), field('parentId')] },
+    // The upload slot's body is multipart; the model only places it in the body argument.
+    {
+      id: FILE_UPLOAD_BODY_MODEL_ID,
+      name: 'fileUploadBody',
+      fields: [field('file', 'any'), field('collectionId'), field('parentId'), field('name'), field('kind')],
+    },
   ]
 }
 
@@ -5439,6 +5460,7 @@ export function fileCollectionSeedEndpoints(): EndpointDef[] {
     { ...base, id: MOVE_FILE_ITEM_ENDPOINT_ID, name: 'moveFileItem', description: 'Move a folder or file to another folder / collection', url: '/collection/file-items/:id/move', method: 'PATCH', parameter: ID_PARAM_MODEL_ID, body: FILE_ITEM_MOVE_BODY_MODEL_ID },
     { ...base, id: DUPLICATE_FILE_ITEM_ENDPOINT_ID, name: 'duplicateFileItem', description: 'Duplicate a file', url: '/collection/file-items/:id/duplicate', method: 'POST', parameter: ID_PARAM_MODEL_ID },
     { ...base, id: DELETE_FILE_ITEM_ENDPOINT_ID, name: 'deleteFileItem', description: 'Delete a file or an empty folder', url: '/collection/file-items/:id', method: 'DELETE', parameter: ID_PARAM_MODEL_ID },
+    { ...base, id: UPLOAD_FILE_ITEM_ENDPOINT_ID, name: 'uploadFileItem', description: 'Upload a file into a folder (multipart: file, collectionId, parentId, name, kind)', url: '/collection/file-items/upload', method: 'POST', body: FILE_UPLOAD_BODY_MODEL_ID },
   ]
 }
 
@@ -5462,7 +5484,7 @@ export function fileCollectionDemoSeedItems(): GridItemData[] {
       settings: full(),
       config: {
         ...createDefaultTypographyConfig(),
-        text: 'Every slot wired: click a file to select it, double-click or F2 renames, drag into a folder, the … menu has Move to, Duplicate and Delete. The line beside it is bound to the selection.',
+        text: 'Every slot wired: click a file to select it, double-click or F2 renames, drag into a folder, the … menu has Move to, Duplicate and Delete; drop files from your desktop onto a folder or a collection (or New → Upload files…) to upload them. The line beside it is bound to the selection.',
         color: 'gray',
       },
     },
@@ -5484,6 +5506,7 @@ export function fileCollectionDemoSeedItems(): GridItemData[] {
           deleteItem: { ...docs.endpoints.deleteItem, ...idRef(DELETE_FILE_ITEM_ENDPOINT_ID), snackbarSuccessEnabled: true, snackbarSuccessMessage: 'Deleted' },
           moveItem: idRef(MOVE_FILE_ITEM_ENDPOINT_ID),
           duplicateItem: idRef(DUPLICATE_FILE_ITEM_ENDPOINT_ID),
+          uploadItem: fileCollectionUploadSeedSlot(),
         },
         newItems: [
           { id: 'ni-folder', label: 'New folder', icon: 'folder', type: 'folder', kind: '' },

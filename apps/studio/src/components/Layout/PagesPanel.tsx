@@ -1,7 +1,7 @@
-import { FileText, Plus } from 'lucide-react'
+import { FileText, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, cn } from '../common'
+import { Button, ConfirmDialog, IconButton, cn } from '../common'
 import { PageDialog } from '../Workspace/PageDialog'
 import { countComponents } from '../Workspace/snapshots'
 import type { PageDef } from '../Workspace/types'
@@ -13,15 +13,18 @@ import { pageLinks } from './pageLinks'
  * the page whose button links to them ("via 'Add country'"), roots are the
  * pages nothing links to; each row shows the route, how many overlays its
  * buttons open, and its component count. The live page is highlighted and a
- * click routes to another. Modals, dialogs and toasts are not pages — they
- * are actions on a page and live in the Layers tab.
+ * click routes to another; a trash button on each row deletes the page after
+ * a confirm (never the last one). Modals, dialogs and toasts are not pages —
+ * they are actions on a page and live in the Layers tab.
  */
 export function PagesPanel() {
   const projectId = useWorkspaceStore((s) => s.activeProjectId)
   const activePageId = useWorkspaceStore((s) => s.activePageId)
   const pages = useActivePages()
+  const deletePage = useWorkspaceStore((s) => s.deletePage)
   const navigate = useNavigate()
   const [creating, setCreating] = useState(false)
+  const [deleting, setDeleting] = useState<PageDef | null>(null)
 
   if (!projectId) return null
 
@@ -34,32 +37,45 @@ export function PagesPanel() {
 
   const row = (pg: PageDef, depth: number, via?: string) => {
     const isCurrent = pg.id === activePageId
+    const last = pages.length < 2
     return (
-      <div key={`${pg.id}-${depth}-${via ?? ''}`}>
+      <div key={`${pg.id}-${depth}-${via ?? ''}`} >
         {via && (
           <div className="px-1 pt-1 text-ui-xs italic text-ink-3" style={{ marginLeft: depth * 12 }}>
             via “{via}”
           </div>
         )}
-        <button
-          type="button"
-          aria-current={isCurrent || undefined}
-          onClick={() => navigate(`/p/${projectId}/pages/${pg.id}`)}
-          className={cn('list-row w-full py-1 text-left', isCurrent && 'font-semibold')}
+        <div
+          className={cn('list-row w-full py-1 pr-0.5 text-left', isCurrent && 'font-semibold')}
           style={{ marginLeft: depth * 12, width: `calc(100% - ${depth * 12}px)` }}
         >
-          <FileText className="h-[13px] w-[13px] shrink-0 text-ink-3" aria-hidden="true" />
-          <span className="flex min-w-0 flex-1 flex-col leading-tight">
-            <span className="truncate">{pg.name}</span>
-            <span className="truncate font-mono text-ui-xs font-normal text-ink-3">{pg.path}</span>
-          </span>
-          <span
-            className="font-mono text-ui-xs text-ink-3"
-            title={`${countComponents(pg.grid.items)} component(s)`}
+          <button
+            type="button"
+            aria-current={isCurrent || undefined}
+            onClick={() => navigate(`/p/${projectId}/pages/${pg.id}`)}
+            className="flex min-w-0 flex-1 items-center gap-2 text-left"
           >
-            {countComponents(pg.grid.items)}
-          </span>
-        </button>
+            <FileText className="h-[13px] w-[13px] shrink-0 text-ink-3" aria-hidden="true" />
+            <span className="flex min-w-0 flex-1 flex-col leading-tight">
+              <span className="truncate">{pg.name}</span>
+              <span className="truncate font-mono text-ui-xs font-normal text-ink-3">{pg.path}</span>
+            </span>
+            <span
+              className="font-mono text-ui-xs text-ink-3"
+              title={`${countComponents(pg.grid.items)} component(s)`}
+            >
+              {countComponents(pg.grid.items)}
+            </span>
+          </button>
+          <IconButton
+            label={last ? 'The last page cannot be deleted' : `Delete “${pg.name}”`}
+            className="btn-icon-sm h-6! shrink-0 text-ink-3 hover:text-danger disabled:opacity-30"
+            disabled={last}
+            onClick={() => setDeleting(pg)}
+          >
+            <Trash2 size={12} aria-hidden="true" />
+          </IconButton>
+        </div>
       </div>
     )
   }
@@ -108,6 +124,23 @@ export function PagesPanel() {
         New page
       </Button>
 
+      {deleting && (
+        <ConfirmDialog
+          title={`Delete “${deleting.name}”?`}
+          body="The page and every component on it are removed. Buttons on other pages that link here lose their target. There is no undo."
+          confirmLabel="Delete page"
+          onConfirm={() => {
+            const removed = deleting
+            setDeleting(null)
+            deletePage(projectId, removed.id)
+            if (removed.id === activePageId) {
+              const next = pages.find((pg) => pg.id !== removed.id)
+              if (next) navigate(`/p/${projectId}/pages/${next.id}`, { replace: true })
+            }
+          }}
+          onClose={() => setDeleting(null)}
+        />
+      )}
       {creating && (
         <PageDialog
           projectId={projectId}

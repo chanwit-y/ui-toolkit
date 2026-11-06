@@ -647,3 +647,100 @@ These override the sections above where they differ.
 9. **`menu: false`** (studio `showMenu`, optional — absent = shown) hides
    the **…** button on rows and collection headers; the Remove button, the
    header **+**, rename by double-click / F2 and drag-and-drop stay.
+10. **Upload** (grilled 2026-11-06): a tenth slot `uploadItem` lets the user
+    drop OS files onto a folder / collection, or pick them from the New menu —
+    see §11. Prompt: `docs/prompts/file-collection-upload.md`.
+
+---
+
+## 11. Upload (grilled 2026-11-06)
+
+Drop files from the desktop onto the tree, or pick them from the **New**
+menu, and they are uploaded into the target folder through a tenth slot.
+Everything below is gated on `uploadItem` being wired and not `readOnly`
+(`canUpload`); otherwise nothing changes from the sections above.
+
+### 11.1 Slot
+
+```ts
+uploadItem?: FormListMutationApiRef & {
+  accept?: AcceptConfig;   // presets + raw tokens, as on `uploadfile`
+  maxSizeMB?: number;
+  maxFiles?: number;       // per drop / pick
+  label?: string;          // the New-menu entry, default "Upload files…"
+  icon?: keyof typeof IconData; // default `upload`
+};
+```
+
+- **Transport**: multipart through the engine client (`ApiMaster`), so the
+  bearer token, base URL and `app-version` header come along. The engine
+  always sends a `FormData` body for this slot; the endpoint must declare a
+  body model (any shape) so the body lands in its positional argument —
+  the body-model hint / warning of §10.5 covers it. `HttpClientBase` leaves
+  the `Content-Type` header alone when the body is a `FormData`.
+- **One request per file**, fields fixed: `file`, `collectionId`, `parentId`
+  (omitted at the collection root), `name`, `kind` (the engine's `fileKind`
+  preset — the backend stores, maps or ignores it). `extraBody` DataValues
+  are appended as string fields; `params` map a `:param` to the target like
+  `createItem` (`collectionId`, `parentId`, `id` = parentId, `name`, `kind`).
+- A batch runs 3 at a time under `allSettled`, re-fetches **once** when
+  settled; failed files are named in one error snackbar (`$exception`), the
+  rest land. `snackbarSuccess` fires once with `{{count}}`.
+
+### 11.2 Targets and validation
+
+- Drop targets are §5.7's plus the collection header: folder row → the
+  folder, file row → its parent, root zone / header → the collection root (a
+  collapsed collection expands). The blank body and the empty state take
+  nothing. Native `dragenter` / `dragover` / `drop` on the rows (dnd-kit
+  never sees file drags), accepted when `DataTransfer.types` includes
+  `Files`; the hovered target shows the `data-over` highlight. While wired,
+  the component root prevents the default on a missed file drop so the page
+  never navigates away.
+- Client checks before anything is sent: `accept`, `maxSizeMB`, `maxFiles`,
+  zero-byte, OS folder entries — a rejected file is skipped and named with
+  its reason in the error snackbar. OS folder trees are not walked.
+
+### 11.3 Feedback and the click path
+
+- Each pending file is a greyed ghost row with an indeterminate spinner in
+  its target folder, which expands; the header spinner runs. The re-fetch
+  replaces the ghosts; the last uploaded file is selected (`findCreated` by
+  name, as after New file). No percent, no cancel.
+- Every New menu (header **+**, a folder's **…** → New) ends with an
+  "Upload files…" entry opening a hidden `<input type="file" multiple>`
+  filtered by `accept`; the target follows the menu's own rule. The entry is
+  not part of `newItems`.
+
+### 11.4 Studio, MCP, demo
+
+- `FileCollectionUploadSlot` = `FormListCrudRef` + `acceptPresets` / `accept`
+  / `maxSizeMB` / `maxFiles` / `label` / `icon`, a tenth card in the Data
+  section; exported only while wired; in the body-model-hint list. Workspace
+  v70 (`migrateV69`): the default slot on every file collection, the seeded
+  `uploadFileItem` endpoint + `fileUploadBody` model, wired on the seeded
+  page's main tree and on the File preview page's tree (which stops being
+  read-only: upload is its only mutation). Schemas regenerated, guide
+  paragraph, `validate_project` warnings cover the slot. The canvas preview is
+  inert.
+- Mock API: `POST /collection/file-items/upload` creates the node and keeps
+  the bytes in `data/files.ts`' in-memory store under the node id, so the
+  File preview page shows a dropped file at once; 10 MB cap, blocked types
+  as `/upload`; kinds mapped to the demo's vocabulary (`spreadsheet → sheet`,
+  `.md` → `markdown`, pdf / document / presentation → `document`). A raster
+  image also gets its `blurhash` + `width` / `height` computed from the bytes
+  when it is stored (`data/imageMeta.ts`: jimp + blurhash, 4 × 3 over a 32 px
+  copy; an SVG or an undecodable image gets none), on the node and the
+  record, so the selection-bound preview opens on the placeholder — the
+  client can't make a hash before the image has loaded, so it has to come
+  with the data. The example page's wired tree gains the slot (Browse /
+  Read-only don't); its `kindIcons` gains the preset names. The File preview
+  page's tree is upload-only: drops land beside the selection preview
+  (`fit: cover`, `blurhashDelay: 2000`), nothing else can be changed.
+
+### 11.5 Out of scope
+
+Progress percent and cancel, recursive folder upload, paste-to-upload,
+replacing a file's content by dropping on its row, chunked / resumable
+uploads, dragging files out, configurable field names, a per-slot `kinds`
+map.

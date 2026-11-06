@@ -9,7 +9,7 @@
         "name": "RAG UI",
         "description": "Banpu RAG UI.",
         "createdAt": 1793937586151,
-        "updatedAt": 1793946348752,
+        "updatedAt": 1793951203300,
         "snapshot": {
           "pages": [
             {
@@ -418,7 +418,7 @@
                                         "xs": "start",
                                         "sm": "start",
                                         "md": "start",
-                                        "lg": "start"
+                                        "lg": "end"
                                       },
                                       "alignSelf": {
                                         "xs": "stretch",
@@ -441,8 +441,8 @@
                                       "minWidth": "",
                                       "maxHeight": "",
                                       "trigger": {
-                                        "label": "Add",
-                                        "icon": "puls",
+                                        "label": "Upload",
+                                        "icon": "upload",
                                         "variant": "contained"
                                       }
                                     },
@@ -1320,7 +1320,7 @@
                                     }
                                   },
                                   {
-                                    "id": "b981c730-41b3-4fb1-97cc-233c610667eb",
+                                    "id": "7f8cdc87-0dcf-4abe-91ba-641be01c7fd2",
                                     "label": "File preview",
                                     "type": "filepreview",
                                     "settings": {
@@ -3898,7 +3898,7 @@
                     "lg": "row"
                   }
                 },
-                "fieldSeq": 23
+                "fieldSeq": 25
               },
               "parentId": "9d4838f7-96e6-48c8-8d31-a79b346d072e",
               "loads": [
@@ -5073,15 +5073,397 @@
                     }
                   },
                   "paths": "data.items",
-                  "loading": "cycle",
+                  "loading": "skeleton",
                   "errorMessage": "Couldn't load the applications"
                 }
               ]
+            },
+            {
+              "id": "243d7d9f-a443-49ff-a910-167e534bf8d9",
+              "key": "users",
+              "name": "Users",
+              "path": "/settings/users",
+              "grid": {
+                "items": [
+                  {
+                    "id": "10d976be-4012-4e57-80f1-592b41c588bf",
+                    "label": "Page title",
+                    "type": "typography",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 6,
+                        "md": 8,
+                        "lg": 12
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "text": "Users",
+                      "variant": "h4",
+                      "weight": "bold",
+                      "color": "",
+                      "align": "",
+                      "truncate": false,
+                      "href": "",
+                      "binding": null
+                    }
+                  },
+                  {
+                    "id": "07cf0e02-0e84-460a-8701-8b7e42714adb",
+                    "label": "Page subtitle",
+                    "type": "typography",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 6,
+                        "md": 8,
+                        "lg": 12
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "text": "Manage who can use RAG UI.",
+                      "variant": "body2",
+                      "weight": "",
+                      "color": "gray",
+                      "align": "",
+                      "truncate": false,
+                      "href": "",
+                      "binding": null
+                    }
+                  }
+                ],
+                "containerSettings": {
+                  "columns": {
+                    "xs": 4,
+                    "sm": 6,
+                    "md": 8,
+                    "lg": 12
+                  },
+                  "gap": {
+                    "xs": "16px",
+                    "sm": "16px",
+                    "md": "16px",
+                    "lg": "16px"
+                  },
+                  "rowGap": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "columnGap": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "justifyItems": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "alignItems": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "justifyContent": {
+                    "xs": "start",
+                    "sm": "start",
+                    "md": "start",
+                    "lg": "start"
+                  },
+                  "alignContent": {
+                    "xs": "start",
+                    "sm": "start",
+                    "md": "start",
+                    "lg": "start"
+                  },
+                  "gridAutoRows": {
+                    "xs": "minmax(56px, auto)",
+                    "sm": "minmax(56px, auto)",
+                    "md": "minmax(56px, auto)",
+                    "lg": "minmax(56px, auto)"
+                  },
+                  "gridAutoFlow": {
+                    "xs": "row",
+                    "sm": "row",
+                    "md": "row",
+                    "lg": "row"
+                  }
+                },
+                "fieldSeq": 0
+              }
+            },
+            {
+              "id": "d8ac47cd-2c2f-422e-ac31-b5c3e04c8736",
+              "key": "roles",
+              "name": "Roles",
+              "path": "/settings/roles",
+              "grid": {
+                "items": [
+                  {
+                    "id": "4151feb4-cdad-4a65-8f64-da098b14c4f2",
+                    "label": "Page title",
+                    "type": "typography",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 6,
+                        "md": 8,
+                        "lg": 12
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "text": "Roles",
+                      "variant": "h4",
+                      "weight": "bold",
+                      "color": "",
+                      "align": "",
+                      "truncate": false,
+                      "href": "",
+                      "binding": null
+                    }
+                  },
+                  {
+                    "id": "d2dabaaa-6aff-484e-ae17-0b7787227701",
+                    "label": "Page subtitle",
+                    "type": "typography",
+                    "settings": {
+                      "colSpan": {
+                        "xs": 4,
+                        "sm": 6,
+                        "md": 8,
+                        "lg": 12
+                      },
+                      "colStart": {
+                        "xs": 0,
+                        "sm": 0,
+                        "md": 0,
+                        "lg": 0
+                      },
+                      "rowSpan": {
+                        "xs": 1,
+                        "sm": 1,
+                        "md": 1,
+                        "lg": 1
+                      },
+                      "gridArea": {
+                        "xs": "",
+                        "sm": "",
+                        "md": "",
+                        "lg": ""
+                      },
+                      "justifySelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "alignSelf": {
+                        "xs": "stretch",
+                        "sm": "stretch",
+                        "md": "stretch",
+                        "lg": "stretch"
+                      },
+                      "order": {
+                        "xs": "0",
+                        "sm": "0",
+                        "md": "0",
+                        "lg": "0"
+                      }
+                    },
+                    "config": {
+                      "text": "Manage roles and what each role can do.",
+                      "variant": "body2",
+                      "weight": "",
+                      "color": "gray",
+                      "align": "",
+                      "truncate": false,
+                      "href": "",
+                      "binding": null
+                    }
+                  }
+                ],
+                "containerSettings": {
+                  "columns": {
+                    "xs": 4,
+                    "sm": 6,
+                    "md": 8,
+                    "lg": 12
+                  },
+                  "gap": {
+                    "xs": "16px",
+                    "sm": "16px",
+                    "md": "16px",
+                    "lg": "16px"
+                  },
+                  "rowGap": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "columnGap": {
+                    "xs": "",
+                    "sm": "",
+                    "md": "",
+                    "lg": ""
+                  },
+                  "justifyItems": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "alignItems": {
+                    "xs": "stretch",
+                    "sm": "stretch",
+                    "md": "stretch",
+                    "lg": "stretch"
+                  },
+                  "justifyContent": {
+                    "xs": "start",
+                    "sm": "start",
+                    "md": "start",
+                    "lg": "start"
+                  },
+                  "alignContent": {
+                    "xs": "start",
+                    "sm": "start",
+                    "md": "start",
+                    "lg": "start"
+                  },
+                  "gridAutoRows": {
+                    "xs": "minmax(56px, auto)",
+                    "sm": "minmax(56px, auto)",
+                    "md": "minmax(56px, auto)",
+                    "lg": "minmax(56px, auto)"
+                  },
+                  "gridAutoFlow": {
+                    "xs": "row",
+                    "sm": "row",
+                    "md": "row",
+                    "lg": "row"
+                  }
+                },
+                "fieldSeq": 0
+              }
             }
           ],
           "menu": [
             {
-              "id": "561f1781-720a-4154-8618-39095ad4da14",
+              "id": "cae8c672-04ed-4739-b27b-92e741d30718",
               "kind": "page",
               "label": "Applications",
               "icon": "package",
@@ -5090,6 +5472,37 @@
                 "params": {},
                 "replace": false
               }
+            },
+            {
+              "id": "0b067eb3-d3d6-4312-b017-2342fdd83013",
+              "kind": "group",
+              "label": "Settings",
+              "icon": "settings",
+              "collapsed": false,
+              "items": [
+                {
+                  "id": "533a3984-0923-4382-be87-c2054db2c29c",
+                  "kind": "page",
+                  "label": "Users",
+                  "icon": "users",
+                  "navigate": {
+                    "pageId": "243d7d9f-a443-49ff-a910-167e534bf8d9",
+                    "params": {},
+                    "replace": false
+                  }
+                },
+                {
+                  "id": "8fec978c-3ed3-46a6-a1cd-9858d80ab5b0",
+                  "kind": "page",
+                  "label": "Roles",
+                  "icon": "userCog",
+                  "navigate": {
+                    "pageId": "d8ac47cd-2c2f-422e-ac31-b5c3e04c8736",
+                    "params": {},
+                    "replace": false
+                  }
+                }
+              ]
             }
           ],
           "shell": {
@@ -5100,15 +5513,15 @@
               "icon": "",
               "logo": "",
               "logoSize": "",
-              "variant": "panel",
+              "variant": "custom",
               "background": "",
               "gradient": {
-                "enabled": false,
-                "from": "",
-                "to": "",
+                "enabled": true,
+                "from": "#e93d82",
+                "to": "#9b1450",
                 "angle": 90
               },
-              "foreground": "",
+              "foreground": "light",
               "padding": "",
               "sidebarToggle": {
                 "hide": "menu",
@@ -5132,6 +5545,11 @@
               },
               "indicator": null,
               "indicatorColor": ""
+            },
+            "pageTransition": {
+              "type": "slide",
+              "duration": "",
+              "easing": "ease-out"
             }
           },
           "env": [
@@ -5192,7 +5610,7 @@
           ],
           "theme": {
             "appearance": "light",
-            "accentColor": "iris",
+            "accentColor": "crimson",
             "radius": "small",
             "panelBackground": "translucent",
             "surface": "flat",
@@ -5201,40 +5619,40 @@
               "color": "",
               "darkColor": "",
               "gradient": {
-                "from": "#eef2ff",
-                "to": "#c7d2fe",
+                "from": "#fff3f7",
+                "to": "#fcdce7",
                 "angle": 160,
-                "darkFrom": "#1e1b4b",
-                "darkTo": "#4338ca"
+                "darkFrom": "#2f0a19",
+                "darkTo": "#701a3d"
               },
               "image": ""
             },
-            "buttonColor": "iris",
+            "buttonColor": "crimson",
             "dataTable": {
-              "headerColor": "iris",
+              "headerColor": "crimson",
               "headerTextColor": "",
               "headerFontSize": "",
               "headerFontWeight": "",
-              "headerHoverColor": "iris",
-              "paginationButtonColor": "iris",
-              "paginationButtonHoverColor": "iris",
-              "rowHoverColor": "iris",
-              "editButtonColor": "iris",
+              "headerHoverColor": "crimson",
+              "paginationButtonColor": "crimson",
+              "paginationButtonHoverColor": "crimson",
+              "rowHoverColor": "crimson",
+              "editButtonColor": "crimson",
               "deleteButtonColor": "red"
             },
             "design": {
               "font": "Inter",
               "light": {
-                "surface": "#eef2ff",
-                "panel": "#c7d2fe",
-                "text": "#1e1b4b",
-                "border": "#b3bce9"
+                "surface": "#fff3f7",
+                "panel": "#fcdce7",
+                "text": "#2f0a19",
+                "border": "#e3c3ce"
               },
               "dark": {
-                "surface": "#1e1b4b",
-                "panel": "#4338ca",
-                "text": "#eef2ff",
-                "border": "#584ed0"
+                "surface": "#2f0a19",
+                "panel": "#701a3d",
+                "text": "#fff3f7",
+                "border": "#813453"
               }
             }
           },
@@ -5307,7 +5725,8 @@
           ],
           "customComponents": [],
           "authId": "auth-59549fbd-9373-42c4-b4be-1667e16e76fa",
-          "globalLoads": []
+          "globalLoads": [],
+          "formulas": []
         }
       },
       {
@@ -51865,6 +52284,106 @@
       ]
     },
     "activity": [
+      {
+        "id": "2360a9d5-8649-46d3-97c4-c87d19811059",
+        "ts": 1793949844918,
+        "user": "Claude (MCP)",
+        "verb": "updated",
+        "kind": "page",
+        "name": "Application",
+        "detail": "added filepreview File preview",
+        "projectId": "2ce4fc9d-a5ce-4245-bb9d-c5c405204efc"
+      },
+      {
+        "id": "c3b58ad7-716d-4e38-9347-7260d5ed208e",
+        "ts": 1793949844913,
+        "user": "Claude (MCP)",
+        "verb": "updated",
+        "kind": "page",
+        "name": "Application",
+        "detail": "removed custom File preview",
+        "projectId": "2ce4fc9d-a5ce-4245-bb9d-c5c405204efc"
+      },
+      {
+        "id": "2cc07d62-3e52-460a-a9c3-bad68ae41121",
+        "ts": 1793948234163,
+        "user": "Claude (MCP)",
+        "verb": "updated",
+        "kind": "page",
+        "name": "Application",
+        "detail": "added custom File preview",
+        "projectId": "2ce4fc9d-a5ce-4245-bb9d-c5c405204efc"
+      },
+      {
+        "id": "5bd5ab40-1396-4989-a6af-c1d01dfc49e7",
+        "ts": 1793948234161,
+        "user": "Claude (MCP)",
+        "verb": "updated",
+        "kind": "page",
+        "name": "Application",
+        "detail": "removed filepreview File preview",
+        "projectId": "2ce4fc9d-a5ce-4245-bb9d-c5c405204efc"
+      },
+      {
+        "id": "bdc94b13-29d8-4825-a03b-6d9b4fcfb0e4",
+        "ts": 1793947700840,
+        "user": "Claude (MCP)",
+        "verb": "updated",
+        "kind": "page",
+        "name": "Roles",
+        "detail": "added typography Page subtitle",
+        "projectId": "2ce4fc9d-a5ce-4245-bb9d-c5c405204efc"
+      },
+      {
+        "id": "c4dffd21-c677-47b5-9877-7d019bcc14d6",
+        "ts": 1793947700840,
+        "user": "Claude (MCP)",
+        "verb": "updated",
+        "kind": "page",
+        "name": "Roles",
+        "detail": "added typography Page title",
+        "projectId": "2ce4fc9d-a5ce-4245-bb9d-c5c405204efc"
+      },
+      {
+        "id": "13e7bf09-273f-4f2c-af33-3f14c8cc6a33",
+        "ts": 1793947700840,
+        "user": "Claude (MCP)",
+        "verb": "created",
+        "kind": "page",
+        "name": "Roles",
+        "detail": "blank page",
+        "projectId": "2ce4fc9d-a5ce-4245-bb9d-c5c405204efc"
+      },
+      {
+        "id": "9516488e-c254-4fe1-9749-88b24e0f4883",
+        "ts": 1793947700840,
+        "user": "Claude (MCP)",
+        "verb": "updated",
+        "kind": "page",
+        "name": "Users",
+        "detail": "added typography Page subtitle",
+        "projectId": "2ce4fc9d-a5ce-4245-bb9d-c5c405204efc"
+      },
+      {
+        "id": "7548ecfd-00aa-4046-9d01-ac76940cd6cb",
+        "ts": 1793947700840,
+        "user": "Claude (MCP)",
+        "verb": "updated",
+        "kind": "page",
+        "name": "Users",
+        "detail": "added typography Page title",
+        "projectId": "2ce4fc9d-a5ce-4245-bb9d-c5c405204efc"
+      },
+      {
+        "id": "25722d95-eebb-4d32-a85b-b7dc5462c0e2",
+        "ts": 1793947700838,
+        "user": "Claude (MCP)",
+        "verb": "created",
+        "kind": "page",
+        "name": "Users",
+        "detail": "blank page",
+        "projectId": "2ce4fc9d-a5ce-4245-bb9d-c5c405204efc"
+      },
       {
         "id": "0ad547e4-4fac-4216-bad9-4b90c8d9dab6",
         "ts": 1793943166436,

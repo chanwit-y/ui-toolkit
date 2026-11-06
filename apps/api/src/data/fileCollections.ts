@@ -57,6 +57,7 @@ add(node('c2', null, 'Brand guide.pdf', 'file', 'document'));
 add(node('c2', null, 'Empty folder', 'folder'));
 // Appended last so the ids above stay as `data/files.ts` names them.
 add({ ...node('c2', campaigns.id, 'Mountain meadow.jpg', 'file', 'image'), blurhash: 'LvHx.@ofj[of.AWCoea#-;f5j[fP', width: 1200, height: 1600 });
+add(node('c1', q1.id, 'Q1 sales.xlsx', 'file', 'sheet'));
 
 let next = seq + 1;
 const newId = () => `n${next++}`;
@@ -98,7 +99,7 @@ export const fileCollectionService = {
   },
 
   getNode: (id: string) => nodes.find((n) => n.id === id) ?? null,
-  createItem: (data: { collectionId: string; parentId: string | null; name: string; type: FileNode['type']; kind?: string | null }) => {
+  createItem: (data: { collectionId: string; parentId: string | null; name: string; type: FileNode['type']; kind?: string | null; blurhash?: string; width?: number; height?: number }) => {
     if (!collections.some((c) => c.id === data.collectionId)) return { error: 'Collection not found' } as const;
     if (data.parentId != null) {
       const parent = nodes.find((n) => n.id === data.parentId);
@@ -106,6 +107,7 @@ export const fileCollectionService = {
     }
     const now = Date.now();
     const n: FileNode = { id: newId(), collectionId: data.collectionId, parentId: data.parentId ?? null, name: data.name, type: data.type, kind: data.kind ?? null, createdAt: now, updatedAt: now };
+    if (data.blurhash && data.width && data.height) Object.assign(n, { blurhash: data.blurhash, width: data.width, height: data.height });
     nodes.push(n);
     return { node: n } as const;
   },

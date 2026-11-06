@@ -1,11 +1,11 @@
 import { IconButton } from "@radix-ui/themes";
 import { ChevronDown, Image as ImageIcon } from "lucide-react";
 import { useState, type CSSProperties, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
-import type { DataValue, NavigateTarget } from "./@types";
+import type { CardLoadingMode, DataValue, NavigateTarget } from "./@types";
 import { imageSrc } from "./core/bound";
 import { useNavigateTo } from "./core/pages";
 import { useDataValue, useDisplayValue, useSkeleton } from "./core/rowScope";
-import { Skeleton } from "./Skeleton";
+import { Skeleton, useSkeletonHold } from "./Skeleton";
 import { Paper, type PaperProps } from "./Paper";
 
 /**
@@ -220,6 +220,12 @@ export type CardViewProps = {
   variant?: PaperProps["variant"];
   elevation?: number;
   square?: boolean;
+  /** See `CardElement.loading`; default `slots`. */
+  loading?: CardLoadingMode;
+  /** The `state` bindings of the content / collapse bins: under `loading: "card"` the card waits for them too. */
+  contentValues?: DataValue[];
+  /** See `CardElement.skeletonDelay`. */
+  skeletonDelay?: number;
   className?: string;
   style?: CSSProperties;
 };
@@ -248,15 +254,26 @@ export function CardView({
   variant,
   elevation,
   square,
+  loading = "slots",
+  contentValues = [],
+  skeletonDelay,
   className,
   style,
 }: CardViewProps) {
   const boundTitle = useDisplayValue(titleValue).text;
   const boundSubheader = useDisplayValue(subheaderValue).text;
   const boundMedia = imageSrc(useDataValue(media?.srcValue));
-  // Slots bound to a page load in `skeleton` mode shimmer until it lands.
-  const headerPending = useSkeleton(titleValue, subheaderValue);
-  const mediaPending = useSkeleton(media?.srcValue);
+  // Slots bound to a page load in `skeleton` mode shimmer until it lands —
+  // each on its own (`slots`), the whole card at once (`card`), or not at all.
+  const headerBound = useSkeleton(titleValue, subheaderValue);
+  const mediaBound = useSkeleton(media?.srcValue);
+  const contentBound = useSkeleton(...contentValues);
+  const anyBound = headerBound || mediaBound || contentBound;
+  // `skeletonDelay`: the extra time the shimmer stays after the data landed.
+  const holding = useSkeletonHold(anyBound, skeletonDelay) && !anyBound;
+  const cardPending = loading === "card" && (anyBound || holding);
+  const headerPending = loading === "slots" && (headerBound || (holding && !!(titleValue || subheaderValue)));
+  const mediaPending = loading === "slots" && (mediaBound || (holding && !!media?.srcValue));
   const [expanded, setExpanded] = useState(defaultExpanded);
   const navigateTo = useNavigateTo();
 
@@ -266,6 +283,7 @@ export function CardView({
   const hasActions = actions.length > 0 || collapse !== undefined;
 
   return (
+    <Skeleton loading={cardPending} className="h-full">
     <Card onActivate={navigate ? () => navigateTo(navigate) : undefined} variant={variant} elevation={elevation} square={square} className={className} style={style}>
       {hasHeader && (
         <Skeleton loading={headerPending}>
@@ -293,5 +311,6 @@ export function CardView({
       )}
       {collapse !== undefined && <CardCollapse expanded={expanded}>{collapse}</CardCollapse>}
     </Card>
+    </Skeleton>
   );
 }

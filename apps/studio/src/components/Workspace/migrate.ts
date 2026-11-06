@@ -60,6 +60,11 @@ import {
   FORMAT_DEMO_FIELDS,
   dataGridSeedEndpoints,
   fileCollectionSeedModels,
+  fileCollectionUploadSeedSlot,
+  FILE_COLLECTION_DOCS_ITEM_ID,
+  FILE_PREVIEW_TREE_ITEM_ID,
+  FILE_UPLOAD_BODY_MODEL_ID,
+  UPLOAD_FILE_ITEM_ENDPOINT_ID,
   filePreviewSeedModels,
   chartSeedModels,
   chartSeedEndpoints,
@@ -160,7 +165,8 @@ import { migrateItemConditions } from './logic'
 import { LOGIC_PAGE_ID, LOGIC_REQUIRED_ITEM_IDS, logicDemoSeedItems, logicSeedFormulas, logicSeedRules } from '../seed/logic'
 import { FORMULA_PAGE_ID, FORMULA_WIDGET_ITEM_IDS, formulaDemoSeedItems } from '../seed/formula'
 import { walkItems } from '../Layout/pageLinks'
-import type { ContainerConfig, FilePreviewConfig } from '../Layout/types'
+import type { ContainerConfig, FileCollectionConfig, FilePreviewConfig } from '../Layout/types'
+import { createFileCollectionUploadSlot } from '../Layout/types'
 import { defaultMenu } from './menu'
 import { createDefaultPaginationConfig, DEFAULT_ADD_BUTTON, createDefaultApprovalLineConfig, createFormListCrudRef, type ApprovalLineConfig } from '../Layout/types'
 import { createDefaultSortConfig, DEFAULT_CELL_LINES, DEFAULT_FILTER_BUTTON, ensureDataTableCanvases, createDefaultProfileKeysConfig } from '../Layout/types'
@@ -1240,7 +1246,48 @@ function migrateV68(data: { projects: ProjectDef[]; library: LibraryData }): {
   library: LibraryData
 } {
   patchSeedPreviews(data.projects, FILE_PREVIEW_DOCUMENT_ITEM_IDS, { blurhashDelay: 2000 })
-  return data
+  return migrateV69(data)
+}
+
+/** Every item of a canvas, through nested child canvases. */
+function forEachItemDeep(items: GridItemData[], fn: (item: GridItemData) => void) {
+  for (const item of items) {
+    fn(item)
+    for (const canvas of item.childCanvases ?? []) forEachItemDeep(canvas.items, fn)
+  }
+}
+
+/**
+ * v69 → v70: the file collection's upload (spec §11). Every tree gains the
+ * `uploadItem` slot (unwired), the library the seeded `uploadFileItem`
+ * endpoint + `fileUploadBody` model, and the seeded Documents tree and the
+ * File preview page's tree (upload-only: it stops being read-only) are wired
+ * to it — only where the slot is still absent, so an edited tree keeps what
+ * it has.
+ */
+function migrateV69(data: { projects: ProjectDef[]; library: LibraryData }): {
+  projects: ProjectDef[]
+  library: LibraryData
+} {
+  const seeded = seedLibraryAdditions(
+    data.projects,
+    data.library,
+    fileCollectionSeedModels().filter((m) => m.id === FILE_UPLOAD_BODY_MODEL_ID),
+    fileCollectionSeedEndpoints().filter((e) => e.id === UPLOAD_FILE_ITEM_ENDPOINT_ID),
+  )
+  const fill = (items: GridItemData[]) =>
+    forEachItemDeep(items, (item) => {
+      if (item.type !== 'filecollection' || !item.config) return
+      const c = item.config as FileCollectionConfig
+      if (c.endpoints.uploadItem) return
+      const seeded = item.id === FILE_COLLECTION_DOCS_ITEM_ID || item.id === FILE_PREVIEW_TREE_ITEM_ID
+      const uploadItem = seeded ? fileCollectionUploadSeedSlot() : createFileCollectionUploadSlot()
+      const readOnly = item.id === FILE_PREVIEW_TREE_ITEM_ID ? false : c.readOnly
+      item.config = { ...c, readOnly, endpoints: { ...c.endpoints, uploadItem } }
+    })
+  for (const p of seeded.projects) for (const pg of p.snapshot.pages) fill(pg.grid.items)
+  for (const t of seeded.library.templates) fill(t.grid.items)
+  return seeded
 }
 
 /**
@@ -1966,7 +2013,7 @@ export function withSeedLibrary(library: LibraryData): LibraryData {
 }
 
 /** The workspace version this build writes (and the newest it reads). */
-export const WORKSPACE_VERSION = 69
+export const WORKSPACE_VERSION = 70
 
 /** What a persisted payload migrates to: the stored fields at the current shape. */
 export type MigratedWorkspace = Pick<WorkspaceData, 'appearance' | 'user' | 'activity' | 'projects' | 'library'>
@@ -2223,7 +2270,11 @@ export function migrateWorkspace(persisted: unknown): MigratedWorkspace | null {
     const normalized = { ...library, auth: (library.auth ?? []).map((a) => normalizeAuthDef(a)) }
     return { appearance, user, activity, ...migrateV68({ projects: data.projects, library: normalized }) }
   }
-  if (data.version !== 69) return null
+  if (data.version === 69) {
+    const normalized = { ...library, auth: (library.auth ?? []).map((a) => normalizeAuthDef(a)) }
+    return { appearance, user, activity, ...migrateV69({ projects: data.projects, library: normalized }) }
+  }
+  if (data.version !== 70) return null
   // Same version, possibly older entry shapes (fields added without a bump): fill the defaults.
   return { appearance, user, activity, projects: data.projects, library: { ...library, auth: (library.auth ?? []).map((a) => normalizeAuthDef(a)) } }
 }

@@ -1,5 +1,32 @@
 import { Skeleton as RadixSkeleton } from "@radix-ui/themes";
-import type { CSSProperties, ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+
+/** The longest a skeleton can be held, in milliseconds. */
+export const MAX_SKELETON_HOLD = 10_000;
+
+/** A configured skeleton delay as a hold in ms: rounded, clamped to 0–10000, 0 for anything else. */
+export function skeletonHold(delay: unknown): number {
+  return typeof delay === "number" && Number.isFinite(delay) ? Math.min(Math.max(Math.round(delay), 0), MAX_SKELETON_HOLD) : 0;
+}
+
+/**
+ * Keeps a placeholder on show at least `delay` ms once it has appeared: a
+ * floor, counted from the first time `pending` is true in this mount, so a
+ * slice that answers at once doesn't flash its skeleton for a frame. Never
+ * slows a slow load down; `0` (the default) is `pending` itself.
+ */
+export function useSkeletonHold(pending: boolean, delay?: number): boolean {
+  const hold = skeletonHold(delay);
+  const [held, setHeld] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout>>();
+  useEffect(() => {
+    if (!pending || hold === 0 || timer.current !== undefined) return;
+    setHeld(true);
+    timer.current = setTimeout(() => setHeld(false), hold);
+  }, [pending, hold]);
+  useEffect(() => () => clearTimeout(timer.current), []);
+  return pending || held;
+}
 
 /**
  * The library's loading placeholder (see the grilled loading-mode design):

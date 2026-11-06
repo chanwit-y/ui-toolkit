@@ -9,20 +9,23 @@ import {
 	type DragStartEvent,
 } from "@dnd-kit/core";
 import { Spinner } from "@radix-ui/themes";
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent, type KeyboardEvent, type ReactNode } from "react";
 import type {
 	FileCollection as Collection,
 	FileCollectionNewItem,
 	FileCollectionNode,
+	FileCollectionLoadingMode,
 	FileCollectionProps,
 	FileCollectionSelected,
 	FormListDeleteApi,
 	FormListMutationApi,
 	SnackbarElement,
 } from "./@types";
+import { resolveAccept } from "../util/accept";
 import { DeleteModal, MoveModal, NameModal } from "./FileCollectionDialogs";
 import { CollectionGroup, safeIcon, type TreeActions } from "./FileCollectionTree";
 import Icon from "./Icon";
+import { useSkeletonHold } from "./Skeleton";
 import { useSnackbar, type SnackbarVariant } from "./Snackbar";
 import { resolveDataValues, type DataValueScope } from "./core/dataValue";
 import {
@@ -37,6 +40,21 @@ import {
 	selectedOf,
 	substitute,
 } from "./core/fileCollectionTree";
+import {
+	DEFAULT_UPLOAD_ICON,
+	DEFAULT_UPLOAD_LABEL,
+	failureMessage,
+	filesFromDataTransfer,
+	hasFiles,
+	partitionDrop,
+	rejectionMessage,
+	runWithConcurrency,
+	uploadFormData,
+	uploadKind,
+	uploadSubject,
+	type PendingUpload,
+	type UploadTarget,
+} from "./core/fileCollectionUpload";
 import { useNavigateTo } from "./core/pages";
 import { callArgs, useRouteScope } from "./core/readApi";
 import { useRowScope } from "./core/rowScope";
@@ -94,8 +112,9 @@ export type FileCollectionViewProps = {
 	collapsible?: boolean;
 	height?: string;
 	collections: Collection[];
-	/** First fetch in flight ⇒ the skeleton. */
+	/** First fetch in flight ⇒ the skeleton (or an empty body under `loadingMode: "none"`). */
 	loading?: boolean;
+	loadingMode?: FileCollectionLoadingMode;
 	/** The fetch failed ⇒ the message + Retry. */
 	error?: string | null;
 	onRetry?: () => void;
@@ -112,6 +131,8 @@ export type FileCollectionViewProps = {
 	/** Studio note under the empty state (no list endpoint). */
 	note?: ReactNode;
 	onKeyDown?: (e: KeyboardEvent<HTMLDivElement>) => void;
+	/** Uploads are wired: a file drop that missed every target is swallowed, so it never navigates the page away. */
+	dropGuard?: boolean;
 	children?: ReactNode;
 };
 
@@ -128,6 +149,7 @@ export function FileCollectionView({
 	height,
 	collections,
 	loading,
+	loadingMode = "skeleton",
 	error,
 	onRetry,
 	busy,
@@ -140,13 +162,27 @@ export function FileCollectionView({
 	onAddCollection,
 	note,
 	onKeyDown,
+	dropGuard,
 	children,
 }: FileCollectionViewProps) {
 	const [collapsed, setCollapsed] = useState(false);
 	const showAdd = !!onAddCollection && !actions.readOnly;
+	// The rows stop the events of a drop they take; what reaches the root missed every target.
+	const guard = dropGuard
+		? {
+				onDragOver: (e: DragEvent<HTMLDivElement>) => {
+					if (!hasFiles(e.dataTransfer)) return;
+					e.preventDefault();
+					e.dataTransfer.dropEffect = "none";
+				},
+				onDrop: (e: DragEvent<HTMLDivElement>) => {
+					if (hasFiles(e.dataTransfer)) e.preventDefault();
+				},
+			}
+		: {};
 
 	return (
-		<div className="gummy-fc gummy-surface" data-file-collection={name} data-collapsed={collapsed || undefined} style={height ? { height } : undefined}>
+		<div className="gummy-fc gummy-surface" data-file-collection={name} data-collapsed={collapsed || undefined} style={height ? { height } : undefined} {...guard}>
 			<div className="gummy-fc-header">
 				{!collapsed && <span className="gummy-fc-title">{title}</span>}
 				<div className="gummy-fc-header-actions">
@@ -177,7 +213,7 @@ export function FileCollectionView({
 			{!collapsed && (
 				<div className="gummy-fc-body" role="tree" aria-label={title || name} onKeyDown={onKeyDown}>
 					{loading ? (
-						<FileCollectionSkeleton />
+						loadingMode === "none" ? null : <FileCollectionSkeleton />
 					) : error ? (
 						<div className="gummy-fc-state" role="alert">
 							<span>Couldn't load files</span>
@@ -234,6 +270,8 @@ export const FileCollection = ({
 	readOnly = false,
 	height,
 	menu = true,
+	loading: loadingMode,
+	skeletonDelay,
 	api,
 	newItems = DEFAULT_NEW_ITEMS,
 	kindIcons,
@@ -258,6 +296,11 @@ export const FileCollection = ({
 	const [dialog, setDialog] = useState<Dialog | null>(null);
 	const [busy, setBusy] = useState(false);
 	const [dragging, setDragging] = useState<FileCollectionNode | null>(null);
+	// Uploads in flight (ghost rows); several drops may overlap, so `busy` counts them.
+	const [pending, setPending] = useState<PendingUpload[]>([]);
+	const inflight = useRef(0);
+	const fileInput = useRef<HTMLInputElement>(null);
+	const pickTarget = useRef<UploadTarget | null>(null);
 	// The create we're waiting on: select the node once the re-fetch returns it.
 	const pendingSelect = useRef<{ collectionId: string; parentId: string | null; name: string } | null>(null);
 
@@ -407,6 +450,93 @@ export const FileCollection = ({
 		return ok;
 	};
 
+	// ---- upload (spec §11) ------------------------------------------------
+	const canUpload = !readOnly && !!api.uploadItem;
+	const openTarget = useCallback((collectionId: string, parentId: string | null) => {
+		setCollapsedCollections((prev) => {
+			if (!prev.has(collectionId)) return prev;
+			const next = new Set(prev);
+			next.delete(collectionId);
+			return next;
+		});
+		if (parentId) setExpanded((prev) => (prev.has(parentId) ? prev : new Set(prev).add(parentId)));
+	}, []);
+
+	/**
+	 * Upload `files` into `parentId` of `collectionId`: the rules first (the
+	 * skipped ones named at once), then one multipart request per file, three
+	 * at a time, ghost rows meanwhile, one re-fetch when the batch settles,
+	 * the last uploaded file selected, failures named in one snackbar.
+	 */
+	const uploadFiles = useCallback(
+		async (collectionId: string, parentId: string | null, files: File[], folders: File[] = []) => {
+			const info = api.uploadItem;
+			if (!info || readOnly) return;
+			const { accepted, rejected } = partitionDrop(files, info, folders);
+			if (rejected.length) showSnackbar({ variant: "error", message: rejectionMessage(rejected, info) });
+			if (!accepted.length) return;
+			if (info.segments && !info.segments.body) {
+				console.warn(`[gummy-ui] FileCollection "${name}": uploadItem API "${info.name}" declares no body model, so the file can't be sent.`);
+				showSnackbar({ variant: "error", message: "The upload endpoint declares no body model" });
+				return;
+			}
+			const target: UploadTarget = { collectionId, parentId };
+			const batch: PendingUpload[] = accepted.map((file, i) => ({ key: `${Date.now()}-${i}-${file.name}`, collectionId, parentId, name: file.name, kind: uploadKind(file) }));
+			openTarget(collectionId, parentId);
+			setPending((prev) => [...prev, ...batch]);
+			inflight.current += 1;
+			setBusy(true);
+			const query = resolveDataValues(info.query, scope);
+			const extraParams = resolveDataValues(info.extraParams, scope);
+			const extraBody = resolveDataValues(info.extraBody, scope);
+			const call = info.api as (...a: unknown[]) => Promise<unknown>;
+			const results = await runWithConcurrency(
+				accepted.map((file) => () => {
+					const p = { ...subjectParams(info.params, uploadSubject(file, target)), ...extraParams };
+					return call(...callArgs(info.segments, query, p, uploadFormData(file, target, extraBody) as unknown as Row));
+				}),
+			);
+			const failed: { name: string; error: unknown }[] = [];
+			let last: File | undefined;
+			results.forEach((r, i) => {
+				if (r.status === "rejected") failed.push({ name: accepted[i].name, error: r.reason });
+				else last = accepted[i];
+			});
+			try {
+				if (last) {
+					pendingSelect.current = { collectionId, parentId, name: last.name };
+					await refetch();
+				}
+			} finally {
+				const keys = new Set(batch.map((b) => b.key));
+				setPending((prev) => prev.filter((p) => !keys.has(p.key)));
+				inflight.current -= 1;
+				if (inflight.current === 0) setBusy(false);
+			}
+			if (last) {
+				const success: SnackbarElement | undefined = info.snackbarSuccess;
+				if (success?.message) showSnackbar({ variant: success.type, message: substitute(success.message, { name: last.name, count: accepted.length - failed.length }) });
+			}
+			if (failed.length) showSnackbar({ variant: "error", message: failureMessage(failed) });
+		},
+		[api.uploadItem, readOnly, name, scope, refetch, showSnackbar, openTarget],
+	);
+	const onDropFiles = (collectionId: string, parentId: string | null, dt: DataTransfer) => {
+		const { files, folders } = filesFromDataTransfer(dt);
+		if (files.length || folders.length) void uploadFiles(collectionId, parentId, files, folders);
+	};
+	const onPickFiles = (collectionId: string, parentId: string | null, fromHeader: boolean) => {
+		pickTarget.current = { collectionId, parentId: fromHeader ? creationTarget(collections, collectionId, selectedId) : parentId };
+		fileInput.current?.click();
+	};
+	const onPicked = (list: FileList | null) => {
+		const files = Array.from(list ?? []);
+		const target = pickTarget.current;
+		pickTarget.current = null;
+		if (target && files.length) void uploadFiles(target.collectionId, target.parentId, files);
+	};
+	const uploadAccept = resolveAccept(api.uploadItem?.accept).join(",");
+
 	// ---- drag and drop ----------------------------------------------------
 	const canDrag = !readOnly && !!api.moveItem;
 	const sensors = useSensors(
@@ -500,9 +630,14 @@ export const FileCollection = ({
 		onDeleteItem: api.deleteItem ? (node) => setDialog({ kind: "deleteItem", node }) : undefined,
 		onMoveItem: api.moveItem ? (node) => setDialog({ kind: "move", node }) : undefined,
 		onDuplicateItem: api.duplicateItem ? duplicateItem : undefined,
+		canUpload,
+		uploadEntry: canUpload ? { label: api.uploadItem?.label || DEFAULT_UPLOAD_LABEL, icon: safeIcon(api.uploadItem?.icon, DEFAULT_UPLOAD_ICON as "upload") } : undefined,
+		onDropFiles: canUpload ? onDropFiles : undefined,
+		onPickFiles: canUpload ? onPickFiles : undefined,
+		pending,
 	};
 
-	const firstLoad = (isLoading || held) && !data;
+	const firstLoad = useSkeletonHold((isLoading || held) && !data, skeletonDelay);
 	const deleteInfo = (d: Dialog | null): { info: FormListDeleteApi | undefined; subjectName: string; count: number; blocked: boolean } => {
 		if (d?.kind === "deleteCollection") return { info: api.deleteCollection, subjectName: d.collection.name, count: countFiles(d.collection.directories), blocked: false };
 		if (d?.kind === "deleteItem") return { info: api.deleteItem, subjectName: d.node.name, count: countFiles(d.node.children), blocked: d.node.type === "folder" && !!d.node.children?.length };
@@ -519,6 +654,7 @@ export const FileCollection = ({
 				height={height}
 				collections={collections}
 				loading={firstLoad}
+				loadingMode={loadingMode}
 				error={error ? (error instanceof Error ? error.message : "Couldn't load files") : null}
 				onRetry={() => void refetch()}
 				busy={busy || (isFetching && !!data)}
@@ -530,7 +666,23 @@ export const FileCollection = ({
 				actions={actions}
 				onAddCollection={api.createCollection ? () => setDialog({ kind: "newCollection" }) : undefined}
 				onKeyDown={onKeyDown}
+				dropGuard={canUpload}
 			>
+				{canUpload && (
+					<input
+						ref={fileInput}
+						type="file"
+						multiple
+						hidden
+						tabIndex={-1}
+						aria-hidden
+						accept={uploadAccept || undefined}
+						onChange={(e) => {
+							onPicked(e.target.files);
+							e.target.value = "";
+						}}
+					/>
+				)}
 				<DragOverlay dropAnimation={null}>
 					{dragging && (
 						<span className="gummy-fc-drag-chip">

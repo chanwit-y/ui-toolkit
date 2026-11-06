@@ -510,4 +510,6 @@ export const model: TModelMaster = {
   nameBody: { name: "string" },
   fileItemCreateBody: { collectionId: "string", parentId: "string", name: "string", type: "string", kind: "string" },
   fileItemMoveBody: { collectionId: "string", parentId: "string" },
+  // The upload slot's body is multipart; the model only places it in the body argument.
+  fileUploadBody: { file: "any", collectionId: "string", parentId: "string", name: "string", kind: "string" },
 };

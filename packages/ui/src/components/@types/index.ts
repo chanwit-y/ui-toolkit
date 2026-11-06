@@ -967,13 +967,39 @@ export type FileCollectionNewItem = {
 };
 
 /**
- * The nine endpoint slots. `list` reads the nested collections; every
+ * The upload rules and the New-menu entry of the `uploadItem` slot (spec
+ * §11). All optional: absent `accept` / `maxSizeMB` / `maxFiles` means the
+ * server decides; `label` / `icon` name the "Upload files…" entry.
+ */
+export type FileCollectionUploadOptions = {
+  /** Presets + raw tokens, as on `uploadfile`; checked on drop and pick. */
+  accept?: AcceptConfig;
+  maxSizeMB?: number;
+  /** Per drop / pick; the files past it are skipped. */
+  maxFiles?: number;
+  /** The New-menu entry, default "Upload files…". */
+  label?: string;
+  /** An `IconData` key, default `upload`. */
+  icon?: keyof typeof IconData;
+};
+
+/** The `uploadItem` slot: a mutation ref plus the upload rules. */
+export type FileCollectionUploadApiRef = FormListMutationApiRef & FileCollectionUploadOptions;
+/** {@link FileCollectionUploadApiRef} resolved against the ApiMaster. */
+export type FileCollectionUploadApi = FormListMutationApi & FileCollectionUploadOptions;
+
+/**
+ * The ten endpoint slots. `list` reads the nested collections; every
  * mutation's body is fixed by the engine (`{ name }`, `{ collectionId,
  * parentId, name, type, kind }`, `{ collectionId, parentId }`), its `params`
  * map a URL `:param` to a **node / collection field** (`id`, `collectionId`,
  * `parentId`, `name`, `kind`) and `extraParams` / `query` resolve from the
  * route / global state / literals. A mutation's response is ignored: after a
  * 2xx the tree is re-fetched. An absent slot hides the affordance it powers.
+ * `uploadItem` is the exception on the body: the engine always sends a
+ * multipart `FormData` for it (`file`, `collectionId`, `parentId` — omitted at
+ * the root —, `name`, `kind`), one request per dropped / picked file; the
+ * endpoint must still declare a body model so the body lands in its slot.
  */
 export type FileCollectionApi = {
   list: FormListReadApiRef;
@@ -985,6 +1011,8 @@ export type FileCollectionApi = {
   deleteItem?: FormListDeleteApiRef;
   moveItem?: FormListMutationApiRef;
   duplicateItem?: FormListMutationApiRef;
+  /** Drop OS files onto a folder / collection, or pick them from the New menu. */
+  uploadItem?: FileCollectionUploadApiRef;
 };
 
 /** {@link FileCollectionApi} resolved against the ApiMaster. */
@@ -998,6 +1026,7 @@ export type FileCollectionApiConfig = {
   deleteItem?: FormListDeleteApi;
   moveItem?: FormListMutationApi;
   duplicateItem?: FormListMutationApi;
+  uploadItem?: FileCollectionUploadApi;
 };
 
 /**
@@ -1023,6 +1052,10 @@ export type FileCollectionElement = {
   height?: string;
   /** The **…** menu on rows and collection headers. `false` hides it (Remove, the header +, rename by double-click / F2 and drag stay). Defaults to true. */
   menu?: boolean;
+  /** What the body shows while the list loads the first time: the §5.1 skeleton (default) or nothing. */
+  loading?: FileCollectionLoadingMode;
+  /** Keeps the skeleton on show at least this long (ms, 0–10000) once the first fetch has started; a floor, never a slowdown. */
+  skeletonDelay?: number;
   api: FileCollectionApi;
   /** The **New** menu. Defaults to "New folder" + "New file". */
   newItems?: FileCollectionNewItem[];
@@ -1032,6 +1065,9 @@ export type FileCollectionElement = {
   /** Played on a file click only. */
   selectNavigate?: NavigateTarget;
 };
+
+/** See {@link FileCollectionElement.loading}. */
+export type FileCollectionLoadingMode = "skeleton" | "none";
 
 export type FileCollectionProps = Omit<FileCollectionElement, "api"> & {
   api: FileCollectionApiConfig;
@@ -2962,9 +2998,21 @@ export type CardElement = {
   /** Shadow depth (0–24, default 1). Ignored when outlined. */
   elevation?: number;
   square?: boolean;
+  /**
+   * How the card waits for a `skeleton`-mode page load one of its bindings
+   * reads: `slots` (default) shimmers only the pending header / media slot,
+   * `card` shimmers the whole card while any slot or content binding is
+   * pending, `none` shows the static fallbacks instead.
+   */
+  loading?: CardLoadingMode;
+  /** Keeps the shimmer on show at least this long (ms, 0–10000) once a binding has started waiting; a floor, never a slowdown. */
+  skeletonDelay?: number;
   className?: string;
   style?: CSSProperties;
 };
+
+/** See {@link CardElement.loading}. */
+export type CardLoadingMode = "slots" | "card" | "none";
 
 /**
  * A block of HTML on the page (`html` Bin): a `{{path}}` template rendered

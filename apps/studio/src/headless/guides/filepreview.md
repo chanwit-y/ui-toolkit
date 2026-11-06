@@ -1,7 +1,9 @@
 # filepreview
 
 One file shown in place: an image, PDF, video, audio or text file drawn in its
-cell, a "no preview" card with Download for anything else. It reads and never
+cell, a spreadsheet (.xlsx / .xls / .ods / .csv) as a read-only sheet grid with
+a tab per sheet (first 500 rows × 50 columns, files over 15 MB not parsed), a
+"no preview" card with Download for anything else. It reads and never
 writes, so it knows nothing about where the file came from.
 
 **Source** (`source`):

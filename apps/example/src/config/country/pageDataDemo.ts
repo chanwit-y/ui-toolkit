@@ -136,7 +136,7 @@ export const containerPageDataDemo: Container[] = [
         element: { text: "Country not found — try one of the buttons above.", variant: "subtitle1", color: "red" },
       },
 
-      ...section("Bound display", "A card whose header and media read the country slice, with the chained region in its content."),
+      ...section("Bound display", "A card whose header and media read the country slice, with the chained region in its content; loading: \"card\" shimmers the whole card until every binding has landed, and skeletonDelay keeps the shimmer at least 1.5 s."),
       {
         sm: "12", md: "6", lg: "4", xl: "4",
         type: "card",
@@ -144,6 +144,8 @@ export const containerPageDataDemo: Container[] = [
         element: {
           name: "pageDataCountry",
           variant: "outlined",
+          loading: "card",
+          skeletonDelay: 1500,
           header: {
             title: "Loading…",
             titleValue: state("country", "name"),

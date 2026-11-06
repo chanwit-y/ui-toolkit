@@ -173,3 +173,139 @@
   cursor: zoom-in;
   background: transparent;
 }
+
+/* Spreadsheet: a read-only grid filling the body, the column letters and row
+ * numbers sticky while it scrolls, a tab per sheet along the bottom. */
+.gummy-fp-sheet {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--gray-6);
+  border-radius: var(--radius-2, 6px);
+}
+.gummy-fp-sheet-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+.gummy-fp-sheet-scroll:focus-visible {
+  outline: 2px solid var(--accent-8);
+  outline-offset: -2px;
+}
+.gummy-fp-sheet-status {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: var(--gray-11);
+}
+.gummy-fp-sheet-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--gray-12);
+}
+.gummy-fp-sheet-table th,
+.gummy-fp-sheet-table td {
+  border-right: 1px solid var(--gray-a5);
+  border-bottom: 1px solid var(--gray-a5);
+  padding: 3px 8px;
+}
+.gummy-fp-sheet-col,
+.gummy-fp-sheet-row,
+.gummy-fp-sheet-corner {
+  position: sticky;
+  background: var(--gray-2);
+  color: var(--gray-11);
+  font-weight: 500;
+  text-align: center;
+}
+.gummy-fp-sheet-col {
+  top: 0;
+  z-index: 1;
+  min-width: 64px;
+}
+.gummy-fp-sheet-row {
+  left: 0;
+  z-index: 1;
+  min-width: 40px;
+  font-variant-numeric: tabular-nums;
+}
+.gummy-fp-sheet-corner {
+  top: 0;
+  left: 0;
+  z-index: 2;
+}
+.gummy-fp-sheet-cell {
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: var(--color-panel-solid);
+}
+.gummy-fp-sheet-cell.is-number {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.gummy-fp-sheet-cell.is-merged {
+  text-align: center;
+  vertical-align: middle;
+}
+.gummy-fp-sheet-footer {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  padding: 0 8px 0 0;
+  border-top: 1px solid var(--gray-a5);
+  background: var(--gray-2);
+}
+.gummy-fp-sheet-tabs {
+  display: flex;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.gummy-fp-sheet-tab {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  border-right: 1px solid var(--gray-a5);
+  border-top: 2px solid transparent;
+  font-size: 12px;
+  color: var(--gray-11);
+  white-space: nowrap;
+}
+.gummy-fp-sheet-tab:hover {
+  background: var(--gray-a3);
+  color: var(--gray-12);
+}
+.gummy-fp-sheet-tab[aria-selected="true"] {
+  border-top-color: var(--accent-9);
+  background: var(--color-panel-solid);
+  color: var(--accent-11);
+  font-weight: 500;
+}
+.gummy-fp-sheet-tab:focus-visible {
+  outline: 2px solid var(--accent-8);
+  outline-offset: -2px;
+}
+.gummy-fp-sheet-note {
+  /* Gives way to the tabs in a narrow frame. */
+  flex: 0 100 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-left: auto;
+  padding-left: 8px;
+  font-size: 11px;
+  color: var(--gray-11);
+  white-space: nowrap;
+}

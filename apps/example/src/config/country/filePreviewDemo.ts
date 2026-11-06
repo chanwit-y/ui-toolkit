@@ -10,12 +10,16 @@ import { DEFAULT_CONTAINER_GRID } from "@gummy-ui/ui";
  * - **From a file collection** — the tree's selection slice, whose nodes carry
  *   only an `id`, plus a `urlTemplate`. A selected folder shows the empty text.
  *   The same click navigates here with `?file=<id>`, and the second preview
- *   reads that through its own endpoint.
+ *   reads that through its own endpoint. The tree takes drops (only
+ *   `uploadItem` is wired, so nothing else can be changed): the mock API keeps
+ *   the bytes and, for a raster image, computes its blurhash and size, so the
+ *   uploaded file previews at once, placeholder first.
  * - **From an endpoint** — the JSON envelope with the bytes inline as `data`.
  * - **From a literal** — a bare URL (its last segment names the file) and a
  *   record pinned in the config.
  * - **In a repeater** — one preview per list item, `openOnClick` opening the
  *   modal viewer.
+ * - **Spreadsheets** — an .xlsx workbook and a .csv drawn as sheet grids.
  * - **Blurhash** — an image's placeholder while it loads, from the record, a
  *   nested key or the config, over a URL the mock API delays.
  * - **What can't be shown** — the "No preview" card, without its header too,
@@ -31,7 +35,7 @@ const literal = (value: unknown): DataValue => ({ type: "value", key: "none", va
 const note = (text: string): Bin => ({ ...full, type: "typography", element: { text, variant: "body2", color: "gray" } as Bin["element"] });
 
 const fromCollectionBins: Bin[] = [
-  note("Pick a file: the left preview reads the tree's selection slice and builds a content URL from the node's id; the right one fetches the same file by the ?file= param and gets the bytes inline. A folder has nothing to preview."),
+  note("Pick a file: the left preview reads the tree's selection slice and builds a content URL from the node's id; the right one fetches the same file by the ?file= param and gets the bytes inline. A folder has nothing to preview. Drop a file from your desktop onto a folder or a collection to upload it — it is selected once it lands; an image gets its blurhash and size computed by the API when it is stored, so the preview opens on its placeholder."),
   {
     sm: "12", md: "4", lg: "3", xl: "3",
     alignSelf: "stretch",
@@ -39,9 +43,18 @@ const fromCollectionBins: Bin[] = [
     element: {
       name: "previewDocs",
       title: "Documents",
-      readOnly: true,
-      api: { list: { name: "fileCollections", paths: ["data"] } },
-      kindIcons: { markdown: "fileText", sheet: "table", image: "image", document: "fileText" },
+      api: {
+        list: { name: "fileCollections", paths: ["data"] },
+        // The only mutation: drops and the New menu's Upload entry; every other affordance stays hidden.
+        uploadItem: {
+          name: "uploadFileItem",
+          accept: ["image", "pdf", "document", "spreadsheet", "text"],
+          maxSizeMB: 10,
+          maxFiles: 5,
+          snackbarSuccess: { type: "success", message: "{{count}} file(s) uploaded" },
+        },
+      },
+      kindIcons: { markdown: "fileText", sheet: "table", image: "image", document: "fileText", spreadsheet: "table", pdf: "fileText", text: "fileText" },
       selectNavigate: { page: "filePreviewDemo", query: { file: { type: "row", key: "id" } }, replace: true },
     },
   },
@@ -146,6 +159,20 @@ const blurhashBins: Bin[] = [
   },
 ];
 
+const spreadsheetBins: Bin[] = [
+  note("A workbook (.xlsx, .xls, .ods) or a .csv is read in the browser and drawn as a grid: a tab per sheet, merged cells, the formatted values. Long sheets are cut at 500 rows and 50 columns, with a note saying so."),
+  {
+    sm: "12", md: "12", lg: "8", xl: "8",
+    type: "filepreview",
+    element: { name: "sheetWorkbook", value: literal({ name: "Q1 sales.xlsx", url: "/collection/files/n15/content" }), height: "360px" },
+  },
+  {
+    sm: "12", md: "12", lg: "4", xl: "4",
+    type: "filepreview",
+    element: { name: "sheetCsv", value: literal({ name: "Q1 price list.csv", url: "/collection/files/n3/content" }), height: "360px" },
+  },
+];
+
 const fallbackBins: Bin[] = [
   { ...third, type: "filepreview", element: { name: "noPreview", value: literal({ name: "Q2 supplier terms.docx", size: 74, url: "/collection/files/n5/content" }), height: "200px" } },
   { ...third, type: "filepreview", element: { name: "noPreviewBare", value: literal({ name: "Q2 supplier terms.docx", size: 74, url: "/collection/files/n5/content" }), height: "200px", showHeader: false } },
@@ -168,6 +195,7 @@ export const containerFilePreviewDemo: Container[] = [
   section("collection", "From a file collection and an endpoint", fromCollectionBins),
   section("literal", "From a literal", literalBins),
   section("repeater", "In a repeater", repeaterBins),
+  section("spreadsheet", "Spreadsheets", spreadsheetBins),
   section("blurhash", "Blurhash", blurhashBins),
   section("fallbacks", "What can't be shown", fallbackBins),
 ];

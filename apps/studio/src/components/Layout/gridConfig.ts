@@ -19,6 +19,7 @@ import {
   uploadAccept,
   type FileCollectionConfig,
   type FileCollectionDeleteSlot,
+  type FileCollectionUploadSlot,
   type ChartConfig,
   type ChartAxisConfig,
   type ChartOptionsConfig,
@@ -1132,6 +1133,18 @@ function fileCollectionElement(
       : {}),
     ...(ref.snackbarErrorException ? { snackbarError: '$exception' } : {}),
   })
+  // The upload slot: the rules and the New-menu entry only when set (spec §11).
+  const upload = (ref: FileCollectionUploadSlot) => {
+    const accept = uploadAccept({ acceptPresets: ref.acceptPresets ?? [], accept: ref.accept ?? '' })
+    return {
+      ...mutation(ref),
+      ...(accept ? { accept } : {}),
+      ...(ref.maxSizeMB ? { maxSizeMB: Number(ref.maxSizeMB) } : {}),
+      ...(ref.maxFiles ? { maxFiles: Number(ref.maxFiles) } : {}),
+      ...(ref.label?.trim() ? { label: ref.label.trim() } : {}),
+      ...(ref.icon?.trim() ? { icon: ref.icon.trim() } : {}),
+    }
+  }
   const api: Record<string, unknown> = {
     list: {
       name: resolveEndpoint(c.endpoints.list.endpointId) ?? '',
@@ -1142,8 +1155,13 @@ function fileCollectionElement(
   }
   for (const slot of FILE_COLLECTION_MUTATION_SLOTS) {
     const ref = c.endpoints[slot]
-    if (ref.endpointId == null) continue
-    api[slot] = slot === 'deleteCollection' || slot === 'deleteItem' ? del(ref as FileCollectionDeleteSlot) : mutation(ref)
+    if (!ref || ref.endpointId == null) continue
+    api[slot] =
+      slot === 'deleteCollection' || slot === 'deleteItem'
+        ? del(ref as FileCollectionDeleteSlot)
+        : slot === 'uploadItem'
+          ? upload(ref as FileCollectionUploadSlot)
+          : mutation(ref)
   }
   const defaults = defaultFileCollectionNewItems()
   const sameNewItems =
@@ -1160,6 +1178,8 @@ function fileCollectionElement(
   const selectNavigate = c.selectNavigate ? navigateTarget(c.selectNavigate, refs) : undefined
   return {
     name: c.name,
+    ...(c.loading === 'none' ? { loading: 'none' } : {}),
+    ...(c.loading !== 'none' && c.skeletonDelay ? { skeletonDelay: c.skeletonDelay } : {}),
     ...omitEmpty({ title: c.title, height: c.height }),
     ...(c.collapsible ? { collapsible: true } : {}),
     ...(c.readOnly ? { readOnly: true } : {}),
@@ -2101,6 +2121,8 @@ function cardElement(
     ...(c.variant !== 'elevation' ? { variant: c.variant } : {}),
     ...(c.variant === 'elevation' && c.elevation !== 1 ? { elevation: c.elevation } : {}),
     ...(c.square ? { square: true } : {}),
+    ...(c.loading && c.loading !== 'slots' ? { loading: c.loading } : {}),
+    ...(c.loading !== 'none' && c.skeletonDelay ? { skeletonDelay: c.skeletonDelay } : {}),
   }
 }
 
