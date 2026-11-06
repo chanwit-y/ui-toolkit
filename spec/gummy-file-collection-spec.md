@@ -719,15 +719,24 @@ uploadItem?: FormListMutationApiRef & {
   section; exported only while wired; in the body-model-hint list. Workspace
   v70 (`migrateV69`): the default slot on every file collection, the seeded
   `uploadFileItem` endpoint + `fileUploadBody` model, wired on the seeded
-  page's main tree. Schemas regenerated, guide paragraph, `validate_project`
-  warnings cover the slot. The canvas preview is inert.
+  page's main tree and on the File preview page's tree (which stops being
+  read-only: upload is its only mutation). Schemas regenerated, guide
+  paragraph, `validate_project` warnings cover the slot. The canvas preview is
+  inert.
 - Mock API: `POST /collection/file-items/upload` creates the node and keeps
   the bytes in `data/files.ts`' in-memory store under the node id, so the
   File preview page shows a dropped file at once; 10 MB cap, blocked types
   as `/upload`; kinds mapped to the demo's vocabulary (`spreadsheet → sheet`,
-  `.md` → `markdown`, pdf / document / presentation → `document`). The
-  example page's wired tree gains the slot (Browse / Read-only don't); its
-  `kindIcons` gains the preset names.
+  `.md` → `markdown`, pdf / document / presentation → `document`). A raster
+  image also gets its `blurhash` + `width` / `height` computed from the bytes
+  when it is stored (`data/imageMeta.ts`: jimp + blurhash, 4 × 3 over a 32 px
+  copy; an SVG or an undecodable image gets none), on the node and the
+  record, so the selection-bound preview opens on the placeholder — the
+  client can't make a hash before the image has loaded, so it has to come
+  with the data. The example page's wired tree gains the slot (Browse /
+  Read-only don't); its `kindIcons` gains the preset names. The File preview
+  page's tree is upload-only: drops land beside the selection preview
+  (`fit: cover`, `blurhashDelay: 2000`), nothing else can be changed.
 
 ### 11.5 Out of scope
 

@@ -5213,6 +5213,8 @@ export const LOAD_FP_BANNER_ID = 'load-seed-fp-banner'
 export const FILE_PREVIEW_BLURHASH_ITEM_ID = 'seed-item-file-preview-hash-record'
 /** The two previews beside the Documents tree: `migrateV67` sets them to cover their frame, `migrateV68` holds their blurhash 2 s. */
 export const FILE_PREVIEW_DOCUMENT_ITEM_IDS = ['seed-item-file-preview-selected', 'seed-item-file-preview-fetched']
+/** The seeded File preview page's tree: upload-only, so a dropped image previews with the blurhash the mock API computes. */
+export const FILE_PREVIEW_TREE_ITEM_ID = 'seed-item-file-preview-tree'
 
 /** The list carries a `url` per file, one record its bytes inline as `data`. */
 export function filePreviewSeedModels(): ModelDef[] {
@@ -5309,18 +5311,22 @@ export function filePreviewDemoSeedItems(): GridItemData[] {
   const tree = createDefaultFileCollectionConfig('previewDocs')
   const selected = 'previewDocsSelected'
   return [
-    caption('seed-item-file-preview-caption', 'Pick a file: the first preview reads the tree’s selection and builds a content URL from the node’s id, the second fetches the same id through its own endpoint and gets the bytes inline. A folder has no file: the first shows its empty text, the second’s read fails.'),
+    caption('seed-item-file-preview-caption', 'Pick a file: the first preview reads the tree’s selection and builds a content URL from the node’s id, the second fetches the same id through its own endpoint and gets the bytes inline. A folder has no file: the first shows its empty text, the second’s read fails. Drop a file from your desktop onto a folder or a collection to upload it: it is selected once it lands, and an image gets its blurhash and size from the API when it is stored, so the preview opens on its placeholder.'),
     {
-      id: 'seed-item-file-preview-tree',
+      id: FILE_PREVIEW_TREE_ITEM_ID,
       label: 'File Collection',
       type: 'filecollection',
       settings: createDefaultItemSettings({ colSpan: { xs: 4, sm: 6, md: 2, lg: 3 } }),
       config: {
         ...tree,
         title: 'Documents',
-        readOnly: true,
-        endpoints: { ...tree.endpoints, list: { ...tree.endpoints.list, endpointId: FILE_COLLECTIONS_ENDPOINT_ID, apiPaths: 'data' } },
-        kindIcons: { markdown: 'fileText', sheet: 'table', image: 'image', document: 'fileText' },
+        // Only the upload slot is wired: drops land, nothing else can be changed.
+        endpoints: {
+          ...tree.endpoints,
+          list: { ...tree.endpoints.list, endpointId: FILE_COLLECTIONS_ENDPOINT_ID, apiPaths: 'data' },
+          uploadItem: fileCollectionUploadSeedSlot(),
+        },
+        kindIcons: { markdown: 'fileText', sheet: 'table', image: 'image', document: 'fileText', spreadsheet: 'table', pdf: 'fileText', text: 'fileText' },
       },
     },
     preview('seed-item-file-preview-selected', 5, {

@@ -62,6 +62,7 @@ import {
   fileCollectionSeedModels,
   fileCollectionUploadSeedSlot,
   FILE_COLLECTION_DOCS_ITEM_ID,
+  FILE_PREVIEW_TREE_ITEM_ID,
   FILE_UPLOAD_BODY_MODEL_ID,
   UPLOAD_FILE_ITEM_ENDPOINT_ID,
   filePreviewSeedModels,
@@ -1259,7 +1260,8 @@ function forEachItemDeep(items: GridItemData[], fn: (item: GridItemData) => void
 /**
  * v69 → v70: the file collection's upload (spec §11). Every tree gains the
  * `uploadItem` slot (unwired), the library the seeded `uploadFileItem`
- * endpoint + `fileUploadBody` model, and the seeded Documents tree is wired
+ * endpoint + `fileUploadBody` model, and the seeded Documents tree and the
+ * File preview page's tree (upload-only: it stops being read-only) are wired
  * to it — only where the slot is still absent, so an edited tree keeps what
  * it has.
  */
@@ -1278,8 +1280,10 @@ function migrateV69(data: { projects: ProjectDef[]; library: LibraryData }): {
       if (item.type !== 'filecollection' || !item.config) return
       const c = item.config as FileCollectionConfig
       if (c.endpoints.uploadItem) return
-      const uploadItem = item.id === FILE_COLLECTION_DOCS_ITEM_ID ? fileCollectionUploadSeedSlot() : createFileCollectionUploadSlot()
-      item.config = { ...c, endpoints: { ...c.endpoints, uploadItem } }
+      const seeded = item.id === FILE_COLLECTION_DOCS_ITEM_ID || item.id === FILE_PREVIEW_TREE_ITEM_ID
+      const uploadItem = seeded ? fileCollectionUploadSeedSlot() : createFileCollectionUploadSlot()
+      const readOnly = item.id === FILE_PREVIEW_TREE_ITEM_ID ? false : c.readOnly
+      item.config = { ...c, readOnly, endpoints: { ...c.endpoints, uploadItem } }
     })
   for (const p of seeded.projects) for (const pg of p.snapshot.pages) fill(pg.grid.items)
   for (const t of seeded.library.templates) fill(t.grid.items)

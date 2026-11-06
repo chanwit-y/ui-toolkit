@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { fileCollectionService as svc } from '../data/fileCollections.js';
 import { fileService } from '../data/files.js';
+import { imageMeta } from '../data/imageMeta.js';
 
 /**
  * The File collection demo's resources (see
@@ -11,7 +12,8 @@ import { fileService } from '../data/files.js';
  * POST `/:id/duplicate`, DELETE `/:id` — 409 on a non-empty folder, and
  * POST `/upload` multipart `file` + `collectionId` + `parentId?` + `name?` +
  * `kind?` — spec §11: creates the file node and keeps the bytes in the files
- * store under its id, so `/collection/files/:id/...` previews it). Every
+ * store under its id, so `/collection/files/:id/...` previews it; a raster
+ * image also gets its `blurhash` + `width` / `height`, see `data/imageMeta.ts`). Every
  * reply uses the `{ data, status, success, message }` envelope.
  */
 export const fileCollectionRoutes = new Hono();
@@ -76,9 +78,13 @@ fileCollectionRoutes.post('/collection/file-items/upload', async (c) => {
   const name = nameOf(body) ?? file.name;
   const parentId = typeof body.parentId === 'string' && body.parentId ? body.parentId : null;
   const kind = demoKind(typeof body.kind === 'string' ? body.kind : '', name) || null;
-  const result = svc.createItem({ collectionId: body.collectionId, parentId, name, type: 'file', kind });
+  const type = servedType(file);
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  // An image's blurhash + size come with its node and record, so a selection-bound preview has its placeholder.
+  const meta = await imageMeta(bytes, type);
+  const result = svc.createItem({ collectionId: body.collectionId, parentId, name, type: 'file', kind, ...meta });
   if ('error' in result) return fail(c, String(result.error), 404);
-  fileService.add({ _id: result.node.id, name, type: servedType(file), bytes: new Uint8Array(await file.arrayBuffer()) });
+  fileService.add({ _id: result.node.id, name, type, bytes, ...meta });
   return ok(c, result.node, 'File uploaded successfully', 201);
 });
 

@@ -81,7 +81,10 @@ failure is a snackbar. The same upload is reachable without a mouse from the **N
    (multipart) creates the node in `data/fileCollections.ts` and puts the bytes into
    `data/files.ts`' in-memory store under the new node id, so the File preview page's
    selection-bound preview shows a just-dropped file. Same 10 MB cap and blocked types as `/upload`;
-   nothing written to disk.
+   nothing written to disk. A raster image also gets its `blurhash` + `width` / `height` computed from
+   the bytes when it is stored (`data/imageMeta.ts`, jimp + blurhash), so the preview opens on the
+   placeholder; the File preview page's tree is wired upload-only for exactly that (added after the
+   build, same day).
 9. **Scope: engine + studio + MCP + demo in one PR, two commits.** Engine: the slot + the interceptor
    change + drop / picker / ghost rows + the mock route + the example page's wired tree gains the
    slot (its Browse and Read-only trees stay without it, showing the difference). Studio: a tenth slot

@@ -99,7 +99,7 @@ export const fileCollectionService = {
   },
 
   getNode: (id: string) => nodes.find((n) => n.id === id) ?? null,
-  createItem: (data: { collectionId: string; parentId: string | null; name: string; type: FileNode['type']; kind?: string | null }) => {
+  createItem: (data: { collectionId: string; parentId: string | null; name: string; type: FileNode['type']; kind?: string | null; blurhash?: string; width?: number; height?: number }) => {
     if (!collections.some((c) => c.id === data.collectionId)) return { error: 'Collection not found' } as const;
     if (data.parentId != null) {
       const parent = nodes.find((n) => n.id === data.parentId);
@@ -107,6 +107,7 @@ export const fileCollectionService = {
     }
     const now = Date.now();
     const n: FileNode = { id: newId(), collectionId: data.collectionId, parentId: data.parentId ?? null, name: data.name, type: data.type, kind: data.kind ?? null, createdAt: now, updatedAt: now };
+    if (data.blurhash && data.width && data.height) Object.assign(n, { blurhash: data.blurhash, width: data.width, height: data.height });
     nodes.push(n);
     return { node: n } as const;
   },

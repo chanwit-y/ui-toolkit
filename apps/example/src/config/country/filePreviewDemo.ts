@@ -10,7 +10,10 @@ import { DEFAULT_CONTAINER_GRID } from "@gummy-ui/ui";
  * - **From a file collection** — the tree's selection slice, whose nodes carry
  *   only an `id`, plus a `urlTemplate`. A selected folder shows the empty text.
  *   The same click navigates here with `?file=<id>`, and the second preview
- *   reads that through its own endpoint.
+ *   reads that through its own endpoint. The tree takes drops (only
+ *   `uploadItem` is wired, so nothing else can be changed): the mock API keeps
+ *   the bytes and, for a raster image, computes its blurhash and size, so the
+ *   uploaded file previews at once, placeholder first.
  * - **From an endpoint** — the JSON envelope with the bytes inline as `data`.
  * - **From a literal** — a bare URL (its last segment names the file) and a
  *   record pinned in the config.
@@ -32,7 +35,7 @@ const literal = (value: unknown): DataValue => ({ type: "value", key: "none", va
 const note = (text: string): Bin => ({ ...full, type: "typography", element: { text, variant: "body2", color: "gray" } as Bin["element"] });
 
 const fromCollectionBins: Bin[] = [
-  note("Pick a file: the left preview reads the tree's selection slice and builds a content URL from the node's id; the right one fetches the same file by the ?file= param and gets the bytes inline. A folder has nothing to preview."),
+  note("Pick a file: the left preview reads the tree's selection slice and builds a content URL from the node's id; the right one fetches the same file by the ?file= param and gets the bytes inline. A folder has nothing to preview. Drop a file from your desktop onto a folder or a collection to upload it — it is selected once it lands; an image gets its blurhash and size computed by the API when it is stored, so the preview opens on its placeholder."),
   {
     sm: "12", md: "4", lg: "3", xl: "3",
     alignSelf: "stretch",
@@ -40,9 +43,18 @@ const fromCollectionBins: Bin[] = [
     element: {
       name: "previewDocs",
       title: "Documents",
-      readOnly: true,
-      api: { list: { name: "fileCollections", paths: ["data"] } },
-      kindIcons: { markdown: "fileText", sheet: "table", image: "image", document: "fileText" },
+      api: {
+        list: { name: "fileCollections", paths: ["data"] },
+        // The only mutation: drops and the New menu's Upload entry; every other affordance stays hidden.
+        uploadItem: {
+          name: "uploadFileItem",
+          accept: ["image", "pdf", "document", "spreadsheet", "text"],
+          maxSizeMB: 10,
+          maxFiles: 5,
+          snackbarSuccess: { type: "success", message: "{{count}} file(s) uploaded" },
+        },
+      },
+      kindIcons: { markdown: "fileText", sheet: "table", image: "image", document: "fileText", spreadsheet: "table", pdf: "fileText", text: "fileText" },
       selectNavigate: { page: "filePreviewDemo", query: { file: { type: "row", key: "id" } }, replace: true },
     },
   },
