@@ -1023,6 +1023,10 @@ export type FileCollectionElement = {
   height?: string;
   /** The **…** menu on rows and collection headers. `false` hides it (Remove, the header +, rename by double-click / F2 and drag stay). Defaults to true. */
   menu?: boolean;
+  /** What the body shows while the list loads the first time: the §5.1 skeleton (default) or nothing. */
+  loading?: FileCollectionLoadingMode;
+  /** Keeps the skeleton on show at least this long (ms, 0–10000) once the first fetch has started; a floor, never a slowdown. */
+  skeletonDelay?: number;
   api: FileCollectionApi;
   /** The **New** menu. Defaults to "New folder" + "New file". */
   newItems?: FileCollectionNewItem[];
@@ -1032,6 +1036,9 @@ export type FileCollectionElement = {
   /** Played on a file click only. */
   selectNavigate?: NavigateTarget;
 };
+
+/** See {@link FileCollectionElement.loading}. */
+export type FileCollectionLoadingMode = "skeleton" | "none";
 
 export type FileCollectionProps = Omit<FileCollectionElement, "api"> & {
   api: FileCollectionApiConfig;
@@ -2962,9 +2969,21 @@ export type CardElement = {
   /** Shadow depth (0–24, default 1). Ignored when outlined. */
   elevation?: number;
   square?: boolean;
+  /**
+   * How the card waits for a `skeleton`-mode page load one of its bindings
+   * reads: `slots` (default) shimmers only the pending header / media slot,
+   * `card` shimmers the whole card while any slot or content binding is
+   * pending, `none` shows the static fallbacks instead.
+   */
+  loading?: CardLoadingMode;
+  /** Keeps the shimmer on show at least this long (ms, 0–10000) once a binding has started waiting; a floor, never a slowdown. */
+  skeletonDelay?: number;
   className?: string;
   style?: CSSProperties;
 };
+
+/** See {@link CardElement.loading}. */
+export type CardLoadingMode = "slots" | "card" | "none";
 
 /**
  * A block of HTML on the page (`html` Bin): a `{{path}}` template rendered

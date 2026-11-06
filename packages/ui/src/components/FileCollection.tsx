@@ -14,6 +14,7 @@ import type {
 	FileCollection as Collection,
 	FileCollectionNewItem,
 	FileCollectionNode,
+	FileCollectionLoadingMode,
 	FileCollectionProps,
 	FileCollectionSelected,
 	FormListDeleteApi,
@@ -23,6 +24,7 @@ import type {
 import { DeleteModal, MoveModal, NameModal } from "./FileCollectionDialogs";
 import { CollectionGroup, safeIcon, type TreeActions } from "./FileCollectionTree";
 import Icon from "./Icon";
+import { useSkeletonHold } from "./Skeleton";
 import { useSnackbar, type SnackbarVariant } from "./Snackbar";
 import { resolveDataValues, type DataValueScope } from "./core/dataValue";
 import {
@@ -94,8 +96,9 @@ export type FileCollectionViewProps = {
 	collapsible?: boolean;
 	height?: string;
 	collections: Collection[];
-	/** First fetch in flight ⇒ the skeleton. */
+	/** First fetch in flight ⇒ the skeleton (or an empty body under `loadingMode: "none"`). */
 	loading?: boolean;
+	loadingMode?: FileCollectionLoadingMode;
 	/** The fetch failed ⇒ the message + Retry. */
 	error?: string | null;
 	onRetry?: () => void;
@@ -128,6 +131,7 @@ export function FileCollectionView({
 	height,
 	collections,
 	loading,
+	loadingMode = "skeleton",
 	error,
 	onRetry,
 	busy,
@@ -177,7 +181,7 @@ export function FileCollectionView({
 			{!collapsed && (
 				<div className="gummy-fc-body" role="tree" aria-label={title || name} onKeyDown={onKeyDown}>
 					{loading ? (
-						<FileCollectionSkeleton />
+						loadingMode === "none" ? null : <FileCollectionSkeleton />
 					) : error ? (
 						<div className="gummy-fc-state" role="alert">
 							<span>Couldn't load files</span>
@@ -234,6 +238,8 @@ export const FileCollection = ({
 	readOnly = false,
 	height,
 	menu = true,
+	loading: loadingMode,
+	skeletonDelay,
 	api,
 	newItems = DEFAULT_NEW_ITEMS,
 	kindIcons,
@@ -502,7 +508,7 @@ export const FileCollection = ({
 		onDuplicateItem: api.duplicateItem ? duplicateItem : undefined,
 	};
 
-	const firstLoad = (isLoading || held) && !data;
+	const firstLoad = useSkeletonHold((isLoading || held) && !data, skeletonDelay);
 	const deleteInfo = (d: Dialog | null): { info: FormListDeleteApi | undefined; subjectName: string; count: number; blocked: boolean } => {
 		if (d?.kind === "deleteCollection") return { info: api.deleteCollection, subjectName: d.collection.name, count: countFiles(d.collection.directories), blocked: false };
 		if (d?.kind === "deleteItem") return { info: api.deleteItem, subjectName: d.node.name, count: countFiles(d.node.children), blocked: d.node.type === "folder" && !!d.node.children?.length };
@@ -519,6 +525,7 @@ export const FileCollection = ({
 				height={height}
 				collections={collections}
 				loading={firstLoad}
+				loadingMode={loadingMode}
 				error={error ? (error instanceof Error ? error.message : "Couldn't load files") : null}
 				onRetry={() => void refetch()}
 				busy={busy || (isFetching && !!data)}

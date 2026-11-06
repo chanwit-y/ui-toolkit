@@ -73,6 +73,8 @@ export class FileCollection<M extends TModelMaster, A extends TApiMaster<M>> imp
       readOnly: props.readOnly,
       height: props.height,
       menu: props.menu,
+      loading: props.loading,
+      skeletonDelay: props.skeletonDelay,
       api: config,
       newItems: props.newItems,
       kindIcons: props.kindIcons,

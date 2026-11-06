@@ -10,6 +10,7 @@ import { useRepeaterScope } from './repeaterScope'
 import { IMAGE_KINDS, TEXT_KINDS } from './rowFields'
 import {
   BUTTON_VARIANT_OPTIONS,
+  CARD_LOADING_OPTIONS,
   createDefaultCardActionConfig,
   createDefaultNavigate,
   type AvatarConfig,
@@ -276,6 +277,33 @@ export function CardConfigPanel({ itemId, config }: { itemId: string; config: Ca
         </Field>
       )}
       <Toggle label="Square corners" checked={config.square} onChange={(v) => set('square', v)} />
+
+      <Heading>Loading</Heading>
+      <Field label="While page data loads">
+        <SegmentedControl
+          options={CARD_LOADING_OPTIONS}
+          value={config.loading ?? 'slots'}
+          onChange={(v) => set('loading', v === 'slots' ? undefined : (v as CardConfig['loading']))}
+          aria-label="Card loading mode"
+        />
+      </Field>
+      {config.loading !== 'none' && (
+        <Field label="Minimum skeleton time (ms)">
+          <Input
+            type="number"
+            min={0}
+            max={10000}
+            step={100}
+            value={config.skeletonDelay ? String(config.skeletonDelay) : ''}
+            placeholder="0"
+            onChange={(e) => set('skeletonDelay', Number(e.target.value) > 0 ? Number(e.target.value) : undefined)}
+          />
+        </Field>
+      )}
+      <p className="text-ui-xs leading-snug text-ink-3">
+        Applies to bindings on a page load in Skeleton mode: shimmer only the pending title / subheader / media slot, the whole card
+        while any of its bindings (content included) is still loading, or show the static fallbacks.
+      </p>
     </div>
   )
 }

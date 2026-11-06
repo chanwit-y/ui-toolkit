@@ -1,12 +1,39 @@
 import { createElement, type JSX, type ReactNode } from "react";
 import type { ApiMaster, TApiMaster } from "../../api/APIMaster";
 import type { TModelMaster } from "../../model/master";
-import type { ButtonElement, CardElement, Container, IElement, TElement, ThemeContextType } from "../@types";
+import type { Bin, ButtonElement, CardElement, Container, DataValue, IElement, TElement, ThemeContextType } from "../@types";
 import { CardView } from "../Card";
 import { useData } from "../context/DataProvider";
 import { ContainerBuilder, ContainerGrid } from "./containerBuilder";
 import { ElementContext } from "./elementBuilder";
 import { useRowScope } from "./rowScope";
+import { skeletonBindingKeys } from "./stateStore";
+
+/**
+ * The page-data bindings of a container's bins (their `value`, an avatar's
+ * `srcValue`, a table's / repeater's `items`), through tab panels and nested
+ * cards, so a card in `loading: "card"` mode can wait for them as one.
+ */
+export function containerStateValues(container: Container | undefined): DataValue[] {
+  if (!container) return [];
+  const out: DataValue[] = [];
+  const visit = (bins: Bin[] | undefined) => {
+    for (const bin of bins ?? []) {
+      const el = bin.element as Record<string, unknown> | undefined;
+      if (!el) continue;
+      for (const key of ["value", "srcValue", "fallbackValue", "titleValue", "subheaderValue", "items", "optionsValue"]) {
+        const dv = el[key] as DataValue | undefined;
+        if (dv && typeof dv === "object" && skeletonBindingKeys([dv]).length) out.push(dv);
+      }
+      const media = el.media as { srcValue?: DataValue } | undefined;
+      if (media?.srcValue && skeletonBindingKeys([media.srcValue]).length) out.push(media.srcValue);
+      for (const key of ["content", "collapse", "container"]) visit((el[key] as Container | undefined)?.bins);
+      for (const tab of (el.tabs as { container?: Container }[] | undefined) ?? []) visit(tab.container?.bins);
+    }
+  };
+  visit(container.bins);
+  return out;
+}
 
 type Apis = ApiMaster<TModelMaster, TApiMaster<TModelMaster>>;
 
@@ -81,6 +108,9 @@ export class Card<M extends TModelMaster, A extends TApiMaster<M>> implements IE
       variant: props.variant,
       elevation: props.elevation,
       square: props.square,
+      loading: props.loading,
+      skeletonDelay: props.skeletonDelay,
+      contentValues: props.loading === "card" ? [...containerStateValues(props.content), ...containerStateValues(props.collapse)] : undefined,
       className: props.className,
       style: props.style,
     });

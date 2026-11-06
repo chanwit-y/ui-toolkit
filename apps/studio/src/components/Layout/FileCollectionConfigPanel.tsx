@@ -230,6 +230,20 @@ export function FileCollectionConfigPanel({ itemId, config }: FileCollectionConf
       <Toggle label="Collapsible (48px rail)" checked={config.collapsible} onChange={(v) => set('collapsible', v)} />
       <Toggle label="Read-only" checked={config.readOnly} onChange={(v) => set('readOnly', v)} />
       <Toggle label="… menu on rows" checked={config.showMenu ?? true} onChange={(v) => set('showMenu', v ? undefined : false)} />
+      <Toggle label="Skeleton while loading" checked={config.loading !== 'none'} onChange={(v) => set('loading', v ? undefined : 'none')} />
+      {config.loading !== 'none' && (
+        <Field label="Minimum skeleton time (ms)">
+          <Input
+            type="number"
+            min={0}
+            max={10000}
+            step={100}
+            value={config.skeletonDelay ? String(config.skeletonDelay) : ''}
+            placeholder="0"
+            onChange={(e) => set('skeletonDelay', Number(e.target.value) > 0 ? Number(e.target.value) : undefined)}
+          />
+        </Field>
+      )}
       <Field label="Height (CSS)">
         <Input value={config.height} onChange={(e) => set('height', e.target.value)} placeholder="Fills the cell" className="font-mono" />
       </Field>

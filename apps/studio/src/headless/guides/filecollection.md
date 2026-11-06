@@ -5,6 +5,9 @@ rename / move / duplicate / delete through eight more endpoint slots (see
 `spec/gummy-file-collection-spec.md`). `name` is its binding name; the
 selected node is page data `<name>Selected` = `{ id, collectionId, parentId,
 name, type, kind, path }` (bind with `source: "state"`, key = that slice).
+`loading: "none"` leaves the body empty during the first list fetch instead of
+the skeleton rows; `skeletonDelay` (ms, 0–10000) keeps the skeleton at least
+that long once it has appeared.
 
 - `endpoints.list` — a CRUD ref `{ endpointId, params, extra }` + `apiPaths`
   (dot path to the collections array, `''` = the response itself). The

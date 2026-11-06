@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import * as XLSX from 'xlsx';
 /**
  * In-memory files behind the example's File preview page. Ids match the file
  * nodes of the File collection demo (`data/fileCollections.ts`), so a tree
@@ -63,6 +64,57 @@ const coverSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360">
 /** A 64 × 36 gradient: a real PNG, so `<img>` decodes a raster the way it would an upload. */
 const BANNER_PNG = 'iVBORw0KGgoAAAANSUhEUgAAAEAAAAAkCAIAAAC2bqvFAAACGUlEQVR42u3PaUoqYAAF0FZ37/33CCECCSSIQAIRRIgghAgiiCCEMKdMMkNtsMSywQaTTDHHEssGLSJwEW8dj/edHZyRP/gexcCC/hg+x/FhxdsEeja8TuJlCt1pdOx4nsGTA20nWi403KjPojaHx3lUPagsoLyIhyWUlnG/guIq7tZQ8OJ2HTc+XAWQD+EygosozmLIxXGawEkK2QNk0jjO4CiLdA6H59jPY+8aqQKSRSRK2C0jXsVODbEmttuIdrDVRaSHzXeE+wh+IfAD/y82hvCNmIAJmIAJmIAJmIAJmIAJmIAJ/LsBfo9yYGF/jJ/j/LDybYI9G18n+TLF7jQ7dj7P8MnBtpMtFxtu1mdZm+PjPKseVhZYXuTDEkvLvF9hcZV3ayx4ebvOGx+vAsyHeBnhRZRnMebiPE3wJMXsATNpHmd4lGU6x8Nz7ue5d81UgckiEyXulhmvcqfGWJPbbUY73Ooy0uPmO8N9Br8Y+KH/lxtDmoAJmIAJmIAJmIAJmIAJmMB/HdD3qAYW9cf0Oa4Pq94m1LPpdVIvU+pOq2PX84yeHGo71XKp4VZ9VrU5Pc6r6lFlQeVFPSyptKz7FRVXdbemgle367rx6SqgfEiXEV1EdRZTLq7ThE5Syh4ok9ZxRkdZpXM6PNd+XnvXShWULCpR0m5Z8ap2aoo1td1WtKOtriI9bb4r3FfwS4Ef+X+1MZTvL+u4s1tzgMcgAAAAAElFTkSuQmCC';
 
+/**
+ * A real workbook, built here so it is deterministic: a Summary sheet with a
+ * merged title and number formats, 600 order rows (more than a preview shows)
+ * and a short Regions sheet.
+ */
+function salesWorkbook() {
+  const products = ['Notebook', 'Pencil set', 'Desk lamp', 'Stapler', 'Planner', 'Marker pack'];
+  const prices = [120, 45.5, 890, 210, 350, 99];
+  const regions = ['Bangkok', 'Chiang Mai', 'Phuket', 'Khon Kaen'];
+  const orders: unknown[][] = [['Order', 'Date', 'Region', 'Product', 'Qty', 'Unit price', 'Total']];
+  for (let i = 0; i < 600; i++) {
+    const p = (i * 7) % products.length;
+    const qty = 1 + ((i * 13) % 9);
+    const day = new Date(Date.UTC(2026, Math.floor(i / 200), 1 + (i % 28)));
+    orders.push([`SO-${String(1001 + i)}`, day, regions[(i * 5) % regions.length], products[p], qty, prices[p], qty * prices[p]]);
+  }
+  const months = ['January', 'February', 'March'];
+  const summary: unknown[][] = [
+    ['Q1 sales summary', '', ''],
+    ['Month', 'Orders', 'Revenue (THB)'],
+    ...months.map((m, i) => {
+      const rows = orders.slice(1 + i * 200, 1 + (i + 1) * 200);
+      return [m, rows.length, rows.reduce((sum, r) => sum + (r[6] as number), 0)];
+    }),
+  ];
+  summary.push(['Total', 600, summary.slice(2).reduce((sum, r) => sum + (r[2] as number), 0)]);
+
+  const wb = XLSX.utils.book_new();
+  const sum = XLSX.utils.aoa_to_sheet(summary);
+  sum['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 2 } }];
+  for (let r = 2; r < summary.length; r++) {
+    const cell = sum[XLSX.utils.encode_cell({ r, c: 2 })];
+    if (cell) cell.z = '#,##0.00';
+  }
+  XLSX.utils.book_append_sheet(wb, sum, 'Summary');
+  const ord = XLSX.utils.aoa_to_sheet(orders, { cellDates: true, dateNF: 'yyyy-mm-dd' });
+  for (let r = 1; r < orders.length; r++) {
+    for (const c of [5, 6]) {
+      const cell = ord[XLSX.utils.encode_cell({ r, c })];
+      if (cell) cell.z = '#,##0.00';
+    }
+  }
+  XLSX.utils.book_append_sheet(wb, ord, 'Orders');
+  XLSX.utils.book_append_sheet(
+    wb,
+    XLSX.utils.aoa_to_sheet([['Region', 'Manager', 'Stores'], ['Bangkok', 'Somchai P.', 12], ['Chiang Mai', 'Nadia S.', 4], ['Phuket', 'Pimchanok S.', 3], ['Khon Kaen', 'Arthit K.', 2]]),
+    'Regions',
+  );
+  return new Uint8Array(XLSX.write(wb, { type: 'array', bookType: 'xlsx' }) as ArrayBuffer);
+}
+
 const FILES: StoredFile[] = [
   {
     _id: 'n3',
@@ -95,6 +147,12 @@ const FILES: StoredFile[] = [
     name: 'Brand guide.pdf',
     type: 'application/pdf',
     bytes: pdf('Brand guide', ['Logo: keep clear space on every side.', 'Colour: indigo first, pink as the accent.', 'Type: one family, two weights.']),
+  },
+  {
+    _id: 'n15',
+    name: 'Q1 sales.xlsx',
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    bytes: salesWorkbook(),
   },
 ];
 

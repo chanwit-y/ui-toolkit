@@ -16,6 +16,7 @@ import { DEFAULT_CONTAINER_GRID } from "@gummy-ui/ui";
  *   record pinned in the config.
  * - **In a repeater** — one preview per list item, `openOnClick` opening the
  *   modal viewer.
+ * - **Spreadsheets** — an .xlsx workbook and a .csv drawn as sheet grids.
  * - **Blurhash** — an image's placeholder while it loads, from the record, a
  *   nested key or the config, over a URL the mock API delays.
  * - **What can't be shown** — the "No preview" card, without its header too,
@@ -146,6 +147,20 @@ const blurhashBins: Bin[] = [
   },
 ];
 
+const spreadsheetBins: Bin[] = [
+  note("A workbook (.xlsx, .xls, .ods) or a .csv is read in the browser and drawn as a grid: a tab per sheet, merged cells, the formatted values. Long sheets are cut at 500 rows and 50 columns, with a note saying so."),
+  {
+    sm: "12", md: "12", lg: "8", xl: "8",
+    type: "filepreview",
+    element: { name: "sheetWorkbook", value: literal({ name: "Q1 sales.xlsx", url: "/collection/files/n15/content" }), height: "360px" },
+  },
+  {
+    sm: "12", md: "12", lg: "4", xl: "4",
+    type: "filepreview",
+    element: { name: "sheetCsv", value: literal({ name: "Q1 price list.csv", url: "/collection/files/n3/content" }), height: "360px" },
+  },
+];
+
 const fallbackBins: Bin[] = [
   { ...third, type: "filepreview", element: { name: "noPreview", value: literal({ name: "Q2 supplier terms.docx", size: 74, url: "/collection/files/n5/content" }), height: "200px" } },
   { ...third, type: "filepreview", element: { name: "noPreviewBare", value: literal({ name: "Q2 supplier terms.docx", size: 74, url: "/collection/files/n5/content" }), height: "200px", showHeader: false } },
@@ -168,6 +183,7 @@ export const containerFilePreviewDemo: Container[] = [
   section("collection", "From a file collection and an endpoint", fromCollectionBins),
   section("literal", "From a literal", literalBins),
   section("repeater", "In a repeater", repeaterBins),
+  section("spreadsheet", "Spreadsheets", spreadsheetBins),
   section("blurhash", "Blurhash", blurhashBins),
   section("fallbacks", "What can't be shown", fallbackBins),
 ];

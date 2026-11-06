@@ -6,6 +6,8 @@ import { Blurhash, blurhashHold } from "./Blurhash"
 import { FileKindIcon } from "./UploadFileParts"
 import { fileKind, isTextFile, isUrlContent, toFileBlob, type UploadFileContent } from "../util/file"
 import type { FilePreviewFit } from "./@types"
+import { isCsvFile, parseSpreadsheet, SpreadsheetTooLargeError, type SheetPreview } from "../util/spreadsheet"
+import { SpreadsheetPreview } from "./SpreadsheetPreview"
 
 /** What the viewers can show: an uploaded file, or a record pointing at one by URL. */
 export type ViewableFile = {
@@ -22,7 +24,7 @@ export type ViewableFile = {
 	height?: number
 }
 
-export type ViewerMode = "image" | "pdf" | "video" | "audio" | "text" | "none"
+export type ViewerMode = "image" | "pdf" | "video" | "audio" | "sheet" | "text" | "none"
 
 /** Text previews read at most this much of the file. */
 const TEXT_PREVIEW_LIMIT = 200_000
@@ -30,6 +32,7 @@ const TEXT_PREVIEW_LIMIT = 200_000
 const viewerMode = (file: ViewableFile): ViewerMode => {
 	const kind = fileKind(file)
 	if (kind === "image" || kind === "pdf" || kind === "video" || kind === "audio") return kind
+	if (kind === "spreadsheet") return "sheet"
 	return isTextFile(file) ? "text" : "none"
 }
 
@@ -44,7 +47,7 @@ const isSvg = (file: ViewableFile): boolean =>
 const blobType = (file: ViewableFile, mode: ViewerMode): string => {
 	if (mode === "pdf") return "application/pdf"
 	if (mode === "text") return "text/plain"
-	if (mode === "none") return "application/octet-stream"
+	if (mode === "none" || mode === "sheet") return "application/octet-stream"
 	return file.type
 }
 
@@ -100,10 +103,44 @@ const useFileText = (url: string | undefined, enabled: boolean, attempt: number)
 	return state
 }
 
+export type SheetState = {
+	sheets?: SheetPreview[]
+	/** Over the size limit: shown as a message with the download, not as a failure. */
+	tooLarge?: boolean
+	failed?: boolean
+}
+
+/** A spreadsheet read into text grids; the parser is loaded on first use. */
+const useFileSheets = (file: ViewableFile | undefined, url: string | undefined, enabled: boolean, attempt: number) => {
+	const [state, setState] = useState<SheetState>({})
+	const csv = !!file && isCsvFile(file)
+
+	useEffect(() => {
+		setState({})
+		if (!enabled || !url) return
+		let alive = true
+		fetch(url)
+			.then((res): Promise<string | ArrayBuffer> => {
+				if (!res.ok) throw new Error(`${res.status}`)
+				return csv ? res.text() : res.arrayBuffer()
+			})
+			.then((content) => parseSpreadsheet(content))
+			.then((sheets) => alive && setState({ sheets }))
+			.catch((error: unknown) => alive && setState(error instanceof SpreadsheetTooLargeError ? { tooLarge: true } : { failed: true }))
+		return () => {
+			alive = false
+		}
+	}, [url, enabled, csv, attempt])
+
+	return state
+}
+
 export type FilePreviewState = {
 	mode: ViewerMode
 	url?: string
 	text?: string
+	/** A spreadsheet's sheets once parsed. */
+	sheet?: SheetState
 	/** Whether it may open as a document: an SVG runs its scripts there, so it is only ever an `<img>`. */
 	canOpen: boolean
 	/** The content didn't decode, or the text didn't load. Media reports through `onLoadError`. */
@@ -115,12 +152,15 @@ export const useFilePreview = (file: ViewableFile | undefined, attempt = 0): Fil
 	const mode = file ? viewerMode(file) : "none"
 	const { url, failed: broken } = useFileUrl(file, mode)
 	const { text, failed } = useFileText(url, mode === "text", attempt)
+	const sheet = useFileSheets(file, url, mode === "sheet", attempt)
 	return {
 		mode,
 		url,
 		text,
-		canOpen: mode !== "none" && !!file && !isSvg(file),
-		failed: !!broken || !!failed,
+		sheet,
+		// A browser can't show a workbook itself: opening one would only download it again.
+		canOpen: mode !== "none" && mode !== "sheet" && !!file && !isSvg(file),
+		failed: !!broken || !!failed || !!sheet.failed,
 	}
 }
 
@@ -253,7 +293,7 @@ const PreviewImage = ({ url, alt, blurhash, blurhashDelay, width, height, fit = 
  * element, so the forced-mime and SVG rules can't drift apart.
  */
 export const FilePreviewBody = ({ file, preview, onLoadError, noPreview, blurhashDelay, fit }: FilePreviewBodyProps) => {
-	const { mode, url, text } = preview
+	const { mode, url, text, sheet } = preview
 	return (
 		<>
 			{mode === "image" && (url || file.blurhash) && (
@@ -276,6 +316,14 @@ export const FilePreviewBody = ({ file, preview, onLoadError, noPreview, blurhas
 				<video src={url} controls onError={onLoadError} className="max-h-full max-w-full rounded-md" />
 			)}
 			{mode === "audio" && url && <audio src={url} controls onError={onLoadError} className="w-full max-w-md" />}
+			{mode === "sheet" && (
+				<SpreadsheetPreview
+					sheets={sheet?.sheets}
+					tooLarge={sheet?.tooLarge}
+					fileName={file.name}
+					noPreview={noPreview}
+				/>
+			)}
 			{mode === "text" && (
 				<pre className="h-full w-full overflow-auto rounded-md border border-[var(--gray-6)] bg-[var(--gray-a2)] p-3 text-xs text-[var(--gray-12)] whitespace-pre-wrap">
 					{text ?? "Loading…"}

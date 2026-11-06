@@ -57,6 +57,7 @@ add(node('c2', null, 'Brand guide.pdf', 'file', 'document'));
 add(node('c2', null, 'Empty folder', 'folder'));
 // Appended last so the ids above stay as `data/files.ts` names them.
 add({ ...node('c2', campaigns.id, 'Mountain meadow.jpg', 'file', 'image'), blurhash: 'LvHx.@ofj[of.AWCoea#-;f5j[fP', width: 1200, height: 1600 });
+add(node('c1', q1.id, 'Q1 sales.xlsx', 'file', 'sheet'));
 
 let next = seq + 1;
 const newId = () => `n${next++}`;

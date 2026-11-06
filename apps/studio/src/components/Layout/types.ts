@@ -1356,6 +1356,10 @@ export type FileCollectionConfig = {
   height: string
   /** The … menu on rows and collection headers; absent = shown (engine `menu`). */
   showMenu?: boolean
+  /** The body during the first list fetch; absent = the skeleton (engine `loading`). */
+  loading?: 'skeleton' | 'none'
+  /** Minimum time the skeleton stays, ms; absent / 0 = none (engine `skeletonDelay`). */
+  skeletonDelay?: number
   endpoints: {
     list: FileCollectionListSlot
     createCollection: FormListCrudRef
@@ -2309,7 +2313,19 @@ export type CardConfig = {
   variant: 'elevation' | 'outlined'
   elevation: number
   square: boolean
+  /** How the card waits for a skeleton-mode page load; absent = `slots` (engine `loading`). */
+  loading?: CardLoadingMode
+  /** Minimum time the shimmer stays, ms; absent / 0 = none (engine `skeletonDelay`). */
+  skeletonDelay?: number
 }
+
+export type CardLoadingMode = 'slots' | 'card' | 'none'
+
+export const CARD_LOADING_OPTIONS: { value: CardLoadingMode; label: string }[] = [
+  { value: 'slots', label: 'Each slot' },
+  { value: 'card', label: 'Whole card' },
+  { value: 'none', label: 'Nothing' },
+]
 
 export const DEFAULT_CARD_MEDIA_HEIGHT = 180
 

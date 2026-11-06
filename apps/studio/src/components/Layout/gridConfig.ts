@@ -1160,6 +1160,8 @@ function fileCollectionElement(
   const selectNavigate = c.selectNavigate ? navigateTarget(c.selectNavigate, refs) : undefined
   return {
     name: c.name,
+    ...(c.loading === 'none' ? { loading: 'none' } : {}),
+    ...(c.loading !== 'none' && c.skeletonDelay ? { skeletonDelay: c.skeletonDelay } : {}),
     ...omitEmpty({ title: c.title, height: c.height }),
     ...(c.collapsible ? { collapsible: true } : {}),
     ...(c.readOnly ? { readOnly: true } : {}),
@@ -2101,6 +2103,8 @@ function cardElement(
     ...(c.variant !== 'elevation' ? { variant: c.variant } : {}),
     ...(c.variant === 'elevation' && c.elevation !== 1 ? { elevation: c.elevation } : {}),
     ...(c.square ? { square: true } : {}),
+    ...(c.loading && c.loading !== 'slots' ? { loading: c.loading } : {}),
+    ...(c.loading !== 'none' && c.skeletonDelay ? { skeletonDelay: c.skeletonDelay } : {}),
   }
 }
 
